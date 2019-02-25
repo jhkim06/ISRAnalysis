@@ -2,7 +2,6 @@ import os
 import sys
 import ROOT
 
-# How to use TUnfold: try to load library (" gSystem->Load("./libunfold.so")
 # Class for unfolding
 # Reco histograms (unfolding inputs): one histogram for data, one histogram for signal MC, dynamic size for background MCs
 # Migration matrix
@@ -18,12 +17,20 @@ import ROOT
 
 # get input root files information using sampleDef.py
 
+import etc.sampleDef as isrSamples
+
+for sampleType in isrSamples.samplesDef_electron.keys():
+    sample =  isrSamples.samplesDef_electron[sampleType]
+    if sample is None : continue
+    #if sampleType == args.sample or args.sample == 'all' :
+    print 'creating histogram for sample '
+    sample.dump()
+    #tnpHist.makePassFailHistograms( sample, tnpConf.flags[args.flag], tnpBins, var )
+
 # create histograms from the root files
-# try to use libunfold.so and make test histogram(response matrix) using DY MC
+# make test histogram(response matrix) using DY MC
 # make response matrix: from detector to post FSR, from post to pre FSR, from detector to pre FSR
 # make directories for each migration matrix
-
-import etc.sampleDef as isrSamples
 
 def makeRecoPlots():
         # load TUnfold library 

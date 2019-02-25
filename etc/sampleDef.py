@@ -4,7 +4,12 @@ import os
 class tnpSample:
 	def __init__(self, sName, path):
         	self.path = []
+                self.path.append(path)
         	self.name = sName
+
+    	def dump(self):
+    	    print '**** name: %-*s ' % (100, self.name)
+    	    print '  path    : ', self.path
 
     	def add_sample(self, sample):
         	self.path.extend( sample.path )
