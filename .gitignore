@@ -1,2 +1,4 @@
 *.root
 *.pcm
+*.d
+*.so
