@@ -23,6 +23,8 @@ import ROOT
 # make response matrix: from detector to post FSR, from post to pre FSR, from detector to pre FSR
 # make directories for each migration matrix
 
+import etc.sampleDef as isrSamples
+
 def makeRecoPlots():
         # load TUnfold library 
 	ROOT.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfold/libunfold.so")	
