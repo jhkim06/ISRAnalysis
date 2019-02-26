@@ -36,4 +36,4 @@ samplesDef_electron = {
 }
 
 #FIXME find better way to add files
-samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DY1'])
+#samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DY1'])

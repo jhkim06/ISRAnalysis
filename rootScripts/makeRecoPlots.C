@@ -12,16 +12,17 @@
 #include "tree.h"
 
 // FIXME may be it's better to set this in the unfoldingISR to select do only norminal unfolding or include systematic unfolding
+// TODO use map for systematics ex) std::vector<std::map<TString,Double_t>> string for systematic name double for weight
 struct recoTH1info {
   std::vector<TH1*> hists;
-  recoTH1info(std::vector<TH1*> ihists):
-    hists(std::move(ihists)){}
+  std::vector<std::map<TString,Double_t>> sysNamesWeights;
+  std::vector<TString> sysNames;
+  
+  recoTH1info(std::vector<TH1*> ihists, std::vector<TString> sysNames_):
+    hists(std::move(ihists)), sysNames(std::move(sysNames_)){}
 };
 
-void recoHists(TFile *filein){ // TODO add list of systematics
-
- TH1::SetDefaultSumw2();
-
+TUnfoldBinningV17* binning(){
  const int nmassbin_fine=5;
  double massbin_fine[nmassbin_fine+1]={40,60,80,100,200,350};
  const int nmassbin_wide=5;
@@ -46,16 +47,18 @@ void recoHists(TFile *filein){ // TODO add list of systematics
  TUnfoldBinningV17 *binning_Rec=new TUnfoldBinningV17("Rec");
  binning_Rec->AddAxis("pt",nptbin_fine,ptbin_fine,false,true);
  binning_Rec->AddAxis("mass",nmassbin_fine,massbin_fine,true,true);
- binning_Rec->PrintStream(std::cout);
 
- TUnfoldBinningV17 *binning_Gen=new TUnfoldBinningV17("Gen");
- binning_Gen->AddAxis("pt",nptbin_wide,ptbin_wide,false,true);
- binning_Gen->AddAxis("mass",nmassbin_wide,massbin_wide,true,true);
- binning_Gen->PrintStream(std::cout);
+ return binning_Rec;
+}
 
- std::vector<TH1*> hp;
- recoTH1info histsToSave(hp);
- histsToSave.hists.push_back((binning_Rec->CreateHistogram("hdataRec")));
+// create hisgotram using TUnfoldBinningV17
+TH1* histogram(){
+ return binning()->CreateHistogram("hdataRec");
+}
+
+void recoHists(TFile *filein, TFile *fileout, const recoTH1info &recoHist){ // TODO add list of systematics
+
+ TH1::SetDefaultSumw2();
 
  TTree *treco=(TTree *)filein->Get("tree");
  treco->SetBranchAddress("qLep",&qLep);
@@ -69,57 +72,23 @@ void recoHists(TFile *filein){ // TODO add list of systematics
  treco->SetBranchAddress("nVtx",&nVtx);
  nentries=treco->GetEntries();
 
+ TUnfoldBinningV17 *bin = binning();
+
+ // TODO based on the info in recoTH1info make map for systematics
  for(int i=0;i<nentries;i++){
+ //for(int i=0;i<10000;i++){
    if(i%10000000==0) cout<<i<<endl;
    treco->GetEntry(i);
     if(ispassRec && isBveto && ptRec->at(2) < 100){
-       histsToSave.hists.at(0)->Fill(binning_Rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)));
-    }
- }
+       recoHist.hists.at(0)->Fill(bin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightRec);
+    }// event selection
+ }// event loop
 
- TFile *outputFile=new TFile("test.root","recreate");
- histsToSave.hists.at(0)->Write();
- outputFile->Write();
-
- delete outputFile;
+ delete bin;
+ //fileout->cd();
+ 
+ // seems histograms automatically written 
+ // recoHist.hists.at(0)->Write();
+ // delete outputFile;
 }
 
-/*
- TFile *outputFile=new TFile("test.root","recreate");
-
- outputFile->cd();
- TUnfoldBinning *fineBinningRoot,*coarseBinningRoot;
-
- TDOMParser parser;
- Int_t error=parser.ParseFile("/home/jhkim/ISR2016/unfolding/TUnfold/testUnfold7binning.xml");
-  if(error) {
-     cout<<"error="<<error<<" from TDOMParser\n";
-     cout<<"==============================================================\n";
-     cout<<"Maybe the file testUnfold7binning.xml is missing?\n";
-     cout<<"The content of the file is included in the comments section\n";
-     cout<<"of this macro \"testUnfold7b.C\"\n";
-     cout<<"==============================================================\n";
- }
-
- TXMLDocument const *XMLdocument=parser.GetXMLDocument();
- fineBinningRoot=
-    TUnfoldBinningXML::ImportXML(XMLdocument,"fine");
- coarseBinningRoot=
-    TUnfoldBinningXML::ImportXML(XMLdocument,"coarse");
- 
- // write binnig schemes to output file
- fineBinningRoot->Write();
- coarseBinningRoot->Write();
-
- if(fineBinningRoot) {
-    fineBinningRoot->PrintStream(cout);
- } else {
-    cout<<"could not read 'detector' binning\n";
- }
- if(coarseBinningRoot) {
-    coarseBinningRoot->PrintStream(cout);
- } else {
-    cout<<"could not read 'generator' binning\n";
- }
-
-*/
