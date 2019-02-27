@@ -32,13 +32,12 @@ for sampleType in isrSamples.samplesDef_electron.keys():
     print 'creating histogram for sample '
     sample.dump()
 
-    if not sample.isMC: 
-	print "data, so only reco histograms"
-        histUtil.makeRecoHists(sample) # FIXME systematic list to consider
-    if sample.isMC and sample.isSig: 
-        print "make migration matrix also"
-        histUtil.makeRecoHists(sample)
-	
+    histUtil.makeRecoHists(sample) # TODO systematic list to consider
+    #if not sample.isMC: 
+    #    print "data, so only reco histograms"
+    #if sample.isMC and sample.isSig: 
+    #    print "make migration matrix also" # FIXME DY contain tautau events
+    #    histUtil.makeRecoHists(sample)
 
     # path list, check if it is data or sig mc, bkg mc, binning info
     #tnpHist.makePassFailHistograms( sample, tnpConf.flags[args.flag], tnpBins, var )

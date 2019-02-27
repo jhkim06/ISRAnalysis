@@ -17,9 +17,10 @@ struct recoTH1info {
   std::vector<TH1*> hists;
   std::vector<std::map<TString,Double_t>> sysNamesWeights;
   std::vector<TString> sysNames;
+  Bool_t isSig;
   
-  recoTH1info(std::vector<TH1*> ihists, std::vector<TString> sysNames_):
-    hists(std::move(ihists)), sysNames(std::move(sysNames_)){}
+  recoTH1info(std::vector<TH1*> ihists, std::vector<TString> sysNames_, Bool_t isSig_):
+    hists(std::move(ihists)), sysNames(std::move(sysNames_)), isSig(std::move(isSig_)) {}
 };
 
 TUnfoldBinningV17* binning(){
@@ -52,12 +53,13 @@ TUnfoldBinningV17* binning(){
 }
 
 // create hisgotram using TUnfoldBinningV17
-TH1* histogram(){
- return binning()->CreateHistogram("hdataRec");
+TH1* histogram(TString name){
+ return binning()->CreateHistogram("h"+ name+ "Rec");
 }
 
-void recoHists(TFile *filein, TFile *fileout, const recoTH1info &recoHist){ // TODO add list of systematics
+void recoHists(TFile *filein, TFile *fileout1, TFile *fileout2, const recoTH1info &recoHist, const recoTH1info &recoHist_){ // TODO add list of systematics
 
+ gROOT->SetBatch();
  TH1::SetDefaultSumw2();
 
  TTree *treco=(TTree *)filein->Get("tree");
@@ -70,6 +72,7 @@ void recoHists(TFile *filein, TFile *fileout, const recoTH1info &recoHist){ // T
  treco->SetBranchAddress("isBveto",&isBveto);
  treco->SetBranchAddress("weightRec",&weightRec);
  treco->SetBranchAddress("nVtx",&nVtx);
+ treco->SetBranchAddress("DYtautau",&DYtautau);
  nentries=treco->GetEntries();
 
  TUnfoldBinningV17 *bin = binning();
@@ -80,11 +83,25 @@ void recoHists(TFile *filein, TFile *fileout, const recoTH1info &recoHist){ // T
    if(i%10000000==0) cout<<i<<endl;
    treco->GetEntry(i);
     if(ispassRec && isBveto && ptRec->at(2) < 100){
-       recoHist.hists.at(0)->Fill(bin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightRec);
-    }// event selection
+       if(!recoHist.isSig){ // for data and MC except DY
+          fileout1->cd();
+          recoHist.hists.at(0)->Fill(bin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightRec);
+       }
+       else{
+            if(DYtautau){
+               fileout2->cd();
+               recoHist_.hists.at(0)->Fill(bin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightRec);
+            }
+            else{
+               fileout1->cd();
+               recoHist.hists.at(0)->Fill(bin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightRec);
+            }
+       }
+    }
  }// event loop
 
  delete bin;
+ delete treco;
  //fileout->cd();
  
  // seems histograms automatically written 
