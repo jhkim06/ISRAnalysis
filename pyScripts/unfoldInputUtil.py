@@ -51,6 +51,7 @@ def makeSigHists(sample):
 
         
         sigHists.hists.push_back(rt.histogram("norminal"))
+        sigHists.matrixs.push_back(rt.matrix("norminal"))
         sigHists.sysNames.push_back("norminal")
 
         if sample.isInc: # for DY to tautau, make one more histogram

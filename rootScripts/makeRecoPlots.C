@@ -129,18 +129,22 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
  gROOT->SetBatch();
  TH1::SetDefaultSumw2();
 
- TTree *treco=(TTree *)filein->Get("tree");
- treco->SetBranchAddress("qLep",&qLep);
- treco->SetBranchAddress("ptRec",&ptRec);
- treco->SetBranchAddress("etaRec",&etaRec);
- treco->SetBranchAddress("phiRec",&phiRec);
- treco->SetBranchAddress("mRec",&mRec);
- treco->SetBranchAddress("ispassRec",&ispassRec);
- treco->SetBranchAddress("isBveto",&isBveto);
- treco->SetBranchAddress("weightRec",&weightRec);
- treco->SetBranchAddress("nVtx",&nVtx);
- treco->SetBranchAddress("DYtautau",&DYtautau);
- nentries=treco->GetEntries();
+ TTree *tsignal=(TTree *)filein->Get("tree");
+ tsignal->SetBranchAddress("qLep",&qLep);
+ tsignal->SetBranchAddress("ptPreFSR",&ptPreFSR);
+ tsignal->SetBranchAddress("mPreFSR",&mPreFSR);
+ tsignal->SetBranchAddress("ptRec",&ptRec);
+ tsignal->SetBranchAddress("etaRec",&etaRec);
+ tsignal->SetBranchAddress("phiRec",&phiRec);
+ tsignal->SetBranchAddress("mRec",&mRec);
+ tsignal->SetBranchAddress("ispassRec",&ispassRec);
+ tsignal->SetBranchAddress("isBveto",&isBveto);
+ tsignal->SetBranchAddress("weightGen",&weightGen);
+ tsignal->SetBranchAddress("weightRec",&weightRec);
+ tsignal->SetBranchAddress("l1PreFire",&l1PreFire);
+ tsignal->SetBranchAddress("nVtx",&nVtx);
+ tsignal->SetBranchAddress("DYtautau",&DYtautau);
+ nentries=tsignal->GetEntries();
 
  TUnfoldBinningV17 *bin_rec = binning_rec();
  TUnfoldBinningV17 *bin_gen = binning_gen();
@@ -149,7 +153,7 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
  for(int i=0;i<nentries;i++){
  //for(int i=0;i<10000;i++){
    if(i%10000000==0) cout<<i<<endl;
-   treco->GetEntry(i);
+   tsignal->GetEntry(i);
 
     if(!sigHist.isInc){
        if(ispassRec && isBveto && ptRec->at(2) < 100){
@@ -169,13 +173,33 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
                sigHist.hists.at(0)->Fill(bin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightRec);
             }
          }
-    }
+
+        /////////////////////////////////////////// fill migration matrix ////////////////////////////////////////
+        //
+        if(!DYtautau){
+          if(ptPreFSR->size()==3){
+            if( ispassRec && isBveto && ptRec->at(2) < 100) {
+               int binZero=0;
+               sigHist.matrixs.at(0)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), bin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*0.97*l1PreFire->at(0));
+               sigHist.matrixs.at(0)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), binZero,                                               weightGen*(1.-weightRec*0.97*l1PreFire->at(0)));
+
+            }// events passing reco selection
+            else{
+                int binZero=0;
+                sigHist.matrixs.at(0)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), binZero, weightGen); 
+            }
+          }// check if the pre FSR dilepton exist
+        }// DY to ee or mumu events only
+        //
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    }// for DYtoLL MC case
 
  }// event loop
 
  delete bin_rec;
  delete bin_gen;
- delete treco;
+ delete tsignal;
  //fileout->cd();
 
  // seems histograms automatically written 
