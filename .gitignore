@@ -2,5 +2,8 @@
 *.pcm
 *.d
 *.so
+*.o
+*.d
 *.pyc
 output/
+*.swp
