@@ -32,7 +32,16 @@ for sampleType in isrSamples.samplesDef_electron.keys():
     print 'creating histogram for sample '
     sample.dump()
 
-    histUtil.makeRecoHists(sample) # TODO systematic list to consider
+    if not sample.isMC:
+    	histUtil.makeRecoHists(sample) # TODO systematic list to consider
+
+    if sample.isMC and not sample.isSig:
+    	histUtil.makeRecoHists(sample) # TODO systematic list to consider
+
+    if sample.isMC and sample.isSig:
+	histUtil.makeSigHists(sample)
+
+
     #if not sample.isMC: 
     #    print "data, so only reco histograms"
     #if sample.isMC and sample.isSig: 
