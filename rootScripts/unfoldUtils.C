@@ -27,8 +27,18 @@ TUnfoldDensityV17* setTUnfoldDensity(TFile *filein){
                                        TUnfoldDensityV17::kDensityModeBinWidth,
                                        binning_Gen,binning_Rec);
 
-        delete binning_Rec; 
-        delete binning_Gen;
+        // seems not allowed to delete the inputs of the TUnfoldDensity 
         return unfold;
  
+}
+
+void setInput(TUnfoldDensityV17* unfold, TFile *filein){
+	
+        TH1* hRec = (TH1*)filein->Get("hRecnorminal");
+        unfold->SetInput(hRec, 0); // TODO allow to selec option for bias
+}
+
+void doUnfold(TUnfoldDensityV17* unfold){
+
+	unfold->DoUnfold(0); // TODO allow option for regulrization
 }

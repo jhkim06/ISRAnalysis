@@ -16,4 +16,21 @@ def setUnfold(filepath):
         
         unfold = rt.setTUnfoldDensity(infile) # set the migration matrix TODO allow to select different unfolding option
 
+        del infile
 	return unfold
+
+def setUnfoldInput(unfold, filepath):
+
+	print "Set input to unfold"
+        infile = rt.TFile(filepath,'r')
+
+        unfold = rt.setInput(unfold, infile)
+
+        del infile
+
+def doUnfold(unfold):
+
+	print "do unfold!"
+
+	unfold = rt.doUnfold(unfold)
+

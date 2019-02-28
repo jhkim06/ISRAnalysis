@@ -36,9 +36,9 @@ for i in range(2,51):
 	ISR2016_electron['DY%s' % str(i)] = isrSample('DYtoEE_%s' % str(i) , myinputDir + 'DYJets_cat_v8-0-7_%s.root' % str(i), isMC = True, isSig = True, isInc = True)
 
 samplesDef_electron = {
-    'data'   : ISR2016_electron['DATA'].clone(),
+    #'data'   : ISR2016_electron['DATA'].clone(),
     'mcSig'  : ISR2016_electron['DY'].clone(),
-    'mcBkg'  : ISR2016_electron['BKG'].clone(),
+    #'mcBkg'  : ISR2016_electron['BKG'].clone(),
 }
 
 for i in range(2,51):

@@ -160,7 +160,7 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
     if(!sigHist.isInc){
        if(ispassRec && isBveto && ptRec->at(2) < 100){
              fileout1->cd();
-             sigHist.hists.at(0)->Fill(bin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightRec); //
+             sigHist.hists.at(0)->Fill(bin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec); //
        }
     }
     else{ // for inclusive DY MC
@@ -168,11 +168,11 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
          if(ispassRec && isBveto && ptRec->at(2) < 100){
             if(DYtautau){
                fileout2->cd();
-               recoHist.hists.at(0)->Fill(bin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightRec);
+               recoHist.hists.at(0)->Fill(bin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*0.97*l1PreFire->at(0));
             }
             else{
                fileout1->cd();
-               sigHist.hists.at(0)->Fill(bin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightRec);
+               sigHist.hists.at(0)->Fill(bin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*0.97*l1PreFire->at(0));
             }
          }
 
