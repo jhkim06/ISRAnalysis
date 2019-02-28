@@ -11,6 +11,8 @@
 #include "TUnfoldBinning.h"
 #include "tree.h"
 
+#include "makeRecoPlots.h"
+
 // FIXME may be it's better to set this in the unfoldingISR to select do only norminal unfolding or include systematic unfolding
 // TODO use map for systematics ex) std::vector<std::map<TString,Double_t>> string for systematic name double for weight
 struct recoHistsinfo {
@@ -105,8 +107,8 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist){ /
  TUnfoldBinningV17 *bin = binning_rec();
 
  // TODO based on the info in recoHistsinfo make map for systematics
- //for(int i=0;i<nentries;i++){
- for(int i=0;i<10000;i++){
+ for(int i=0;i<nentries;i++){
+ //for(int i=0;i<10000;i++){
    if(i%10000000==0) cout<<i<<endl;
    treco->GetEntry(i);
     if(ispassRec && isBveto && ptRec->at(2) < 100){
@@ -150,8 +152,8 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
  TUnfoldBinningV17 *bin_gen = binning_gen();
 
  // TODO based on the info in recoHistsinfo make map for systematics
- //for(int i=0;i<nentries;i++){
- for(int i=0;i<10000;i++){
+ for(int i=0;i<nentries;i++){
+ //for(int i=0;i<10000;i++){
    if(i%10000000==0) cout<<i<<endl;
    tsignal->GetEntry(i);
 
