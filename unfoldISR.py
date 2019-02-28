@@ -77,13 +77,14 @@ if args.setResMatrix:
 	print unfoldInputList['data'] 
 	unfold = unfoldutil.setUnfold(unfoldInputList['sig'])
 	# get bkg subtracted data
-        unfoldutil.setUnfoldInput(unfold, unfoldInputList['sig'])
+        unfoldutil.setUnfoldInput(unfold, unfoldInputList['data'])
 	# do unfolding with bkg subtracted data and the migration matrix
         unfoldutil.doUnfold(unfold)
 
         outpdf = outputDirectory + "ratio.pdf"
         # check unfolded distribution
         drawutil.basicRatio(outpdf, unfold, unfoldInputList['sig'])
+        del unfold
 
 def makeRecoPlots():
         # load TUnfold library 

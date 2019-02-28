@@ -35,7 +35,8 @@ TUnfoldDensityV17* setTUnfoldDensity(TFile *filein){
 void setInput(TUnfoldDensityV17* unfold, TFile *filein){
 	
         TH1* hRec = (TH1*)filein->Get("hRecnorminal");
-        unfold->SetInput(hRec, 0); // TODO allow to selec option for bias
+        unfold->SetInput(hRec, 1); // TODO allow to selec option for bias
+			           // NEED TO KNOW THE EFFECT OF THE BIAS FACTOR
 }
 
 void doUnfold(TUnfoldDensityV17* unfold){
