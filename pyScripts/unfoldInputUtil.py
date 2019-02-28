@@ -8,14 +8,20 @@ rt.gROOT.ProcessLine(".L /home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScript
 import gc
 gc.collect()
 
+import etc.histDef as fHistDef
+
 # input file paths, binning, output directory, for data and bkg reco histograms only
-def makeRecoHists(sample):
+def makeRecoHists(sample, outputDirectory):
 
         rt.gROOT.SetBatch()
         print "####################### makeRecoHists #################################"
 
+        outDic = {}
+
         # don't need to check isMC for reco histogram 
-	outfile = rt.TFile(sample.name+".root",'recreate')
+	outfile = rt.TFile(outputDirectory + sample.name+".root",'recreate')
+        if not sample.isMC: outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "data")
+        else : outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "bkg")
 
         # need to create histogram before the file loop to save one histogram from the input files
         recoHists = rt.recoHistsinfo(rt.vector('TH1*')(), rt.vector('TString')()) 
@@ -31,20 +37,23 @@ def makeRecoHists(sample):
 
                 del infile
 
-
         outfile.Write()
         outfile.Delete()
 
         del recoHists
+        return outDic
 
-def makeSigHists(sample):
+def makeSigHists(sample, outputDirectory):
         rt.gROOT.SetBatch()
         print "####################### makeRecoHists #################################"
 
+        outDic = {}
+
         # don't need to check isMC for reco histogram 
-	outfile = rt.TFile(sample.name+".root",'recreate')
+	outfile = rt.TFile(outputDirectory + sample.name+".root",'recreate')
         outfile_ = None
 
+        outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "sig")
         # need to create histogram before the file loop to save one histogram from the input files
         sigHists  = rt.sigHistsinfo(rt.vector('TH1*')(), rt.vector('TH2*')(), rt.vector('TString')(), sample.isInc) 
         recoHists = rt.recoHistsinfo(rt.vector('TH1*')(), rt.vector('TString')())
@@ -55,7 +64,8 @@ def makeSigHists(sample):
         sigHists.sysNames.push_back("norminal")
 
         if sample.isInc: # for DY to tautau, make one more histogram
-	        outfile_ = rt.TFile(sample.name+"tau.root",'recreate')
+	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
+        	outDic[sample.name+"tau"] = fHistDef.inputfHists(sample.name+"tau", outputDirectory + sample.name+"tau.root", "bkg")
 
         	recoHists.hists.push_back(rt.histogram("norminal"))
 	        recoHists.sysNames.push_back("norminal")
@@ -68,7 +78,6 @@ def makeSigHists(sample):
 
                 del infile
 
-
         outfile.Write()
         outfile.Delete()
 
@@ -79,5 +88,6 @@ def makeSigHists(sample):
         del sigHists
         del recoHists
 
+	return outDic
 def makeMigrationM():
 	pass
