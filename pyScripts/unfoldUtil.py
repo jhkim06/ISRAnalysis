@@ -28,6 +28,16 @@ def setUnfoldInput(unfold, filepath):
 
         del infile
 
+
+def subtractBkgs(unfold, filepath, name):
+
+        print "Subtract background from data"
+        infile = rt.TFile(filepath,'r')
+
+        unfold = rt.subBkgs(unfold, infile, name)
+
+        del infile
+
 def doUnfold(unfold):
 
 	print "do unfold!"

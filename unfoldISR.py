@@ -78,6 +78,10 @@ if args.setResMatrix:
 	unfold = unfoldutil.setUnfold(unfoldInputList['sig'])
 	# get bkg subtracted data
         unfoldutil.setUnfoldInput(unfold, unfoldInputList['data'])
+
+        unfoldutil.subtractBkgs(unfold, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold, unfoldInputList['BKG'], "BKG")
+
 	# do unfolding with bkg subtracted data and the migration matrix
         unfoldutil.doUnfold(unfold)
 

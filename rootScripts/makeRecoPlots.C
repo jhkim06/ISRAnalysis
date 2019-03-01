@@ -99,7 +99,9 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist){ /
  treco->SetBranchAddress("mRec",&mRec);
  treco->SetBranchAddress("ispassRec",&ispassRec);
  treco->SetBranchAddress("isBveto",&isBveto);
+ treco->SetBranchAddress("weightGen",&weightGen);
  treco->SetBranchAddress("weightRec",&weightRec);
+ treco->SetBranchAddress("l1PreFire",&l1PreFire);
  treco->SetBranchAddress("nVtx",&nVtx);
  treco->SetBranchAddress("DYtautau",&DYtautau);
  nentries=treco->GetEntries();
@@ -113,7 +115,7 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist){ /
    treco->GetEntry(i);
     if(ispassRec && isBveto && ptRec->at(2) < 100){
           fileout1->cd();
-          recoHist.hists.at(0)->Fill(bin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightRec);
+          recoHist.hists.at(0)->Fill(bin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec);
     }
  }// event loop
 

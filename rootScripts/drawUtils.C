@@ -47,6 +47,16 @@ void setPadMargins(TPad* pad){
 
 }
 
+TLine* drawVerLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2){
+
+        TLine *l_;
+        l_ = new TLine(x1, y1, x2, y2);
+        l_->Draw("same");
+        l_->SetLineStyle(2);
+        l_->SetLineColor(kBlack);
+        return l_;
+}
+
 TH1* getHistwAxisBin(TH1* hist, int nthMass){
 
 	int nbinxTot = hist->GetNbinsX();
@@ -76,7 +86,6 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
 
         TH1* hmeans = new TH1D("means", "means", 5, 0., 5.);
         TH1* hmeansMC = new TH1D("meansMC", "meansMC", 5, 0., 5.);
-        std::cout << "n bins: " << hunfolded->GetNbinsX() << std::endl;
         for(int i = 1; i < 6; i++){
         	TH1* temp;
                 TH1* tempMC;
@@ -149,6 +158,12 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
         l_->Draw("same");
         l_->SetLineStyle(1);
         l_->SetLineColor(kRed);
+	
+	TLine* lm1 = drawVerLine(20, 0.8, 20, 1.2);
+	TLine* lm2 = drawVerLine(40, 0.8, 40, 1.2);
+	TLine* lm3 = drawVerLine(60, 0.8, 60, 1.2);
+	TLine* lm4 = drawVerLine(80, 0.8, 80, 1.2);
+	TLine* lm5 = drawVerLine(100, 0.8, 100, 1.2);
 
         c1->cd();
 
@@ -170,7 +185,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
         setYaxisHist(hmeans);
         setXaxisHist(hmeans);
         hmeans->GetYaxis()->SetNdivisions(505);
-        hmeans->SetYTitle("Average \\ {p_{T}^{\\ell\\ell}}");
+        hmeans->SetYTitle("Average \\ {p_{T}^{\\ell\\ell}}"); // \\ell not working with pdf format
 	hmeans->GetXaxis()->SetTitle("Mass(m_{#font[11]{ee}}) region (GeV)");
         hmeans->GetXaxis()->SetTitleOffset(5.);
         hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(0.), "40~60");
@@ -189,10 +204,16 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
 
         delete hmeans;
         delete hmeansMC;
-        delete l_;
+        delete l_; 
+        delete lm1;
+        delete lm2;
+	delete lm3;
+        delete lm4;
+        delete lm5;
         delete leg_;
         delete pad1;
         delete pad2;
+        delete pad3;
         delete c1;
 
 }

@@ -39,6 +39,12 @@ void setInput(TUnfoldDensityV17* unfold, TFile *filein){
 			           // NEED TO KNOW THE EFFECT OF THE BIAS FACTOR
 }
 
+void subBkgs(TUnfoldDensityV17* unfold, TFile *filein, TString name){
+
+        TH1* hRec = (TH1*)filein->Get("hRecnorminal");
+        unfold->SubtractBackground(hRec, name); 
+}
+
 void doUnfold(TUnfoldDensityV17* unfold){
 
 	unfold->DoUnfold(0); // TODO allow option for regulrization
