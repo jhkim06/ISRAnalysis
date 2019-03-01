@@ -9,6 +9,8 @@
 #include <TStyle.h>
 #include <TLegend.h>
 #include <TLine.h>
+#include <TMathText.h>
+#include <TLatex.h>
 #include <TDOMParser.h>
 #include <TXMLDocument.h>
 #include "TUnfoldBinningXML.h"
@@ -90,7 +92,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
                 delete tempMC;
         }
 
-  	TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700, 1000);
+  	TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
   	c1->cd();
   	gStyle->SetOptStat(0);
 
@@ -168,7 +170,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
         setYaxisHist(hmeans);
         setXaxisHist(hmeans);
         hmeans->GetYaxis()->SetNdivisions(505);
-        hmeans->GetYaxis()->SetTitle("Average p_{T}^{ll}");
+        hmeans->SetYTitle("Average \\ {p_{T}^{\\ell\\ell}}");
 	hmeans->GetXaxis()->SetTitle("Mass(m_{#font[11]{ee}}) region (GeV)");
         hmeans->GetXaxis()->SetTitleOffset(5.);
         hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(0.), "40~60");
@@ -185,6 +187,8 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
 
         c1->SaveAs(outpdf);
 
+        delete hmeans;
+        delete hmeansMC;
         delete l_;
         delete leg_;
         delete pad1;

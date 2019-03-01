@@ -8,8 +8,6 @@ rt.gROOT.ProcessLine(".L /home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScript
 import gc
 gc.collect()
 
-
-
 def basicRatio(outpdf, unfold, filepath):
 
         print "############################ draw ###############################################"

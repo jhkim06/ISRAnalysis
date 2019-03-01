@@ -81,7 +81,7 @@ if args.setResMatrix:
 	# do unfolding with bkg subtracted data and the migration matrix
         unfoldutil.doUnfold(unfold)
 
-        outpdf = outputDirectory + "ratio.pdf"
+        outpdf = outputDirectory + "ratio.png"
         # check unfolded distribution
         drawutil.basicRatio(outpdf, unfold, unfoldInputList['sig'])
         del unfold
