@@ -148,6 +148,14 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
  tsignal->SetBranchAddress("l1PreFire",&l1PreFire);
  tsignal->SetBranchAddress("nVtx",&nVtx);
  tsignal->SetBranchAddress("DYtautau",&DYtautau);
+ tsignal->SetBranchAddress("isfiducialPreFSR",&isfiducialPreFSR);
+
+ // FIXME 
+ //TFile* fZptWeight = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/etc/ZptWeight/aMCNLO/electron/ZptWeight_electron.root", "r");
+ TFile* fZptWeight = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/etc/ZptWeight/MG/electron/ZptWeight_electron.root", "r");
+ TH1 *hZptWeight;
+ fZptWeight->GetObject("ZptWeight", hZptWeight);
+
  nentries=tsignal->GetEntries();
 
  TUnfoldBinningV17 *bin_rec = binning_rec();
@@ -182,15 +190,35 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
         //
         if(!DYtautau){
           if(ptPreFSR->size()==3){
+
+            Double_t zptWeight = 1.;
+            Double_t ZptGen_ = ptPreFSR->at(2);
+            if(ZptGen_ > 100.) ZptGen_ = 99.5;
+            zptWeight = hZptWeight->GetBinContent(hZptWeight->FindBin(ZptGen_));
+
             if( ispassRec && isBveto && ptRec->at(2) < 100) {
                int binZero=0;
                sigHist.matrixs.at(0)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), bin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*0.97*l1PreFire->at(0));
                sigHist.matrixs.at(0)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), binZero,                                               weightGen*(1.-weightRec*0.97*l1PreFire->at(0)));
 
+               // for the migration matrix inside the fiducial region at pre FSR
+               sigHist.matrixs.at(1)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), bin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*0.97*l1PreFire->at(0));
+               sigHist.matrixs.at(1)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), binZero,                                               weightGen*(1.-weightRec*0.97*l1PreFire->at(0)));
+
+               sigHist.matrixs.at(2)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), bin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*zptWeight*weightRec*0.97*l1PreFire->at(0));
+               sigHist.matrixs.at(2)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), binZero,                                               weightGen*zptWeight*(1.-weightRec*0.97*l1PreFire->at(0)));
+
             }// events passing reco selection
             else{
                 int binZero=0;
                 sigHist.matrixs.at(0)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), binZero, weightGen); 
+
+                sigHist.matrixs.at(2)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), binZero, weightGen*zptWeight); 
+                
+                if(isfiducialPreFSR){
+                  int binZero=0;
+                  sigHist.matrixs.at(1)->Fill(bin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), binZero, weightGen); 
+                }
             }
           }// check if the pre FSR dilepton exist
         }// DY to ee or mumu events only
@@ -198,9 +226,10 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     }// for DYtoLL MC case
-
  }// event loop
 
+ delete hZptWeight;
+ delete fZptWeight;
  delete bin_rec;
  delete bin_gen;
  delete tsignal;

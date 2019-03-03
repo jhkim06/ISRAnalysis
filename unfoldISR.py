@@ -20,8 +20,7 @@ inputfhisttxtName = outputDirectory + "fhist.txt"
 if not os.path.exists( outputDirectory ):
 	os.makedirs( outputDirectory )
 
-# use histDef to save info about input histograms 
-#TODO save the histogram info as txt
+# TODO allow to use several binning definitions
 
 if args.createInputHists:
 	import etc.histDef as inputfHist
@@ -73,13 +72,23 @@ import pyScripts.unfoldUtil as unfoldutil
 import pyScripts.drawUtil as drawutil
 
 if args.setResMatrix:
-	print unfoldInputList['sig'] 
-	print unfoldInputList['data'] 
-	unfold = unfoldutil.setUnfold(unfoldInputList['sig'])
+
+        # set unfolding class 
+	unfold = unfoldutil.setUnfold(unfoldInputList['sig'], "norminal")
+	#unfold = unfoldutil.setUnfold(unfoldInputList['sig'], "fiducialPreFSR")
+	#unfold = unfoldutil.setUnfold(unfoldInputList['sig'], "ZptReweight")
+
+	# print out response matrix and efficiency plot
+
+        outpdf = outputDirectory + "response.png"
+        drawutil.responseM(outpdf, unfold)
+        outpdf = outputDirectory + "efficiency.png"
+        drawutil.efficiency(outpdf, unfold)
+
 	# get bkg subtracted data
         unfoldutil.setUnfoldInput(unfold, unfoldInputList['data'])
 
-        unfoldutil.subtractBkgs(unfold, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold, unfoldInputList['DYMGtoEEtau'], "DYMGtoEEtau")
         unfoldutil.subtractBkgs(unfold, unfoldInputList['BKG'], "BKG")
 
 	# do unfolding with bkg subtracted data and the migration matrix

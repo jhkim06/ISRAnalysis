@@ -23,11 +23,14 @@ class isrSample:
         	return copy.deepcopy(self)
 
 myinputDir = '/home/jhkim/data/Data/temp/'
+myinputDir_ = '/home/jhkim/data/Data/DY_MG/'
 
 ISR2016_electron = {
     'DATA'     : isrSample('DoubleEGamma',  myinputDir + 'ISRee_unfolding_data_DoubleEG_cat_v8-0-7.root', isMC = False, isSig = False),
     'DY'       : isrSample('DYtoEE' ,       myinputDir + 'DYJets_cat_v8-0-7_1.root', isMC = True, isSig = True, isInc = True),
     'DY10to50' : isrSample('DYtoEE10to50' , myinputDir + 'ISRee_unfolding_DYJets_10to50_cat_v8-0-7.root', isMC = True, isSig = True, isInc = True),
+    'DYMG'       : isrSample('DYMGtoEE' ,       myinputDir_ + 'DYJets_MG_cat_v8-0-7_1.root', isMC = True, isSig = True, isInc = True),
+    'DYMG10to50' : isrSample('DYMGtoEE10to50' , myinputDir_ + 'ISRee_unfolding_DYJets_MG_10to50_cat_v8-0-7.root', isMC = True, isSig = True, isInc = True),
     'BKG'      : isrSample('BKG' ,          myinputDir + 'ISRee_unfolding_background.root', isMC = True, isSig = False),
 }
 
@@ -35,14 +38,23 @@ ISR2016_electron = {
 for i in range(2,51):
 	ISR2016_electron['DY%s' % str(i)] = isrSample('DYtoEE_%s' % str(i) , myinputDir + 'DYJets_cat_v8-0-7_%s.root' % str(i), isMC = True, isSig = True, isInc = True)
 
+for i in range(2,36):
+        ISR2016_electron['DYMG%s' % str(i)] = isrSample('DYMGtoEE_%s' % str(i) , myinputDir_ + 'DYJets_MG_cat_v8-0-7_%s.root' % str(i), isMC = True, isSig = True, isInc = True)
+
 samplesDef_electron = {
-    'data'   : ISR2016_electron['DATA'].clone(),
-    'mcSig'  : ISR2016_electron['DY'].clone(),
-    'mcBkg'  : ISR2016_electron['BKG'].clone(),
+    #'data'   : ISR2016_electron['DATA'].clone(),
+    #'mcSig'  : ISR2016_electron['DY'].clone(),
+    'mcSig'  : ISR2016_electron['DYMG'].clone(),
+    #'mcBkg'  : ISR2016_electron['BKG'].clone(),
 }
 
-for i in range(2,51):
-	samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DY%s' % str(i)])
+#for i in range(2,51):
+#	samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DY%s' % str(i)])
+#
+#samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DY10to50'])
 
-samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DY10to50'])
+for i in range(2,36):
+        samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DYMG%s' % str(i)])
+
+samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DYMG10to50'])
 

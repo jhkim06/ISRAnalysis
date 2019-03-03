@@ -13,9 +13,9 @@
 
 #include "makeRecoPlots.h"
 
-TUnfoldDensityV17* setTUnfoldDensity(TFile *filein){
+TUnfoldDensityV17* setTUnfoldDensity(TFile *filein, TString matrixName){
 
-	TH2* hmcGenRec = (TH2*)filein->Get("hmcGenRecnorminal");
+	TH2* hmcGenRec = (TH2*)filein->Get("hmcGenRec" + matrixName);
 	TUnfoldBinningV17* binning_Rec = binning_rec();
 	TUnfoldBinningV17* binning_Gen = binning_gen();
 

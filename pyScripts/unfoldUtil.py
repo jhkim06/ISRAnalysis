@@ -9,12 +9,12 @@ import gc
 gc.collect()
 
 
-def setUnfold(filepath):
+def setUnfold(filepath, matrixName):
 
         print "Open " + filepath
 	infile = rt.TFile(filepath,'r')
         
-        unfold = rt.setTUnfoldDensity(infile) # set the migration matrix TODO allow to select different unfolding option
+        unfold = rt.setTUnfoldDensity(infile, matrixName) # set the migration matrix TODO allow to select different unfolding option
 
         del infile
 	return unfold

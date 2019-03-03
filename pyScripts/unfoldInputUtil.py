@@ -57,11 +57,18 @@ def makeSigHists(sample, outputDirectory):
         # need to create histogram before the file loop to save one histogram from the input files
         sigHists  = rt.sigHistsinfo(rt.vector('TH1*')(), rt.vector('TH2*')(), rt.vector('TString')(), sample.isInc) 
         recoHists = rt.recoHistsinfo(rt.vector('TH1*')(), rt.vector('TString')())
-
         
         sigHists.hists.push_back(rt.histogram("norminal"))
         sigHists.matrixs.push_back(rt.matrix("norminal"))
         sigHists.sysNames.push_back("norminal")
+
+        sigHists.hists.push_back(rt.histogram("fiducialPreFSR"))
+        sigHists.matrixs.push_back(rt.matrix("fiducialPreFSR"))
+        sigHists.sysNames.push_back("fiducialPreFSR")
+
+        sigHists.hists.push_back(rt.histogram("ZptReweight"))
+        sigHists.matrixs.push_back(rt.matrix("ZptReweight"))
+        sigHists.sysNames.push_back("ZptReweight")
 
         if sample.isInc: # for DY to tautau, make one more histogram
 	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')

@@ -16,3 +16,13 @@ def basicRatio(outpdf, unfold, filepath):
 
 	rt.drawRatio(outpdf, unfold, infile)	
         del infile
+
+def responseM(outpdf, unfold):
+
+	rt.responseM(outpdf, unfold)
+
+
+def efficiency(outpdf, unfold):
+
+        rt.efficiency(outpdf, unfold)
+

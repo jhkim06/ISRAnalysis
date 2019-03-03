@@ -60,7 +60,7 @@ TLine* drawVerLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2){
 TH1* getHistwAxisBin(TH1* hist, int nthMass){
 
 	int nbinxTot = hist->GetNbinsX();
-	int nbinxSub = nbinxTot / 5; // fix number of mass bin as 5 
+	int nbinxSub = nbinxTot / 5; // assume the total number of mass bin is 5, and equidistant binning definition here. 
 	TH1* temp = new TH1D("temp","temp",nbinxSub, 0., 100.);
 
 	for(int ibin = 1; ibin <=nbinxSub; ibin++){
@@ -214,6 +214,59 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
         delete pad1;
         delete pad2;
         delete pad3;
+        delete c1;
+}
+
+void responseM(TString outpdf, TUnfoldDensityV17* unfold){
+	gROOT->SetBatch();
+	TH2 *histProbability=unfold->GetProbabilityMatrix("histProbability"); // get response matrix
+
+        TCanvas *c1 = new TCanvas("c1", "c1", 50, 50, 750, 750);
+        gStyle->SetOptStat(0);
+        gStyle->SetLineWidth(1);
+        c1->SetBottomMargin(0.15);
+        c1->SetTopMargin(0.05);
+        c1->SetLeftMargin(0.15);
+        c1->SetRightMargin(0.15);
+        c1->SetTicks(1);
+        c1->Draw();
+        c1->cd();
+
+        //gPad->SetLogz();  
+        gStyle->SetPalette(1);
+
+        histProbability->GetZaxis()->SetRangeUser(0., 1.);
+        histProbability->Draw("colz");
+
+        c1->SaveAs(outpdf);
+     
+        delete histProbability;
+        delete c1;
+}
+
+void efficiency(TString outpdf, TUnfoldDensityV17* unfold){
+
+        gROOT->SetBatch();
+        TH2 *histProbability=unfold->GetProbabilityMatrix("histProbability"); // get response matrix
+	TH1 *histEfficiency=histProbability->ProjectionX("histEfficiency");
+
+        TCanvas *c1 = new TCanvas("c1", "c1", 50, 50, 750, 750);
+        gStyle->SetOptStat(0);
+        gStyle->SetLineWidth(1);
+        c1->SetBottomMargin(0.15);
+        c1->SetTopMargin(0.05);
+        c1->SetLeftMargin(0.15);
+        c1->SetRightMargin(0.15);
+        c1->SetTicks(1);
+        c1->Draw();
+        c1->cd();
+
+        histEfficiency->Draw("hist");
+
+        c1->SaveAs(outpdf);
+
+        delete histProbability;
+        delete histEfficiency;
         delete c1;
 
 }
