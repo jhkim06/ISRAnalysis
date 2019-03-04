@@ -74,8 +74,8 @@ import pyScripts.drawUtil as drawutil
 if args.setResMatrix:
 
         # set unfolding class 
-	unfold = unfoldutil.setUnfold(unfoldInputList['sig'], "norminal")
-	#unfold = unfoldutil.setUnfold(unfoldInputList['sig'], "fiducialPreFSR")
+	#unfold = unfoldutil.setUnfold(unfoldInputList['sig'], "norminal")
+	unfold = unfoldutil.setUnfold(unfoldInputList['sig'], "fiducialPreFSR")
 	#unfold = unfoldutil.setUnfold(unfoldInputList['sig'], "ZptReweight")
 
 	# print out response matrix and efficiency plot
@@ -88,8 +88,11 @@ if args.setResMatrix:
 	# get bkg subtracted data
         unfoldutil.setUnfoldInput(unfold, unfoldInputList['data'])
 
-        unfoldutil.subtractBkgs(unfold, unfoldInputList['DYMGtoEEtau'], "DYMGtoEEtau")
-        unfoldutil.subtractBkgs(unfold, unfoldInputList['BKG'], "BKG")
+        unfoldutil.subtractBkgs(unfold, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
+        #unfoldutil.subtractBkgs(unfold, unfoldInputList['BKG'], "BKG")
+        unfoldutil.subtractBkgs(unfold, unfoldInputList['TTbar'], "TTbar")
+        unfoldutil.subtractBkgs(unfold, unfoldInputList['VV'], "VV")
+        unfoldutil.subtractBkgs(unfold, unfoldInputList['Wjets'], "Wjets")
 
 	# do unfolding with bkg subtracted data and the migration matrix
         unfoldutil.doUnfold(unfold)

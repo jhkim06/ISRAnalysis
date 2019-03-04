@@ -32,6 +32,9 @@ ISR2016_electron = {
     'DYMG'       : isrSample('DYMGtoEE' ,       myinputDir_ + 'DYJets_MG_cat_v8-0-7_1.root', isMC = True, isSig = True, isInc = True),
     'DYMG10to50' : isrSample('DYMGtoEE10to50' , myinputDir_ + 'ISRee_unfolding_DYJets_MG_10to50_cat_v8-0-7.root', isMC = True, isSig = True, isInc = True),
     'BKG'      : isrSample('BKG' ,          myinputDir + 'ISRee_unfolding_background.root', isMC = True, isSig = False),
+    'TTbar'      : isrSample('TTbar' ,          myinputDir + 'ISRee_unfolding_SKTT_powheg_dilep_cat_v8-0-7.root', isMC = True, isSig = False),
+    'VV'      : isrSample('VV' ,          myinputDir + 'ISRee_unfolding_VV.root', isMC = True, isSig = False),
+    'Wjets'      : isrSample('Wjets' ,          myinputDir + 'ISRee_unfolding_SKWJets_dilep_cat_v8-0-7.root', isMC = True, isSig = False),
 }
 
 # for 50 DY ntuples
@@ -44,8 +47,11 @@ for i in range(2,36):
 samplesDef_electron = {
     #'data'   : ISR2016_electron['DATA'].clone(),
     #'mcSig'  : ISR2016_electron['DY'].clone(),
-    'mcSig'  : ISR2016_electron['DYMG'].clone(),
+    #'mcSig'  : ISR2016_electron['DYMG'].clone(),
     #'mcBkg'  : ISR2016_electron['BKG'].clone(),
+    'mcBkg1'  : ISR2016_electron['TTbar'].clone(),
+    'mcBkg2'  : ISR2016_electron['VV'].clone(),
+    'mcBkg3'  : ISR2016_electron['Wjets'].clone(),
 }
 
 #for i in range(2,51):
@@ -53,8 +59,8 @@ samplesDef_electron = {
 #
 #samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DY10to50'])
 
-for i in range(2,36):
-        samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DYMG%s' % str(i)])
-
-samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DYMG10to50'])
+#for i in range(2,36):
+#        samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DYMG%s' % str(i)])
+#
+#samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DYMG10to50'])
 
