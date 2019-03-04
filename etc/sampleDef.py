@@ -45,8 +45,8 @@ for i in range(2,36):
         ISR2016_electron['DYMG%s' % str(i)] = isrSample('DYMGtoEE_%s' % str(i) , myinputDir_ + 'DYJets_MG_cat_v8-0-7_%s.root' % str(i), isMC = True, isSig = True, isInc = True)
 
 samplesDef_electron = {
-    #'data'   : ISR2016_electron['DATA'].clone(),
-    #'mcSig'  : ISR2016_electron['DY'].clone(),
+    'data'   : ISR2016_electron['DATA'].clone(),
+    'mcSig'  : ISR2016_electron['DY'].clone(),
     #'mcSig'  : ISR2016_electron['DYMG'].clone(),
     #'mcBkg'  : ISR2016_electron['BKG'].clone(),
     'mcBkg1'  : ISR2016_electron['TTbar'].clone(),
@@ -54,10 +54,10 @@ samplesDef_electron = {
     'mcBkg3'  : ISR2016_electron['Wjets'].clone(),
 }
 
-#for i in range(2,51):
-#	samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DY%s' % str(i)])
-#
-#samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DY10to50'])
+for i in range(2,51):
+	samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DY%s' % str(i)])
+
+samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DY10to50'])
 
 #for i in range(2,36):
 #        samplesDef_electron['mcSig'].add_sample(ISR2016_electron['DYMG%s' % str(i)])

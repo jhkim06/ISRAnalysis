@@ -2,8 +2,11 @@
 #define makeRecoPlots_h
 
 
-TUnfoldBinningV17* binning_rec();
-TUnfoldBinningV17* binning_gen();
+TUnfoldBinningV17* ptBinning_rec();
+TUnfoldBinningV17* ptBinning_gen();
+
+TUnfoldBinningV17* massBinning_rec();
+TUnfoldBinningV17* massBinning_gen();
 
 
 #endif

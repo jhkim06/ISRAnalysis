@@ -79,13 +79,12 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
 	TH1* hunfolded = unfold->GetOutput("hunfolded",0,0,"*[UO]",kFALSE);
 	TH1* ratio=(TH1*)hunfolded->Clone("ratio");
 
-        TH2* hmcGenRec = (TH2*)filein->Get("hmcGenRecnorminal");
-        //TH1 *histMCTruth=hmcGenRec->ProjectionX("histMCTruth",0,-1,"e");
         TH1 *histMCTruth=unfold->GetBias("histMCTruth",0,0,"*[UO]",kFALSE);
         ratio->Divide(histMCTruth);
 
         TH1* hmeans = new TH1D("means", "means", 5, 0., 5.);
         TH1* hmeansMC = new TH1D("meansMC", "meansMC", 5, 0., 5.);
+
         for(int i = 1; i < 6; i++){
         	TH1* temp;
                 TH1* tempMC;
@@ -214,6 +213,131 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
         delete pad1;
         delete pad2;
         delete pad3;
+        delete c1;
+}
+
+void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
+
+        gROOT->SetBatch();
+	TH1* hunfolded = unfold->GetOutput("hunfolded",0,0,"*[UO]",kTRUE);
+	TH1* ratio=(TH1*)hunfolded->Clone("ratio");
+
+        TH1 *histMCTruth=unfold->GetBias("histMCTruth",0,0,"*[UO]",kTRUE);
+        ratio->Divide(histMCTruth);
+
+  	TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
+  	c1->cd();
+  	gStyle->SetOptStat(0);
+
+  	TPad *pad1 = new TPad("pad1","pad1",0,0.66,1,1);
+        setPadMargins(pad1);
+  	pad1->SetBottomMargin(0.01);
+  	pad1->SetTicks(1);
+  	pad1->SetLogy();
+  	pad1->Draw();
+  	pad1->cd();
+
+  	hunfolded->SetTitle("");
+  	hunfolded->Draw("p9histe");
+  	hunfolded->SetMarkerStyle(20);
+  	hunfolded->SetMarkerSize(.7);
+  	hunfolded->SetLineColor(kBlack);
+        setYaxisHist(hunfolded);
+  	hunfolded->GetXaxis()->SetLabelSize(0.);
+  	hunfolded->GetYaxis()->SetTitle("Number of events per bin");
+  	histMCTruth->Draw("histsames");
+  	histMCTruth->SetLineColor(2);
+  	hunfolded->GetYaxis()->SetRangeUser(100.,hunfolded->GetMaximum()>histMCTruth->GetMaximum()?10.*hunfolded->GetMaximum():10.*histMCTruth->GetMaximum());
+
+  	TLegend* leg_ = new TLegend(0.7, 0.60, 0.95, 0.9,"","brNDC");
+  	leg_->SetTextSize(0.06);
+  	leg_->SetFillStyle(0);
+  	leg_->SetBorderSize(0);
+  	leg_->AddEntry(hunfolded, "Unfolded reco", "p");
+  	leg_->AddEntry(histMCTruth, "Truth", "l");
+  	leg_->Draw();
+
+  	c1->cd();
+
+  	TPad *pad2 = new TPad("pad2","pad2",0,0.33,1,0.66);
+        setPadMargins(pad2);
+  	pad2->SetBottomMargin(0.2);
+  	pad2->SetTicks(1);
+  	pad2->Draw();
+  	pad2->cd();
+
+  	ratio->Draw("pe");
+  	ratio->SetMarkerStyle(20);
+  	ratio->SetMarkerSize(.7);
+  	ratio->SetLineColor(kBlack);
+  	ratio->SetMinimum(0.8);
+  	ratio->SetMaximum(1.2);
+  	ratio->SetTitle("");
+        setYaxisHist(ratio);
+        setXaxisHist(ratio);
+  	ratio->GetYaxis()->SetNdivisions(505);
+
+        TLine *l_;
+        l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
+        l_->Draw("same");
+        l_->SetLineStyle(1);
+        l_->SetLineColor(kRed);
+	
+	//TLine* lm1 = drawVerLine(20, 0.8, 20, 1.2);
+	//TLine* lm2 = drawVerLine(40, 0.8, 40, 1.2);
+	//TLine* lm3 = drawVerLine(60, 0.8, 60, 1.2);
+	//TLine* lm4 = drawVerLine(80, 0.8, 80, 1.2);
+	//TLine* lm5 = drawVerLine(100, 0.8, 100, 1.2);
+
+        c1->cd();
+/*
+        TPad *pad3 = new TPad("pad3","pad3",0,0.,1,0.33);
+        setPadMargins(pad3);
+        pad3->SetBottomMargin(0.3);
+        pad3->SetTicks(1);
+        pad3->SetGrid(0,1);
+        pad3->Draw();
+        pad3->cd();
+
+        hmeans->Draw("pe");
+        hmeans->SetTitle("");
+        hmeans->SetMarkerStyle(20);
+        hmeans->SetMarkerSize(.7);
+        hmeans->SetLineColor(kBlack);
+        hmeans->SetMinimum(10.);
+        hmeans->SetMaximum(30.);
+        setYaxisHist(hmeans);
+        setXaxisHist(hmeans);
+        hmeans->GetYaxis()->SetNdivisions(505);
+        hmeans->SetYTitle("Average \\ {p_{T}^{\\ell\\ell}}"); // \\ell not working with pdf format
+	hmeans->GetXaxis()->SetTitle("Mass(m_{#font[11]{ee}}) region (GeV)");
+        hmeans->GetXaxis()->SetTitleOffset(5.);
+        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(0.), "40~60");
+        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(1.), "60~80");
+        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(2.), "80~100");
+        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(3.), "100~200");
+        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(4.), "200~350");
+
+        hmeansMC->Draw("pesame");
+        hmeansMC->SetMarkerStyle(20);
+        hmeansMC->SetMarkerSize(.7);
+        hmeansMC->SetLineColor(kRed);
+        hmeansMC->SetMarkerColor(kRed);
+*/
+        c1->SaveAs(outpdf);
+
+        //delete hmeans;
+        //delete hmeansMC;
+        delete l_; 
+        //delete lm1;
+        //delete lm2;
+	//delete lm3;
+        //delete lm4;
+        //delete lm5;
+        delete leg_;
+        delete pad1;
+        delete pad2;
+        //delete pad3;
         delete c1;
 }
 

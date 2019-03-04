@@ -24,9 +24,10 @@ def makeRecoHists(sample, outputDirectory):
         else : outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "bkg")
 
         # need to create histogram before the file loop to save one histogram from the input files
-        recoHists = rt.recoHistsinfo(rt.vector('TH1*')(), rt.vector('TString')()) 
+        recoHists = rt.recoHistsinfo(rt.vector('TH1*')(), rt.vector('TH1*')(), rt.vector('TString')()) 
         
-        recoHists.hists.push_back(rt.histogram("norminal"))
+        recoHists.ptHists.push_back(rt.ptHistogram("norminal"))
+        recoHists.massHists.push_back(rt.massHistogram("norminal"))
         recoHists.sysNames.push_back("norminal")
 
         for filepath in sample.path:	
@@ -55,26 +56,33 @@ def makeSigHists(sample, outputDirectory):
 
         outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "sig")
         # need to create histogram before the file loop to save one histogram from the input files
-        sigHists  = rt.sigHistsinfo(rt.vector('TH1*')(), rt.vector('TH2*')(), rt.vector('TString')(), sample.isInc) 
-        recoHists = rt.recoHistsinfo(rt.vector('TH1*')(), rt.vector('TString')())
+        sigHists  = rt.sigHistsinfo(rt.vector('TH1*')(), rt.vector('TH1*')(), rt.vector('TH2*')(), rt.vector('TH2*')(), rt.vector('TString')(), sample.isInc) 
+        recoHists = rt.recoHistsinfo(rt.vector('TH1*')(), rt.vector('TH1*')(), rt.vector('TString')())
         
-        sigHists.hists.push_back(rt.histogram("norminal"))
-        sigHists.matrixs.push_back(rt.matrix("norminal"))
+        sigHists.ptHists.push_back(rt.ptHistogram("norminal"))
+        sigHists.ptMatrixs.push_back(rt.ptMatrix("norminal"))
+        sigHists.massHists.push_back(rt.massHistogram("norminal"))
+        sigHists.massMatrixs.push_back(rt.massMatrix("norminal"))
         sigHists.sysNames.push_back("norminal")
 
-        sigHists.hists.push_back(rt.histogram("fiducialPreFSR"))
-        sigHists.matrixs.push_back(rt.matrix("fiducialPreFSR"))
+        sigHists.ptHists.push_back(rt.ptHistogram("fiducialPreFSR"))
+        sigHists.ptMatrixs.push_back(rt.ptMatrix("fiducialPreFSR"))
+        sigHists.massHists.push_back(rt.massHistogram("fiducialPreFSR"))
+        sigHists.massMatrixs.push_back(rt.massMatrix("fiducialPreFSR"))
         sigHists.sysNames.push_back("fiducialPreFSR")
 
-        sigHists.hists.push_back(rt.histogram("ZptReweight"))
-        sigHists.matrixs.push_back(rt.matrix("ZptReweight"))
+        sigHists.ptHists.push_back(rt.ptHistogram("ZptReweight"))
+        sigHists.ptMatrixs.push_back(rt.ptMatrix("ZptReweight"))
+        sigHists.massHists.push_back(rt.massHistogram("ZptReweight"))
+        sigHists.massMatrixs.push_back(rt.massMatrix("ZptReweight"))
         sigHists.sysNames.push_back("ZptReweight")
 
         if sample.isInc: # for DY to tautau, make one more histogram
 	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
         	outDic[sample.name+"tau"] = fHistDef.inputfHists(sample.name+"tau", outputDirectory + sample.name+"tau.root", "bkg")
 
-        	recoHists.hists.push_back(rt.histogram("norminal"))
+        	recoHists.ptHists.push_back(rt.ptHistogram("norminal"))
+        	recoHists.massHists.push_back(rt.massHistogram("norminal"))
 	        recoHists.sysNames.push_back("norminal")
 
         for filepath in sample.path:	

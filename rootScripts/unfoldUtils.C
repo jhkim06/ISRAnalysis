@@ -13,11 +13,20 @@
 
 #include "makeRecoPlots.h"
 
-TUnfoldDensityV17* setTUnfoldDensity(TFile *filein, TString matrixName){
+TUnfoldDensityV17* setTUnfoldDensity(TFile *filein, TString var, TString matrixName){
 
-	TH2* hmcGenRec = (TH2*)filein->Get("hmcGenRec" + matrixName);
-	TUnfoldBinningV17* binning_Rec = binning_rec();
-	TUnfoldBinningV17* binning_Gen = binning_gen();
+	TH2* hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
+	TUnfoldBinningV17* binning_Rec = NULL;
+	TUnfoldBinningV17* binning_Gen = NULL;
+
+ 	if( var.CompareTo("Pt") == 0 ){
+	  binning_Rec = ptBinning_rec();
+	  binning_Gen = ptBinning_gen();
+        }
+        if( var.CompareTo("Mass") == 0 ){
+	  binning_Rec = massBinning_rec();
+	  binning_Gen = massBinning_gen();
+        }
 
         TUnfoldDensityV17 *unfold;
         unfold = new TUnfoldDensityV17(hmcGenRec,
@@ -32,16 +41,16 @@ TUnfoldDensityV17* setTUnfoldDensity(TFile *filein, TString matrixName){
  
 }
 
-void setInput(TUnfoldDensityV17* unfold, TFile *filein){
+void setInput(TUnfoldDensityV17* unfold, TString var, TFile *filein){
 	
-        TH1* hRec = (TH1*)filein->Get("hRecnorminal");
+        TH1* hRec = (TH1*)filein->Get("h"+var+"Recnorminal");
         unfold->SetInput(hRec, 1); // TODO allow to selec option for bias
 			           // NEED TO KNOW THE EFFECT OF THE BIAS FACTOR
 }
 
-void subBkgs(TUnfoldDensityV17* unfold, TFile *filein, TString name){
+void subBkgs(TUnfoldDensityV17* unfold, TString var, TFile *filein, TString name){
 
-        TH1* hRec = (TH1*)filein->Get("hRecnorminal");
+        TH1* hRec = (TH1*)filein->Get("h"+var+"Recnorminal");
         unfold->SubtractBackground(hRec, name); 
 }
 

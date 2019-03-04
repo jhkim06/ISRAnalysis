@@ -9,32 +9,32 @@ import gc
 gc.collect()
 
 
-def setUnfold(filepath, matrixName):
+def setUnfold(filepath, var, matrixName):
 
         print "Open " + filepath
 	infile = rt.TFile(filepath,'r')
         
-        unfold = rt.setTUnfoldDensity(infile, matrixName) # set the migration matrix TODO allow to select different unfolding option
+        unfold = rt.setTUnfoldDensity(infile, var, matrixName) # set the migration matrix TODO allow to select different unfolding option
 
         del infile
 	return unfold
 
-def setUnfoldInput(unfold, filepath):
+def setUnfoldInput(unfold, var, filepath):
 
 	print "Set input to unfold"
         infile = rt.TFile(filepath,'r')
 
-        unfold = rt.setInput(unfold, infile)
+        unfold = rt.setInput(unfold, var, infile)
 
         del infile
 
 
-def subtractBkgs(unfold, filepath, name):
+def subtractBkgs(unfold, var, filepath, name):
 
         print "Subtract background from data"
         infile = rt.TFile(filepath,'r')
 
-        unfold = rt.subBkgs(unfold, infile, name)
+        unfold = rt.subBkgs(unfold, var, infile, name)
 
         del infile
 

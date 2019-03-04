@@ -17,6 +17,15 @@ def basicRatio(outpdf, unfold, filepath):
 	rt.drawRatio(outpdf, unfold, infile)	
         del infile
 
+def basicRatioMass(outpdf, unfold, filepath):
+
+        print "############################ draw ###############################################"
+        print "Open " + filepath
+        infile = rt.TFile(filepath,'r')
+
+        rt.drawMassRatio(outpdf, unfold, infile)
+        del infile
+
 def responseM(outpdf, unfold):
 
 	rt.responseM(outpdf, unfold)
