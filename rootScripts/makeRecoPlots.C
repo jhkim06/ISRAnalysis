@@ -87,7 +87,7 @@ TUnfoldBinningV17* massBinning_rec(){
  double bin_fine[nbin_fine+1]={40,42.5,45,47.5,50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
 
  TUnfoldBinningV17 *binning_Rec=new TUnfoldBinningV17("Rec");
- binning_Rec->AddAxis("mass",nbin_fine,bin_fine,false,false);
+ binning_Rec->AddAxis("reco mass",nbin_fine,bin_fine,false,false);
 
  return binning_Rec;
 }
@@ -99,7 +99,7 @@ TUnfoldBinningV17* massBinning_gen(){
  double bin_wide[nbin_wide+1]={40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
 
  TUnfoldBinningV17 *binning_Gen=new TUnfoldBinningV17("Gen");
- binning_Gen->AddAxis("mass",nbin_wide,bin_wide,true,true);
+ binning_Gen->AddAxis("gen mass",nbin_wide,bin_wide,true,true);
 
  return binning_Gen;
 }
@@ -189,8 +189,8 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
  tsignal->SetBranchAddress("isfiducialPreFSR",&isfiducialPreFSR);
 
  // FIXME 
- //TFile* fZptWeight = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/etc/ZptWeight/aMCNLO/electron/ZptWeight_electron.root", "r");
- TFile* fZptWeight = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/etc/ZptWeight/MG/electron/ZptWeight_electron.root", "r");
+ TFile* fZptWeight = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/etc/ZptWeight/aMCNLO/electron/ZptWeight_electron.root", "r");
+ //TFile* fZptWeight = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/etc/ZptWeight/MG/electron/ZptWeight_electron.root", "r");
  TH1 *hZptWeight;
  fZptWeight->GetObject("ZptWeight", hZptWeight);
 
