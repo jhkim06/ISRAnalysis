@@ -12,6 +12,8 @@
 
  vector<Double_t> *ptPreFSR = 0;
  vector<Double_t> *mPreFSR = 0;
+ vector<Double_t> *ptDRp2FSR = 0;
+ vector<Double_t> *mDRp2FSR = 0;
  vector<Int_t> *qLep = 0;
  vector<Double_t> *ptRec = 0;
  vector<Double_t> *etaRec = 0;

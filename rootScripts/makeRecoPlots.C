@@ -175,6 +175,8 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
  tsignal->SetBranchAddress("qLep",&qLep);
  tsignal->SetBranchAddress("ptPreFSR",&ptPreFSR);
  tsignal->SetBranchAddress("mPreFSR",&mPreFSR);
+ tsignal->SetBranchAddress("ptDRp2FSR",&ptDRp2FSR);
+ tsignal->SetBranchAddress("mDRp2FSR",&mDRp2FSR);
  tsignal->SetBranchAddress("ptRec",&ptRec);
  tsignal->SetBranchAddress("etaRec",&etaRec);
  tsignal->SetBranchAddress("phiRec",&phiRec);
@@ -252,6 +254,9 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
                sigHist.ptMatrixs.at(2)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*zptWeight*weightRec*0.97*l1PreFire->at(0));
                sigHist.ptMatrixs.at(2)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero,                                               weightGen*zptWeight*(1.-weightRec*0.97*l1PreFire->at(0)));
 
+               sigHist.ptMatrixs.at(3)->Fill(ptBin_gen->GetGlobalBinNumber(ptDRp2FSR->at(2), mDRp2FSR->at(2)), ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*0.97*l1PreFire->at(0));
+               sigHist.ptMatrixs.at(3)->Fill(ptBin_gen->GetGlobalBinNumber(ptDRp2FSR->at(2), mDRp2FSR->at(2)), ptBinZero,                                               weightGen*(1.-weightRec*0.97*l1PreFire->at(0)));
+
                int massBinZero=0;
                sigHist.massMatrixs.at(0)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*0.97*l1PreFire->at(0));
                sigHist.massMatrixs.at(0)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBinZero,                                  weightGen*(1.-weightRec*0.97*l1PreFire->at(0)));
@@ -263,15 +268,20 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
                sigHist.massMatrixs.at(2)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*zptWeight*weightRec*0.97*l1PreFire->at(0));
                sigHist.massMatrixs.at(2)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBinZero,                                  weightGen*zptWeight*(1.-weightRec*0.97*l1PreFire->at(0)));
 
+               sigHist.massMatrixs.at(3)->Fill(massBin_gen->GetGlobalBinNumber(mDRp2FSR->at(2)), massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*0.97*l1PreFire->at(0));
+               sigHist.massMatrixs.at(3)->Fill(massBin_gen->GetGlobalBinNumber(mDRp2FSR->at(2)), massBinZero,                                  weightGen*(1.-weightRec*0.97*l1PreFire->at(0)));
+
             }// events passing reco selection
             else{
                 int ptBinZero=0;
                 sigHist.ptMatrixs.at(0)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero, weightGen); 
                 sigHist.ptMatrixs.at(2)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero, weightGen*zptWeight); 
+                sigHist.ptMatrixs.at(3)->Fill(ptBin_gen->GetGlobalBinNumber(ptDRp2FSR->at(2), mDRp2FSR->at(2)), ptBinZero, weightGen); 
 
                 int massBinZero=0;
                 sigHist.massMatrixs.at(0)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), ptBinZero, weightGen); 
                 sigHist.massMatrixs.at(2)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), ptBinZero, weightGen*zptWeight); 
+                sigHist.massMatrixs.at(3)->Fill(massBin_gen->GetGlobalBinNumber(mDRp2FSR->at(2)), ptBinZero, weightGen); 
                 
                 if(isfiducialPreFSR){
                   int ptBinZero=0;

@@ -77,6 +77,12 @@ def makeSigHists(sample, outputDirectory):
         sigHists.massMatrixs.push_back(rt.massMatrix("ZptReweight"))
         sigHists.sysNames.push_back("ZptReweight")
 
+        sigHists.ptHists.push_back(rt.ptHistogram("Dressed"))
+        sigHists.ptMatrixs.push_back(rt.ptMatrix("Dressed"))
+        sigHists.massHists.push_back(rt.massHistogram("Dressed"))
+        sigHists.massMatrixs.push_back(rt.massMatrix("Dressed"))
+        sigHists.sysNames.push_back("Dressed")
+
         if sample.isInc: # for DY to tautau, make one more histogram
 	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
         	outDic[sample.name+"tau"] = fHistDef.inputfHists(sample.name+"tau", outputDirectory + sample.name+"tau.root", "bkg")

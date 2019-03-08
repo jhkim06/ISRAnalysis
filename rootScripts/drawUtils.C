@@ -78,7 +78,7 @@ TLine* drawVerLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2){
         return l_;
 }
 
-TH1* getHistwAxisBin(TH1* hist, int nthMass){
+TH1* getHistwAxisBin(TH1* hist, int nthMass){ //FIXME allow dynamic bin definition
 
 	int nbinxTot = hist->GetNbinsX();
 	int nbinxSub = nbinxTot / 5; // assume the total number of mass bin is 5, and equidistant binning definition here. 
@@ -264,6 +264,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
         pad3->SetBottomMargin(0.3);
         pad3->SetTicks(1);
         pad3->SetGrid(0,1);
+        pad3->SetLogx();
         pad3->Draw();
         pad3->cd();
 
@@ -399,61 +400,13 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
         l_->SetLineStyle(1);
         l_->SetLineColor(kRed);
 	
-	//TLine* lm1 = drawVerLine(20, 0.8, 20, 1.2);
-	//TLine* lm2 = drawVerLine(40, 0.8, 40, 1.2);
-	//TLine* lm3 = drawVerLine(60, 0.8, 60, 1.2);
-	//TLine* lm4 = drawVerLine(80, 0.8, 80, 1.2);
-	//TLine* lm5 = drawVerLine(100, 0.8, 100, 1.2);
-
         c1->cd();
-/*
-        TPad *pad3 = new TPad("pad3","pad3",0,0.,1,0.33);
-        setPadMargins(pad3);
-        pad3->SetBottomMargin(0.3);
-        pad3->SetTicks(1);
-        pad3->SetGrid(0,1);
-        pad3->Draw();
-        pad3->cd();
-
-        hmeans->Draw("pe");
-        hmeans->SetTitle("");
-        hmeans->SetMarkerStyle(20);
-        hmeans->SetMarkerSize(.7);
-        hmeans->SetLineColor(kBlack);
-        hmeans->SetMinimum(10.);
-        hmeans->SetMaximum(30.);
-        setYaxisHist(hmeans);
-        setXaxisHist(hmeans);
-        hmeans->GetYaxis()->SetNdivisions(505);
-        hmeans->SetYTitle("Average \\ {p_{T}^{\\ell\\ell}}"); // \\ell not working with pdf format
-	hmeans->GetXaxis()->SetTitle("Mass(m_{#font[11]{ee}}) region (GeV)");
-        hmeans->GetXaxis()->SetTitleOffset(5.);
-        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(0.), "40~60");
-        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(1.), "60~80");
-        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(2.), "80~100");
-        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(3.), "100~200");
-        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(4.), "200~350");
-
-        hmeansMC->Draw("pesame");
-        hmeansMC->SetMarkerStyle(20);
-        hmeansMC->SetMarkerSize(.7);
-        hmeansMC->SetLineColor(kRed);
-        hmeansMC->SetMarkerColor(kRed);
-*/
         c1->SaveAs(outpdf);
 
-        //delete hmeans;
-        //delete hmeansMC;
         delete l_; 
-        //delete lm1;
-        //delete lm2;
-	//delete lm3;
-        //delete lm4;
-        //delete lm5;
         delete leg_;
         delete pad1;
         delete pad2;
-        //delete pad3;
         delete c1;
 }
 

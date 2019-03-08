@@ -27,8 +27,8 @@ if args.createInputHists:
 	
 	inputfHistDic = {}
 	
-	for sampleType in isrSamples.samplesDef_electron.keys():
-	    sample =  isrSamples.samplesDef_electron[sampleType]
+	for sampleType in isrSamples.samplesDef_electronLegacy.keys():
+	    sample =  isrSamples.samplesDef_electronLegacy[sampleType]
 	    if sample is None : continue
 	    print 'creating histogram for sample '
 	    sample.dump()
@@ -74,13 +74,13 @@ import pyScripts.drawUtil as drawutil
 if args.setResMatrix:
 
         # set unfolding class 
-	#unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", "norminal")
+	unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", "norminal")
 	#unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", "fiducialPreFSR")
-	unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", "ZptReweight")
+	#unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", "Dressed")
 
-	#unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "norminal")
+	unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "norminal")
 	#unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "fiducialPreFSR")
-	unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "ZptReweight")
+	#unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "Dressed")
 
 	# print out response matrix and efficiency plot
 
