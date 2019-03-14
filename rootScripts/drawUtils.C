@@ -12,6 +12,7 @@
 #include <TLine.h>
 #include <TMathText.h>
 #include <TLatex.h>
+#include <THStack.h>
 #include <TDOMParser.h>
 #include <TXMLDocument.h>
 #include "TUnfoldBinningXML.h"
@@ -20,14 +21,17 @@
 
 #include "makeRecoPlots.h"
 
+#include "./tdrstyle.C"
+#include "./CMS_lumi.C"
+
 void setYaxisHist(TH1* hist){
 
         hist->SetTitle("");
         hist->GetYaxis()->SetLabelFont(63);
         hist->GetYaxis()->SetLabelSize(25);
-        hist->GetYaxis()->SetTitleFont(43);
-        hist->GetYaxis()->SetTitleSize(20);
-        hist->GetYaxis()->SetTitleOffset(2.5);
+        hist->GetYaxis()->SetTitleFont(63);
+        hist->GetYaxis()->SetTitleSize(35);
+        hist->GetYaxis()->SetTitleOffset(2.3);
 }
 
 void setYaxisGraph(TGraphErrors* gr){
@@ -35,9 +39,9 @@ void setYaxisGraph(TGraphErrors* gr){
         gr->SetTitle("");
         gr->GetYaxis()->SetLabelFont(63);
         gr->GetYaxis()->SetLabelSize(25);
-        gr->GetYaxis()->SetTitleFont(43);
-        gr->GetYaxis()->SetTitleSize(20);
-        gr->GetYaxis()->SetTitleOffset(2.5);
+        gr->GetYaxis()->SetTitleFont(63);
+        gr->GetYaxis()->SetTitleSize(35);
+        gr->GetYaxis()->SetTitleOffset(2.3);
 }
 
 void setXaxisHist(TH1* hist){
@@ -97,6 +101,11 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 
         gROOT->SetBatch();
 
+         setTDRStyle();
+         writeExtraText = true;       // if extra text
+         extraText  = "Preliminary";
+
+
 	TH1* hunfolded_pt = unfold_pt->GetOutput("hunfolded_pt",0,0,"*[UO]",kFALSE);
 	TH1* ratio=(TH1*)hunfolded_pt->Clone("ratio");
 
@@ -125,6 +134,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
                 hmeans->SetBinError(i, temp->GetMeanError());
                 meanpt_data[i-1] = temp->GetMean();
                 meanpterr_data[i-1] = temp->GetMeanError();
+		std::cout << i << " mass region, mean pt: " << meanpt_data[i-1] << " error: " << meanpterr_data[i-1] << std::endl;
         	delete temp;
 
 		tempMC = getHistwAxisBin(histMCTruth_pt, i);
@@ -200,6 +210,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
   	TPad *pad1 = new TPad("pad1","pad1",0,0.66,1,1);
         setPadMargins(pad1);
   	pad1->SetBottomMargin(0.01);
+  	pad1->SetTopMargin(0.1);
   	pad1->SetTicks(1);
   	pad1->SetLogy();
   	pad1->Draw();
@@ -217,11 +228,22 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
   	histMCTruth_pt->SetLineColor(2);
   	hunfolded_pt->GetYaxis()->SetRangeUser(100.,hunfolded_pt->GetMaximum()>histMCTruth_pt->GetMaximum()?10.*hunfolded_pt->GetMaximum():10.*histMCTruth_pt->GetMaximum());
 
+
+		TLine grid_;
+		grid_.SetLineColor(kRed);
+		grid_.SetLineStyle(kSolid);
+		for( int ii=0; ii<histMCTruth_pt->GetNbinsX(); ii++ )
+		{
+			Int_t i_bin = ii+1;
+			Double_t binEdge = hunfolded_pt->GetBinLowEdge(i_bin);
+			grid_.DrawLine(binEdge, 100, binEdge, histMCTruth_pt->GetBinContent(ii+1) );
+		}
+
   	TLegend* leg_ = new TLegend(0.7, 0.60, 0.95, 0.9,"","brNDC");
   	leg_->SetTextSize(0.06);
   	leg_->SetFillStyle(0);
   	leg_->SetBorderSize(0);
-  	leg_->AddEntry(hunfolded_pt, "Unfolded reco", "p");
+  	leg_->AddEntry(hunfolded_pt, "Unfolded data", "p");
   	leg_->AddEntry(histMCTruth_pt, "Truth", "l");
   	leg_->Draw();
 
@@ -272,6 +294,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
         TGraphErrors *grMC = new TGraphErrors(5, meanmass_mc, meanpt_mc, meanmasserr_mc, meanpterr_mc);
 
         grUnfolded->Draw("ape");
+        grUnfolded->GetXaxis()->SetMoreLogLabels();
         grUnfolded->SetTitle("Average \\ {p_{T}^{\\ell\\ell}} vs M{\\ell\\ell}");
         grUnfolded->SetMarkerStyle(20);
         grUnfolded->SetMarkerSize(.9);
@@ -314,6 +337,9 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
         hmeansMC->SetLineColor(kRed);
         hmeansMC->SetMarkerColor(kRed);
 */
+
+        CMS_lumi( pad1, 4, 0 );
+        c1->cd();
         c1->SaveAs(outpdf);
 	
 	delete grUnfolded; 
@@ -336,6 +362,12 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
 
         gROOT->SetBatch();
+
+         setTDRStyle();
+         writeExtraText = true;       // if extra text
+         extraText  = "Preliminary";
+
+
 	TH1* hunfolded = unfold->GetOutput("hunfolded",0,0,"*[UO]",kTRUE);
 	TH1* ratio=(TH1*)hunfolded->Clone("ratio");
 
@@ -349,6 +381,7 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
   	TPad *pad1 = new TPad("pad1","pad1",0,0.66,1,1);
         setPadMargins(pad1);
   	pad1->SetBottomMargin(0.01);
+  	pad1->SetTopMargin(0.1);
   	pad1->SetTicks(1);
   	pad1->SetLogy();
   	pad1->Draw();
@@ -366,11 +399,21 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
   	histMCTruth->SetLineColor(2);
   	hunfolded->GetYaxis()->SetRangeUser(100.,hunfolded->GetMaximum()>histMCTruth->GetMaximum()?10.*hunfolded->GetMaximum():10.*histMCTruth->GetMaximum());
 
+                TLine grid_;
+                grid_.SetLineColor(kRed);
+                grid_.SetLineStyle(kSolid);
+                for( int ii=0; ii<histMCTruth->GetNbinsX(); ii++ )
+                {
+                        Int_t i_bin = ii+1;
+                        Double_t binEdge = hunfolded->GetBinLowEdge(i_bin);
+                        grid_.DrawLine(binEdge, 100, binEdge, histMCTruth->GetBinContent(ii+1) );
+                }
+
   	TLegend* leg_ = new TLegend(0.7, 0.60, 0.95, 0.9,"","brNDC");
   	leg_->SetTextSize(0.06);
   	leg_->SetFillStyle(0);
   	leg_->SetBorderSize(0);
-  	leg_->AddEntry(hunfolded, "Unfolded reco", "p");
+  	leg_->AddEntry(hunfolded, "Unfolded data", "p");
   	leg_->AddEntry(histMCTruth, "Truth", "l");
   	leg_->Draw();
 
@@ -400,6 +443,7 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
         l_->SetLineStyle(1);
         l_->SetLineColor(kRed);
 	
+        CMS_lumi( pad1, 4, 0 );
         c1->cd();
         c1->SaveAs(outpdf);
 
@@ -408,6 +452,344 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
         delete pad1;
         delete pad2;
         delete c1;
+}
+
+void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets){
+
+	 setTDRStyle();
+	 writeExtraText = true;       // if extra text
+	 extraText  = "Preliminary";
+
+	TString hname = "hPtRec" + postfix;
+  	Int_t linecolorZ   = kOrange-3;
+  	Int_t fillcolorZ   = kOrange-2;
+   	Int_t linecolorEWK = kOrange+10;
+   	Int_t fillcolorEWK = kOrange+7;
+   	Int_t linecolorTop = kGreen+2;
+   	Int_t fillcolorTop = kGreen-5;
+
+	TUnfoldBinningV17 *ptbin = ptBinning_rec();
+
+	TH1* hdata = (TH1*)fdata->Get(hname);
+  	TH1* hdataNoUO = ptbin->ExtractHistogram("hdata", hdata, 0, kFALSE, "*[UO]");
+
+	TH1* hdysig = (TH1*)fDYsig->Get(hname);
+  	TH1* hdysigNoUO = ptbin->ExtractHistogram("hdysig", hdysig, 0, kFALSE, "*[UO]");
+
+	TH1* hdybkg = (TH1*)fDYbkg->Get(hname);
+  	TH1* hdybkgNoUO = ptbin->ExtractHistogram("hdybkg", hdybkg, 0, kFALSE, "*[UO]");
+
+	TH1* httbar = (TH1*)fTTbar->Get(hname);
+  	TH1* httbarNoUO = ptbin->ExtractHistogram("httbar", httbar, 0, kFALSE, "*[UO]");
+
+	TH1* hvv = (TH1*)fVV->Get(hname);
+  	TH1* hvvNoUO = ptbin->ExtractHistogram("hvv", hvv, 0, kFALSE, "*[UO]");
+
+	TH1* hwjets = (TH1*)fWjets->Get(hname);
+  	TH1* hwjetsNoUO = ptbin->ExtractHistogram("hwjets", hwjets, 0, kFALSE, "*[UO]");
+
+   	THStack *hsMCs = new THStack("hsMCs","hsMCs");
+        hdysigNoUO->SetLineColor(linecolorZ);
+        hdysigNoUO->SetFillColor(fillcolorZ);
+        hdybkgNoUO->SetLineColor(linecolorZ+1);
+        hdybkgNoUO->SetFillColor(fillcolorZ+1);
+        httbarNoUO->SetLineColor(linecolorTop);
+        httbarNoUO->SetFillColor(fillcolorTop);
+        hvvNoUO->SetLineColor(linecolorEWK);
+        hvvNoUO->SetFillColor(fillcolorEWK);
+        hwjetsNoUO->SetLineColor(linecolorEWK-1);
+        hwjetsNoUO->SetFillColor(fillcolorEWK-1);
+
+	hsMCs->Add(hwjetsNoUO);
+	hsMCs->Add(hvvNoUO);
+	hsMCs->Add(httbarNoUO);
+	hsMCs->Add(hdybkgNoUO);
+	hsMCs->Add(hdysigNoUO);
+
+        TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
+        c1->cd();
+        gStyle->SetOptStat(0);
+
+        TPad *pad1 = new TPad("pad1","pad1",0,0.45,1,1);
+        setPadMargins(pad1);
+        pad1->SetTopMargin(0.1);
+        pad1->SetBottomMargin(0.01);
+        pad1->SetTicks(1);
+        pad1->SetLogy();
+        pad1->Draw();
+        pad1->cd();
+        
+        hdataNoUO->SetTitle("");
+        hdataNoUO->Draw("p9histe");
+        hdataNoUO->SetMarkerStyle(20);
+        hdataNoUO->SetMarkerSize(.7);
+        hdataNoUO->SetLineColor(kBlack);
+        setYaxisHist(hdataNoUO);
+	hsMCs->Draw("hist same");
+        hdataNoUO->GetXaxis()->SetLabelSize(0.);
+        hdataNoUO->GetYaxis()->SetTitle("Number of events per bin");
+        //histMCTruth_pt->Draw("histsames");
+        //histMCTruth_pt->SetLineColor(2);
+        hdataNoUO->GetYaxis()->SetRangeUser(1.,hdataNoUO->GetMaximum() * 1e2);
+        hdataNoUO->Draw("p9histsamee");
+	
+	TLegend *fLeg = new TLegend(0.65,0.55,0.95,0.88);
+        fLeg->SetTextSize(0.05);
+        fLeg->SetFillStyle(0);
+        fLeg->SetBorderSize(0);
+ 	fLeg->AddEntry(hdataNoUO, "Data", "pe");
+ 	fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
+ 	fLeg->AddEntry(hdybkgNoUO, "Z #rightarrow #tau#tau", "F");
+ 	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
+ 	fLeg->AddEntry(hvvNoUO, "VV", "F");
+ 	fLeg->AddEntry(hwjetsNoUO, "Wjets", "F");
+	fLeg->Draw();
+
+        c1->cd();
+
+        TPad *pad2 = new TPad("pad2","pad2",0,0.2,1,0.45);
+        setPadMargins(pad2);
+        pad2->SetBottomMargin(0.2);
+        pad2->SetTicks(1);
+        pad2->SetGridy();
+        pad2->Draw();
+        pad2->cd();
+
+	TH1F *ratio = (TH1F*)hdataNoUO->Clone("ratio");
+	TH1F *hmcs = (TH1F*)hdysigNoUO->Clone("mcs");
+	hmcs->Add(hdybkgNoUO);
+	hmcs->Add(httbarNoUO);
+	hmcs->Add(hvvNoUO);
+	hmcs->Add(hwjetsNoUO);
+
+        ratio->Divide(hmcs);
+        ratio->Draw("pe");
+        ratio->SetMarkerStyle(20);
+        ratio->SetMarkerSize(.7);
+        ratio->SetLineColor(kBlack);
+        ratio->SetMinimum(0.8);
+        ratio->SetMaximum(1.2);
+        ratio->GetYaxis()->SetTitle("#frac{Data}{MC}");
+        ratio->GetYaxis()->CenterTitle();
+        setYaxisHist(ratio);
+        setXaxisHist(ratio);
+        ratio->GetYaxis()->SetNdivisions(515);
+
+        TLine *l_;
+        l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
+        l_->Draw("same");
+        l_->SetLineStyle(1);
+        l_->SetLineColor(kRed);
+
+        TLine* lm1 = drawVerLine(50, 0.8, 50, 1.2);
+        TLine* lm2 = drawVerLine(100, 0.8, 100, 1.2);
+        TLine* lm3 = drawVerLine(150, 0.8, 150, 1.2);
+        TLine* lm4 = drawVerLine(200, 0.8, 200, 1.2);
+
+        c1->cd();
+
+        TPad *pad3 = new TPad("pad3","pad3",0,0.,1,0.2);
+        setPadMargins(pad3);
+        pad3->SetBottomMargin(0.2);
+        pad3->SetTicks(1);
+        pad3->SetGrid(0,1);
+        pad3->Draw();
+        pad3->cd();
+
+        TH1F *hratiottbar = (TH1F*)httbarNoUO->Clone("ratiottbar");
+        TH1F *hratiodybkg = (TH1F*)hdybkgNoUO->Clone("ratiodybkg");
+
+        hratiottbar->Divide(hmcs);
+        hratiodybkg->Divide(hmcs);
+        hratiottbar->Draw("hist");
+        hratiottbar->SetMinimum(0.0);
+        hratiottbar->SetMaximum(0.65);
+        setYaxisHist(hratiottbar);
+        setXaxisHist(hratiottbar);
+	hratiottbar->SetFillColorAlpha(fillcolorTop, 0.35);
+        hratiodybkg->Draw("histsame");
+	hratiodybkg->SetFillColorAlpha(fillcolorZ+1, 0.35);
+
+        CMS_lumi( pad1, 4, 0 );
+        c1->cd();
+        c1->SaveAs(outpdf);
+
+        delete hdata;
+        delete hdataNoUO;
+        delete hdysig;
+        delete hdysigNoUO;
+        delete hsMCs;
+        delete c1;
+        delete ptbin;
+}
+
+void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets){
+
+         setTDRStyle();
+         writeExtraText = true;       // if extra text
+         extraText  = "Preliminary";
+
+	TString hname = "hMassRec" + postfix;
+  	Int_t linecolorZ   = kOrange-3;
+  	Int_t fillcolorZ   = kOrange-2;
+   	Int_t linecolorEWK = kOrange+10;
+   	Int_t fillcolorEWK = kOrange+7;
+   	Int_t linecolorTop = kGreen+2;
+   	Int_t fillcolorTop = kGreen-5;
+
+	TUnfoldBinningV17 *massbin = massBinning_rec();
+
+	TH1* hdata = (TH1*)fdata->Get(hname);
+  	TH1* hdataNoUO = massbin->ExtractHistogram("hdata", hdata, 0, kTRUE, "*[UO]");
+
+	TH1* hdysig = (TH1*)fDYsig->Get(hname);
+  	TH1* hdysigNoUO = massbin->ExtractHistogram("hdysig", hdysig, 0, kTRUE, "*[UO]");
+
+	TH1* hdybkg = (TH1*)fDYbkg->Get(hname);
+  	TH1* hdybkgNoUO = massbin->ExtractHistogram("hdybkg", hdybkg, 0, kTRUE, "*[UO]");
+
+	TH1* httbar = (TH1*)fTTbar->Get(hname);
+  	TH1* httbarNoUO = massbin->ExtractHistogram("httbar", httbar, 0, kTRUE, "*[UO]");
+
+	TH1* hvv = (TH1*)fVV->Get(hname);
+  	TH1* hvvNoUO = massbin->ExtractHistogram("hvv", hvv, 0, kTRUE, "*[UO]");
+
+	TH1* hwjets = (TH1*)fWjets->Get(hname);
+  	TH1* hwjetsNoUO = massbin->ExtractHistogram("hwjets", hwjets, 0, kTRUE, "*[UO]");
+
+   	THStack *hsMCs = new THStack("hsMCs","hsMCs");
+        hdysigNoUO->SetLineColor(linecolorZ);
+        hdysigNoUO->SetFillColor(fillcolorZ);
+        hdybkgNoUO->SetLineColor(linecolorZ+1);
+        hdybkgNoUO->SetFillColor(fillcolorZ+1);
+        httbarNoUO->SetLineColor(linecolorTop);
+        httbarNoUO->SetFillColor(fillcolorTop);
+        hvvNoUO->SetLineColor(linecolorEWK);
+        hvvNoUO->SetFillColor(fillcolorEWK);
+        hwjetsNoUO->SetLineColor(linecolorEWK-1);
+        hwjetsNoUO->SetFillColor(fillcolorEWK-1);
+
+	hsMCs->Add(hwjetsNoUO);
+	hsMCs->Add(hvvNoUO);
+	hsMCs->Add(httbarNoUO);
+	hsMCs->Add(hdybkgNoUO);
+	hsMCs->Add(hdysigNoUO);
+
+        TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
+        c1->cd();
+        gStyle->SetOptStat(0);
+
+        TPad *pad1 = new TPad("pad1","pad1",0,0.45,1,1);
+        setPadMargins(pad1);
+        pad1->SetBottomMargin(0.01);
+        pad1->SetTopMargin(0.1);
+        pad1->SetTicks(1);
+        pad1->SetLogy();
+        pad1->Draw();
+        pad1->cd();
+        
+        hdataNoUO->SetTitle("");
+        hdataNoUO->Draw("p9histe");
+        hdataNoUO->SetMarkerStyle(20);
+        hdataNoUO->SetMarkerSize(.7);
+        hdataNoUO->SetLineColor(kBlack);
+        setYaxisHist(hdataNoUO);
+	hsMCs->Draw("hist same");
+        hdataNoUO->GetXaxis()->SetLabelSize(0.);
+        hdataNoUO->GetYaxis()->SetTitle("Number of events per bin");
+        //histMCTruth_mass->Draw("histsames");
+        //histMCTruth_mass->SetLineColor(2);
+        hdataNoUO->GetYaxis()->SetRangeUser(1.,hdataNoUO->GetMaximum() * 1e2);
+        hdataNoUO->Draw("p9histsamee");
+	
+        TLegend *fLeg = new TLegend(0.65,0.55,0.95,0.88);
+        fLeg->SetTextSize(0.05);
+        fLeg->SetFillStyle(0);
+        fLeg->SetBorderSize(0);
+ 	fLeg->AddEntry(hdataNoUO, "Data", "pe");
+ 	fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
+ 	fLeg->AddEntry(hdybkgNoUO, "Z #rightarrow #tau#tau", "F");
+ 	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
+ 	fLeg->AddEntry(hvvNoUO, "VV", "F");
+ 	fLeg->AddEntry(hwjetsNoUO, "Wjets", "F");
+	fLeg->Draw();
+
+        c1->cd();
+
+        TPad *pad2 = new TPad("pad2","pad2",0,0.2,1,0.45);
+        setPadMargins(pad2);
+        pad2->SetBottomMargin(0.2);
+        pad2->SetTicks(1);
+        pad2->SetGridy();
+        pad2->Draw();
+        pad2->cd();
+
+	TH1F *ratio = (TH1F*)hdataNoUO->Clone("ratio");
+	TH1F *hmcs = (TH1F*)hdysigNoUO->Clone("mcs");
+	hmcs->Add(hdybkgNoUO);
+	hmcs->Add(httbarNoUO);
+	hmcs->Add(hvvNoUO);
+	hmcs->Add(hwjetsNoUO);
+
+        ratio->Divide(hmcs);
+        ratio->Draw("pe");
+        ratio->SetMarkerStyle(20);
+        ratio->SetMarkerSize(.7);
+        ratio->SetLineColor(kBlack);
+        ratio->SetMinimum(0.8);
+        ratio->SetMaximum(1.2);
+        ratio->GetYaxis()->SetTitle("#frac{Data}{MC}");
+        ratio->GetYaxis()->CenterTitle();
+        setYaxisHist(ratio);
+        setXaxisHist(ratio);
+        ratio->GetYaxis()->SetNdivisions(515);
+
+        TLine *l_;
+        l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
+        l_->Draw("same");
+        l_->SetLineStyle(1);
+        l_->SetLineColor(kRed);
+
+        TLine* lm1 = drawVerLine(50, 0.8, 50, 1.2);
+        TLine* lm2 = drawVerLine(100, 0.8, 100, 1.2);
+        TLine* lm3 = drawVerLine(150, 0.8, 150, 1.2);
+        TLine* lm4 = drawVerLine(200, 0.8, 200, 1.2);
+
+        c1->cd();
+
+        TPad *pad3 = new TPad("pad3","pad3",0,0.,1,0.2);
+        setPadMargins(pad3);
+        pad3->SetBottomMargin(0.2);
+        pad3->SetTicks(1);
+        pad3->SetGrid(0,1);
+        pad3->Draw();
+        pad3->cd();
+
+        TH1F *hratiottbar = (TH1F*)httbarNoUO->Clone("ratiottbar");
+        TH1F *hratiodybkg = (TH1F*)hdybkgNoUO->Clone("ratiodybkg");
+
+        hratiottbar->Divide(hmcs);
+        hratiodybkg->Divide(hmcs);
+        hratiottbar->Draw("hist");
+        hratiottbar->SetMinimum(0.0);
+        hratiottbar->SetMaximum(0.65);
+        setYaxisHist(hratiottbar);
+        setXaxisHist(hratiottbar);
+	hratiottbar->SetFillColorAlpha(fillcolorTop, 0.35);
+        hratiodybkg->Draw("histsame");
+	hratiodybkg->SetFillColorAlpha(fillcolorZ+1, 0.35);
+
+        CMS_lumi( pad1, 4, 0 );
+        c1->cd();
+        c1->SaveAs(outpdf);
+
+        delete hdata;
+        delete hdataNoUO;
+        delete hdysig;
+        delete hdysigNoUO;
+        delete hsMCs;
+        delete c1;
+        delete massbin;
 }
 
 void responseM(TString outpdf, TUnfoldDensityV17* unfold){
@@ -425,11 +807,31 @@ void responseM(TString outpdf, TUnfoldDensityV17* unfold){
         c1->Draw();
         c1->cd();
 
-        //gPad->SetLogz();  
+        gPad->SetLogz();  
         gStyle->SetPalette(1);
 
         histProbability->GetZaxis()->SetRangeUser(0., 1.);
         histProbability->Draw("colz");
+
+                TLine grid_;
+                //grid_.SetLineColor(kGray+2);
+                grid_.SetLineColorAlpha(kGray+2, 0.35);;
+                grid_.SetLineStyle(kSolid);
+                for( int ii=0; ii<histProbability->GetXaxis()->GetNbins(); ii++ )
+                {
+                        Int_t i_bin = ii+1;
+                        Double_t binEdge = histProbability->GetXaxis()->GetBinUpEdge(i_bin);
+                        grid_.DrawLine(binEdge, histProbability->GetYaxis()->GetBinUpEdge(0), binEdge, histProbability->GetYaxis()->GetBinUpEdge(histProbability->GetYaxis()->GetNbins()) );
+                }
+
+                for( int ii=0; ii<histProbability->GetYaxis()->GetNbins(); ii++ )
+                {
+                        Int_t i_bin = ii+1;
+                        Double_t binEdge = histProbability->GetYaxis()->GetBinUpEdge(i_bin);
+                        grid_.DrawLine(histProbability->GetXaxis()->GetBinUpEdge(0), binEdge, histProbability->GetXaxis()->GetBinUpEdge(histProbability->GetXaxis()->GetNbins()),binEdge );
+                }
+
+
 
         c1->SaveAs(outpdf);
      

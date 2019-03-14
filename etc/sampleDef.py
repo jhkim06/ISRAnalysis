@@ -47,14 +47,17 @@ ISR2016Legacy_electron = {
     'Wjets'      : isrSample('Wjets' ,          myinputDir_Legacy + 'WJets.root', isMC = True, isSig = False),
 }
 
+
 samplesDef_electronLegacy = { 
-    'data'   : ISR2016Legacy_electron['DATA'].clone(),
+    #'data'   : ISR2016Legacy_electron['DATA'].clone(),
     'mcSig'  : ISR2016Legacy_electron['DY'].clone(),
     #'mcSig'  : ISR2016Legacy_electron['DYMG'].clone(),
-    'mcBkg1'  : ISR2016Legacy_electron['TTbar'].clone(),
-    'mcBkg2'  : ISR2016Legacy_electron['VV'].clone(),
-    'mcBkg3'  : ISR2016Legacy_electron['Wjets'].clone(),
+    #'mcBkg1'  : ISR2016Legacy_electron['TTbar'].clone(),
+    #'mcBkg2'  : ISR2016Legacy_electron['VV'].clone(),
+    #'mcBkg3'  : ISR2016Legacy_electron['Wjets'].clone(),
 }
+
+samplesDef_electronLegacy['mcSig'].add_sample(ISR2016Legacy_electron['DY10to50'])
 
 # for 50 DY ntuples
 for i in range(2,51):

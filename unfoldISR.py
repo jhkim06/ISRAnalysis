@@ -73,14 +73,11 @@ import pyScripts.drawUtil as drawutil
 
 if args.setResMatrix:
 
+        postfix = "ZptReweight"
         # set unfolding class 
-	unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", "norminal")
-	#unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", "fiducialPreFSR")
-	#unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", "Dressed")
+	unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", postfix)
 
-	unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "norminal")
-	#unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "fiducialPreFSR")
-	#unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "Dressed")
+	unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", postfix)
 
 	# print out response matrix and efficiency plot
 
@@ -95,20 +92,22 @@ if args.setResMatrix:
         drawutil.efficiency(outpdf_mass, unfold_mass)
 
 	# get bkg subtracted data
-        unfoldutil.setUnfoldInput(unfold_pt, "Pt", unfoldInputList['data'])
+        unfoldutil.setUnfoldInput(unfold_pt, "Pt", postfix, unfoldInputList['data']) # don't need to add hname to data
+        #unfoldutil.setUnfoldInput(unfold_pt, "Pt", unfoldInputList['sig'])
 
-        unfoldutil.subtractBkgs(unfold_pt, "Pt", unfoldInputList['DYtoEEtau'], "DYtoEEtau")
-        unfoldutil.subtractBkgs(unfold_pt, "Pt", unfoldInputList['TTbar'], "TTbar")
-        unfoldutil.subtractBkgs(unfold_pt, "Pt", unfoldInputList['VV'], "VV")
-        unfoldutil.subtractBkgs(unfold_pt, "Pt", unfoldInputList['Wjets'], "Wjets")
+        unfoldutil.subtractBkgs(unfold_pt, "Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold_pt, "Pt", postfix, unfoldInputList['TTbar'], "TTbar")
+        unfoldutil.subtractBkgs(unfold_pt, "Pt", postfix, unfoldInputList['VV'], "VV")
+        unfoldutil.subtractBkgs(unfold_pt, "Pt", postfix, unfoldInputList['Wjets'], "Wjets")
 
 	# for mass unfolding
-        unfoldutil.setUnfoldInput(unfold_mass, "Mass", unfoldInputList['data'])
+        unfoldutil.setUnfoldInput(unfold_mass, "Mass", postfix, unfoldInputList['data'])
+        #unfoldutil.setUnfoldInput(unfold_mass, "Mass", unfoldInputList['sig'])
 
-        unfoldutil.subtractBkgs(unfold_mass, "Mass", unfoldInputList['DYtoEEtau'], "DYtoEEtau")
-        unfoldutil.subtractBkgs(unfold_mass, "Mass", unfoldInputList['TTbar'], "TTbar")
-        unfoldutil.subtractBkgs(unfold_mass, "Mass", unfoldInputList['VV'], "VV")
-        unfoldutil.subtractBkgs(unfold_mass, "Mass", unfoldInputList['Wjets'], "Wjets")
+        unfoldutil.subtractBkgs(unfold_mass, "Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold_mass, "Mass", postfix, unfoldInputList['TTbar'], "TTbar")
+        unfoldutil.subtractBkgs(unfold_mass, "Mass", postfix, unfoldInputList['VV'], "VV")
+        unfoldutil.subtractBkgs(unfold_mass, "Mass", postfix, unfoldInputList['Wjets'], "Wjets")
 
 	# do unfolding with bkg subtracted data and the migration matrix
         unfoldutil.doUnfold(unfold_pt)
@@ -119,6 +118,12 @@ if args.setResMatrix:
         # check unfolded distribution
         drawutil.basicRatio(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'])
         drawutil.basicRatioMass(outpdf_mass, unfold_mass, unfoldInputList['sig'])
+
+        outpdf = outputDirectory + "recoPt.png"
+        drawutil.recoPt(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets']);
+
+        outpdf = outputDirectory + "recoMass.png"
+        drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets']);
 
         del unfold_pt
         del unfold_mass

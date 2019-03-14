@@ -27,3 +27,7 @@
  vector<Double_t> *l1PreFire = 0;
  Int_t nVtx;
 
+ Int_t IsElEl, IsMuMu;
+ Double_t ZPtCor;
+ Double_t bTagReweight;
+ Int_t isdielectron;

@@ -35,3 +35,37 @@ def efficiency(outpdf, unfold):
 
         rt.efficiency(outpdf, unfold)
 
+def recoPt(outpdf, postfix, fdatapath, fdysigpath, fdybkgpath, fttbarpath, fvvpath, fwjetspath):
+
+	fdata = rt.TFile(fdatapath,'r')
+	fdysig = rt.TFile(fdysigpath,'r')
+	fdybkg = rt.TFile(fdybkgpath,'r')
+	fttbar = rt.TFile(fttbarpath,'r')
+	fvv = rt.TFile(fvvpath,'r')
+	fwjets = rt.TFile(fwjetspath,'r')
+
+        rt.drawPtReco(outpdf, postfix, fdata, fdysig, fdybkg, fttbar, fvv, fwjets)
+        del fdata
+        del fdysig
+        del fdybkg
+        del fttbar
+        del fvv
+        del fwjets
+
+def recoMass(outpdf, postfix, fdatapath, fdysigpath, fdybkgpath, fttbarpath, fvvpath, fwjetspath):
+
+        fdata = rt.TFile(fdatapath,'r')
+        fdysig = rt.TFile(fdysigpath,'r')
+        fdybkg = rt.TFile(fdybkgpath,'r')
+        fttbar = rt.TFile(fttbarpath,'r')
+        fvv = rt.TFile(fvvpath,'r')
+        fwjets = rt.TFile(fwjetspath,'r')
+
+        rt.drawMassReco(outpdf, postfix, fdata, fdysig, fdybkg, fttbar, fvv, fwjets)
+        del fdata
+        del fdysig
+        del fdybkg
+        del fttbar
+        del fvv
+        del fwjets
+

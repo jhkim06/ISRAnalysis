@@ -41,16 +41,16 @@ TUnfoldDensityV17* setTUnfoldDensity(TFile *filein, TString var, TString matrixN
  
 }
 
-void setInput(TUnfoldDensityV17* unfold, TString var, TFile *filein){
+void setInput(TUnfoldDensityV17* unfold, TString var, TString postfix, TFile *filein){
 	
-        TH1* hRec = (TH1*)filein->Get("h"+var+"Recnorminal");
+        TH1* hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix);
         unfold->SetInput(hRec, 1); // TODO allow to selec option for bias
 			           // NEED TO KNOW THE EFFECT OF THE BIAS FACTOR
 }
 
-void subBkgs(TUnfoldDensityV17* unfold, TString var, TFile *filein, TString name){
+void subBkgs(TUnfoldDensityV17* unfold, TString var, TString hname, TFile *filein, TString name){
 
-        TH1* hRec = (TH1*)filein->Get("h"+var+"Recnorminal");
+        TH1* hRec = (TH1*)filein->Get("h"+var+"Rec"+hname);
         unfold->SubtractBackground(hRec, name); 
 }
 

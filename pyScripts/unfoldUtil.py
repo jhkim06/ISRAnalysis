@@ -19,22 +19,22 @@ def setUnfold(filepath, var, matrixName):
         del infile
 	return unfold
 
-def setUnfoldInput(unfold, var, filepath):
+def setUnfoldInput(unfold, var, postfix, filepath):
 
 	print "Set input to unfold"
         infile = rt.TFile(filepath,'r')
 
-        unfold = rt.setInput(unfold, var, infile)
+        unfold = rt.setInput(unfold, var, postfix, infile)
 
         del infile
 
 
-def subtractBkgs(unfold, var, filepath, name):
+def subtractBkgs(unfold, var, hname, filepath, name):
 
         print "Subtract background from data"
         infile = rt.TFile(filepath,'r')
 
-        unfold = rt.subBkgs(unfold, var, infile, name)
+        unfold = rt.subBkgs(unfold, var, hname, infile, name)
 
         del infile
 

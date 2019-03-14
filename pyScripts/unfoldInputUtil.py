@@ -30,6 +30,18 @@ def makeRecoHists(sample, outputDirectory):
         recoHists.massHists.push_back(rt.massHistogram("norminal"))
         recoHists.sysNames.push_back("norminal")
 
+        recoHists.ptHists.push_back(rt.ptHistogram("fiducialPreFSR"))
+        recoHists.massHists.push_back(rt.massHistogram("fiducialPreFSR"))
+        recoHists.sysNames.push_back("fiducialPreFSR")
+
+        recoHists.ptHists.push_back(rt.ptHistogram("ZptReweight"))
+        recoHists.massHists.push_back(rt.massHistogram("ZptReweight"))
+        recoHists.sysNames.push_back("ZptReweight")
+
+        recoHists.ptHists.push_back(rt.ptHistogram("noBveto"))
+        recoHists.massHists.push_back(rt.massHistogram("noBveto"))
+        recoHists.sysNames.push_back("noBveto")
+
         for filepath in sample.path:	
 
 		infile = rt.TFile(filepath,'r')
@@ -77,11 +89,11 @@ def makeSigHists(sample, outputDirectory):
         sigHists.massMatrixs.push_back(rt.massMatrix("ZptReweight"))
         sigHists.sysNames.push_back("ZptReweight")
 
-        sigHists.ptHists.push_back(rt.ptHistogram("Dressed"))
-        sigHists.ptMatrixs.push_back(rt.ptMatrix("Dressed"))
-        sigHists.massHists.push_back(rt.massHistogram("Dressed"))
-        sigHists.massMatrixs.push_back(rt.massMatrix("Dressed"))
-        sigHists.sysNames.push_back("Dressed")
+        sigHists.ptHists.push_back(rt.ptHistogram("noBveto"))
+        sigHists.ptMatrixs.push_back(rt.ptMatrix("noBveto"))
+        sigHists.massHists.push_back(rt.massHistogram("noBveto"))
+        sigHists.massMatrixs.push_back(rt.massMatrix("noBveto"))
+        sigHists.sysNames.push_back("noBveto")
 
         if sample.isInc: # for DY to tautau, make one more histogram
 	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
@@ -90,6 +102,18 @@ def makeSigHists(sample, outputDirectory):
         	recoHists.ptHists.push_back(rt.ptHistogram("norminal"))
         	recoHists.massHists.push_back(rt.massHistogram("norminal"))
 	        recoHists.sysNames.push_back("norminal")
+
+                recoHists.ptHists.push_back(rt.ptHistogram("fiducialPreFSR"))
+                recoHists.massHists.push_back(rt.massHistogram("fiducialPreFSR"))
+                recoHists.sysNames.push_back("fiducialPreFSR")
+
+                recoHists.ptHists.push_back(rt.ptHistogram("ZptReweight"))
+                recoHists.massHists.push_back(rt.massHistogram("ZptReweight"))
+                recoHists.sysNames.push_back("ZptReweight")
+
+                recoHists.ptHists.push_back(rt.ptHistogram("noBveto"))
+                recoHists.massHists.push_back(rt.massHistogram("noBveto"))
+                recoHists.sysNames.push_back("noBveto")
 
         for filepath in sample.path:	
 
