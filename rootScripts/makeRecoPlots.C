@@ -20,9 +20,11 @@ struct recoHistsinfo {
   std::vector<TH1*> massHists;
   std::vector<std::map<TString,Double_t>> sysNamesWeights; // will be initialze in the function makeRecoHists
   std::vector<TString> sysNames;
+
+  std::map<TString, TH1*> testHistmaps;
   
-  recoHistsinfo(std::vector<TH1*> iptHists, std::vector<TH1*> imassHists, std::vector<TString> sysNames_):
-    ptHists(std::move(iptHists)), massHists(std::move(imassHists)), sysNames(std::move(sysNames_)) {}
+  recoHistsinfo(std::vector<TH1*> iptHists, std::vector<TH1*> imassHists, std::vector<TString> sysNames_, std::map<TString, TH1*> testHistmaps_):
+    ptHists(std::move(iptHists)), massHists(std::move(imassHists)), sysNames(std::move(sysNames_)), testHistmaps(std::move(testHistmaps_)) {}
 };
 
 struct sigHistsinfo {
@@ -149,8 +151,8 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist, TS
 	TUnfoldBinningV17 *massbin = massBinning_rec();
 	
 	// TODO based on the info in recoHistsinfo make map for systematics
-	for(int i=0;i<nentries;i++){
-	//for(int i=0;i<10000;i++){
+	//for(int i=0;i<nentries;i++){
+	for(int i=0;i<10000;i++){
 	  if(i%10000000==0) cout<<i<<endl;
 	  treco->GetEntry(i);
 
@@ -214,8 +216,8 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
 	TUnfoldBinningV17 *massBin_gen = massBinning_gen();
 	
 	// TODO based on the info in recoHistsinfo make map for systematics
-	for(int i=0;i<nentries;i++){
-	//for(int i=0;i<10000;i++){
+	//for(int i=0;i<nentries;i++){
+	for(int i=0;i<10000;i++){
 	  if(i%10000000==0) cout<<i<<endl;
 	  tsignal->GetEntry(i);
 	
@@ -249,6 +251,8 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
 	              fileout2->cd();
 	              recoHist.ptHists.at(0)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
 	              recoHist.massHists.at(0)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
+		
+                      (recoHist.testHistmaps.find("testmap")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
 	           }
 	           else{
 	              fileout1->cd();

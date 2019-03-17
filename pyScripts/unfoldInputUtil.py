@@ -57,13 +57,18 @@ def makeSigHists(sample, outputDirectory, channel):
         outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "sig")
         # need to create histogram before the file loop to save one histogram from the input files
         sigHists  = rt.sigHistsinfo(rt.vector('TH1*')(), rt.vector('TH1*')(), rt.vector('TH2*')(), rt.vector('TH2*')(), rt.vector('TString')(), sample.isInc) 
-        recoHists = rt.recoHistsinfo(rt.vector('TH1*')(), rt.vector('TH1*')(), rt.vector('TString')())
+        recoHists = rt.recoHistsinfo(rt.vector('TH1*')(), rt.vector('TH1*')(), rt.vector('TString')(), rt.std.map("TString, TH1*")())
         
         sigHists.ptHists.push_back(rt.ptHistogram("norminal"))
         sigHists.ptMatrixs.push_back(rt.ptMatrix("norminal"))
         sigHists.massHists.push_back(rt.massHistogram("norminal"))
         sigHists.massMatrixs.push_back(rt.massMatrix("norminal"))
         sigHists.sysNames.push_back("norminal")
+
+        #test
+	rt.gInterpreter.GenerateDictionary("std::pair<TString, TH1*>", "map;TString.h;TH1.h")
+	rt.gInterpreter.GenerateDictionary("std::map<TString, TH1*>", "map;TString.h;TH1.h")
+	rt.gInterpreter.GenerateDictionary("std::pair<std::map<TString, TH1*>::iterator,bool>", "map;TString.h;TH1.h")
 
         if sample.isInc: # for DY to tautau, make one more histogram
 	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
@@ -72,6 +77,8 @@ def makeSigHists(sample, outputDirectory, channel):
         	recoHists.ptHists.push_back(rt.ptHistogram("norminal"))
         	recoHists.massHists.push_back(rt.massHistogram("norminal"))
 	        recoHists.sysNames.push_back("norminal")
+
+		recoHists.testHistmaps.insert(rt.std.pair("const TString, TH1*")("testmap", rt.ptHistogram("testmap")))
 
         for filepath in sample.path:	
 
