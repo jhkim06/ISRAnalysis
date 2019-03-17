@@ -5,51 +5,55 @@ import ROOT
 
 
 parser = argparse.ArgumentParser(description='Unfolding for ISR analysis')
+
+parser.add_argument('--channel' , dest = 'channel', default = 'electron', help = 'select channel electron or muon')
 parser.add_argument('--createInputHists'  , action='store_true'  , help = 'create input histograms')
 parser.add_argument('--setResMatrix'  , action='store_true'  , help = 'set response matrix')
 
 args = parser.parse_args()
 
 # get input root files information using sampleDef.py
-
 import etc.sampleDef as isrSamples
 import pyScripts.unfoldInputUtil as histUtil
 
-outputDirectory = 'output/' 
+outputDirectory = 'output/' + args.channel + "/"  
 inputfhisttxtName = outputDirectory + "fhist.txt"
 if not os.path.exists( outputDirectory ):
 	os.makedirs( outputDirectory )
 
-# TODO allow to use several binning definitions
+print "channel to run: " + args.channel
+
+selectedSample = {} 
+if args.channel == "electron":
+	selectedSample = isrSamples.samplesDef_electronLegacy
+if args.channel == "muon":
+	selectedSample = isrSamples.samplesDef_muonLegacy 
 
 if args.createInputHists:
 	import etc.histDef as inputfHist
 	
 	inputfHistDic = {}
 	
-	for sampleType in isrSamples.samplesDef_electronLegacy.keys():
-	    sample =  isrSamples.samplesDef_electronLegacy[sampleType]
+	for sampleType in selectedSample.keys():
+	    sample =  selectedSample[sampleType]
 	    if sample is None : continue
 	    print 'creating histogram for sample '
 	    sample.dump()
 	
 	    if not sample.isMC:
-	    	inputfHistDic.update(histUtil.makeRecoHists(sample, outputDirectory)) # TODO systematic list to consider
+	    	inputfHistDic.update(histUtil.makeRecoHists(sample, outputDirectory, args.channel)) # TODO systematic list to consider
 	
 	    if sample.isMC and not sample.isSig:
-	    	inputfHistDic.update(histUtil.makeRecoHists(sample, outputDirectory)) # TODO systematic list to consider
+	    	inputfHistDic.update(histUtil.makeRecoHists(sample, outputDirectory, args.channel)) # TODO systematic list to consider
 	
 	    if sample.isMC and sample.isSig:
-		inputfHistDic.update(histUtil.makeSigHists(sample, outputDirectory))
+		inputfHistDic.update(histUtil.makeSigHists(sample, outputDirectory, args.channel))
 	
 	fOutTxt = open( inputfhisttxtName,'w')
 	
 	for fhist in inputfHistDic.keys():
 	        astr = inputfHistDic[fhist].name + ' ' + inputfHistDic[fhist].htype + ' ' + (inputfHistDic[fhist].path)[0]
 	        fOutTxt.write( astr + '\n' )
-	 	#print fhist
-		#print inputfHistDic[fhist].name + ' ' + inputfHistDic[fhist].htype 
-	        #print inputfHistDic[fhist].path
 	
 	fOutTxt.close()
 
@@ -74,13 +78,13 @@ import pyScripts.drawUtil as drawutil
 if args.setResMatrix:
 
         postfix = "ZptReweight"
+
         # set unfolding class 
 	unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", postfix)
 
 	unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", postfix)
 
 	# print out response matrix and efficiency plot
-
         outpdf = outputDirectory + "response.png"
         drawutil.responseM(outpdf, unfold_pt)
         outpdf = outputDirectory + "efficiency.png"
@@ -92,7 +96,7 @@ if args.setResMatrix:
         drawutil.efficiency(outpdf_mass, unfold_mass)
 
 	# get bkg subtracted data
-        unfoldutil.setUnfoldInput(unfold_pt, "Pt", postfix, unfoldInputList['data']) # don't need to add hname to data
+        unfoldutil.setUnfoldInput(unfold_pt, "Pt", postfix, unfoldInputList['data'])
         #unfoldutil.setUnfoldInput(unfold_pt, "Pt", unfoldInputList['sig'])
 
         unfoldutil.subtractBkgs(unfold_pt, "Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
@@ -125,13 +129,13 @@ if args.setResMatrix:
         outpdf = outputDirectory + "recoMass.png"
         drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets']);
 
+	outpdf = outputDirectory + "test.png" 
+	drawutil.drawTest(outpdf, unfold_pt)
+
         del unfold_pt
         del unfold_mass
 
 def makeRecoPlots():
-        # load TUnfold library 
-	#ROOT.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfold/libunfold.so")	
-	#ROOT.gROOT.ProcessLine(".L /home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScripts/makeRecoPlots.C++")
         pass
 
 # test 

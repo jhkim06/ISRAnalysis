@@ -17,6 +17,10 @@ def basicRatio(outpdf, unfold_pt, unfold_mass, filepath):
 	rt.drawRatio(outpdf, unfold_pt, unfold_mass, infile)	
         del infile
 
+def drawTest(outpdf, unfold_pt):
+
+        rt.drawTest(outpdf, unfold_pt)
+
 def basicRatioMass(outpdf, unfold, filepath):
 
         print "############################ draw ###############################################"

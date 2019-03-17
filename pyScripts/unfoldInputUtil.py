@@ -11,7 +11,7 @@ gc.collect()
 import etc.histDef as fHistDef
 
 # input file paths, binning, output directory, for data and bkg reco histograms only
-def makeRecoHists(sample, outputDirectory):
+def makeRecoHists(sample, outputDirectory, channel):
 
         rt.gROOT.SetBatch()
         print "####################### makeRecoHists #################################"
@@ -46,7 +46,7 @@ def makeRecoHists(sample, outputDirectory):
 
 		infile = rt.TFile(filepath,'r')
 		print filepath
-		rt.recoHists(infile, outfile, recoHists)
+		rt.recoHists(infile, outfile, recoHists, channel)
 
                 del infile
 
@@ -56,7 +56,7 @@ def makeRecoHists(sample, outputDirectory):
         del recoHists
         return outDic
 
-def makeSigHists(sample, outputDirectory):
+def makeSigHists(sample, outputDirectory, channel):
         rt.gROOT.SetBatch()
         print "####################### makeRecoHists #################################"
 
@@ -119,7 +119,7 @@ def makeSigHists(sample, outputDirectory):
 
 		infile = rt.TFile(filepath,'r')
 		print filepath
-		rt.sigHists(infile, outfile, outfile_, sigHists, recoHists)
+		rt.sigHists(infile, outfile, outfile_, sigHists, recoHists, channel)
 
                 del infile
 

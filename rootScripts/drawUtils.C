@@ -69,7 +69,6 @@ void setPadMargins(TPad* pad){
         pad->SetTopMargin(0.05);
         pad->SetLeftMargin(0.12);
         pad->SetRightMargin(0.05);
-
 }
 
 TLine* drawVerLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2){
@@ -82,36 +81,36 @@ TLine* drawVerLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2){
         return l_;
 }
 
-TH1* getHistwAxisBin(TH1* hist, int nthMass){ //FIXME allow dynamic bin definition
+void drawTest(TString outpdf, TUnfoldDensityV17* unfold_pt){
 
-	int nbinxTot = hist->GetNbinsX();
-	int nbinxSub = nbinxTot / 5; // assume the total number of mass bin is 5, and equidistant binning definition here. 
-	TH1* temp = new TH1D("temp","temp",nbinxSub, 0., 100.);
+        TH1* hunfolded_pt = unfold_pt->GetOutput("hunfolded_pt",0,0,"pt[UO];mass[UOC2]",kTRUE);
 
-	for(int ibin = 1; ibin <=nbinxSub; ibin++){
-                int ibin_ = nbinxSub * (nthMass-1) + ibin;
-		temp->SetBinContent(ibin, hist->GetBinContent(ibin_));	
-		temp->SetBinError(ibin, hist->GetBinError(ibin_));	
-	} 
+        TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
+        c1->cd();
+        gStyle->SetOptStat(0);
+	hunfolded_pt->Draw("hist");
 
-        return temp;
+	c1->SaveAs(outpdf);
+        delete c1;
+        delete hunfolded_pt;
 }
 
 void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* unfold_mass, TFile *filein){
 
         gROOT->SetBatch();
 
-         setTDRStyle();
-         writeExtraText = true;       // if extra text
-         extraText  = "Preliminary";
+        setTDRStyle();
+        writeExtraText = true;       // if extra text
+        extraText  = "Preliminary";
 
-
+	// pt distribution for 5 mass bins in one histogram
 	TH1* hunfolded_pt = unfold_pt->GetOutput("hunfolded_pt",0,0,"*[UO]",kFALSE);
 	TH1* ratio=(TH1*)hunfolded_pt->Clone("ratio");
 
         TH1 *histMCTruth_pt=unfold_pt->GetBias("histMCTruth_pt",0,0,"*[UO]",kFALSE);
         ratio->Divide(histMCTruth_pt);
 
+	// mass distribution
         TH1* hunfolded_mass = unfold_mass->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
         TH1 *histMCTruth_mass=unfold_mass->GetBias("histMCTruth_mass",0,0,"*[UO]",kTRUE);
 
@@ -125,26 +124,21 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
         Double_t meanmass_mc[5], meanmasserr_mc[5];
 
         // get average pT for each mass region
-        for(int i = 1; i < 6; i++){
-        	TH1* temp;
-                TH1* tempMC;
+	for(int i = 0; i < 5; i++){
+	   TString ibinMass;
+	   ibinMass.Form("%d", i);
+	   TH1* hunfolded_pt_temp = unfold_pt->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);	
+           meanpt_data[i] = hunfolded_pt_temp->GetMean();
+           meanpterr_data[i] = hunfolded_pt_temp->GetMeanError();
 
-		temp = getHistwAxisBin(hunfolded_pt, i);
-                hmeans->SetBinContent(i, temp->GetMean());
-                hmeans->SetBinError(i, temp->GetMeanError());
-                meanpt_data[i-1] = temp->GetMean();
-                meanpterr_data[i-1] = temp->GetMeanError();
-		std::cout << i << " mass region, mean pt: " << meanpt_data[i-1] << " error: " << meanpterr_data[i-1] << std::endl;
-        	delete temp;
+	   TH1 *histMCTruth_pt_temp=unfold_pt->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+           meanpt_mc[i] = histMCTruth_pt_temp->GetMean();
+           meanpterr_mc[i] = histMCTruth_pt_temp->GetMeanError();
 
-		tempMC = getHistwAxisBin(histMCTruth_pt, i);
-                hmeansMC->SetBinContent(i, tempMC->GetMean());
-                hmeansMC->SetBinError(i, tempMC->GetMeanError());
-                meanpt_mc[i-1] = tempMC->GetMean();
-                meanpterr_mc[i-1] = tempMC->GetMeanError();
-                delete tempMC;
+           delete hunfolded_pt_temp;
+           delete histMCTruth_pt_temp; 
         }
-	
+
 	// get average mass
         TUnfoldBinningV17* massBin_gen = massBinning_gen();
 	TH1 *hunfolded_mass_bin[5];
@@ -228,16 +222,15 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
   	histMCTruth_pt->SetLineColor(2);
   	hunfolded_pt->GetYaxis()->SetRangeUser(100.,hunfolded_pt->GetMaximum()>histMCTruth_pt->GetMaximum()?10.*hunfolded_pt->GetMaximum():10.*histMCTruth_pt->GetMaximum());
 
-
-		TLine grid_;
-		grid_.SetLineColor(kRed);
-		grid_.SetLineStyle(kSolid);
-		for( int ii=0; ii<histMCTruth_pt->GetNbinsX(); ii++ )
-		{
-			Int_t i_bin = ii+1;
-			Double_t binEdge = hunfolded_pt->GetBinLowEdge(i_bin);
-			grid_.DrawLine(binEdge, 100, binEdge, histMCTruth_pt->GetBinContent(ii+1) );
-		}
+	TLine grid_;
+	grid_.SetLineColor(kRed);
+	grid_.SetLineStyle(kSolid);
+	for( int ii=0; ii<histMCTruth_pt->GetNbinsX(); ii++ )
+	{
+		Int_t i_bin = ii+1;
+		Double_t binEdge = hunfolded_pt->GetBinLowEdge(i_bin);
+		grid_.DrawLine(binEdge, 100, binEdge, histMCTruth_pt->GetBinContent(ii+1) );
+	}
 
   	TLegend* leg_ = new TLegend(0.7, 0.60, 0.95, 0.9,"","brNDC");
   	leg_->SetTextSize(0.06);
@@ -260,8 +253,8 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
   	ratio->SetMarkerStyle(20);
   	ratio->SetMarkerSize(.7);
   	ratio->SetLineColor(kBlack);
-  	ratio->SetMinimum(0.8);
-  	ratio->SetMaximum(1.2);
+  	ratio->SetMinimum(0.6);
+  	ratio->SetMaximum(1.4);
   	ratio->SetTitle("");
         setYaxisHist(ratio);
         setXaxisHist(ratio);
@@ -363,10 +356,9 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
 
         gROOT->SetBatch();
 
-         setTDRStyle();
-         writeExtraText = true;       // if extra text
-         extraText  = "Preliminary";
-
+        setTDRStyle();
+        writeExtraText = true;       // if extra text
+        extraText  = "Preliminary";
 
 	TH1* hunfolded = unfold->GetOutput("hunfolded",0,0,"*[UO]",kTRUE);
 	TH1* ratio=(TH1*)hunfolded->Clone("ratio");
@@ -399,15 +391,15 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
   	histMCTruth->SetLineColor(2);
   	hunfolded->GetYaxis()->SetRangeUser(100.,hunfolded->GetMaximum()>histMCTruth->GetMaximum()?10.*hunfolded->GetMaximum():10.*histMCTruth->GetMaximum());
 
-                TLine grid_;
-                grid_.SetLineColor(kRed);
-                grid_.SetLineStyle(kSolid);
-                for( int ii=0; ii<histMCTruth->GetNbinsX(); ii++ )
-                {
-                        Int_t i_bin = ii+1;
-                        Double_t binEdge = hunfolded->GetBinLowEdge(i_bin);
-                        grid_.DrawLine(binEdge, 100, binEdge, histMCTruth->GetBinContent(ii+1) );
-                }
+        TLine grid_;
+        grid_.SetLineColor(kRed);
+        grid_.SetLineStyle(kSolid);
+        for( int ii=0; ii<histMCTruth->GetNbinsX(); ii++ )
+        {
+                Int_t i_bin = ii+1;
+                Double_t binEdge = hunfolded->GetBinLowEdge(i_bin);
+                grid_.DrawLine(binEdge, 100, binEdge, histMCTruth->GetBinContent(ii+1) );
+        }
 
   	TLegend* leg_ = new TLegend(0.7, 0.60, 0.95, 0.9,"","brNDC");
   	leg_->SetTextSize(0.06);
@@ -456,9 +448,9 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
 
 void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets){
 
-	 setTDRStyle();
-	 writeExtraText = true;       // if extra text
-	 extraText  = "Preliminary";
+	setTDRStyle();
+	writeExtraText = true;       // if extra text
+	extraText  = "Preliminary";
 
 	TString hname = "hPtRec" + postfix;
   	Int_t linecolorZ   = kOrange-3;
@@ -538,7 +530,8 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         fLeg->SetFillStyle(0);
         fLeg->SetBorderSize(0);
  	fLeg->AddEntry(hdataNoUO, "Data", "pe");
- 	fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
+ 	//fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
+ 	fLeg->AddEntry(hdysigNoUO, "Z #rightarrow #mu#mu", "F");
  	fLeg->AddEntry(hdybkgNoUO, "Z #rightarrow #tau#tau", "F");
  	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
  	fLeg->AddEntry(hvvNoUO, "VV", "F");
@@ -625,9 +618,9 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
 
 void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets){
 
-         setTDRStyle();
-         writeExtraText = true;       // if extra text
-         extraText  = "Preliminary";
+        setTDRStyle();
+        writeExtraText = true;       // if extra text
+        extraText  = "Preliminary";
 
 	TString hname = "hMassRec" + postfix;
   	Int_t linecolorZ   = kOrange-3;
@@ -707,7 +700,8 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         fLeg->SetFillStyle(0);
         fLeg->SetBorderSize(0);
  	fLeg->AddEntry(hdataNoUO, "Data", "pe");
- 	fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
+ 	//fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
+ 	fLeg->AddEntry(hdysigNoUO, "Z #rightarrow #mu#mu", "F");
  	fLeg->AddEntry(hdybkgNoUO, "Z #rightarrow #tau#tau", "F");
  	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
  	fLeg->AddEntry(hvvNoUO, "VV", "F");
@@ -813,25 +807,23 @@ void responseM(TString outpdf, TUnfoldDensityV17* unfold){
         histProbability->GetZaxis()->SetRangeUser(0., 1.);
         histProbability->Draw("colz");
 
-                TLine grid_;
-                //grid_.SetLineColor(kGray+2);
-                grid_.SetLineColorAlpha(kGray+2, 0.35);;
-                grid_.SetLineStyle(kSolid);
-                for( int ii=0; ii<histProbability->GetXaxis()->GetNbins(); ii++ )
-                {
-                        Int_t i_bin = ii+1;
-                        Double_t binEdge = histProbability->GetXaxis()->GetBinUpEdge(i_bin);
-                        grid_.DrawLine(binEdge, histProbability->GetYaxis()->GetBinUpEdge(0), binEdge, histProbability->GetYaxis()->GetBinUpEdge(histProbability->GetYaxis()->GetNbins()) );
-                }
+        TLine grid_;
+        //grid_.SetLineColor(kGray+2);
+        grid_.SetLineColorAlpha(kGray+2, 0.35);;
+        grid_.SetLineStyle(kSolid);
+        for( int ii=0; ii<histProbability->GetXaxis()->GetNbins(); ii++ )
+        {
+                Int_t i_bin = ii+1;
+                Double_t binEdge = histProbability->GetXaxis()->GetBinUpEdge(i_bin);
+                grid_.DrawLine(binEdge, histProbability->GetYaxis()->GetBinUpEdge(0), binEdge, histProbability->GetYaxis()->GetBinUpEdge(histProbability->GetYaxis()->GetNbins()) );
+        }
 
-                for( int ii=0; ii<histProbability->GetYaxis()->GetNbins(); ii++ )
-                {
-                        Int_t i_bin = ii+1;
-                        Double_t binEdge = histProbability->GetYaxis()->GetBinUpEdge(i_bin);
-                        grid_.DrawLine(histProbability->GetXaxis()->GetBinUpEdge(0), binEdge, histProbability->GetXaxis()->GetBinUpEdge(histProbability->GetXaxis()->GetNbins()),binEdge );
-                }
-
-
+        for( int ii=0; ii<histProbability->GetYaxis()->GetNbins(); ii++ )
+        {
+                Int_t i_bin = ii+1;
+                Double_t binEdge = histProbability->GetYaxis()->GetBinUpEdge(i_bin);
+                grid_.DrawLine(histProbability->GetXaxis()->GetBinUpEdge(0), binEdge, histProbability->GetXaxis()->GetBinUpEdge(histProbability->GetXaxis()->GetNbins()),binEdge );
+        }
 
         c1->SaveAs(outpdf);
      
