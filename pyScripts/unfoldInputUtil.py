@@ -30,18 +30,6 @@ def makeRecoHists(sample, outputDirectory, channel):
         recoHists.massHists.push_back(rt.massHistogram("norminal"))
         recoHists.sysNames.push_back("norminal")
 
-        recoHists.ptHists.push_back(rt.ptHistogram("fiducialPreFSR"))
-        recoHists.massHists.push_back(rt.massHistogram("fiducialPreFSR"))
-        recoHists.sysNames.push_back("fiducialPreFSR")
-
-        recoHists.ptHists.push_back(rt.ptHistogram("ZptReweight"))
-        recoHists.massHists.push_back(rt.massHistogram("ZptReweight"))
-        recoHists.sysNames.push_back("ZptReweight")
-
-        recoHists.ptHists.push_back(rt.ptHistogram("noBveto"))
-        recoHists.massHists.push_back(rt.massHistogram("noBveto"))
-        recoHists.sysNames.push_back("noBveto")
-
         for filepath in sample.path:	
 
 		infile = rt.TFile(filepath,'r')
@@ -77,24 +65,6 @@ def makeSigHists(sample, outputDirectory, channel):
         sigHists.massMatrixs.push_back(rt.massMatrix("norminal"))
         sigHists.sysNames.push_back("norminal")
 
-        sigHists.ptHists.push_back(rt.ptHistogram("fiducialPreFSR"))
-        sigHists.ptMatrixs.push_back(rt.ptMatrix("fiducialPreFSR"))
-        sigHists.massHists.push_back(rt.massHistogram("fiducialPreFSR"))
-        sigHists.massMatrixs.push_back(rt.massMatrix("fiducialPreFSR"))
-        sigHists.sysNames.push_back("fiducialPreFSR")
-
-        sigHists.ptHists.push_back(rt.ptHistogram("ZptReweight"))
-        sigHists.ptMatrixs.push_back(rt.ptMatrix("ZptReweight"))
-        sigHists.massHists.push_back(rt.massHistogram("ZptReweight"))
-        sigHists.massMatrixs.push_back(rt.massMatrix("ZptReweight"))
-        sigHists.sysNames.push_back("ZptReweight")
-
-        sigHists.ptHists.push_back(rt.ptHistogram("noBveto"))
-        sigHists.ptMatrixs.push_back(rt.ptMatrix("noBveto"))
-        sigHists.massHists.push_back(rt.massHistogram("noBveto"))
-        sigHists.massMatrixs.push_back(rt.massMatrix("noBveto"))
-        sigHists.sysNames.push_back("noBveto")
-
         if sample.isInc: # for DY to tautau, make one more histogram
 	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
         	outDic[sample.name+"tau"] = fHistDef.inputfHists(sample.name+"tau", outputDirectory + sample.name+"tau.root", "bkg")
@@ -103,23 +73,16 @@ def makeSigHists(sample, outputDirectory, channel):
         	recoHists.massHists.push_back(rt.massHistogram("norminal"))
 	        recoHists.sysNames.push_back("norminal")
 
-                recoHists.ptHists.push_back(rt.ptHistogram("fiducialPreFSR"))
-                recoHists.massHists.push_back(rt.massHistogram("fiducialPreFSR"))
-                recoHists.sysNames.push_back("fiducialPreFSR")
-
-                recoHists.ptHists.push_back(rt.ptHistogram("ZptReweight"))
-                recoHists.massHists.push_back(rt.massHistogram("ZptReweight"))
-                recoHists.sysNames.push_back("ZptReweight")
-
-                recoHists.ptHists.push_back(rt.ptHistogram("noBveto"))
-                recoHists.massHists.push_back(rt.massHistogram("noBveto"))
-                recoHists.sysNames.push_back("noBveto")
-
         for filepath in sample.path:	
 
 		infile = rt.TFile(filepath,'r')
 		print filepath
-		rt.sigHists(infile, outfile, outfile_, sigHists, recoHists, channel)
+                temp_kfactor = 1.;
+		if filepath.find("M-10to50") > 0:
+		   print "this is M-10to50 DY sample"
+                   temp_kfactor = 6225.42/5765.4
+		print "temp_kfactor: " + str(temp_kfactor)
+		rt.sigHists(infile, outfile, outfile_, sigHists, recoHists, channel, temp_kfactor)
 
                 del infile
 

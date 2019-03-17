@@ -162,19 +162,8 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist, TS
 	         fileout1->cd();
 	         recoHist.ptHists.at(0)->Fill(ptbin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
 	         recoHist.massHists.at(0)->Fill(massbin->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
-	
-	         recoHist.ptHists.at(1)->Fill(ptbin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
-	         recoHist.massHists.at(1)->Fill(massbin->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
-	
-	         recoHist.ptHists.at(2)->Fill(ptbin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
-	         recoHist.massHists.at(2)->Fill(massbin->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
 	   }
 	
-	   if(isdilep && ispassRec && ptRec->at(2) < 100){
-	         fileout1->cd();
-	         recoHist.ptHists.at(3)->Fill(ptbin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec);
-	         recoHist.massHists.at(3)->Fill(massbin->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec);
-	   }
 	}// event loop
 	
 	delete ptbin;
@@ -187,7 +176,7 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist, TS
 	// delete outputFile;
 }
 
-void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinfo &sigHist, const recoHistsinfo &recoHist, TString channel){ // TODO add list of systematics
+void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinfo &sigHist, const recoHistsinfo &recoHist, TString channel, Double_t temp_kfactor){ // TODO add list of systematics
 
 	gROOT->SetBatch();
 	TH1::SetDefaultSumw2();
@@ -229,6 +218,8 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
 	//for(int i=0;i<10000;i++){
 	  if(i%10000000==0) cout<<i<<endl;
 	  tsignal->GetEntry(i);
+	
+	  weightGen *= temp_kfactor;
 
           int isdilep = 0, issignal = 0;
           if( channel.CompareTo("electron") == 0 ){
@@ -258,36 +249,11 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
 	              fileout2->cd();
 	              recoHist.ptHists.at(0)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
 	              recoHist.massHists.at(0)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
-	
-	              recoHist.ptHists.at(1)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
-	              recoHist.massHists.at(1)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
-	
-	              recoHist.ptHists.at(2)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
-	              recoHist.massHists.at(2)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
 	           }
 	           else{
 	              fileout1->cd();
 	              sigHist.ptHists.at(0)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
 	              sigHist.massHists.at(0)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
-	
-	              sigHist.ptHists.at(1)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
-	              sigHist.massHists.at(1)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
-	
-	              sigHist.ptHists.at(2)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*zptWeight*weightRec*bTagReweight);
-	              sigHist.massHists.at(2)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*zptWeight*weightRec*bTagReweight);
-	           }
-	        }
-	
-	        if(isdilep && ispassRec && ptRec->at(2) < 100){
-	           if(DYtautau){
-	              fileout2->cd();
-	              recoHist.ptHists.at(3)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec);
-	              recoHist.massHists.at(3)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec);
-	           }
-	           else{
-	              fileout1->cd();
-	              sigHist.ptHists.at(3)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*zptWeight*weightRec);
-	              sigHist.massHists.at(3)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*zptWeight*weightRec);
 	           }
 	        }
 	
@@ -301,63 +267,18 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
 	              sigHist.ptMatrixs.at(0)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
 	              sigHist.ptMatrixs.at(0)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero,                                               weightGen*(1.-weightRec*bTagReweight));
 	
-	              // for the migration matrix inside the fiducial region at pre FSR
-	              sigHist.ptMatrixs.at(1)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);
-	              sigHist.ptMatrixs.at(1)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero,                                               weightGen*(1.-weightRec*bTagReweight));
-	
-	              sigHist.ptMatrixs.at(2)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*zptWeight*weightRec*bTagReweight);
-	              sigHist.ptMatrixs.at(2)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero,                                               weightGen*zptWeight*(1.-weightRec*bTagReweight));
-	
 	              int massBinZero=0;
 	              sigHist.massMatrixs.at(0)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
 	              sigHist.massMatrixs.at(0)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBinZero,                                  weightGen*(1.-weightRec*bTagReweight));
-	
-	              // for the migration matrix inside the fiducial region at pre FSR
-	              sigHist.massMatrixs.at(1)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
-	              sigHist.massMatrixs.at(1)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBinZero,                                  weightGen*(1.-weightRec*bTagReweight));
-	
-	              sigHist.massMatrixs.at(2)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*zptWeight*weightRec*bTagReweight);
-	              sigHist.massMatrixs.at(2)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBinZero,                                  weightGen*zptWeight*(1.-weightRec*bTagReweight));
-	
 	
 	           }// events passing reco selection
 	           else{
 	               int ptBinZero=0;
 	               sigHist.ptMatrixs.at(0)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero, weightGen); 
-	               sigHist.ptMatrixs.at(2)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero, weightGen*zptWeight); 
 	
 	               int massBinZero=0;
 	               sigHist.massMatrixs.at(0)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), ptBinZero, weightGen); 
-	               sigHist.massMatrixs.at(2)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), ptBinZero, weightGen*zptWeight); 
-	               
-	               if(isfiducialPreFSR){
-	                 int ptBinZero=0;
-	                 sigHist.ptMatrixs.at(1)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero, weightGen); 
-	
-	                 int massBinZero=0;
-	                 sigHist.massMatrixs.at(1)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), ptBinZero, weightGen); 
-	               }
 	           }
-	
-	           //////////////////////////////////////////////////// no Bveto
-	           if( isdilep && ispassRec && ptRec->at(2) < 100) {
-	              int ptBinZero=0;
-	              sigHist.ptMatrixs.at(3)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*zptWeight*weightRec);
-	              sigHist.ptMatrixs.at(3)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero,                                               weightGen*zptWeight*(1.-weightRec));
-	
-	              int massBinZero=0;
-	              sigHist.massMatrixs.at(3)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*zptWeight*weightRec);
-	              sigHist.massMatrixs.at(3)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBinZero,                                  weightGen*zptWeight*(1.-weightRec));
-	
-	           }// events passing reco selection
-	           else{
-	               int ptBinZero=0;
-	               sigHist.ptMatrixs.at(3)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero, weightGen*zptWeight);
-	
-	               int massBinZero=0;
-	               sigHist.massMatrixs.at(3)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), ptBinZero, weightGen*zptWeight);
-	           }
-	           ///////////////////////////////////////////////////// no Bveto
 	
 	         }// check if the pre FSR dilepton exist
 	       }// DY to ee or mumu events only

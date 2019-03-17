@@ -77,7 +77,7 @@ import pyScripts.drawUtil as drawutil
 
 if args.setResMatrix:
 
-        postfix = "ZptReweight"
+        postfix = "norminal"
 
         # set unfolding class 
 	unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", postfix)
