@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser(description='Unfolding for ISR analysis')
 
 parser.add_argument('--channel' , dest = 'channel', default = 'electron', help = 'select channel electron or muon')
 parser.add_argument('--createInputHists'  , action='store_true'  , help = 'create input histograms')
+parser.add_argument('--createMatrixOnly'  , action='store_true'  , default = False, help = 'create histograms only for signal sample')
 parser.add_argument('--setResMatrix'  , action='store_true'  , help = 'set response matrix')
 
 args = parser.parse_args()
@@ -37,16 +38,19 @@ if args.createInputHists:
 	for sampleType in selectedSample.keys():
 	    sample =  selectedSample[sampleType]
 	    if sample is None : continue
-	    print 'creating histogram for sample '
-	    sample.dump()
 	
-	    if not sample.isMC:
-	    	inputfHistDic.update(histUtil.makeRecoHists(sample, outputDirectory, args.channel)) # TODO systematic list to consider
+ 	    if not args.createMatrixOnly:
+	    	 print 'creating histogram for sample '
+	    	 sample.dump()
+	   	 if not sample.isMC:
+	    		inputfHistDic.update(histUtil.makeRecoHists(sample, outputDirectory, args.channel)) # TODO systematic list to consider
 	
-	    if sample.isMC and not sample.isSig:
-	    	inputfHistDic.update(histUtil.makeRecoHists(sample, outputDirectory, args.channel)) # TODO systematic list to consider
+	    	 if sample.isMC and not sample.isSig:
+	    		inputfHistDic.update(histUtil.makeRecoHists(sample, outputDirectory, args.channel)) # TODO systematic list to consider
 	
 	    if sample.isMC and sample.isSig:
+	    	print 'creating histogram for sample '
+	    	sample.dump()
 		inputfHistDic.update(histUtil.makeSigHists(sample, outputDirectory, args.channel))
 	
 	fOutTxt = open( inputfhisttxtName,'w')

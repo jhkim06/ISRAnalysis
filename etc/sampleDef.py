@@ -36,11 +36,11 @@ ISR2016Legacy = {
 
 # electron channel
 samplesDef_electronLegacy = { 
-    #'data'   : ISR2016Legacy['DATA_electron'].clone(),
+    'data'   : ISR2016Legacy['DATA_electron'].clone(),
     'mcSig'  : ISR2016Legacy['DY'].clone(),
-    #'mcBkg1'  : ISR2016Legacy['TTbar'].clone(),
-    #'mcBkg2'  : ISR2016Legacy['VV'].clone(),
-    #'mcBkg3'  : ISR2016Legacy['Wjets'].clone(),
+    'mcBkg1'  : ISR2016Legacy['TTbar'].clone(),
+    'mcBkg2'  : ISR2016Legacy['VV'].clone(),
+    'mcBkg3'  : ISR2016Legacy['Wjets'].clone(),
 }
 
 samplesDef_electronLegacy['mcSig'].add_sample(ISR2016Legacy['DY10to50'])
