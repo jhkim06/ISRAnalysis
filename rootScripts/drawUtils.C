@@ -10,6 +10,7 @@
 #include <TStyle.h>
 #include <TLegend.h>
 #include <TLine.h>
+#include <TGaxis.h>
 #include <TMathText.h>
 #include <TLatex.h>
 #include <THStack.h>
@@ -221,6 +222,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
   	histMCTruth_pt->Draw("histsames");
   	histMCTruth_pt->SetLineColor(2);
   	hunfolded_pt->GetYaxis()->SetRangeUser(100.,hunfolded_pt->GetMaximum()>histMCTruth_pt->GetMaximum()?10.*hunfolded_pt->GetMaximum():10.*histMCTruth_pt->GetMaximum());
+        pad1->Update();
 
 	TLine grid_;
 	grid_.SetLineColor(kRed);
@@ -231,6 +233,18 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 		Double_t binEdge = hunfolded_pt->GetBinLowEdge(i_bin);
 		grid_.DrawLine(binEdge, 100, binEdge, histMCTruth_pt->GetBinContent(ii+1) );
 	}
+
+        std::cout << "n bins: " << ratio->GetXaxis()->GetNbins() << std::endl;	
+	int totoalNbin = ratio->GetXaxis()->GetNbins();
+
+        TLine grid_vertical;
+        grid_vertical.SetLineColor(kBlack);
+        grid_vertical.SetLineStyle(kSolid);
+        for( int ii=0; ii<5; ii++ )
+        {
+                grid_vertical.DrawLine(totoalNbin/5 * (ii+1) + 0.5, hunfolded_pt->GetMinimum(), totoalNbin/5 * (ii+1) + 0.5, hunfolded_pt->GetMaximum() );
+        }
+
 
   	TLegend* leg_ = new TLegend(0.7, 0.60, 0.95, 0.9,"","brNDC");
   	leg_->SetTextSize(0.06);
@@ -246,6 +260,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
         setPadMargins(pad2);
   	pad2->SetBottomMargin(0.2);
   	pad2->SetTicks(1);
+  	pad2->SetGridy(1);
   	pad2->Draw();
   	pad2->cd();
 
@@ -258,19 +273,19 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
   	ratio->SetTitle("");
         setYaxisHist(ratio);
         setXaxisHist(ratio);
-  	ratio->GetYaxis()->SetNdivisions(505);
+  	ratio->GetYaxis()->SetNdivisions(515);
 
         TLine *l_;
         l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
         l_->Draw("same");
         l_->SetLineStyle(1);
         l_->SetLineColor(kRed);
-	
-	TLine* lm1 = drawVerLine(20, 0.8, 20, 1.2);
-	TLine* lm2 = drawVerLine(40, 0.8, 40, 1.2);
-	TLine* lm3 = drawVerLine(60, 0.8, 60, 1.2);
-	TLine* lm4 = drawVerLine(80, 0.8, 80, 1.2);
-	TLine* lm5 = drawVerLine(100, 0.8, 100, 1.2);
+
+        for( int ii=0; ii<5; ii++ )
+        {
+                grid_vertical.DrawLine(totoalNbin/5 * (ii+1) + 0.5, ratio->GetMinimum(), totoalNbin/5 * (ii+1) + 0.5, ratio->GetMaximum() );
+        }
+
 
         c1->cd();
 
@@ -294,6 +309,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
         grUnfolded->SetLineColor(kBlack);
         grUnfolded->SetMinimum(10.);
         grUnfolded->SetMaximum(30.);
+	grUnfolded->GetYaxis()->SetNdivisions(505);
      	setYaxisGraph(grUnfolded);
 	setXaxisGraph(grUnfolded);
         grUnfolded->GetYaxis()->SetTitle("Average \\ {p_{T}^{\\ell\\ell}}");
@@ -340,11 +356,6 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
         delete hmeans;
         delete hmeansMC;
         delete l_; 
-        delete lm1;
-        delete lm2;
-	delete lm3;
-        delete lm4;
-        delete lm5;
         delete leg_;
         delete pad1;
         delete pad2;
@@ -446,7 +457,7 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
         delete c1;
 }
 
-void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets){
+void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets, TString channel){
 
 	setTDRStyle();
 	writeExtraText = true;       // if extra text
@@ -524,14 +535,24 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         //histMCTruth_pt->SetLineColor(2);
         hdataNoUO->GetYaxis()->SetRangeUser(1.,hdataNoUO->GetMaximum() * 1e2);
         hdataNoUO->Draw("p9histsamee");
-	
+
+        int totoalNbin = hdataNoUO->GetXaxis()->GetNbins();
+
+        TLine grid_vertical;
+        grid_vertical.SetLineColor(kBlack);
+        grid_vertical.SetLineStyle(kSolid);
+        for( int ii=0; ii<5; ii++ )
+        {
+                grid_vertical.DrawLine(totoalNbin/5 * (ii+1) + 0.5, hdataNoUO->GetMinimum(), totoalNbin/5 * (ii+1) + 0.5, hdataNoUO->GetMaximum() );
+        }
+
 	TLegend *fLeg = new TLegend(0.65,0.55,0.95,0.88);
         fLeg->SetTextSize(0.05);
         fLeg->SetFillStyle(0);
         fLeg->SetBorderSize(0);
  	fLeg->AddEntry(hdataNoUO, "Data", "pe");
- 	//fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
- 	fLeg->AddEntry(hdysigNoUO, "Z #rightarrow #mu#mu", "F");
+ 	if( channel.CompareTo("electron") == 0 ) fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
+ 	if( channel.CompareTo("muon") == 0 )     fLeg->AddEntry(hdysigNoUO, "Z #rightarrow #mu#mu", "F");
  	fLeg->AddEntry(hdybkgNoUO, "Z #rightarrow #tau#tau", "F");
  	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
  	fLeg->AddEntry(hvvNoUO, "VV", "F");
@@ -560,8 +581,8 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         ratio->SetMarkerStyle(20);
         ratio->SetMarkerSize(.7);
         ratio->SetLineColor(kBlack);
-        ratio->SetMinimum(0.8);
-        ratio->SetMaximum(1.2);
+        ratio->SetMinimum(0.6);
+        ratio->SetMaximum(1.4);
         ratio->GetYaxis()->SetTitle("#frac{Data}{MC}");
         ratio->GetYaxis()->CenterTitle();
         setYaxisHist(ratio);
@@ -574,10 +595,11 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         l_->SetLineStyle(1);
         l_->SetLineColor(kRed);
 
-        TLine* lm1 = drawVerLine(50, 0.8, 50, 1.2);
-        TLine* lm2 = drawVerLine(100, 0.8, 100, 1.2);
-        TLine* lm3 = drawVerLine(150, 0.8, 150, 1.2);
-        TLine* lm4 = drawVerLine(200, 0.8, 200, 1.2);
+        for( int ii=0; ii<5; ii++ )
+        {
+                grid_vertical.DrawLine(totoalNbin/5 * (ii+1) + 0.5, ratio->GetMinimum(), totoalNbin/5 * (ii+1) + 0.5, ratio->GetMaximum() );
+        }
+
 
         c1->cd();
 
@@ -616,7 +638,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         delete ptbin;
 }
 
-void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets){
+void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets, TString channel){
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
@@ -700,8 +722,8 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         fLeg->SetFillStyle(0);
         fLeg->SetBorderSize(0);
  	fLeg->AddEntry(hdataNoUO, "Data", "pe");
- 	//fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
- 	fLeg->AddEntry(hdysigNoUO, "Z #rightarrow #mu#mu", "F");
+ 	if( channel.CompareTo("electron") == 0 ) fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
+ 	if( channel.CompareTo("muon") == 0 )     fLeg->AddEntry(hdysigNoUO, "Z #rightarrow #mu#mu", "F");
  	fLeg->AddEntry(hdybkgNoUO, "Z #rightarrow #tau#tau", "F");
  	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
  	fLeg->AddEntry(hvvNoUO, "VV", "F");
@@ -743,11 +765,6 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         l_->Draw("same");
         l_->SetLineStyle(1);
         l_->SetLineColor(kRed);
-
-        TLine* lm1 = drawVerLine(50, 0.8, 50, 1.2);
-        TLine* lm2 = drawVerLine(100, 0.8, 100, 1.2);
-        TLine* lm3 = drawVerLine(150, 0.8, 150, 1.2);
-        TLine* lm4 = drawVerLine(200, 0.8, 200, 1.2);
 
         c1->cd();
 

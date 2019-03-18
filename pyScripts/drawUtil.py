@@ -39,7 +39,7 @@ def efficiency(outpdf, unfold):
 
         rt.efficiency(outpdf, unfold)
 
-def recoPt(outpdf, postfix, fdatapath, fdysigpath, fdybkgpath, fttbarpath, fvvpath, fwjetspath):
+def recoPt(outpdf, postfix, fdatapath, fdysigpath, fdybkgpath, fttbarpath, fvvpath, fwjetspath, channel):
 
 	fdata = rt.TFile(fdatapath,'r')
 	fdysig = rt.TFile(fdysigpath,'r')
@@ -48,7 +48,7 @@ def recoPt(outpdf, postfix, fdatapath, fdysigpath, fdybkgpath, fttbarpath, fvvpa
 	fvv = rt.TFile(fvvpath,'r')
 	fwjets = rt.TFile(fwjetspath,'r')
 
-        rt.drawPtReco(outpdf, postfix, fdata, fdysig, fdybkg, fttbar, fvv, fwjets)
+        rt.drawPtReco(outpdf, postfix, fdata, fdysig, fdybkg, fttbar, fvv, fwjets, channel)
         del fdata
         del fdysig
         del fdybkg
@@ -56,7 +56,7 @@ def recoPt(outpdf, postfix, fdatapath, fdysigpath, fdybkgpath, fttbarpath, fvvpa
         del fvv
         del fwjets
 
-def recoMass(outpdf, postfix, fdatapath, fdysigpath, fdybkgpath, fttbarpath, fvvpath, fwjetspath):
+def recoMass(outpdf, postfix, fdatapath, fdysigpath, fdybkgpath, fttbarpath, fvvpath, fwjetspath, channel):
 
         fdata = rt.TFile(fdatapath,'r')
         fdysig = rt.TFile(fdysigpath,'r')
@@ -65,7 +65,7 @@ def recoMass(outpdf, postfix, fdatapath, fdysigpath, fdybkgpath, fttbarpath, fvv
         fvv = rt.TFile(fvvpath,'r')
         fwjets = rt.TFile(fwjetspath,'r')
 
-        rt.drawMassReco(outpdf, postfix, fdata, fdysig, fdybkg, fttbar, fvv, fwjets)
+        rt.drawMassReco(outpdf, postfix, fdata, fdysig, fdybkg, fttbar, fvv, fwjets, channel)
         del fdata
         del fdysig
         del fdybkg

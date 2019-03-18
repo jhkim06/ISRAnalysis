@@ -128,10 +128,10 @@ if args.setResMatrix:
         drawutil.basicRatioMass(outpdf_mass, unfold_mass, unfoldInputList['sig'])
 
         outpdf = outputDirectory + "recoPt.png"
-        drawutil.recoPt(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets']);
+        drawutil.recoPt(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], args.channel);
 
         outpdf = outputDirectory + "recoMass.png"
-        drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets']);
+        drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], args.channel);
 
 	outpdf = outputDirectory + "test.png" 
 	drawutil.drawTest(outpdf, unfold_pt)
