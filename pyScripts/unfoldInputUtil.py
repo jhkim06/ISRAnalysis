@@ -24,11 +24,11 @@ def makeRecoHists(sample, outputDirectory, channel):
         else : outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "bkg")
 
         # need to create histogram before the file loop to save one histogram from the input files
-        recoHists = rt.recoHistsinfo(rt.vector('TH1*')(), rt.vector('TH1*')(), rt.vector('TString')()) 
+        recoHists = rt.recoHistsinfo(rt.std.map("TString, TH1*")())
         
-        recoHists.ptHists.push_back(rt.ptHistogram("norminal"))
-        recoHists.massHists.push_back(rt.massHistogram("norminal"))
-        recoHists.sysNames.push_back("norminal")
+        recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_norminal", rt.ptHistogram("norminal")))
+        recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_norminal", rt.massHistogram("norminal")))
+
 
         for filepath in sample.path:	
 
@@ -56,29 +56,31 @@ def makeSigHists(sample, outputDirectory, channel):
 
         outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "sig")
         # need to create histogram before the file loop to save one histogram from the input files
-        sigHists  = rt.sigHistsinfo(rt.vector('TH1*')(), rt.vector('TH1*')(), rt.vector('TH2*')(), rt.vector('TH2*')(), rt.vector('TString')(), sample.isInc) 
-        recoHists = rt.recoHistsinfo(rt.vector('TH1*')(), rt.vector('TH1*')(), rt.vector('TString')(), rt.std.map("TString, TH1*")())
-        
-        sigHists.ptHists.push_back(rt.ptHistogram("norminal"))
-        sigHists.ptMatrixs.push_back(rt.ptMatrix("norminal"))
-        sigHists.massHists.push_back(rt.massHistogram("norminal"))
-        sigHists.massMatrixs.push_back(rt.massMatrix("norminal"))
-        sigHists.sysNames.push_back("norminal")
-
-        #test
+        sigHists  = rt.sigHistsinfo(rt.std.map("TString, TH1*")(), rt.std.map("TString, TH2*")(), sample.isInc) 
+        recoHists = rt.recoHistsinfo(rt.std.map("TString, TH1*")())
+       
+	########################################### 
 	rt.gInterpreter.GenerateDictionary("std::pair<TString, TH1*>", "map;TString.h;TH1.h")
 	rt.gInterpreter.GenerateDictionary("std::map<TString, TH1*>", "map;TString.h;TH1.h")
 	rt.gInterpreter.GenerateDictionary("std::pair<std::map<TString, TH1*>::iterator,bool>", "map;TString.h;TH1.h")
+
+        rt.gInterpreter.GenerateDictionary("std::pair<TString, TH2*>", "map;TString.h;TH2.h")
+        rt.gInterpreter.GenerateDictionary("std::map<TString, TH2*>", "map;TString.h;TH2.h")
+        rt.gInterpreter.GenerateDictionary("std::pair<std::map<TString, TH2*>::iterator,bool>", "map;TString.h;TH2.h")
+	#############################################
+
+        sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_norminal", rt.ptMatrix("norminal")))
+        sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_norminal", rt.massMatrix("norminal")))
+
+        sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_norminal", rt.ptHistogram("norminal")))
+        sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_norminal", rt.massHistogram("norminal")))
 
         if sample.isInc: # for DY to tautau, make one more histogram
 	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
         	outDic[sample.name+"tau"] = fHistDef.inputfHists(sample.name+"tau", outputDirectory + sample.name+"tau.root", "bkg")
 
-        	recoHists.ptHists.push_back(rt.ptHistogram("norminal"))
-        	recoHists.massHists.push_back(rt.massHistogram("norminal"))
-	        recoHists.sysNames.push_back("norminal")
-
-		recoHists.testHistmaps.insert(rt.std.pair("const TString, TH1*")("testmap", rt.ptHistogram("testmap")))
+		recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_norminal", rt.ptHistogram("norminal")))
+		recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_norminal", rt.massHistogram("norminal")))
 
         for filepath in sample.path:	
 
