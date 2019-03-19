@@ -14,8 +14,7 @@
 #include "makeRecoPlots.h"
 
 struct recoHistsinfo {
-  std::vector<std::map<TString,Double_t>> sysNamesWeights; // will be initialze in the function makeRecoHists
-
+  std::map<TString, Double_t> sysNamesWeights; // will be initialze in the function makeRecoHists
   std::map<TString, TH1*> histMaps;
   
   recoHistsinfo(std::map<TString, TH1*> histMaps_):
@@ -23,7 +22,7 @@ struct recoHistsinfo {
 };
 
 struct sigHistsinfo {
-  std::vector<std::map<TString,Double_t>> sysNamesWeights;
+  std::map<TString, Double_t> sysNamesWeights;
   std::map<TString, TH1*> histMaps;
   std::map<TString, TH2*> hist2DMaps;
 
@@ -145,7 +144,7 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist, TS
 	treco->SetBranchAddress("weightGen",&weightGen);
 	treco->SetBranchAddress("weightRec",&weightRec);
 	treco->SetBranchAddress("DYtautau",&DYtautau);
-	treco->SetBranchAddress("bTagReweight",&bTagReweight);
+	treco->SetBranchAddress("bTagReweight",&bTagReweight); // FIXME may it is better to change name bTagReweight to bTagSF
 	nentries=treco->GetEntries();
 	
 	TUnfoldBinningV17 *ptbin = ptBinning_rec();
@@ -280,8 +279,8 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
                       (sigHist.histMaps.find("pt_norminal")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec*bTagReweight);
                       if(ptRec->at(2) < 100) (sigHist.histMaps.find("mass_norminal")->second)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
 
-                      (recoHist.histMaps.find("pt_ZptWeight")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*zptWeight*weightRec*bTagReweight);
-                      if(ptRec->at(2) < 100) (recoHist.histMaps.find("mass_ZptWeight")->second)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*zptWeight*weightRec*bTagReweight);
+                      (sigHist.histMaps.find("pt_ZptWeight")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*zptWeight*weightRec*bTagReweight);
+                      if(ptRec->at(2) < 100) (sigHist.histMaps.find("mass_ZptWeight")->second)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*zptWeight*weightRec*bTagReweight);
 
 	           }
 	        }

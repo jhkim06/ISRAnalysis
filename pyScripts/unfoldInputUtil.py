@@ -83,14 +83,23 @@ def makeSigHists(sample, outputDirectory, channel):
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_ZptWeight", rt.ptMatrix("ZptWeight")))
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_ZptWeight", rt.massMatrix("ZptWeight")))
 
+
+        sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_norminal", rt.ptHistogram("norminal")))
+        sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_norminal", rt.massHistogram("norminal")))
+
+        sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_noBveto", rt.ptHistogram("noBveto")))
+        sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_noBveto", rt.massHistogram("noBveto")))
+
+        sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_ZptWeight", rt.ptHistogram("ZptWeight")))
+        sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_ZptWeight", rt.massHistogram("ZptWeight")))
+
+	# Migration matrix for detector and FSR seperately
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_detector", rt.ptMatrix("detector")))
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_detector", rt.massMatrix("detector")))
 
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_FSR", rt.ptFSRMatrix("FSR")))
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_FSR", rt.massFSRMatrix("FSR")))
 
-        sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_norminal", rt.ptHistogram("norminal")))
-        sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_norminal", rt.massHistogram("norminal")))
 
         if sample.isInc: # for DY to tautau, make one more histogram
 	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
