@@ -76,17 +76,22 @@ for line in fOutTxtCheck:
 
 print unfoldInputList
 
-import pyScripts.unfoldUtil as unfoldutil
-import pyScripts.drawUtil as drawutil
 
 if args.setResMatrix:
 
+	import pyScripts.unfoldUtil as unfoldutil
+	import pyScripts.drawUtil as drawutil
+	
         postfix = "norminal"
 
-        # set unfolding class 
-	unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", postfix)
+	# TODO make getOutput 
 
-	unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", postfix)
+        # set unfolding class 
+	#unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", postfix)
+	unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", "detector", False)
+
+	#unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", postfix)
+	unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "detector", False)
 
 	# print out response matrix and efficiency plot
         outpdf = outputDirectory + "response.png"
@@ -127,14 +132,48 @@ if args.setResMatrix:
         drawutil.basicRatio(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'])
         drawutil.basicRatioMass(outpdf_mass, unfold_mass, unfoldInputList['sig'])
 
+	# check reco level distribution
+	# FIXME use TUnfoldDensityV17::GetBackground()
         outpdf = outputDirectory + "recoPt.png"
         drawutil.recoPt(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], args.channel);
 
         outpdf = outputDirectory + "recoMass.png"
         drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], args.channel);
 
-	outpdf = outputDirectory + "test.png" 
-	drawutil.drawTest(outpdf, unfold_pt)
+	#outpdf = outputDirectory + "test.png" 
+	#drawutil.drawTest(outpdf, unfold_pt)
+
+	# FSR unfolding
+	# get unfolded histogram from detector unfolding results
+	hunfolded_pt = unfoldutil.getUnfoldedHist(unfold_pt, "detector")
+	hunfolded_mass = unfoldutil.getUnfoldedHist(unfold_mass, "detector")
+
+	# set migration matrix for FSR unfolding
+        unfoldFSR_pt = unfoldutil.setUnfold(unfoldInputList['sig'],   "Pt",   "FSR", True)
+        unfoldFSR_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "FSR", True)
+
+        outpdf = outputDirectory + "response_FSR.png"
+        drawutil.responseM(outpdf, unfoldFSR_pt)
+        outpdf = outputDirectory + "efficiency_FSR.png"
+        drawutil.efficiency(outpdf, unfoldFSR_pt)
+
+        outpdf_mass = outputDirectory + "response_mass_FSR.png"
+        drawutil.responseM(outpdf_mass, unfoldFSR_mass)
+        outpdf_mass = outputDirectory + "efficiency_mass_FSR.png"
+        drawutil.efficiency(outpdf_mass, unfoldFSR_mass)
+
+	unfoldutil.setUnfoldInputHist(unfoldFSR_pt, hunfolded_pt)
+	unfoldutil.setUnfoldInputHist(unfoldFSR_mass, hunfolded_mass)
+
+        unfoldutil.doUnfold(unfoldFSR_pt)
+        unfoldutil.doUnfold(unfoldFSR_mass)
+
+        outpdf = outputDirectory + "ratio_FSR.png"
+        outpdf_mass = outputDirectory + "ratio_mass_FSR.png"
+        # check unfolded distribution
+        drawutil.basicRatio(outpdf, unfoldFSR_pt, unfoldFSR_mass, unfoldInputList['sig'])
+        drawutil.basicRatioMass(outpdf_mass, unfoldFSR_mass, unfoldInputList['sig'])
+
 
         del unfold_pt
         del unfold_mass

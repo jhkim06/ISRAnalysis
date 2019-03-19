@@ -7,13 +7,14 @@
  vector<Double_t> *weightGenScale = 0;
  vector<Double_t> *weightGenPdf = 0;
 
- int ispassRec,isfiducialPreFSR,DYtautau, isBveto;
+ int ispassRec,DYtautau, isBveto;
+ int isfiducialPostFSR, isfiducialPreFSR; 
  int nentries;
 
  vector<Double_t> *ptPreFSR = 0;
  vector<Double_t> *mPreFSR = 0;
- vector<Double_t> *ptDRp2FSR = 0;
- vector<Double_t> *mDRp2FSR = 0;
+ vector<Double_t> *ptPostFSR = 0;
+ vector<Double_t> *mPostFSR = 0;
  vector<Int_t> *qLep = 0;
  vector<Double_t> *ptRec = 0;
  vector<Double_t> *etaRec = 0;

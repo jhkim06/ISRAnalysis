@@ -625,6 +625,12 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         hratiodybkg->Draw("histsame");
 	hratiodybkg->SetFillColorAlpha(fillcolorZ+1, 0.35);
 
+        for( int ii=0; ii<5; ii++ )
+        {
+                grid_vertical.DrawLine(totoalNbin/5 * (ii+1) + 0.5, hratiottbar->GetMinimum(), totoalNbin/5 * (ii+1) + 0.5, hratiottbar->GetMaximum() );
+        }
+
+
         CMS_lumi( pad1, 4, 0 );
         c1->cd();
         c1->SaveAs(outpdf);

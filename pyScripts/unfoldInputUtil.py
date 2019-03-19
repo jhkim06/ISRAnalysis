@@ -72,6 +72,12 @@ def makeSigHists(sample, outputDirectory, channel):
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_norminal", rt.ptMatrix("norminal")))
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_norminal", rt.massMatrix("norminal")))
 
+        sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_detector", rt.ptMatrix("detector")))
+        sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_detector", rt.massMatrix("detector")))
+
+        sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_FSR", rt.ptFSRMatrix("FSR")))
+        sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_FSR", rt.massFSRMatrix("FSR")))
+
         sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_norminal", rt.ptHistogram("norminal")))
         sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_norminal", rt.massHistogram("norminal")))
 
