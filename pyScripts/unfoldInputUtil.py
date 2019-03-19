@@ -29,6 +29,11 @@ def makeRecoHists(sample, outputDirectory, channel):
         recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_norminal", rt.ptHistogram("norminal")))
         recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_norminal", rt.massHistogram("norminal")))
 
+        recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_noBveto", rt.ptHistogram("noBveto")))
+        recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_noBveto", rt.massHistogram("noBveto")))
+
+        recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_ZptWeight", rt.ptHistogram("ZptWeight")))
+        recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_ZptWeight", rt.massHistogram("ZptWeight")))
 
         for filepath in sample.path:	
 
@@ -72,6 +77,12 @@ def makeSigHists(sample, outputDirectory, channel):
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_norminal", rt.ptMatrix("norminal")))
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_norminal", rt.massMatrix("norminal")))
 
+        sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_noBveto", rt.ptMatrix("noBveto")))
+        sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_noBveto", rt.massMatrix("noBveto")))
+
+        sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_ZptWeight", rt.ptMatrix("ZptWeight")))
+        sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_ZptWeight", rt.massMatrix("ZptWeight")))
+
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_detector", rt.ptMatrix("detector")))
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_detector", rt.massMatrix("detector")))
 
@@ -87,6 +98,12 @@ def makeSigHists(sample, outputDirectory, channel):
 
 		recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_norminal", rt.ptHistogram("norminal")))
 		recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_norminal", rt.massHistogram("norminal")))
+
+		recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_noBveto", rt.ptHistogram("noBveto")))
+		recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_noBveto", rt.massHistogram("noBveto")))
+
+		recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_ZptWeight", rt.ptHistogram("ZptWeight")))
+		recoHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_ZptWeight", rt.massHistogram("ZptWeight")))
 
         for filepath in sample.path:	
 

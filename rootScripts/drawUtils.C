@@ -305,7 +305,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
         grUnfolded->GetXaxis()->SetMoreLogLabels();
         grUnfolded->SetTitle("Average \\ {p_{T}^{\\ell\\ell}} vs M{\\ell\\ell}");
         grUnfolded->SetMarkerStyle(20);
-        grUnfolded->SetMarkerSize(.9);
+        grUnfolded->SetMarkerSize(1.);
         grUnfolded->SetLineColor(kBlack);
         grUnfolded->SetMinimum(10.);
         grUnfolded->SetMaximum(30.);
@@ -316,7 +316,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 
         grMC->Draw("samepe");
         grMC->SetMarkerStyle(20);
-        grMC->SetMarkerSize(.9);
+        grMC->SetMarkerSize(1.);
         grMC->SetLineColor(kRed);
         grMC->SetMarkerColor(kRed);
 
