@@ -108,8 +108,30 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 	TH1* hunfolded_pt = unfold_pt->GetOutput("hunfolded_pt",0,0,"*[UO]",kFALSE);
 	TH1* ratio=(TH1*)hunfolded_pt->Clone("ratio");
 
+        TH1* ratioUp=(TH1*)hunfolded_pt->Clone("ratioUp");     // default unfoled data
+        TH1* ratioDown=(TH1*)hunfolded_pt->Clone("ratioDown"); //
+        TH1* sysErrRatio = (TH1*)hunfolded_pt->Clone("hsysErrRatio");
+
+        ratioUp->  Add((TH1*)unfold_pt->GetDeltaSysSource("AlphaS_0","SysAlphaS_0","SysAlphaS_0","Gen","*[UO]",kFALSE)); // add systematic delta 
+        ratioDown->Add((TH1*)unfold_pt->GetDeltaSysSource("AlphaS_1","SysAlphaS_1","SysAlphaS_1","Gen","*[UO]",kFALSE)); // add systematic delta 
+
         TH1 *histMCTruth_pt=unfold_pt->GetBias("histMCTruth_pt",0,0,"*[UO]",kFALSE);
         ratio->Divide(histMCTruth_pt);
+
+        ratioUp->Divide(histMCTruth_pt);
+        ratioDown->Divide(histMCTruth_pt);
+
+        for(int ibin = 1; ibin<ratioUp->GetNbinsX()+1;ibin++){
+
+           Double_t errUp = 0., errDown = 0.;
+           errUp = fabs(ratioUp->GetBinContent(ibin) - ratio->GetBinContent(ibin));
+           errDown = fabs(ratioDown->GetBinContent(ibin) - ratio->GetBinContent(ibin));
+
+           sysErrRatio->SetBinContent(ibin, ratio->GetBinContent(ibin));
+           sysErrRatio->SetBinError(ibin, errUp >= errDown ? errUp : errDown);
+           if(sysErrRatio->GetBinError(ibin)==0) sysErrRatio->SetBinError(ibin, 10e-5);
+        }
+
 
 	// mass distribution
         TH1* hunfolded_mass = unfold_mass->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
@@ -202,7 +224,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
   	c1->cd();
   	gStyle->SetOptStat(0);
 
-  	TPad *pad1 = new TPad("pad1","pad1",0,0.66,1,1);
+  	TPad *pad1 = new TPad("pad1","pad1",0,0.6,1,1);
         setPadMargins(pad1);
   	pad1->SetBottomMargin(0.01);
   	pad1->SetTopMargin(0.1);
@@ -256,7 +278,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 
   	c1->cd();
 
-  	TPad *pad2 = new TPad("pad2","pad2",0,0.33,1,0.66);
+  	TPad *pad2 = new TPad("pad2","pad2",0,0.33,1,0.6);
         setPadMargins(pad2);
   	pad2->SetBottomMargin(0.2);
   	pad2->SetTicks(1);
@@ -274,6 +296,11 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
         setYaxisHist(ratio);
         setXaxisHist(ratio);
   	ratio->GetYaxis()->SetNdivisions(515);
+
+	// draw systematic error
+  	sysErrRatio->Draw("E2same");
+  	sysErrRatio->SetMarkerSize(0);
+  	sysErrRatio->SetFillColorAlpha(kRed,0.3);
 
         TLine *l_;
         l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
@@ -374,8 +401,30 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
 	TH1* hunfolded = unfold->GetOutput("hunfolded",0,0,"*[UO]",kTRUE);
 	TH1* ratio=(TH1*)hunfolded->Clone("ratio");
 
+        TH1* ratioUp=(TH1*)hunfolded->Clone("ratioUp");     // default unfoled data
+        TH1* ratioDown=(TH1*)hunfolded->Clone("ratioDown"); //
+        TH1* sysErrRatio = (TH1*)hunfolded->Clone("hsysErrRatio");
+
+        ratioUp->  Add((TH1*)unfold->GetDeltaSysSource("AlphaS_0","SysAlphaS_0","SysAlphaS_0","Gen","*[UO]",kTRUE)); // add systematic delta 
+        ratioDown->Add((TH1*)unfold->GetDeltaSysSource("AlphaS_1","SysAlphaS_1","SysAlphaS_1","Gen","*[UO]",kTRUE)); // add systematic delta 
+
         TH1 *histMCTruth=unfold->GetBias("histMCTruth",0,0,"*[UO]",kTRUE);
         ratio->Divide(histMCTruth);
+
+        ratioUp->Divide(histMCTruth);
+        ratioDown->Divide(histMCTruth);
+
+        for(int ibin = 1; ibin<ratioUp->GetNbinsX()+1;ibin++){
+
+           Double_t errUp = 0., errDown = 0.;
+           errUp = fabs(ratioUp->GetBinContent(ibin) - ratio->GetBinContent(ibin));
+           errDown = fabs(ratioDown->GetBinContent(ibin) - ratio->GetBinContent(ibin));
+
+           sysErrRatio->SetBinContent(ibin, ratio->GetBinContent(ibin));
+           sysErrRatio->SetBinError(ibin, errUp >= errDown ? errUp : errDown);
+           if(sysErrRatio->GetBinError(ibin)==0) sysErrRatio->SetBinError(ibin, 10e-5);
+        }
+
 
   	TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
   	c1->cd();
@@ -439,6 +488,11 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
         setYaxisHist(ratio);
         setXaxisHist(ratio);
   	ratio->GetYaxis()->SetNdivisions(505);
+
+        // draw systematic error
+        sysErrRatio->Draw("E2same");
+        sysErrRatio->SetMarkerSize(0);
+        sysErrRatio->SetFillColorAlpha(kRed,0.3);
 
         TLine *l_;
         l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);

@@ -90,8 +90,6 @@ if args.getUnfoldResults:
 		postfix = "norminal"
 		postfix_matrix = "detector"
 
-	# TODO make getOutput 
-
         # set unfolding class 
 	unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", postfix_matrix, False)
 	unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", postfix_matrix, False)
@@ -128,6 +126,16 @@ if args.getUnfoldResults:
 	# do unfolding with bkg subtracted data and the migration matrix
         unfoldutil.doUnfold(unfold_pt)
         unfoldutil.doUnfold(unfold_mass)
+
+        # set systematic sources
+        # two types: 
+        # 1) vetor type
+        #       input: sys name, vector size 
+        # 2) up/down type
+        #       input: sys name
+
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt,   "Pt",   "AlphaS", 2)
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "AlphaS", 2)
 
         outpdf = outputDirectory + "ratio.png"
         outpdf_mass = outputDirectory + "ratio_mass.png"
@@ -177,6 +185,9 @@ if args.getUnfoldResults:
         	# check unfolded distribution
         	drawutil.basicRatio(outpdf, unfoldFSR_pt, unfoldFSR_mass, unfoldInputList['sig'])
         	drawutil.basicRatioMass(outpdf_mass, unfoldFSR_mass, unfoldInputList['sig'])
+		
+		del unfoldFSR_pt
+		del unfoldFSR_mass
 
 
         del unfold_pt

@@ -46,6 +46,15 @@ TUnfoldDensityV17* setTUnfoldDensity(TFile *filein, TString var, TString matrixN
  
 }
 
+void setVetorSystematic(TFile *filein, TUnfoldDensityV17* unfold, TString var, TString sysMatrixName, int size){
+
+        for(int i = 0; i < size; i++){
+           TString ithSys; ithSys.Form("%d",i);
+           unfold->AddSysError((TH2*)filein->Get("hmc" + var + "GenRec" + sysMatrixName+"_"+ithSys), sysMatrixName+"_"+ithSys, TUnfold::kHistMapOutputHoriz, TUnfoldSys::kSysErrModeMatrix);
+        }
+
+}
+
 void setInput(TUnfoldDensityV17* unfold, TString var, TString postfix, TFile *filein){
 	
         TH1* hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix);

@@ -26,6 +26,8 @@
  vector<Double_t> *Reco1SF = 0;
  vector<Double_t> *Reco2SF = 0;
  vector<Double_t> *l1PreFire = 0;
+ vector<Double_t> *AlphaS = 0;
+ vector<Double_t> *Scale = 0;
  Int_t nVtx;
 
  Int_t IsElEl, IsMuMu;

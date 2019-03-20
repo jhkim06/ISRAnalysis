@@ -19,6 +19,13 @@ def setUnfold(filepath, var, matrixName, isfsr):
         del infile
 	return unfold
 
+def setVectorSys(filepath, unfold, var, sysMatrixName, size):
+	print "Set vertor type systematic" 
+
+	infile = rt.TFile(filepath, 'r')
+
+        rt.setVetorSystematic(infile, unfold, var, sysMatrixName, size)
+
 def setUnfoldInput(unfold, var, postfix, filepath):
 
 	print "Set input to unfold"

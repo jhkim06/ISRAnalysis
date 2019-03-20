@@ -83,6 +83,15 @@ def makeSigHists(sample, outputDirectory, channel):
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_ZptWeight", rt.ptMatrix("ZptWeight")))
         sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_ZptWeight", rt.massMatrix("ZptWeight")))
 
+	# AlphaS systematic
+	for i in range(2):
+        	sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_AlphaS_"+str(i), rt.ptMatrix("AlphaS_"+str(i))))
+        	sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_AlphaS_"+str(i), rt.massMatrix("AlphaS_"+str(i))))
+
+	# Scale systematic
+	for i in range(9):
+        	sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("pt_Scale_"+str(i), rt.ptMatrix("Scale_"+str(i))))
+        	sigHists.hist2DMaps.insert(rt.std.pair("const TString, TH2*")("mass_Scale_"+str(i), rt.massMatrix("Scale_"+str(i))))
 
         sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("pt_norminal", rt.ptHistogram("norminal")))
         sigHists.histMaps.insert(rt.std.pair("const TString, TH1*")("mass_norminal", rt.massHistogram("norminal")))
