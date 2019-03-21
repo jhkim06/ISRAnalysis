@@ -78,7 +78,6 @@ for line in fOutTxtCheck:
 
 print unfoldInputList
 
-
 if args.getUnfoldResults:
 
 	import pyScripts.unfoldUtil as unfoldutil
@@ -91,7 +90,7 @@ if args.getUnfoldResults:
 		postfix_matrix = "detector"
 
         # set unfolding class 
-	unfold_pt = unfoldutil.setUnfold(unfoldInputList['sig'], "Pt", postfix_matrix, False)
+	unfold_pt =   unfoldutil.setUnfold(unfoldInputList['sig'], "Pt",   postfix_matrix, False)
 	unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", postfix_matrix, False)
 
 	# print out response matrix and efficiency plot
@@ -136,6 +135,9 @@ if args.getUnfoldResults:
 
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt,   "Pt",   "AlphaS", 2)
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "AlphaS", 2)
+
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt,   "Pt",   "Scale", 9)
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "Scale", 9)
 
         outpdf = outputDirectory + "ratio.png"
         outpdf_mass = outputDirectory + "ratio_mass.png"
