@@ -65,6 +65,40 @@ void setXaxisGraph(TGraphErrors* gr){
         gr->GetXaxis()->SetTitleSize(20);
 }
 
+void setTGraphAxis(TGraphErrors* data, TGraphErrors* sys, TGraphErrors* mc, Double_t x, Double_t xmin, Double_t xmax, Double_t ymin, Double_t ymax){
+
+
+        TString mass;
+        mass.Form("%0.2f", x);
+
+        data->Draw("ape");
+        sys->SetFillColor(1);
+        sys->SetFillStyle(3004);
+        sys->Draw("same2");
+        data->Draw("pe");
+        mc->Draw("samepe");
+        data->SetTitle("Average \\ {p_{T}^{\\ell\\ell}} vs M{\\ell\\ell}");
+        data->SetMarkerStyle(20);
+        data->SetMarkerSize(1.);
+        data->SetLineColor(kBlack);
+        data->SetMinimum(ymin);
+        data->SetMaximum(ymax);
+        data->GetXaxis()->SetLimits(xmin, xmax);
+	data->GetXaxis()->SetBinLabel(data->GetXaxis()->FindBin(x), mass);
+        data->GetXaxis()->SetNdivisions(501);
+        data->GetYaxis()->SetNdivisions(505);
+        data->GetYaxis()->SetLabelOffset(-0.15);
+        setYaxisGraph(data);
+        setXaxisGraph(data);
+        //data->GetYaxis()->SetTitle("Average \\ {p_{T}^{\\ell\\ell}}");
+
+        mc->SetMarkerStyle(20);
+        mc->SetMarkerSize(1.);
+        mc->SetLineColor(kRed);
+        mc->SetMarkerColor(kRed);
+
+}
+
 void setPadMargins(TPad* pad){
 
         pad->SetTopMargin(0.05);
@@ -96,7 +130,8 @@ void drawTest(TString outpdf, TUnfoldDensityV17* unfold_pt){
         delete hunfolded_pt;
 }
 
-void getAveragePt(vector<Double_t> &mean, vector<Double_t> &err, TUnfoldDensityV17* unfold_pt, bool isData){
+// TODO make a function to get systematic error on the average pt for each systematic source
+void getAveragesPt(vector<Double_t> &mean, vector<Double_t> &err, TUnfoldDensityV17* unfold_pt, bool isData){
 
 	int nMassBin = 5;
 
@@ -116,12 +151,53 @@ void getAveragePt(vector<Double_t> &mean, vector<Double_t> &err, TUnfoldDensityV
         }           
 }
 
+void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfoldDensityV17* unfold_pt){
+
+        int nMassBin = 5;
+
+        for(int i = 0; i < nMassBin; i++){
+           TString ibinMass;
+           ibinMass.Form("%d", i);
+
+           TH1* hpt_temp;
+
+           hpt_temp=unfold_pt->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+
+	   Double_t defaultMean = hpt_temp->GetMean();
+
+	   Double_t err_ = -999.;
+           for(int i = 0; i < sysSize; i++){
+                   if(i==5 || i==7) continue;
+
+               	   TString isys;
+                   isys.Form("%d", i);
+
+           	   TH1* hsyspt_temp;
+
+           	   hsyspt_temp=(TH1*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys, sysName+"_"+isys, "Gen", "pt[UO];mass[UOC"+ibinMass+"]", kTRUE);
+		   hsyspt_temp->Add(hpt_temp);
+
+                   Double_t temp_err =  fabs( defaultMean - hsyspt_temp->GetMean() );
+		   if( err_ < temp_err ){
+		     err_ = temp_err;
+ 		   }
+
+		  delete hsyspt_temp;
+	   }
+	  
+           std::cout << "err: " << err_ << std::endl;
+	   err.push_back(err_);
+
+           delete hpt_temp;
+        }
+}
+
 void getRatioSys(TUnfoldDensityV17* unfold_pt, TString sysName, int sysSize, TH1 *sysRatio){
 
 	vector<TH1*> hDeltas;
 	vector<TH1*> hSys;
 
-        TH1* hunfolded_pt = unfold_pt->GetOutput("hunfolded_pt",0,0,"*[UO]",kFALSE);
+        TH1* hunfolded_pt = unfold_pt->GetOutput("hunfolded_pt_temp",0,0,"*[UO]",kFALSE);
         TH1* ratio=(TH1*)hunfolded_pt->Clone("ratio");
         TH1 *histMCTruth_pt=unfold_pt->GetBias("histMC_pt",0,0,"*[UO]",kFALSE);
         ratio->Divide(histMCTruth_pt);
@@ -151,6 +227,18 @@ void getRatioSys(TUnfoldDensityV17* unfold_pt, TString sysName, int sysSize, TH1
 	   }
 	   sysRatio->SetBinError(ibin, err);
         }
+
+	for(int i = 0; i < sysSize; i++){
+	   delete hDeltas.at(i);
+           delete hSys.at(i);
+
+	}
+	delete hunfolded_pt;
+	hDeltas.clear();
+	hDeltas.shrink_to_fit();
+
+	hSys.clear();
+	hSys.shrink_to_fit();
 }
 
 void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* unfold_mass, TFile *filein){
@@ -165,11 +253,6 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 	TH1* hunfolded_pt = unfold_pt->GetOutput("hunfolded_pt",0,0,"*[UO]",kFALSE);
 	TH1* ratio=(TH1*)hunfolded_pt->Clone("ratio");
 
-	// TODO make a function to get ratio error
-	
-
-        TH1* hunfolded_ptUp=(TH1*)hunfolded_pt->Clone("hunfolded_ptUp");     // default unfoled data
-        TH1* hunfolded_ptDown=(TH1*)hunfolded_pt->Clone("hunfolded_ptDown"); //
         TH1* sysErrRatio = (TH1*)hunfolded_pt->Clone("hsysErrRatio");
 
 	//getRatioSys(unfold_pt, "AlphaS", (int)2, sysErrRatio);	
@@ -192,66 +275,55 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 	vector<Double_t> meanpt_mc, meanpterr_mc;
 
 	// get average pt for each mass bin
-	getAveragePt(meanpt_data, meanpterr_data, unfold_pt, true);
-	getAveragePt(meanpt_mc, meanpterr_mc, unfold_pt, false);
+	getAveragesPt(meanpt_data, meanpterr_data, unfold_pt, true);
+	getAveragesPt(meanpt_mc, meanpterr_mc, unfold_pt, false);
+
+	vector<Double_t> ScaleErr;
+	getAveragesSysPt(ScaleErr, "Scale", (int)9, unfold_pt);
 
 	// get average mass
-        TUnfoldBinningV17* massBin_gen = massBinning_gen();
-	TH1 *hunfolded_mass_bin[5];
-	TH1 *hmc_mass_bin[5];
-        hunfolded_mass_bin[0] = massBin_gen->CreateHistogram("hunfolded_mass_m1",true);
-        hunfolded_mass_bin[1] = massBin_gen->CreateHistogram("hunfolded_mass_m2",true);
-        hunfolded_mass_bin[2] = massBin_gen->CreateHistogram("hunfolded_mass_m3",true);
-        hunfolded_mass_bin[3] = massBin_gen->CreateHistogram("hunfolded_mass_m4",true);
-        hunfolded_mass_bin[4] = massBin_gen->CreateHistogram("hunfolded_mass_m5",true);
+	// TODO make a function to get average mass
+	hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(40.+0.01),hunfolded_mass->GetXaxis()->FindBin(60.-0.01));
+ 	meanmass_data[0] = hunfolded_mass->GetMean();
+ 	meanmasserr_data[0] = hunfolded_mass->GetMeanError();
 
-        hmc_mass_bin[0] = massBin_gen->CreateHistogram("hmc_mass_m1",true);
-        hmc_mass_bin[1] = massBin_gen->CreateHistogram("hmc_mass_m2",true);
-        hmc_mass_bin[2] = massBin_gen->CreateHistogram("hmc_mass_m3",true);
-        hmc_mass_bin[3] = massBin_gen->CreateHistogram("hmc_mass_m4",true);
-        hmc_mass_bin[4] = massBin_gen->CreateHistogram("hmc_mass_m5",true);
+	hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(60.+0.01),hunfolded_mass->GetXaxis()->FindBin(80.-0.01));
+ 	meanmass_data[1] = hunfolded_mass->GetMean();
+ 	meanmasserr_data[1] = hunfolded_mass->GetMeanError();
 
-        for(int ibin = 1; ibin<hunfolded_mass->GetNbinsX()+1; ibin++){
+	hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(80.+0.01),hunfolded_mass->GetXaxis()->FindBin(100.-0.01));
+ 	meanmass_data[2] = hunfolded_mass->GetMean();
+ 	meanmasserr_data[2] = hunfolded_mass->GetMeanError();
 
-           int massRegion = 0;
-           if(hunfolded_mass->GetBinLowEdge(ibin) >= 40 && hunfolded_mass->GetBinLowEdge(ibin)+hunfolded_mass->GetBinWidth(ibin) <= 60)
-              massRegion = 0;
-           if(hunfolded_mass->GetBinLowEdge(ibin) >= 60 && hunfolded_mass->GetBinLowEdge(ibin)+hunfolded_mass->GetBinWidth(ibin) <= 80)
-              massRegion = 1;
-           if(hunfolded_mass->GetBinLowEdge(ibin) >= 80 && hunfolded_mass->GetBinLowEdge(ibin)+hunfolded_mass->GetBinWidth(ibin) <= 100)
-              massRegion = 2;
-           if(hunfolded_mass->GetBinLowEdge(ibin) >= 100 && hunfolded_mass->GetBinLowEdge(ibin)+hunfolded_mass->GetBinWidth(ibin) <= 200)
-              massRegion = 3;
-           if(hunfolded_mass->GetBinLowEdge(ibin) >= 200 && hunfolded_mass->GetBinLowEdge(ibin)+hunfolded_mass->GetBinWidth(ibin) <= 350)
-              massRegion = 4;
+	hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(100.+0.01),hunfolded_mass->GetXaxis()->FindBin(200.-0.01));
+ 	meanmass_data[3] = hunfolded_mass->GetMean();
+ 	meanmasserr_data[3] = hunfolded_mass->GetMeanError();
 
-           hunfolded_mass_bin[massRegion]->SetBinContent(ibin, hunfolded_mass->GetBinContent(ibin));
-           hunfolded_mass_bin[massRegion]->SetBinError(ibin, hunfolded_mass->GetBinError(ibin));
+	hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(200.+0.01),hunfolded_mass->GetXaxis()->FindBin(350.-0.01));
+ 	meanmass_data[4] = hunfolded_mass->GetMean();
+ 	meanmasserr_data[4] = hunfolded_mass->GetMeanError();
 
-           hmc_mass_bin[massRegion]->SetBinContent(ibin, histMCTruth_mass->GetBinContent(ibin));
-           hmc_mass_bin[massRegion]->SetBinError(ibin, histMCTruth_mass->GetBinError(ibin));
-        }
 
-        delete massBin_gen;
-	for(int i = 0; i < 5; i++){
+	histMCTruth_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(40.+0.01),histMCTruth_mass->GetXaxis()->FindBin(60.-0.01));
+ 	meanmass_mc[0] = histMCTruth_mass->GetMean();
+ 	meanmasserr_mc[0] = histMCTruth_mass->GetMeanError();
 
-           meanmass_data[i] = hunfolded_mass_bin[i]->GetMean();
-           meanmasserr_data[i] = hunfolded_mass_bin[i]->GetMeanError();
+	histMCTruth_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(60.+0.01),histMCTruth_mass->GetXaxis()->FindBin(80.-0.01));
+ 	meanmass_mc[1] = histMCTruth_mass->GetMean();
+ 	meanmasserr_mc[1] = histMCTruth_mass->GetMeanError();
 
-           meanmass_mc[i] = hmc_mass_bin[i]->GetMean();
-           meanmasserr_mc[i] = hmc_mass_bin[i]->GetMeanError();
+	histMCTruth_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(80.+0.01),histMCTruth_mass->GetXaxis()->FindBin(100.-0.01));
+ 	meanmass_mc[2] = histMCTruth_mass->GetMean();
+ 	meanmasserr_mc[2] = histMCTruth_mass->GetMeanError();
 
-           delete hunfolded_mass_bin[i];
-           delete hmc_mass_bin[i];
-        }
+	histMCTruth_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(100.+0.01),histMCTruth_mass->GetXaxis()->FindBin(200.-0.01));
+ 	meanmass_mc[3] = histMCTruth_mass->GetMean();
+ 	meanmasserr_mc[3] = histMCTruth_mass->GetMeanError();
 
-	/* print out values
-        for(int i = 0; i < 5; i++){
+	histMCTruth_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(200.+0.01),histMCTruth_mass->GetXaxis()->FindBin(350.-0.01));
+ 	meanmass_mc[4] = histMCTruth_mass->GetMean();
+ 	meanmasserr_mc[4] = histMCTruth_mass->GetMeanError();
 
-            std::cout <<" pt: " << meanpt_data[i] << " mass: " << meanmass_data[i] << std::endl;
-
-        }
- 	*/
 
   	TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
   	c1->cd();
@@ -289,7 +361,6 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 		grid_.DrawLine(binEdge, 100, binEdge, histMCTruth_pt->GetBinContent(ii+1) );
 	}
 
-        std::cout << "n bins: " << ratio->GetXaxis()->GetNbins() << std::endl;	
 	int totoalNbin = ratio->GetXaxis()->GetNbins();
 
         TLine grid_vertical;
@@ -349,63 +420,117 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 
         c1->cd();
 
-        TPad *pad3 = new TPad("pad3","pad3",0,0.,1,0.33);
+        TPad *pad3 = new TPad("pad3","pad3",0.15,0.,0.3,0.33);
         setPadMargins(pad3);
+        pad3->SetLeftMargin(0.1);
+        pad3->SetRightMargin(0.1);
         pad3->SetBottomMargin(0.3);
         pad3->SetTicks(1);
         pad3->SetGrid(0,1);
-        pad3->SetLogx();
+        //pad3->SetLogx();
         pad3->Draw();
         pad3->cd();
 
-        TGraphErrors *grUnfolded = new TGraphErrors(5, meanmass_data, &meanpt_data[0], meanmasserr_data, &meanpterr_data[0]);
-        TGraphErrors *grMC = new TGraphErrors(5, meanmass_mc, &meanpt_mc[0], meanmasserr_mc, &meanpterr_mc[0]);
+	int imass = 0;
 
-        grUnfolded->Draw("ape");
-        grUnfolded->GetXaxis()->SetMoreLogLabels();
-        grUnfolded->SetTitle("Average \\ {p_{T}^{\\ell\\ell}} vs M{\\ell\\ell}");
-        grUnfolded->SetMarkerStyle(20);
-        grUnfolded->SetMarkerSize(1.);
-        grUnfolded->SetLineColor(kBlack);
-        grUnfolded->SetMinimum(10.);
-        grUnfolded->SetMaximum(30.);
-	grUnfolded->GetYaxis()->SetNdivisions(505);
-     	setYaxisGraph(grUnfolded);
-	setXaxisGraph(grUnfolded);
-        grUnfolded->GetYaxis()->SetTitle("Average \\ {p_{T}^{\\ell\\ell}}");
+        TGraphErrors *grUnfolded = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &meanpterr_data[imass]);
+        TGraphErrors *sysData = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &ScaleErr[imass]);
+        TGraphErrors *grMC = new TGraphErrors(1, &meanmass_mc[imass], &meanpt_mc[imass], &meanmasserr_mc[imass], &meanpterr_mc[imass]);
 
-        grMC->Draw("samepe");
-        grMC->SetMarkerStyle(20);
-        grMC->SetMarkerSize(1.);
-        grMC->SetLineColor(kRed);
-        grMC->SetMarkerColor(kRed);
+        Double_t xmin = meanmass_data[imass] > meanmass_mc[imass] ? meanmass_mc[imass] * 0.99: meanmass_data[imass] * 0.99,
+		 xmax = meanmass_data[imass] < meanmass_mc[imass] ? meanmass_mc[imass] * 1.01: meanmass_data[imass] * 1.01,
+		 ymin = meanpt_data[imass] > meanpt_mc[imass] ? meanpt_mc[imass] * 0.95: meanpt_data[imass] * 0.95,
+		 ymax = meanpt_data[imass] < meanpt_mc[imass] ? meanpt_mc[imass] * 1.05: meanpt_data[imass] * 1.05;
+	setTGraphAxis(grUnfolded, sysData, grMC, meanmass_data[imass], xmin, xmax, ymin, ymax); 
 
-/*
-        hmeans->Draw("pe");
-        hmeans->SetTitle("");
-        hmeans->SetMarkerStyle(20);
-        hmeans->SetMarkerSize(.7);
-        hmeans->SetLineColor(kBlack);
-        hmeans->SetMinimum(10.);
-        hmeans->SetMaximum(30.);
-        setYaxisHist(hmeans);
-        setXaxisHist(hmeans);
-        hmeans->GetYaxis()->SetNdivisions(505);
-        hmeans->SetYTitle("Average \\ {p_{T}^{\\ell\\ell}}"); // \\ell not working with pdf format
-	hmeans->GetXaxis()->SetTitle("Mass(m_{#font[11]{ee}}) region (GeV)");
-        hmeans->GetXaxis()->SetTitleOffset(5.);
-        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(0.), "40~60");
-        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(1.), "60~80");
-        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(2.), "80~100");
-        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(3.), "100~200");
-        hmeans->GetXaxis()->SetBinLabel(hmeans->GetXaxis()->FindBin(4.), "200~350");
+ 	c1->cd();
+        TPad *pad4 = new TPad("pad4","pad4",0.3,0.,0.45,0.33);
+        setPadMargins(pad4);
+        pad4->SetLeftMargin(0.1);
+        pad4->SetRightMargin(0.1);
+        pad4->SetBottomMargin(0.3);
+        pad4->SetTicks(1);
+        pad4->SetGrid(0,1);
+        pad4->Draw();
+        pad4->cd();
 
-        hmeansMC->Draw("pesame");
-        hmeansMC->SetMarkerStyle(20);
-        hmeansMC->SetMarkerSize(.7);
-        hmeansMC->SetLineColor(kRed);
-        hmeansMC->SetMarkerColor(kRed);
-*/
+
+        imass = 1;
+        TGraphErrors *grUnfolded_2 = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &meanpterr_data[imass]);
+        TGraphErrors *sysData_2 = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &ScaleErr[imass]);
+        TGraphErrors *grMC_2 = new TGraphErrors(1, &meanmass_mc[imass], &meanpt_mc[imass], &meanmasserr_mc[imass], &meanpterr_mc[imass]);
+        
+        xmin = meanmass_data[imass] > meanmass_mc[imass] ? meanmass_mc[imass] * 0.99: meanmass_data[imass] * 0.99;
+        xmax = meanmass_data[imass] < meanmass_mc[imass] ? meanmass_mc[imass] * 1.01: meanmass_data[imass] * 1.01;
+        ymin = meanpt_data[imass] > meanpt_mc[imass] ? meanpt_mc[imass] * 0.95: meanpt_data[imass] * 0.95;
+        ymax = meanpt_data[imass] < meanpt_mc[imass] ? meanpt_mc[imass] * 1.05: meanpt_data[imass] * 1.05;
+        setTGraphAxis(grUnfolded_2, sysData_2, grMC_2, meanmass_data[imass], xmin, xmax, ymin, ymax);
+
+        c1->cd();
+        TPad *pad5 = new TPad("pad5","pad5",0.45,0.,0.6,0.33);
+        setPadMargins(pad5);
+        pad5->SetLeftMargin(0.1);
+        pad5->SetRightMargin(0.1);
+        pad5->SetBottomMargin(0.3);
+        pad5->SetTicks(1);
+        pad5->SetGrid(0,1);
+        pad5->Draw();
+        pad5->cd();
+
+        imass = 2;
+        TGraphErrors *grUnfolded_3 = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &meanpterr_data[imass]);
+        TGraphErrors *sysData_3 = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &ScaleErr[imass]);
+        TGraphErrors *grMC_3 = new TGraphErrors(1, &meanmass_mc[imass], &meanpt_mc[imass], &meanmasserr_mc[imass], &meanpterr_mc[imass]);
+
+        xmin = meanmass_data[imass] > meanmass_mc[imass] ? meanmass_mc[imass] * 0.995: meanmass_data[imass] * 0.995;
+        xmax = meanmass_data[imass] < meanmass_mc[imass] ? meanmass_mc[imass] * 1.005: meanmass_data[imass] * 1.005;
+        ymin = meanpt_data[imass] > meanpt_mc[imass] ? meanpt_mc[imass] * 0.95: meanpt_data[imass] * 0.95;
+        ymax = meanpt_data[imass] < meanpt_mc[imass] ? meanpt_mc[imass] * 1.05: meanpt_data[imass] * 1.05;
+        setTGraphAxis(grUnfolded_3, sysData_3, grMC_3, meanmass_data[imass], xmin, xmax, ymin, ymax);
+
+        c1->cd();
+        TPad *pad6 = new TPad("pad6","pad6",0.6,0.,0.75,0.33);
+        setPadMargins(pad6);
+        pad6->SetLeftMargin(0.1);
+        pad6->SetRightMargin(0.1);
+        pad6->SetBottomMargin(0.3);
+        pad6->SetTicks(1);
+        pad6->SetGrid(0,1);
+        pad6->Draw();
+        pad6->cd();
+
+        imass = 3;
+        TGraphErrors *grUnfolded_4 = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &meanpterr_data[imass]);
+        TGraphErrors *sysData_4 = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &ScaleErr[imass]);
+        TGraphErrors *grMC_4 = new TGraphErrors(1, &meanmass_mc[imass], &meanpt_mc[imass], &meanmasserr_mc[imass], &meanpterr_mc[imass]);
+
+        xmin = meanmass_data[imass] > meanmass_mc[imass] ? meanmass_mc[imass] * 0.99: meanmass_data[imass] * 0.99;
+        xmax = meanmass_data[imass] < meanmass_mc[imass] ? meanmass_mc[imass] * 1.01: meanmass_data[imass] * 1.01;
+        ymin = meanpt_data[imass] > meanpt_mc[imass] ? meanpt_mc[imass] * 0.95: meanpt_data[imass] * 0.95;
+        ymax = meanpt_data[imass] < meanpt_mc[imass] ? meanpt_mc[imass] * 1.05: meanpt_data[imass] * 1.05;
+        setTGraphAxis(grUnfolded_4, sysData_4, grMC_4, meanmass_data[imass], xmin, xmax, ymin, ymax);
+
+        c1->cd();
+        TPad *pad7 = new TPad("pad7","pad7",0.75,0.,0.9,0.33);
+        setPadMargins(pad7);
+        pad7->SetLeftMargin(0.1);
+        pad7->SetRightMargin(0.1);
+        pad7->SetBottomMargin(0.3);
+        pad7->SetTicks(1);
+        pad7->SetGrid(0,1);
+        pad7->Draw();
+        pad7->cd();
+
+        imass = 4; 
+        TGraphErrors *grUnfolded_5 = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &meanpterr_data[imass]);
+        TGraphErrors *sysData_5 = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &ScaleErr[imass]);
+        TGraphErrors *grMC_5 = new TGraphErrors(1, &meanmass_mc[imass], &meanpt_mc[imass], &meanmasserr_mc[imass], &meanpterr_mc[imass]);
+
+        xmin = meanmass_data[imass] > meanmass_mc[imass] ? meanmass_mc[imass] * 0.99: meanmass_data[imass] * 0.99;
+        xmax = meanmass_data[imass] < meanmass_mc[imass] ? meanmass_mc[imass] * 1.01: meanmass_data[imass] * 1.01;
+        ymin = meanpt_data[imass] > meanpt_mc[imass] ? meanpt_mc[imass] * 0.95: meanpt_data[imass] * 0.95;
+        ymax = meanpt_data[imass] < meanpt_mc[imass] ? meanpt_mc[imass] * 1.05: meanpt_data[imass] * 1.05;
+        setTGraphAxis(grUnfolded_5, sysData_5, grMC_5, meanmass_data[imass], xmin, xmax, ymin, ymax);
 
         CMS_lumi( pad1, 4, 0 );
         c1->cd();
