@@ -36,7 +36,7 @@ TUnfoldBinningV17* ptBinning_rec(){
 
  // FIXME save binning information in other place and read from there
  const int nmassbin_fine=5;
- double massbin_fine[nmassbin_fine+1]={40,60,80,100,200,350};
+ double massbin_fine[nmassbin_fine+1]={50,65,80,100,200,350};
 
  // pt bins for reco
  //const int nptbin_fine=50;
@@ -59,7 +59,7 @@ TUnfoldBinningV17* ptBinning_gen(){
 
  // FIXME save binning information in other place and read from there
  const int nmassbin_wide=5;
- double massbin_wide[nmassbin_wide+1]={40,60,80,100,200,350};
+ double massbin_wide[nmassbin_wide+1]={50,65,80,100,200,350};
 
  // pt bins for gen
  //const int nptbin_wide=20;
@@ -84,8 +84,10 @@ TUnfoldBinningV17* ptBinning_gen(){
 TUnfoldBinningV17* massBinning_rec(){
 
  // FIXME save binning information in other place and read from there
- const int nbin_fine=58;
- double bin_fine[nbin_fine+1]={40,42.5,45,47.5,50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
+ //const int nbin_fine=58;
+ const int nbin_fine=54;
+ //double bin_fine[nbin_fine+1]={40,42.5,45,47.5,50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
+ double bin_fine[nbin_fine+1]={50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
 
  TUnfoldBinningV17 *binning_Rec=new TUnfoldBinningV17("Rec");
  binning_Rec->AddAxis("reco mass",nbin_fine,bin_fine,false,false);
@@ -96,8 +98,10 @@ TUnfoldBinningV17* massBinning_rec(){
 TUnfoldBinningV17* massBinning_gen(){
 
  // FIXME save binning information in other place and read from there
- const int nbin_wide=29;
- double bin_wide[nbin_wide+1]={40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
+ //const int nbin_wide=29;
+ const int nbin_wide=27;
+ //double bin_wide[nbin_wide+1]={40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
+ double bin_wide[nbin_wide+1]={50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
 
  TUnfoldBinningV17 *binning_Gen=new TUnfoldBinningV17("Gen");
  binning_Gen->AddAxis("gen mass",nbin_wide,bin_wide,true,true);
@@ -161,7 +165,7 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist, TS
           if( channel.CompareTo("electron") == 0 ) isdilep = IsElEl;
           if( channel.CompareTo("muon") == 0 ) isdilep = IsMuMu;
 
-	   if(isdilep && ispassRec && isBveto){
+	   if(isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15){
 	         fileout1->cd();
 
                  (recoHist.histMaps.find("pt_norminal")->second)->Fill(ptbin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec*bTagReweight);
@@ -251,7 +255,11 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
           if( channel.CompareTo("muon") == 0 ){
                   isdilep = IsMuMu;
                   issignal = isdimuon;
+          }
 
+	  if( std::isinf(bTagReweight) ){
+		 bTagReweight = 1.; //FIXME check analyzer later
+		 std::cout << "nan bTagReweight... check later" << std::endl;
           }
 	
 	   if(!sigHist.isInc){
@@ -268,7 +276,7 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
 	        Double_t zptWeight = 1.;
 	        zptWeight = ZPtCor;
 	
-	        if(isdilep && ispassRec && isBveto){
+	        if(isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15){
 	           if(DYtautau){
 	              fileout2->cd();
                       (recoHist.histMaps.find("pt_norminal")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec*bTagReweight);
@@ -310,7 +318,7 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
 
 	         //if(ptPreFSR->size()==3){
 	
-	           if( isdilep && ispassRec && isBveto) {
+	           if( isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15) {
 	              int ptBinZero=0;
 	              int massBinZero=0;
 		      (sigHist.hist2DMaps.find("pt_norminal")->second)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec*bTagReweight);

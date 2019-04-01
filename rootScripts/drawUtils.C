@@ -29,10 +29,10 @@ void setYaxisHist(TH1* hist){
 
         hist->SetTitle("");
         hist->GetYaxis()->SetLabelFont(63);
-        hist->GetYaxis()->SetLabelSize(25);
+        hist->GetYaxis()->SetLabelSize(45);
         hist->GetYaxis()->SetTitleFont(63);
-        hist->GetYaxis()->SetTitleSize(35);
-        hist->GetYaxis()->SetTitleOffset(2.3);
+        hist->GetYaxis()->SetTitleSize(50);
+        hist->GetYaxis()->SetTitleOffset(1.7);
 }
 
 void setYaxisGraph(TGraphErrors* gr){
@@ -48,11 +48,11 @@ void setYaxisGraph(TGraphErrors* gr){
 void setXaxisHist(TH1* hist){
 
         hist->GetXaxis()->SetLabelFont(63);
-        hist->GetXaxis()->SetLabelSize(25);
+        hist->GetXaxis()->SetLabelSize(45);
         hist->GetXaxis()->SetTitleOffset(3.5);
         hist->GetXaxis()->SetLabelOffset(0.02);
         hist->GetXaxis()->SetTitleFont(43);
-        hist->GetXaxis()->SetTitleSize(20);
+        hist->GetXaxis()->SetTitleSize(50);
 }
 
 void setXaxisGraph(TGraphErrors* gr){
@@ -65,37 +65,41 @@ void setXaxisGraph(TGraphErrors* gr){
         gr->GetXaxis()->SetTitleSize(20);
 }
 
-void setTGraphAxis(TGraphErrors* data, TGraphErrors* sys, TGraphErrors* mc, Double_t x, Double_t xmin, Double_t xmax, Double_t ymin, Double_t ymax){
+void setTGraphAxis(TGraphErrors* data, Double_t x, Double_t xmin, Double_t xmax, Double_t ymin, Double_t ymax, TGraphErrors* mc = nullptr,  TGraphErrors* sys = nullptr, bool axis = true){
 
 
         TString mass;
         mass.Form("%0.2f", x);
 
-        data->Draw("ape");
-        sys->SetFillColor(1);
-        sys->SetFillStyle(3004);
-        sys->Draw("same2");
+        if(axis) data->Draw("ape");
+	else data->Draw("samepe");
+	//data->GetXaxis()->ChangeLabel(2, -45, 2);
+	if(sys != nullptr) sys->SetFillColor(kGray+1);
+        if(sys != nullptr) sys->SetFillStyle(3001);
+        if(sys != nullptr) sys->Draw("same2");
         data->Draw("pe");
-        mc->Draw("samepe");
+        if(mc != nullptr) mc->Draw("samepe");
         data->SetTitle("Average \\ {p_{T}^{\\ell\\ell}} vs M{\\ell\\ell}");
-        data->SetMarkerStyle(20);
+        if(axis) data->SetMarkerStyle(20);
+ 	else data->SetMarkerStyle(25);
         data->SetMarkerSize(1.);
         data->SetLineColor(kBlack);
+        data->SetLineWidth(2);
         data->SetMinimum(ymin);
         data->SetMaximum(ymax);
         data->GetXaxis()->SetLimits(xmin, xmax);
-//	data->GetXaxis()->SetBinLabel(data->GetXaxis()->FindBin(x), mass);
         data->GetXaxis()->SetNdivisions(501);
         data->GetYaxis()->SetNdivisions(505);
         data->GetYaxis()->SetLabelOffset(-0.2);
         setYaxisGraph(data);
         setXaxisGraph(data);
+	data->GetXaxis()->SetLabelSize(0);
         //data->GetYaxis()->SetTitle("Average \\ {p_{T}^{\\ell\\ell}}");
 
-        mc->SetMarkerStyle(20);
-        mc->SetMarkerSize(1.);
-        mc->SetLineColor(kRed);
-        mc->SetMarkerColor(kRed);
+        if(mc != nullptr) mc->SetMarkerStyle(20);
+        if(mc != nullptr) mc->SetMarkerSize(1.);
+        if(mc != nullptr) mc->SetMarkerColor(kRed);
+        if(mc != nullptr) mc->SetLineColor(kRed);
 
 }
 
@@ -133,6 +137,7 @@ void drawTest(TString outpdf, TUnfoldDensityV17* unfold_pt){
 void getAveragesMass(vector<Double_t> &mean, vector<Double_t> &err, TH1* hmass){
 
 	Double_t massBins[6] = {40., 60., 80., 100., 200., 350.};
+	//Double_t massBins[6] = {50., 65., 80., 100., 200., 350.};
 	for(int ibin = 0; ibin < 5; ibin++){
 		hmass->GetXaxis()->SetRange(hmass->GetXaxis()->FindBin(massBins[ibin]+0.01),hmass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
 		mean.push_back(hmass->GetMean());
@@ -164,7 +169,8 @@ void getAveragesPt(vector<Double_t> &mean, vector<Double_t> &err, TUnfoldDensity
 
 void getAveragesSysMass(vector<Double_t> &err, TString sysName, int sysSize, TUnfoldDensityV17* unfold_mass){
 
-        Double_t massBins[6] = {40., 60., 80., 100., 200., 350.};
+        //Double_t massBins[6] = {40., 60., 80., 100., 200., 350.};
+        Double_t massBins[6] = {50., 65., 80., 100., 200., 350.};
 
         TH1* hmass_temp;
         hmass_temp=unfold_mass->GetOutput("hunfolded_temp",0,0,"*[UO]",kTRUE);
@@ -237,7 +243,6 @@ void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfo
 		  delete hsyspt_temp;
 	   }
 	  
-           std::cout << "err: " << err_ << std::endl;
 	   err.push_back(err_);
 
            delete hpt_temp;
@@ -293,6 +298,135 @@ void getRatioSys(TUnfoldDensityV17* unfold_pt, TString sysName, int sysSize, TH1
 	hSys.shrink_to_fit();
 }
 
+void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensityV17* unfold_pt){
+
+        gROOT->SetBatch();
+
+        setTDRStyle();
+        writeExtraText = true;       // if extra text
+        extraText  = "Preliminary";
+
+        for(int imass = 0; imass < 5; imass++){
+
+           	TString ibinMass;
+           	ibinMass.Form("%d", imass);
+
+           	TH1* hpt_temp;
+           	TH1* hpterr_temp;
+        	TLegend* leg_ = new TLegend(0.2, 0.70, 0.95, 0.9,"","brNDC");
+		leg_->SetNColumns(2);
+        	leg_->SetTextSize(0.04);
+        	leg_->SetFillStyle(0);
+        	leg_->SetBorderSize(0);
+
+           	hpt_temp=unfold_pt->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+           	hpterr_temp=unfold_pt->GetOutput("hunfolded_pterr_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+
+        	TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 800*1.5);
+        	c1->cd();
+        	gStyle->SetOptStat(0);
+
+        	TPad *pad1 = new TPad("pad1","pad1",0,0.6,1,1);
+        	setPadMargins(pad1);
+        	pad1->SetBottomMargin(0.01);
+        	pad1->SetTopMargin(0.1);
+        	pad1->SetTicks(1);
+        	pad1->SetLogy();
+        	pad1->Draw();
+        	pad1->cd();
+
+        	hpt_temp->SetTitle("");
+        	hpt_temp->Draw("p9histe");
+        	hpt_temp->SetMarkerStyle(20);
+        	hpt_temp->SetMarkerSize(.7);
+        	hpt_temp->SetLineColor(kBlack);
+
+
+                int sysSize = 9;
+                TString sysName = "Scale";
+
+        	for(int ibin = 1; ibin<hpterr_temp->GetNbinsX()+1;ibin++){
+
+        	   Double_t err = -999.;
+        	   for(int i = 0; i < sysSize; i++){
+        	           if(i==5 || i==7) continue;
+
+                           TString isys;
+                           isys.Form("%d", i);
+
+			   TH1F * hsyspt_temp_=((TH1F*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys+ibinMass, sysName+"_"+isys+ibinMass, "Gen", "pt[UO];mass[UOC"+ibinMass+"]", kTRUE));
+			   hsyspt_temp_->Add(hpt_temp);
+        	           // get "envelope"
+        	           Double_t temp_err =  fabs(hpt_temp->GetBinContent(ibin) - hsyspt_temp_->GetBinContent(ibin));
+        	           if( temp_err > err){
+        	                  err = temp_err;
+        	           }
+			   delete hsyspt_temp_;
+        	   }
+        	   hpterr_temp->SetBinError(ibin, err);
+        	}
+
+	        hpterr_temp->Draw("E2same");
+	        hpterr_temp->SetMarkerSize(0);
+	        hpterr_temp->SetFillColorAlpha(kRed,0.3);
+
+		c1->cd();
+
+        	TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.6);
+        	setPadMargins(pad2);
+        	pad2->SetBottomMargin(0.2);
+        	pad2->SetTicks(1);
+        	pad2->SetGridy(1);
+        	pad2->Draw();
+
+           	TH1F *hsyspt_temp;
+		TH1F *ratio;
+           	for(int i = 0; i < sysSize; i++){
+           	        if(i==5 || i==7) continue;
+
+           	        TString isys;
+           	        isys.Form("%d", i);
+
+
+           	        hsyspt_temp=((TH1F*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys+ibinMass, sysName+"_"+isys+ibinMass, "Gen", "pt[UO];mass[UOC"+ibinMass+"]", kTRUE));
+           	        hsyspt_temp->Add(hpt_temp);
+
+
+			ratio= ((TH1F*)hsyspt_temp->Clone("ratio"+isys+ibinMass));
+			ratio->Divide(hpt_temp);
+
+			pad2->cd();
+                	if(i==0)ratio->Draw("hist");
+			else ratio->Draw("samehist");
+                	ratio->SetLineColor(i+1);
+                	ratio->SetMarkerColor(i+1);
+                	ratio->SetMinimum(0.9);
+                	ratio->SetMaximum(1.1);
+                	ratio->SetTitle("");
+                	setYaxisHist(ratio);
+                	setXaxisHist(ratio);
+                	ratio->GetYaxis()->SetNdivisions(515);
+
+                	TString mean_;
+                	mean_.Form("%.5f", hsyspt_temp->GetMean());
+
+
+        		leg_->AddEntry(ratio, sysName+"_"+isys + " " + mean_, "l");
+        		leg_->Draw();
+
+           	}
+
+
+		c1->cd();
+        	c1->SaveAs(outpdf+"_"+ibinMass+".pdf");
+		delete hpt_temp;
+		delete hpterr_temp;
+		delete pad1;
+		delete c1;
+
+	}
+}
+
 void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* unfold_mass, TFile *filein){
 
         gROOT->SetBatch();
@@ -328,7 +462,10 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 	getAveragesPt(meanpt_mc, meanpterr_mc, unfold_pt, false);
 
 	vector<Double_t> ScaleErr;
-	getAveragesSysPt(ScaleErr, "Scale", (int)9, unfold_pt);
+	getAveragesSysPt(ScaleErr, "Scale",   (int)9, unfold_pt);
+
+	vector<Double_t> AlphaSErr;
+	getAveragesSysPt(AlphaSErr, "AlphaS", (int)2, unfold_pt);
 
 	// get average mass
 	//
@@ -336,7 +473,10 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 	getAveragesMass(meanmass_mc, meanmasserr_mc, histMCTruth_mass);
 
 	vector<Double_t> ScaleMassErr;
-	getAveragesSysMass(ScaleMassErr, "Scale", (int)9, unfold_mass);
+	getAveragesSysMass(ScaleMassErr, "Scale",   (int)9, unfold_mass);
+
+	vector<Double_t> AlphaSMassErr;
+	getAveragesSysMass(AlphaSMassErr, "AlphaS", (int)2, unfold_mass);
 
 
   	TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
@@ -456,13 +596,14 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
 		// FIXME how to handle below memory allocation
         	TGraphErrors *grUnfolded = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &meanpterr_data[imass]);
         	TGraphErrors *sysData = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &ScaleMassErr[imass], &ScaleErr[imass]);
+        	//TGraphErrors *sysData = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &AlphaSMassErr[imass], &AlphaSErr[imass]);
         	TGraphErrors *grMC = new TGraphErrors(1, &meanmass_mc[imass], &meanpt_mc[imass], &meanmasserr_mc[imass], &meanpterr_mc[imass]);
 
         	Double_t xmin = meanmass_data[imass] > meanmass_mc[imass] ? meanmass_mc[imass] * 0.99: meanmass_data[imass] * 0.99,
         	         xmax = meanmass_data[imass] < meanmass_mc[imass] ? meanmass_mc[imass] * 1.01: meanmass_data[imass] * 1.01,
         	         ymin = meanpt_data[imass] > meanpt_mc[imass] ? meanpt_mc[imass] * 0.95: meanpt_data[imass] * 0.95,
         	         ymax = meanpt_data[imass] < meanpt_mc[imass] ? meanpt_mc[imass] * 1.05: meanpt_data[imass] * 1.05;
-        	setTGraphAxis(grUnfolded, sysData, grMC, meanmass_data[imass], xmin, xmax, ymin, ymin + 2.);
+        	setTGraphAxis(grUnfolded, meanmass_data[imass], xmin, xmax, ymin, ymin + 3., grMC, sysData);
 
 
 
@@ -480,6 +621,411 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
         delete pad2;
         //delete pad3;
         delete c1;
+}
+
+void drawCombinedISR(TString outpdf, TUnfoldDensityV17* unfold_pt2016, TUnfoldDensityV17* unfold_mass2016, TUnfoldDensityV17* unfold_pt2017, TUnfoldDensityV17* unfold_mass2017){
+
+        gROOT->SetBatch();
+
+        setTDRStyle();
+        writeExtraText = true;       // if extra text
+        extraText  = "Preliminary";
+
+        // mass distribution
+        TH1* hunfolded_mass2016 = unfold_mass2016->GetOutput("hunfolded_mass2016",0,0,"*[UO]",kTRUE);
+        TH1 *histMCTruth_mass2016=unfold_mass2016->GetBias("histMCTruth_mass2016",0,0,"*[UO]",kTRUE);
+
+        vector<Double_t> meanmass_data2016, meanmasserr_data2016;
+        vector<Double_t> meanmass_mc2016, meanmasserr_mc2016;
+
+        vector<Double_t> meanpt_data2016, meanpterr_data2016;
+        vector<Double_t> meanpt_mc2016, meanpterr_mc2016;
+
+        // get average pt for each mass bin
+        getAveragesPt(meanpt_data2016, meanpterr_data2016, unfold_pt2016, true);
+        getAveragesPt(meanpt_mc2016, meanpterr_mc2016, unfold_pt2016, false);
+
+        vector<Double_t> ScaleErr2016;
+        getAveragesSysPt(ScaleErr2016, "Scale", (int)9, unfold_pt2016);
+
+        vector<Double_t> AlphaSErr2016;
+        getAveragesSysPt(AlphaSErr2016, "AlphaS", (int)2, unfold_pt2016);
+
+        vector<Double_t> totalPtSys2016;
+        vector<Double_t> totalPtErr2016;
+        for(unsigned int i=0;i<ScaleErr2016.size();i++){
+                totalPtErr2016.push_back(sqrt(pow(ScaleErr2016.at(i),2)+pow(AlphaSErr2016.at(i),2)+pow(meanpterr_data2016.at(i),2)));
+                totalPtSys2016.push_back(sqrt(pow(ScaleErr2016.at(i),2)+pow(AlphaSErr2016.at(i),2)));
+        }
+
+        // get average mass
+        //
+        getAveragesMass(meanmass_data2016, meanmasserr_data2016, hunfolded_mass2016);
+        getAveragesMass(meanmass_mc2016, meanmasserr_mc2016, histMCTruth_mass2016);
+
+        vector<Double_t> ScaleMassErr2016;
+        getAveragesSysMass(ScaleMassErr2016, "Scale", (int)9, unfold_mass2016);
+
+        vector<Double_t> AlphaSMassErr2016;
+        getAveragesSysMass(AlphaSMassErr2016, "AlphaS", (int)2, unfold_mass2016);
+
+        vector<Double_t> totalMassSys2016;
+        vector<Double_t> totalMassErr2016;
+        for(unsigned int i=0;i<ScaleMassErr2016.size();i++){
+                totalMassErr2016.push_back(sqrt(pow(ScaleMassErr2016.at(i),2)+pow(AlphaSMassErr2016.at(i),2)+pow(meanmasserr_data2016.at(i),2)));
+                totalMassSys2016.push_back(sqrt(pow(ScaleMassErr2016.at(i),2)+pow(AlphaSMassErr2016.at(i),2)));
+        }
+
+
+        TH1* hunfolded_mass2017 = unfold_mass2017->GetOutput("hunfolded_mass2017",0,0,"*[UO]",kTRUE);
+        TH1 *histMCTruth_mass2017=unfold_mass2017->GetBias("histMCTruth_mass2017",0,0,"*[UO]",kTRUE);
+
+        vector<Double_t> meanmass_data2017, meanmasserr_data2017;
+        vector<Double_t> meanmass_mc2017, meanmasserr_mc2017;
+
+        vector<Double_t> meanpt_data2017, meanpterr_data2017;
+        vector<Double_t> meanpt_mc2017, meanpterr_mc2017;
+
+        // get average pt for each mass bin
+        getAveragesPt(meanpt_data2017, meanpterr_data2017, unfold_pt2017, true);
+        getAveragesPt(meanpt_mc2017, meanpterr_mc2017, unfold_pt2017, false);
+
+        vector<Double_t> ScaleErr2017;
+        getAveragesSysPt(ScaleErr2017, "Scale", (int)9, unfold_pt2017);
+
+        vector<Double_t> AlphaSErr2017;
+        getAveragesSysPt(AlphaSErr2017, "AlphaS", (int)2, unfold_pt2017);
+
+        vector<Double_t> totalPtSys2017;
+        vector<Double_t> totalPtErr2017;
+        for(unsigned int i=0;i<ScaleErr2017.size();i++){
+                totalPtErr2017.push_back(sqrt(pow(ScaleErr2017.at(i),2)+pow(AlphaSErr2017.at(i),2)+pow(meanpterr_data2017.at(i),2)));
+                totalPtSys2017.push_back(sqrt(pow(ScaleErr2017.at(i),2)+pow(AlphaSErr2017.at(i),2)));
+        }
+
+        // get average mass
+        //
+        getAveragesMass(meanmass_data2017, meanmasserr_data2017, hunfolded_mass2017);
+        getAveragesMass(meanmass_mc2017, meanmasserr_mc2017, histMCTruth_mass2017);
+
+        vector<Double_t> ScaleMassErr2017;
+        getAveragesSysMass(ScaleMassErr2017, "Scale", (int)9, unfold_mass2017);
+
+        vector<Double_t> AlphaSMassErr2017;
+        getAveragesSysMass(AlphaSMassErr2017, "AlphaS", (int)2, unfold_mass2017);
+
+        vector<Double_t> totalMassSys2017;
+        vector<Double_t> totalMassErr2017;
+        for(unsigned int i=0;i<ScaleMassErr2017.size();i++){
+                totalMassErr2017.push_back(sqrt(pow(ScaleMassErr2017.at(i),2)+pow(AlphaSMassErr2017.at(i),2)+pow(meanmasserr_data2017.at(i),2)));
+                totalMassSys2017.push_back(sqrt(pow(ScaleMassErr2017.at(i),2)+pow(AlphaSMassErr2017.at(i),2)));
+        }
+
+        TCanvas * c1 = new TCanvas("","", 900*1.5, 1000*1.5);
+        c1->cd();
+
+        TPad *pad1 = new TPad("pad1","pad1",0,0.6,1,1);
+        setPadMargins(pad1);
+  	gStyle->SetOptStat(0);
+        pad1->SetBottomMargin(0.01);
+        pad1->SetTopMargin(0.1);
+        pad1->SetTicks(1);
+        pad1->SetLogx();
+        pad1->SetGridy();
+        pad1->Draw();
+        pad1->cd();
+
+        TGraphErrors *grUnfolded = new TGraphErrors(5, &meanmass_data2016[0], &meanpt_data2016[0], &totalMassErr2016[0], &totalPtErr2016[0]);
+        grUnfolded->SetLineColor(kBlack);
+        grUnfolded->SetMarkerColor(kBlack);
+        grUnfolded->SetMarkerStyle(20);
+        grUnfolded->SetMarkerSize(1.);
+        grUnfolded->SetLineStyle(1);
+        grUnfolded->SetLineWidth(2);
+        grUnfolded->Draw("ape");
+        setYaxisGraph(grUnfolded);
+
+        TGraphErrors *grUnfolded2017 = new TGraphErrors(5, &meanmass_data2017[0], &meanpt_data2017[0], &totalMassErr2017[0], &totalPtErr2017[0]);
+        grUnfolded2017->SetLineColor(kBlack);
+        grUnfolded2017->SetMarkerColor(kBlack);
+        grUnfolded2017->SetMarkerStyle(21);
+        grUnfolded2017->SetMarkerSize(1.);
+        grUnfolded2017->SetLineStyle(1);
+        grUnfolded2017->SetLineWidth(2);
+        grUnfolded2017->Draw("samepe");
+	
+        vector<Double_t> meanmass_datacombined, meanmasserr_datacombined;
+        vector<Double_t> meanpt_datacombined, meanpterr_datacombined;
+        vector<Double_t> meanptsyserr_datacombined, meanmasssyserr_datacombined;
+
+	for(int i = 0; i < 5; i++){
+		meanpterr_datacombined.push_back( 1./sqrt( 1./pow(meanpterr_data2016.at(i),2) + 1./pow(meanpterr_data2017.at(i),2) ) );
+		meanptsyserr_datacombined.push_back( (totalPtSys2016.at(i) + totalPtSys2017.at(i))/2. );
+		meanpt_datacombined.push_back( (meanpt_data2016.at(i)/pow(totalPtErr2016.at(i),2) + meanpt_data2017.at(i)/pow(totalPtErr2017.at(i),2)) / ( 1./pow(totalPtErr2016.at(i),2) + 1./pow(totalPtErr2017.at(i),2) )  );
+
+		meanmasserr_datacombined.push_back( 1./sqrt( 1./pow(meanmasserr_data2016.at(i),2) + 1./pow(meanmasserr_data2017.at(i),2) ) );
+		meanmasssyserr_datacombined.push_back( (totalMassSys2016.at(i) + totalMassSys2017.at(i))/2. );
+		meanmass_datacombined.push_back( (meanmass_data2016.at(i)/pow(totalPtErr2016.at(i),2) + meanmass_data2017.at(i)/pow(totalPtErr2017.at(i),2)) / ( 1./pow(totalPtErr2016.at(i),2) + 1./pow(totalPtErr2017.at(i),2) )  );
+	}
+
+        TGraphErrors *grUnfoldedCombined = new TGraphErrors(5, &meanmass_datacombined[0], &meanpt_datacombined[0], &meanmasserr_datacombined[0], &meanpterr_datacombined[0]);
+        grUnfoldedCombined->SetLineColor(kRed);
+        grUnfoldedCombined->SetMarkerColor(kRed);
+        grUnfoldedCombined->SetMarkerStyle(31);
+        grUnfoldedCombined->SetMarkerSize(1.);
+        grUnfoldedCombined->SetLineStyle(1);
+        grUnfoldedCombined->SetLineWidth(2);
+        grUnfoldedCombined->Draw("samepe");
+	
+
+        TF1 *f1 = new TF1("f1", "[0]+[1]*log(x)", 40., 350.);
+        f1->GetXaxis()->SetRangeUser(40., 350.);
+        f1->SetLineColor(kBlack);
+        grUnfolded->Fit(f1, "R"); // R: fitting sub range
+        f1->Draw("same");
+
+        TF1 *f2 = new TF1("f2", "[0]+[1]*log(x)", 40., 350.);
+        f2->GetXaxis()->SetRangeUser(40., 350.);
+        f2->SetLineColor(kBlack);
+        grUnfolded2017->Fit(f2, "R"); // R: fitting sub range
+        f2->Draw("same");
+
+        c1->cd();
+
+        Double_t initial_padx = 0.015;
+        TLatex ptstring;
+        for(int imass = 0; imass < 5; imass++){
+
+		// set dummy mass mean position
+		meanmass_data2017[imass] = meanmass_data2016[imass] + 0.5;
+		meanmass_datacombined[imass] = meanmass_data2016[imass] + 0.25;
+		meanmasserr_data2016[imass] = 0.1;
+		totalMassSys2016[imass] = 0.1;
+		meanmasserr_data2017[imass] = 0.1;
+		totalMassSys2017[imass] = 0.1;
+		meanmasserr_datacombined[imass] = 0.1;
+		meanmasssyserr_datacombined[imass] = 0.1;
+
+                TString imass_;
+                imass_.Form("%d", imass);
+
+                c1->cd();
+
+                TPad *pad = new TPad("mass_" + imass_,"mass_" + imass_, initial_padx + (0.19 * imass) + (0.005 * imass), 0., initial_padx + (0.19 * (imass + 1)) + (0.005 * imass), 0.6);
+                setPadMargins(pad);
+                pad->SetLeftMargin(0.01);
+                pad->SetRightMargin(0.01);
+                pad->SetBottomMargin(0.1);
+                pad->SetTicks(1);
+                pad->SetGrid(0,1);
+                //pad->SetLogx();
+                pad->Draw();
+                pad->cd();
+
+                TLegend* leg_ = new TLegend(0.03, 0.6, 0.7, 0.92,"","brNDC");
+                leg_->SetTextSize(0.08);
+                //leg_->SetFillStyle(0);
+                leg_->SetBorderSize(0);
+
+                // FIXME how to handle below memory allocation
+                TGraphErrors *grUnfolded = new TGraphErrors(1, &meanmass_data2016[imass], &meanpt_data2016[imass], &meanmasserr_data2016[imass], &meanpterr_data2016[imass]);
+                TGraphErrors *sysData = new TGraphErrors(1, &meanmass_data2016[imass], &meanpt_data2016[imass], &totalMassSys2016[imass], &totalPtSys2016[imass]);
+
+                Double_t xmin = meanmass_data2016[imass] > meanmass_mc2016[imass] ? meanmass_mc2016[imass] - 1.: meanmass_data2016[imass] - 1.,
+                         xmax = meanmass_data2016[imass] < meanmass_mc2016[imass] ? meanmass_mc2016[imass] + 1.: meanmass_data2016[imass] + 1.,
+                         ymin = meanpt_data2016[imass] > meanpt_mc2016[imass] ? meanpt_mc2016[imass] - 0.7: meanpt_data2016[imass] - 0.7,
+                         ymax = meanpt_data2016[imass] < meanpt_mc2016[imass] ? meanpt_mc2016[imass] + 0.7: meanpt_data2016[imass] + 0.7;
+                setTGraphAxis(grUnfolded, meanmass_data2016[imass], xmin, xmax, ymin, ymin + 3., nullptr, sysData, true);
+
+                TString pt;
+                TString stat;
+                TString sys;
+                TString total;
+                pt.Form("%.2f", meanpt_data2016[imass]);
+                stat.Form("%.2f", meanpterr_data2016[imass]);
+                sys.Form("%.2f", totalPtSys2016[imass]);
+                total.Form("%.2f", sqrt(pow(totalPtSys2016[imass],2)+pow( meanpterr_data2016[imass],2) ));
+                ptstring.SetTextSize(0.12);
+		leg_->AddEntry(grUnfolded, "#splitline{2016: "+pt+"#pm"+total+"}{        (#pm"+stat+"#pm"+sys+")}");
+                //ptstring.DrawLatex(meanmass_data2016[imass]*0.99, meanpt_data2016[imass]*1.02, pt+"#pm"+stat+"#pm"+sys);
+
+
+                TGraphErrors *grUnfolded2017 = new TGraphErrors(1, &meanmass_data2017[imass], &meanpt_data2017[imass], &meanmasserr_data2017[imass], &meanpterr_data2017[imass]);
+                TGraphErrors *sysData2017 = new TGraphErrors(1, &meanmass_data2017[imass], &meanpt_data2017[imass], &totalMassSys2017[imass], &totalPtSys2017[imass]);
+
+                setTGraphAxis(grUnfolded2017, meanmass_data2017[imass], xmin, xmax, ymin, ymin + 3., nullptr, sysData2017, false); 
+
+                pt.Form("%.2f", meanpt_data2017[imass]);
+                stat.Form("%.2f", meanpterr_data2017[imass]);
+                sys.Form("%.2f", totalPtSys2017[imass]);
+                total.Form("%.2f", sqrt(pow(totalPtSys2017[imass],2)+pow( meanpterr_data2017[imass],2) ));
+                ptstring.SetTextSize(0.12);
+                //ptstring.DrawLatex(meanmass_data2017[imass]*0.99, meanpt_data2017[imass]*1.02, pt+"#pm"+stat+"#pm"+sys);
+
+		//leg_->AddEntry(grUnfolded2017, "#splitline{2017: }{"+pt+"#pm"+stat+"#pm"+sys+"}");
+		leg_->AddEntry(grUnfolded2017, "#splitline{2017: "+pt+"#pm"+total+"}{        (#pm"+stat+"#pm"+sys+")}");
+
+                TGraphErrors *grUnfoldedcombined = new TGraphErrors(1, &meanmass_datacombined[imass], &meanpt_datacombined[imass], &meanmasserr_datacombined[imass], &meanpterr_datacombined[imass]);
+                TGraphErrors *sysDataCombined = new TGraphErrors(1, &meanmass_datacombined[imass], &meanpt_datacombined[imass], &meanmasssyserr_datacombined[imass], &meanptsyserr_datacombined[imass]);
+
+                setTGraphAxis(grUnfoldedcombined, meanmass_datacombined[imass], xmin, xmax, ymin, ymin + 3., nullptr, sysDataCombined, false);
+		grUnfoldedcombined->SetMarkerStyle(31);
+		grUnfoldedcombined->SetMarkerColor(kRed);
+		grUnfoldedcombined->SetLineColor(kRed);
+
+                pt.Form("%.2f", meanpt_datacombined[imass]);
+                stat.Form("%.2f", meanpterr_datacombined[imass]);
+                sys.Form("%.2f", meanptsyserr_datacombined[imass]);
+                total.Form("%.2f", sqrt(pow(meanptsyserr_datacombined[imass],2)+pow( meanpterr_datacombined[imass],2) ));
+                ptstring.SetTextSize(0.12);
+                //ptstring.DrawLatex(meanmass_datacombined[imass]*0.99, meanpt_datacombined[imass]*1.02, pt+"#pm"+stat+"#pm"+sys);
+		leg_->AddEntry(grUnfoldedcombined, "#splitline{Combined: "+pt+"#pm"+total+"}{        (#pm"+stat+"#pm"+sys+")}");
+
+		leg_->Draw();
+
+
+        }
+
+
+        CMS_lumi( c1, 4, 0 );
+        c1->cd();
+        c1->SaveAs(outpdf);
+
+
+
+}
+
+void drawISRfit(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* unfold_mass, TFile *filein){
+
+        gROOT->SetBatch();
+
+        setTDRStyle();
+        writeExtraText = true;       // if extra text
+        extraText  = "Preliminary";
+
+        // mass distribution
+        TH1* hunfolded_mass = unfold_mass->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
+        TH1 *histMCTruth_mass=unfold_mass->GetBias("histMCTruth_mass",0,0,"*[UO]",kTRUE);
+
+        vector<Double_t> meanmass_data, meanmasserr_data;
+        vector<Double_t> meanmass_mc, meanmasserr_mc;
+
+        vector<Double_t> meanpt_data, meanpterr_data;
+        vector<Double_t> meanpt_mc, meanpterr_mc;
+
+        // get average pt for each mass bin
+        getAveragesPt(meanpt_data, meanpterr_data, unfold_pt, true);
+        getAveragesPt(meanpt_mc, meanpterr_mc, unfold_pt, false);
+
+        vector<Double_t> ScaleErr;
+        getAveragesSysPt(ScaleErr, "Scale", (int)9, unfold_pt);
+
+        vector<Double_t> AlphaSErr;
+        getAveragesSysPt(AlphaSErr, "AlphaS", (int)2, unfold_pt);
+
+ 	vector<Double_t> totalPtSys;
+ 	vector<Double_t> totalPtErr;
+	for(unsigned int i=0;i<ScaleErr.size();i++){
+		totalPtErr.push_back(sqrt(pow(ScaleErr.at(i),2)+pow(AlphaSErr.at(i),2)+pow(meanpterr_data.at(i),2)));
+		totalPtSys.push_back(sqrt(pow(ScaleErr.at(i),2)+pow(AlphaSErr.at(i),2)));
+	}
+
+        // get average mass
+        //
+        getAveragesMass(meanmass_data, meanmasserr_data, hunfolded_mass);
+        getAveragesMass(meanmass_mc, meanmasserr_mc, histMCTruth_mass);
+
+        vector<Double_t> ScaleMassErr;
+        getAveragesSysMass(ScaleMassErr, "Scale", (int)9, unfold_mass);
+
+        vector<Double_t> AlphaSMassErr;
+        getAveragesSysMass(AlphaSMassErr, "AlphaS", (int)2, unfold_mass);
+
+        vector<Double_t> totalMassSys;
+        vector<Double_t> totalMassErr;
+        for(unsigned int i=0;i<ScaleMassErr.size();i++){
+                totalMassErr.push_back(sqrt(pow(ScaleMassErr.at(i),2)+pow(AlphaSMassErr.at(i),2)+pow(meanmasserr_data.at(i),2)));
+                totalMassSys.push_back(sqrt(pow(ScaleMassErr.at(i),2)+pow(AlphaSMassErr.at(i),2)));
+        }
+
+ 	TCanvas * c1 = new TCanvas("","", 700*1.5, 1000*1.5);
+	c1->cd();
+
+        TPad *pad1 = new TPad("pad1","pad1",0,0.6,1,1);
+        setPadMargins(pad1);
+        pad1->SetBottomMargin(0.01);
+        pad1->SetTopMargin(0.1);
+        pad1->SetTicks(1);
+        pad1->SetLogx();
+        pad1->SetGridy();
+        pad1->Draw();
+        pad1->cd();
+
+ 	TGraphErrors *grUnfolded = new TGraphErrors(5, &meanmass_data[0], &meanpt_data[0], &totalMassErr[0], &totalPtErr[0]);
+ 	grUnfolded->SetLineColor(kBlack);
+ 	grUnfolded->SetMarkerColor(kBlack);
+ 	grUnfolded->SetMarkerStyle(20);
+ 	grUnfolded->SetMarkerSize(1.);
+ 	grUnfolded->SetLineStyle(1);
+ 	grUnfolded->SetLineWidth(2);
+ 	grUnfolded->Draw("ape");
+	setYaxisGraph(grUnfolded);
+
+ 	TF1 *f1 = new TF1("f1", "[0]+[1]*log(x)", 40., 350.);
+ 	f1->GetXaxis()->SetRangeUser(40., 350.);
+ 	f1->SetLineColor(kBlack);
+ 	grUnfolded->Fit(f1, "R"); // R: fitting sub range
+ 	f1->Draw("same");
+
+        c1->cd();
+
+        Double_t initial_padx = 0.01;
+ 	TLatex ptstring;
+        for(int imass = 0; imass < 5; imass++){
+
+                TString imass_;
+                imass_.Form("%d", imass);
+
+                c1->cd();
+
+                TPad *pad = new TPad("mass_" + imass_,"mass_" + imass_, initial_padx + (0.18 * imass) + (0.01 * imass), 0., initial_padx + (0.18 * (imass + 1)) + (0.01 * imass), 0.55);
+                setPadMargins(pad);
+                pad->SetLeftMargin(0.1);
+                pad->SetRightMargin(0.1);
+                pad->SetBottomMargin(0.3);
+                pad->SetTicks(1);
+                pad->SetGrid(0,1);
+                //pad->SetLogx();
+                pad->Draw();
+                pad->cd();
+
+                // FIXME how to handle below memory allocation
+                TGraphErrors *grUnfolded = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &meanmasserr_data[imass], &meanpterr_data[imass]);
+                TGraphErrors *sysData = new TGraphErrors(1, &meanmass_data[imass], &meanpt_data[imass], &totalMassSys[imass], &totalPtSys[imass]);
+                TGraphErrors *grMC = new TGraphErrors(1, &meanmass_mc[imass], &meanpt_mc[imass], &meanmasserr_mc[imass], &meanpterr_mc[imass]);
+
+                Double_t xmin = meanmass_data[imass] > meanmass_mc[imass] ? meanmass_mc[imass] - 1.: meanmass_data[imass] - 1.,
+                         xmax = meanmass_data[imass] < meanmass_mc[imass] ? meanmass_mc[imass] + 1.: meanmass_data[imass] + 1.,
+                         ymin = meanpt_data[imass] > meanpt_mc[imass] ? meanpt_mc[imass] - 0.7: meanpt_data[imass] - 0.7,
+                         ymax = meanpt_data[imass] < meanpt_mc[imass] ? meanpt_mc[imass] + 0.7: meanpt_data[imass] + 0.7;
+                setTGraphAxis(grUnfolded, meanmass_data[imass], xmin, xmax, ymin, ymin + 3., grMC, sysData);
+
+		TString pt;
+		TString stat;
+		TString sys;
+ 		pt.Form("%.2f", meanpt_data[imass]);
+ 		stat.Form("%.2f", meanpterr_data[imass]);
+ 		sys.Form("%.2f", totalPtSys[imass]);
+ 		ptstring.SetTextSize(0.12);
+ 		ptstring.DrawLatex(meanmass_data[imass]*0.99, meanpt_data[imass]*1.02, pt+"#pm"+stat+"#pm"+sys);
+
+        }
+
+
+        CMS_lumi( c1, 4, 0 );
+        c1->cd();
+        c1->SaveAs(outpdf);
+
 }
 
 void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
@@ -729,7 +1275,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         ratio->SetLineColor(kBlack);
         ratio->SetMinimum(0.6);
         ratio->SetMaximum(1.4);
-        ratio->GetYaxis()->SetTitle("#frac{Data}{MC}");
+        ratio->GetYaxis()->SetTitle("data/MC");
         ratio->GetYaxis()->CenterTitle();
         setYaxisHist(ratio);
         setXaxisHist(ratio);
@@ -842,15 +1388,15 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
 	hsMCs->Add(hdybkgNoUO);
 	hsMCs->Add(hdysigNoUO);
 
-        TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
+        TCanvas* c1=new TCanvas("c1", "c1", 950*1.5, 1000*1.5);
         c1->cd();
         gStyle->SetOptStat(0);
 
-        TPad *pad1 = new TPad("pad1","pad1",0,0.45,1,1);
+        TPad *pad1 = new TPad("pad1","pad1",0,0.35,1,1);
         setPadMargins(pad1);
         pad1->SetBottomMargin(0.01);
         pad1->SetTopMargin(0.1);
-        pad1->SetTicks(1);
+        pad1->SetTicks(0,1);
         pad1->SetLogy();
         pad1->Draw();
         pad1->cd();
@@ -858,22 +1404,22 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         hdataNoUO->SetTitle("");
         hdataNoUO->Draw("p9histe");
         hdataNoUO->SetMarkerStyle(20);
-        hdataNoUO->SetMarkerSize(.7);
+        hdataNoUO->SetMarkerSize(1.2);
         hdataNoUO->SetLineColor(kBlack);
         setYaxisHist(hdataNoUO);
 	hsMCs->Draw("hist same");
         hdataNoUO->GetXaxis()->SetLabelSize(0.);
         hdataNoUO->GetYaxis()->SetTitle("Number of events per bin");
-        //histMCTruth_mass->Draw("histsames");
-        //histMCTruth_mass->SetLineColor(2);
-        hdataNoUO->GetYaxis()->SetRangeUser(1.,hdataNoUO->GetMaximum() * 1e2);
+        hdataNoUO->GetYaxis()->SetRangeUser(5.,hdataNoUO->GetMaximum() * 0.8e1);
         hdataNoUO->Draw("p9histsamee");
+	pad1->RedrawAxis();
 	
-        TLegend *fLeg = new TLegend(0.65,0.55,0.95,0.88);
-        fLeg->SetTextSize(0.05);
+        TLegend *fLeg = new TLegend(0.60,0.6,0.95,0.85);
+        fLeg->SetTextSize(50);
+        fLeg->SetTextFont(63);
         fLeg->SetFillStyle(0);
         fLeg->SetBorderSize(0);
- 	fLeg->AddEntry(hdataNoUO, "Data", "pe");
+ 	fLeg->AddEntry(hdataNoUO, "data", "lep");
  	if( channel.CompareTo("electron") == 0 ) fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
  	if( channel.CompareTo("muon") == 0 )     fLeg->AddEntry(hdysigNoUO, "Z #rightarrow #mu#mu", "F");
  	fLeg->AddEntry(hdybkgNoUO, "Z #rightarrow #tau#tau", "F");
@@ -884,9 +1430,9 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
 
         c1->cd();
 
-        TPad *pad2 = new TPad("pad2","pad2",0,0.2,1,0.45);
+        TPad *pad2 = new TPad("pad2","pad2",0,0.0,1,0.35);
         setPadMargins(pad2);
-        pad2->SetBottomMargin(0.2);
+        pad2->SetBottomMargin(0.3);
         pad2->SetTicks(1);
         pad2->SetGridy();
         pad2->Draw();
@@ -902,15 +1448,15 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         ratio->Divide(hmcs);
         ratio->Draw("pe");
         ratio->SetMarkerStyle(20);
-        ratio->SetMarkerSize(.7);
+        ratio->SetMarkerSize(1.2);
         ratio->SetLineColor(kBlack);
         ratio->SetMinimum(0.8);
         ratio->SetMaximum(1.2);
-        ratio->GetYaxis()->SetTitle("#frac{Data}{MC}");
+        ratio->GetYaxis()->SetTitle("data/MC");
         ratio->GetYaxis()->CenterTitle();
         setYaxisHist(ratio);
         setXaxisHist(ratio);
-        ratio->GetYaxis()->SetNdivisions(515);
+        ratio->GetYaxis()->SetNdivisions(510);
 
         TLine *l_;
         l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
@@ -919,7 +1465,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         l_->SetLineColor(kRed);
 
         c1->cd();
-
+/*
         TPad *pad3 = new TPad("pad3","pad3",0,0.,1,0.2);
         setPadMargins(pad3);
         pad3->SetBottomMargin(0.2);
@@ -941,7 +1487,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
 	hratiottbar->SetFillColorAlpha(fillcolorTop, 0.35);
         hratiodybkg->Draw("histsame");
 	hratiodybkg->SetFillColorAlpha(fillcolorZ+1, 0.35);
-
+*/
         CMS_lumi( pad1, 4, 0 );
         c1->cd();
         c1->SaveAs(outpdf);

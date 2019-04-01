@@ -128,9 +128,9 @@ def makeSigHists(sample, outputDirectory, channel):
 		infile = rt.TFile(filepath,'r')
 		print filepath
                 temp_kfactor = 1.;
-		if filepath.find("M-10to50") > 0:
-		   print "this is M-10to50 DY sample"
-                   temp_kfactor = 6225.42/5765.4
+		#if filepath.find("M-10to50") > 0:
+		#   print "this is M-10to50 DY sample"
+                #   temp_kfactor = 6225.42/5765.4
 		print "temp_kfactor: " + str(temp_kfactor)
 		rt.sigHists(infile, outfile, outfile_, sigHists, recoHists, channel, temp_kfactor)
 

@@ -17,6 +17,23 @@ def basicRatio(outpdf, unfold_pt, unfold_mass, filepath):
 	rt.drawRatio(outpdf, unfold_pt, unfold_mass, infile)	
         del infile
 
+def drawUnfoldedPt(outpdf, unfold_pt):
+
+	rt.drawUnfoldedPtDistWithSys(outpdf, unfold_pt)
+
+def drawCombinedISR(outpdf, unfold_pt2016, unfold_mass2016, unfold_pt2017, unfold_mass2017 ):
+
+	rt.drawCombinedISR(outpdf, unfold_pt2016, unfold_mass2016, unfold_pt2017, unfold_mass2017 )
+
+def isrFit(outpdf, unfold_pt, unfold_mass, filepath):
+
+        print "############################ draw fit ###############################################"
+        print "Open " + filepath
+        infile = rt.TFile(filepath,'r')
+
+        rt.drawISRfit(outpdf, unfold_pt, unfold_mass, infile)
+        del infile
+
 def drawTest(outpdf, unfold_pt):
 
         rt.drawTest(outpdf, unfold_pt)

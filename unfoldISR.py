@@ -7,10 +7,12 @@ import ROOT
 parser = argparse.ArgumentParser(description='Unfolding for ISR analysis')
 
 parser.add_argument('--channel' , dest = 'channel', default = 'electron', help = 'select channel electron or muon')
+parser.add_argument('--year' , dest = 'year', default = '2016', help = 'select year')
 parser.add_argument('--postfix' , dest = 'postfix', default = 'norminal', help = 'select histogram name')
 parser.add_argument('--createInputHists'  , action='store_true'  , help = 'create input histograms')
 parser.add_argument('--createMatrixOnly'  , action='store_true'  , default = False, help = 'create histograms only for signal sample')
 parser.add_argument('--getUnfoldResults'  , action='store_true'  , help = 'Get unfolding resutls')
+parser.add_argument('--getCombinedResults'  , action='store_true'  , help = 'Combine 2016 and 2017')
 parser.add_argument('--doSeperateUnfold'  , action='store_true'  , default = False, help = 'Seperate unfolding steps')
 
 args = parser.parse_args()
@@ -19,7 +21,7 @@ args = parser.parse_args()
 import etc.sampleDef as isrSamples
 import pyScripts.unfoldInputUtil as histUtil
 
-outputDirectory = 'output/' + args.channel + "/"  
+outputDirectory = 'output/'+args.year+'/' + args.channel + "/"  
 inputfhisttxtName = outputDirectory + "fhist.txt"
 if not os.path.exists( outputDirectory ):
 	os.makedirs( outputDirectory )
@@ -28,9 +30,15 @@ print "channel to run: " + args.channel
 
 selectedSample = {} 
 if args.channel == "electron":
-	selectedSample = isrSamples.samplesDef_electronLegacy
+	if args.year == "2016":
+		selectedSample = isrSamples.samplesDef_electron2016Legacy
+	if args.year == "2017":
+		selectedSample = isrSamples.samplesDef_electron2017Legacy
 if args.channel == "muon":
-	selectedSample = isrSamples.samplesDef_muonLegacy 
+	if args.year == "2016":
+		selectedSample = isrSamples.samplesDef_muon2016Legacy 
+	if args.year == "2017":
+		selectedSample = isrSamples.samplesDef_muon2017Legacy 
 
 if args.createInputHists:
 	import etc.histDef as inputfHist
@@ -63,22 +71,136 @@ if args.createInputHists:
 	
 	fOutTxt.close()
 
-# read text file
-fOutTxtCheck = open( inputfhisttxtName,'r')
-unfoldInputList = {}
 
-for line in fOutTxtCheck:
-	modifiedLine = line.lstrip(' ').rstrip(' ').rstrip('\n')
-        if modifiedLine.split(' ')[1] == "data":
-		unfoldInputList['data'] = modifiedLine.split(' ')[2]
-        if modifiedLine.split(' ')[1] == "sig":
-		unfoldInputList['sig'] = modifiedLine.split(' ')[2]
-        if modifiedLine.split(' ')[1] == "bkg": # use the sample name as keyword for background
-		unfoldInputList[modifiedLine.split(' ')[0]] = modifiedLine.split(' ')[2]
+if args.getCombinedResults:
 
-print unfoldInputList
+	outputDirectory2016 = 'output/2016/' + args.channel + "/"
+	inputfhisttxtName2016 = outputDirectory2016 + "fhist.txt"
+
+	# read text file
+	fOutTxtCheck2016 = open(inputfhisttxtName2016,'r')
+	unfoldInputList2016 = {}
+	
+	for line in fOutTxtCheck2016:
+	        modifiedLine = line.lstrip(' ').rstrip(' ').rstrip('\n')
+	        if modifiedLine.split(' ')[1] == "data":
+	                unfoldInputList2016['data'] = modifiedLine.split(' ')[2]
+	        if modifiedLine.split(' ')[1] == "sig":
+	                unfoldInputList2016['sig'] = modifiedLine.split(' ')[2]
+	        if modifiedLine.split(' ')[1] == "bkg": # use the sample name as keyword for background
+	                unfoldInputList2016[modifiedLine.split(' ')[0]] = modifiedLine.split(' ')[2]
+	
+	print unfoldInputList2016
+
+        outputDirectory2017 = 'output/2017/' + args.channel + "/"
+        inputfhisttxtName2017 = outputDirectory2017 + "fhist.txt"
+
+        # read text file
+        fOutTxtCheck2017 = open(inputfhisttxtName2017,'r')
+        unfoldInputList2017 = {}
+        
+        for line in fOutTxtCheck2017:
+                modifiedLine = line.lstrip(' ').rstrip(' ').rstrip('\n')
+                if modifiedLine.split(' ')[1] == "data":
+                        unfoldInputList2017['data'] = modifiedLine.split(' ')[2]
+                if modifiedLine.split(' ')[1] == "sig":
+                        unfoldInputList2017['sig'] = modifiedLine.split(' ')[2]
+                if modifiedLine.split(' ')[1] == "bkg": # use the sample name as keyword for background
+                        unfoldInputList2017[modifiedLine.split(' ')[0]] = modifiedLine.split(' ')[2]
+        
+        print unfoldInputList2017
+
+	import pyScripts.unfoldUtil as unfoldutil
+	import pyScripts.drawUtil as drawutil
+
+        postfix = args.postfix
+        postfix_matrix = args.postfix
+
+	## 2016
+        # set unfolding class 
+        unfold_pt2016 =   unfoldutil.setUnfold(unfoldInputList2016['sig'], "Pt",   postfix_matrix, False)
+        unfold_mass2016 = unfoldutil.setUnfold(unfoldInputList2016['sig'], "Mass", postfix_matrix, False)
+
+        # get bkg subtracted data
+        unfoldutil.setUnfoldInput(unfold_pt2016, "Pt", postfix, unfoldInputList2016['data'])
+        #unfoldutil.setUnfoldInput(unfold_pt2016, "Pt", unfoldInputList2016['sig'])
+
+        unfoldutil.subtractBkgs(unfold_pt2016, "Pt", postfix, unfoldInputList2016['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold_pt2016, "Pt", postfix, unfoldInputList2016['TTbar'], "TTbar")
+        unfoldutil.subtractBkgs(unfold_pt2016, "Pt", postfix, unfoldInputList2016['VV'], "VV")
+        unfoldutil.subtractBkgs(unfold_pt2016, "Pt", postfix, unfoldInputList2016['Wjets'], "Wjets")
+
+        # for mass unfolding
+        unfoldutil.setUnfoldInput(unfold_mass2016, "Mass", postfix, unfoldInputList2016['data'])
+        #unfoldutil.setUnfoldInput(unfold_mass2016, "Mass", unfoldInputList2016['sig'])
+
+        unfoldutil.subtractBkgs(unfold_mass2016, "Mass", postfix, unfoldInputList2016['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold_mass2016, "Mass", postfix, unfoldInputList2016['TTbar'], "TTbar")
+        unfoldutil.subtractBkgs(unfold_mass2016, "Mass", postfix, unfoldInputList2016['VV'], "VV")
+        unfoldutil.subtractBkgs(unfold_mass2016, "Mass", postfix, unfoldInputList2016['Wjets'], "Wjets")
+
+        # do unfolding with bkg subtracted data and the migration matrix
+        unfoldutil.doUnfold(unfold_pt2016)
+        unfoldutil.doUnfold(unfold_mass2016)
+
+        unfoldutil.setVectorSys(unfoldInputList2016['sig'], unfold_pt2016,   "Pt",   "AlphaS", 2)
+        unfoldutil.setVectorSys(unfoldInputList2016['sig'], unfold_mass2016, "Mass", "AlphaS", 2)
+
+        unfoldutil.setVectorSys(unfoldInputList2016['sig'], unfold_pt2016,   "Pt",   "Scale", 9)
+        unfoldutil.setVectorSys(unfoldInputList2016['sig'], unfold_mass2016, "Mass", "Scale", 9)
+
+	## 2017
+        # set unfolding class 
+        unfold_pt2017 =   unfoldutil.setUnfold(unfoldInputList2017['sig'], "Pt",   postfix_matrix, False)
+        unfold_mass2017 = unfoldutil.setUnfold(unfoldInputList2017['sig'], "Mass", postfix_matrix, False)
+
+        # get bkg subtracted data
+        unfoldutil.setUnfoldInput(unfold_pt2017, "Pt", postfix, unfoldInputList2017['data'])
+        #unfoldutil.setUnfoldInput(unfold_pt2017, "Pt", unfoldInputList2017['sig'])
+
+        unfoldutil.subtractBkgs(unfold_pt2017, "Pt", postfix, unfoldInputList2017['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold_pt2017, "Pt", postfix, unfoldInputList2017['TTbar'], "TTbar")
+        unfoldutil.subtractBkgs(unfold_pt2017, "Pt", postfix, unfoldInputList2017['VV'], "VV")
+        unfoldutil.subtractBkgs(unfold_pt2017, "Pt", postfix, unfoldInputList2017['Wjets'], "Wjets")
+
+        # for mass unfolding
+        unfoldutil.setUnfoldInput(unfold_mass2017, "Mass", postfix, unfoldInputList2017['data'])
+        #unfoldutil.setUnfoldInput(unfold_mass2017, "Mass", unfoldInputList2017['sig'])
+
+        unfoldutil.subtractBkgs(unfold_mass2017, "Mass", postfix, unfoldInputList2017['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold_mass2017, "Mass", postfix, unfoldInputList2017['TTbar'], "TTbar")
+        unfoldutil.subtractBkgs(unfold_mass2017, "Mass", postfix, unfoldInputList2017['VV'], "VV")
+        unfoldutil.subtractBkgs(unfold_mass2017, "Mass", postfix, unfoldInputList2017['Wjets'], "Wjets")
+
+        # do unfolding with bkg subtracted data and the migration matrix
+        unfoldutil.doUnfold(unfold_pt2017)
+        unfoldutil.doUnfold(unfold_mass2017)
+
+        unfoldutil.setVectorSys(unfoldInputList2017['sig'], unfold_pt2017,   "Pt",   "AlphaS", 2)
+        unfoldutil.setVectorSys(unfoldInputList2017['sig'], unfold_mass2017, "Mass", "AlphaS", 2)
+
+        unfoldutil.setVectorSys(unfoldInputList2017['sig'], unfold_pt2017,   "Pt",   "Scale", 9)
+        unfoldutil.setVectorSys(unfoldInputList2017['sig'], unfold_mass2017, "Mass", "Scale", 9)
+
+	drawutil.drawCombinedISR("./test.pdf", unfold_pt2016, unfold_mass2016, unfold_pt2017, unfold_mass2017 )
+
 
 if args.getUnfoldResults:
+
+	# read text file
+	fOutTxtCheck = open( inputfhisttxtName,'r')
+	unfoldInputList = {}
+	
+	for line in fOutTxtCheck:
+	        modifiedLine = line.lstrip(' ').rstrip(' ').rstrip('\n')
+	        if modifiedLine.split(' ')[1] == "data":
+	                unfoldInputList['data'] = modifiedLine.split(' ')[2]
+	        if modifiedLine.split(' ')[1] == "sig":
+	                unfoldInputList['sig'] = modifiedLine.split(' ')[2]
+	        if modifiedLine.split(' ')[1] == "bkg": # use the sample name as keyword for background
+	                unfoldInputList[modifiedLine.split(' ')[0]] = modifiedLine.split(' ')[2]
+	
+	print unfoldInputList
 
 	import pyScripts.unfoldUtil as unfoldutil
 	import pyScripts.drawUtil as drawutil
@@ -94,14 +216,14 @@ if args.getUnfoldResults:
 	unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", postfix_matrix, False)
 
 	# print out response matrix and efficiency plot
-        outpdf = outputDirectory + "response.png"
+        outpdf = outputDirectory + "response.pdf"
         drawutil.responseM(outpdf, unfold_pt)
-        outpdf = outputDirectory + "efficiency.png"
+        outpdf = outputDirectory + "efficiency.pdf"
         drawutil.efficiency(outpdf, unfold_pt)
 
-        outpdf_mass = outputDirectory + "response_mass.png"
+        outpdf_mass = outputDirectory + "response_mass.pdf"
         drawutil.responseM(outpdf_mass, unfold_mass)
-        outpdf_mass = outputDirectory + "efficiency_mass.png"
+        outpdf_mass = outputDirectory + "efficiency_mass.pdf"
         drawutil.efficiency(outpdf_mass, unfold_mass)
 
 	# get bkg subtracted data
@@ -139,21 +261,27 @@ if args.getUnfoldResults:
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt,   "Pt",   "Scale", 9)
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "Scale", 9)
 
-        outpdf = outputDirectory + "ratio.png"
-        outpdf_mass = outputDirectory + "ratio_mass.png"
+        outpdf = outputDirectory + "ratio.pdf"
+        outpdf_mass = outputDirectory + "ratio_mass.pdf"
         # check unfolded distribution
         drawutil.basicRatio(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'])
         drawutil.basicRatioMass(outpdf_mass, unfold_mass, unfoldInputList['sig'])
 
+        outpdf = outputDirectory + "isrFit.pdf"
+        drawutil.isrFit(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'])
+
 	# check reco level distribution
 	# FIXME use TUnfoldDensityV17::GetBackground()
-        outpdf = outputDirectory + "recoPt.png"
+        outpdf = outputDirectory + "recoPt.pdf"
         drawutil.recoPt(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], args.channel);
 
-        outpdf = outputDirectory + "recoMass.png"
+        outpdf = outputDirectory + "recoMass.pdf"
         drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], args.channel);
 
-	#outpdf = outputDirectory + "test.png" 
+        outpdf = outputDirectory + "recoPtdist.pdf"
+	drawutil.drawUnfoldedPt(outpdf, unfold_pt)
+
+	#outpdf = outputDirectory + "test.pdf" 
 	#drawutil.drawTest(outpdf, unfold_pt)
 
 	if args.doSeperateUnfold:
@@ -166,14 +294,14 @@ if args.getUnfoldResults:
         	unfoldFSR_pt = unfoldutil.setUnfold(unfoldInputList['sig'],   "Pt",   "FSR", True)
         	unfoldFSR_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "FSR", True)
 
-        	outpdf = outputDirectory + "response_FSR.png"
+        	outpdf = outputDirectory + "response_FSR.pdf"
         	drawutil.responseM(outpdf, unfoldFSR_pt)
-        	outpdf = outputDirectory + "efficiency_FSR.png"
+        	outpdf = outputDirectory + "efficiency_FSR.pdf"
         	drawutil.efficiency(outpdf, unfoldFSR_pt)
 
-        	outpdf_mass = outputDirectory + "response_mass_FSR.png"
+        	outpdf_mass = outputDirectory + "response_mass_FSR.pdf"
         	drawutil.responseM(outpdf_mass, unfoldFSR_mass)
-        	outpdf_mass = outputDirectory + "efficiency_mass_FSR.png"
+        	outpdf_mass = outputDirectory + "efficiency_mass_FSR.pdf"
         	drawutil.efficiency(outpdf_mass, unfoldFSR_mass)
 
 		unfoldutil.setUnfoldInputHist(unfoldFSR_pt, hunfolded_pt)
@@ -182,8 +310,8 @@ if args.getUnfoldResults:
         	unfoldutil.doUnfold(unfoldFSR_pt)
         	unfoldutil.doUnfold(unfoldFSR_mass)
 
-        	outpdf = outputDirectory + "ratio_FSR.png"
-        	outpdf_mass = outputDirectory + "ratio_mass_FSR.png"
+        	outpdf = outputDirectory + "ratio_FSR.pdf"
+        	outpdf_mass = outputDirectory + "ratio_mass_FSR.pdf"
         	# check unfolded distribution
         	drawutil.basicRatio(outpdf, unfoldFSR_pt, unfoldFSR_mass, unfoldInputList['sig'])
         	drawutil.basicRatioMass(outpdf_mass, unfoldFSR_mass, unfoldInputList['sig'])
