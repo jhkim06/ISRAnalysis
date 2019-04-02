@@ -261,9 +261,9 @@ if args.getUnfoldResults:
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt,   "Pt",   "Scale", 9)
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "Scale", 9)
 
+        # check unfolded distribution
         outpdf = outputDirectory + "ratio_"+args.channel+".pdf"
         outpdf_mass = outputDirectory + "ratio_mass_"+args.channel+".pdf"
-        # check unfolded distribution
         drawutil.basicRatio(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'])
         drawutil.basicRatioMass(outpdf_mass, unfold_mass, unfoldInputList['sig'])
 
@@ -280,9 +280,6 @@ if args.getUnfoldResults:
 
         outpdf = outputDirectory + "recoPtdist_"+args.channel+".pdf"
 	drawutil.drawUnfoldedPt(outpdf, unfold_pt)
-
-	#outpdf = outputDirectory + "test_"+args.channel+".pdf" 
-	#drawutil.drawTest(outpdf, unfold_pt)
 
 	if args.doSeperateUnfold:
 		# FSR unfolding
