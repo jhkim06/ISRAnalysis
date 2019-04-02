@@ -30,20 +30,24 @@ public:
 
 class sigHistsinfo {
 
+private:
+
+	TUnfoldBinningV17 *binningRec;
+
 public:
 
-  std::map<TString, Double_t> sysNamesWeights;
-  std::map<TString, TH1*> histMaps;
-  std::map<TString, TH2*> hist2DMaps;
-  // binning
+  	std::map<TString, Double_t> sysNamesWeights;
+  	std::map<TString, TH1*> histMaps;
+  	std::map<TString, TH2*> hist2DMaps;
+  	// binning
   
-  Bool_t isInc;
+  	Bool_t isInc;
 
-  void FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen);
-  // FillMigrationM(bool selected, TString hname, Double_t RecoMass, Double_t truthMass, Double_t wreco, Double, wgen);
+  	void FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen);
+  	// FillMigrationM(bool selected, TString hname, Double_t RecoMass, Double_t truthMass, Double_t wreco, Double, wgen);
 
-  sigHistsinfo(std::map<TString, TH1*> histMaps_, std::map<TString, TH2*> hist2DMaps_, Int_t isInc_):
-    histMaps(std::move(histMaps_)), hist2DMaps(std::move(hist2DMaps_)), isInc(std::move(isInc_)) {}
+  	sigHistsinfo(std::map<TString, TH1*> histMaps_, std::map<TString, TH2*> hist2DMaps_, Int_t isInc_):
+    		histMaps(std::move(histMaps_)), hist2DMaps(std::move(hist2DMaps_)), isInc(std::move(isInc_)) {}
 };
 
 void sigHistsinfo::FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen){
@@ -286,8 +290,8 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, sigHistsinfo &sig
 	TUnfoldBinningV17 *massBin_gen = massBinning_gen();
 	
 	// TODO based on the info in recoHistsinfo make map for systematics
-	for(int i=0;i<nentries;i++){
-	//for(int i=0;i<10000;i++){
+	//for(int i=0;i<nentries;i++){
+	for(int i=0;i<10000;i++){
 	  if(i%10000000==0) cout<<i<<endl;
 	  tsignal->GetEntry(i);
 	
@@ -429,11 +433,10 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, sigHistsinfo &sig
                        if(isfiducialPreFSR) (sigHist.hist2DMaps.find("mass_FSR")->second)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)),                  massBinZero, weightGen);
 		   }
 	           //
-	           ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	       }// DY to ee or mumu events only
 	       //
-	       ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	       //////////////////////////////////////////////////// fill migration matrix ////////////////////////////////////////
 	
 	   }// for DYtoLL MC case
 	}// event loop
