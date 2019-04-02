@@ -49,9 +49,9 @@ void setXaxisHist(TH1* hist){
 
         hist->GetXaxis()->SetLabelFont(63);
         hist->GetXaxis()->SetLabelSize(45);
-        hist->GetXaxis()->SetTitleOffset(3.5);
+        hist->GetXaxis()->SetTitleOffset(2.8);
         hist->GetXaxis()->SetLabelOffset(0.02);
-        hist->GetXaxis()->SetTitleFont(43);
+        hist->GetXaxis()->SetTitleFont(63);
         hist->GetXaxis()->SetTitleSize(50);
 }
 
@@ -1201,15 +1201,15 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
 	hsMCs->Add(hdybkgNoUO);
 	hsMCs->Add(hdysigNoUO);
 
-        TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
+        TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 950*1.5, 1000*1.5);
         c1->cd();
         gStyle->SetOptStat(0);
 
-        TPad *pad1 = new TPad("pad1","pad1",0,0.45,1,1);
+        TPad *pad1 = new TPad("pad1","pad1",0,0.35,1,1);
         setPadMargins(pad1);
         pad1->SetTopMargin(0.1);
         pad1->SetBottomMargin(0.01);
-        pad1->SetTicks(1);
+        pad1->SetTicks(0,1);
         pad1->SetLogy();
         pad1->Draw();
         pad1->cd();
@@ -1217,16 +1217,15 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         hdataNoUO->SetTitle("");
         hdataNoUO->Draw("p9histe");
         hdataNoUO->SetMarkerStyle(20);
-        hdataNoUO->SetMarkerSize(.7);
+        hdataNoUO->SetMarkerSize(1.5);
         hdataNoUO->SetLineColor(kBlack);
         setYaxisHist(hdataNoUO);
 	hsMCs->Draw("hist same");
         hdataNoUO->GetXaxis()->SetLabelSize(0.);
         hdataNoUO->GetYaxis()->SetTitle("Number of events per bin");
-        //histMCTruth_pt->Draw("histsames");
-        //histMCTruth_pt->SetLineColor(2);
-        hdataNoUO->GetYaxis()->SetRangeUser(1.,hdataNoUO->GetMaximum() * 1e2);
+        hdataNoUO->GetYaxis()->SetRangeUser(5.,hdataNoUO->GetMaximum() * 1e2);
         hdataNoUO->Draw("p9histsamee");
+        pad1->RedrawAxis();
 
         int totoalNbin = hdataNoUO->GetXaxis()->GetNbins();
 
@@ -1238,14 +1237,15 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
                 grid_vertical.DrawLine(totoalNbin/5 * (ii+1) + 0.5, hdataNoUO->GetMinimum(), totoalNbin/5 * (ii+1) + 0.5, hdataNoUO->GetMaximum() );
         }
 
-	TLegend *fLeg = new TLegend(0.65,0.55,0.95,0.88);
-        fLeg->SetTextSize(0.05);
+	TLegend *fLeg = new TLegend(0.6,0.6,0.95,0.85);
+        fLeg->SetTextSize(50);
+        fLeg->SetTextFont(63);
         fLeg->SetFillStyle(0);
         fLeg->SetBorderSize(0);
- 	fLeg->AddEntry(hdataNoUO, "Data", "pe");
- 	if( channel.CompareTo("electron") == 0 ) fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
- 	if( channel.CompareTo("muon") == 0 )     fLeg->AddEntry(hdysigNoUO, "Z #rightarrow #mu#mu", "F");
- 	fLeg->AddEntry(hdybkgNoUO, "Z #rightarrow #tau#tau", "F");
+ 	fLeg->AddEntry(hdataNoUO, "Data", "lep");
+ 	if( channel.CompareTo("electron") == 0 ) fLeg->AddEntry(hdysigNoUO, "Z/#gamma* #rightarrow ee", "F");
+ 	if( channel.CompareTo("muon") == 0 )     fLeg->AddEntry(hdysigNoUO, "Z/#gamma* #rightarrow #mu#mu", "F");
+ 	fLeg->AddEntry(hdybkgNoUO, "Z/#gamma* #rightarrow #tau#tau", "F");
  	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
  	fLeg->AddEntry(hvvNoUO, "VV", "F");
  	fLeg->AddEntry(hwjetsNoUO, "Wjets", "F");
@@ -1253,9 +1253,9 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
 
         c1->cd();
 
-        TPad *pad2 = new TPad("pad2","pad2",0,0.2,1,0.45);
+        TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.35);
         setPadMargins(pad2);
-        pad2->SetBottomMargin(0.2);
+        pad2->SetBottomMargin(0.22);
         pad2->SetTicks(1);
         pad2->SetGridy();
         pad2->Draw();
@@ -1271,7 +1271,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         ratio->Divide(hmcs);
         ratio->Draw("pe");
         ratio->SetMarkerStyle(20);
-        ratio->SetMarkerSize(.7);
+        ratio->SetMarkerSize(1.5);
         ratio->SetLineColor(kBlack);
         ratio->SetMinimum(0.6);
         ratio->SetMaximum(1.4);
@@ -1280,6 +1280,8 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         setYaxisHist(ratio);
         setXaxisHist(ratio);
         ratio->GetYaxis()->SetNdivisions(515);
+        if( channel.CompareTo("electron") == 0 ) ratio->GetXaxis()->SetTitle("Mass, p_{T}(ee) bin");
+        if( channel.CompareTo("muon") == 0 ) ratio->GetXaxis()->SetTitle("Mass, p_{T}(#mu#mu) bin");
 
         TLine *l_;
         l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
@@ -1294,7 +1296,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
 
 
         c1->cd();
-
+/*
         TPad *pad3 = new TPad("pad3","pad3",0,0.,1,0.2);
         setPadMargins(pad3);
         pad3->SetBottomMargin(0.2);
@@ -1321,7 +1323,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         {
                 grid_vertical.DrawLine(totoalNbin/5 * (ii+1) + 0.5, hratiottbar->GetMinimum(), totoalNbin/5 * (ii+1) + 0.5, hratiottbar->GetMaximum() );
         }
-
+*/
 
         CMS_lumi( pad1, 4, 0 );
         c1->cd();
@@ -1404,7 +1406,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         hdataNoUO->SetTitle("");
         hdataNoUO->Draw("p9histe");
         hdataNoUO->SetMarkerStyle(20);
-        hdataNoUO->SetMarkerSize(1.2);
+        hdataNoUO->SetMarkerSize(1.5);
         hdataNoUO->SetLineColor(kBlack);
         setYaxisHist(hdataNoUO);
 	hsMCs->Draw("hist same");
@@ -1414,15 +1416,15 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         hdataNoUO->Draw("p9histsamee");
 	pad1->RedrawAxis();
 	
-        TLegend *fLeg = new TLegend(0.60,0.6,0.95,0.85);
+        TLegend *fLeg = new TLegend(0.6,0.6,0.95,0.85);
         fLeg->SetTextSize(50);
         fLeg->SetTextFont(63);
         fLeg->SetFillStyle(0);
         fLeg->SetBorderSize(0);
  	fLeg->AddEntry(hdataNoUO, "data", "lep");
- 	if( channel.CompareTo("electron") == 0 ) fLeg->AddEntry(hdysigNoUO, "Z #rightarrow ee", "F");
- 	if( channel.CompareTo("muon") == 0 )     fLeg->AddEntry(hdysigNoUO, "Z #rightarrow #mu#mu", "F");
- 	fLeg->AddEntry(hdybkgNoUO, "Z #rightarrow #tau#tau", "F");
+ 	if( channel.CompareTo("electron") == 0 ) fLeg->AddEntry(hdysigNoUO, "Z/#gamma* #rightarrow ee", "F");
+ 	if( channel.CompareTo("muon") == 0 )     fLeg->AddEntry(hdysigNoUO, "Z/#gamma* #rightarrow #mu#mu", "F");
+ 	fLeg->AddEntry(hdybkgNoUO, "Z/#gamma* #rightarrow #tau#tau", "F");
  	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
  	fLeg->AddEntry(hvvNoUO, "VV", "F");
  	fLeg->AddEntry(hwjetsNoUO, "Wjets", "F");
@@ -1432,7 +1434,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
 
         TPad *pad2 = new TPad("pad2","pad2",0,0.0,1,0.35);
         setPadMargins(pad2);
-        pad2->SetBottomMargin(0.3);
+        pad2->SetBottomMargin(0.22);
         pad2->SetTicks(1);
         pad2->SetGridy();
         pad2->Draw();
@@ -1448,15 +1450,17 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         ratio->Divide(hmcs);
         ratio->Draw("pe");
         ratio->SetMarkerStyle(20);
-        ratio->SetMarkerSize(1.2);
+        ratio->SetMarkerSize(1.5);
         ratio->SetLineColor(kBlack);
         ratio->SetMinimum(0.8);
-        ratio->SetMaximum(1.2);
+        ratio->SetMaximum(1.5);
         ratio->GetYaxis()->SetTitle("data/MC");
         ratio->GetYaxis()->CenterTitle();
         setYaxisHist(ratio);
         setXaxisHist(ratio);
         ratio->GetYaxis()->SetNdivisions(510);
+        if( channel.CompareTo("electron") == 0 ) ratio->GetXaxis()->SetTitle("Mass(ee) (GeV)");
+        if( channel.CompareTo("muon") == 0 ) ratio->GetXaxis()->SetTitle("Mass(#mu#mu) (GeV)");
 
         TLine *l_;
         l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);

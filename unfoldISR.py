@@ -182,7 +182,7 @@ if args.getCombinedResults:
         unfoldutil.setVectorSys(unfoldInputList2017['sig'], unfold_pt2017,   "Pt",   "Scale", 9)
         unfoldutil.setVectorSys(unfoldInputList2017['sig'], unfold_mass2017, "Mass", "Scale", 9)
 
-	drawutil.drawCombinedISR("./test.pdf", unfold_pt2016, unfold_mass2016, unfold_pt2017, unfold_mass2017 )
+	drawutil.drawCombinedISR("./test_"+args.channel+".pdf", unfold_pt2016, unfold_mass2016, unfold_pt2017, unfold_mass2017 )
 
 
 if args.getUnfoldResults:
@@ -216,14 +216,14 @@ if args.getUnfoldResults:
 	unfold_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", postfix_matrix, False)
 
 	# print out response matrix and efficiency plot
-        outpdf = outputDirectory + "response.pdf"
+        outpdf = outputDirectory + "response_"+args.channel+".pdf"
         drawutil.responseM(outpdf, unfold_pt)
-        outpdf = outputDirectory + "efficiency.pdf"
+        outpdf = outputDirectory + "efficiency_"+args.channel+".pdf"
         drawutil.efficiency(outpdf, unfold_pt)
 
-        outpdf_mass = outputDirectory + "response_mass.pdf"
+        outpdf_mass = outputDirectory + "response_mass_"+args.channel+".pdf"
         drawutil.responseM(outpdf_mass, unfold_mass)
-        outpdf_mass = outputDirectory + "efficiency_mass.pdf"
+        outpdf_mass = outputDirectory + "efficiency_mass_"+args.channel+".pdf"
         drawutil.efficiency(outpdf_mass, unfold_mass)
 
 	# get bkg subtracted data
@@ -261,27 +261,27 @@ if args.getUnfoldResults:
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt,   "Pt",   "Scale", 9)
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "Scale", 9)
 
-        outpdf = outputDirectory + "ratio.pdf"
-        outpdf_mass = outputDirectory + "ratio_mass.pdf"
+        outpdf = outputDirectory + "ratio_"+args.channel+".pdf"
+        outpdf_mass = outputDirectory + "ratio_mass_"+args.channel+".pdf"
         # check unfolded distribution
         drawutil.basicRatio(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'])
         drawutil.basicRatioMass(outpdf_mass, unfold_mass, unfoldInputList['sig'])
 
-        outpdf = outputDirectory + "isrFit.pdf"
+        outpdf = outputDirectory + "isrFit_"+args.channel+".pdf"
         drawutil.isrFit(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'])
 
 	# check reco level distribution
 	# FIXME use TUnfoldDensityV17::GetBackground()
-        outpdf = outputDirectory + "recoPt.pdf"
+        outpdf = outputDirectory + "recoPt_"+args.channel+".pdf"
         drawutil.recoPt(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], args.channel);
 
-        outpdf = outputDirectory + "recoMass.pdf"
+        outpdf = outputDirectory + "recoMass_"+args.channel+".pdf"
         drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], args.channel);
 
-        outpdf = outputDirectory + "recoPtdist.pdf"
+        outpdf = outputDirectory + "recoPtdist_"+args.channel+".pdf"
 	drawutil.drawUnfoldedPt(outpdf, unfold_pt)
 
-	#outpdf = outputDirectory + "test.pdf" 
+	#outpdf = outputDirectory + "test_"+args.channel+".pdf" 
 	#drawutil.drawTest(outpdf, unfold_pt)
 
 	if args.doSeperateUnfold:
@@ -294,14 +294,14 @@ if args.getUnfoldResults:
         	unfoldFSR_pt = unfoldutil.setUnfold(unfoldInputList['sig'],   "Pt",   "FSR", True)
         	unfoldFSR_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "FSR", True)
 
-        	outpdf = outputDirectory + "response_FSR.pdf"
+        	outpdf = outputDirectory + "response_FSR_"+args.channel+".pdf"
         	drawutil.responseM(outpdf, unfoldFSR_pt)
-        	outpdf = outputDirectory + "efficiency_FSR.pdf"
+        	outpdf = outputDirectory + "efficiency_FSR_"+args.channel+".pdf"
         	drawutil.efficiency(outpdf, unfoldFSR_pt)
 
-        	outpdf_mass = outputDirectory + "response_mass_FSR.pdf"
+        	outpdf_mass = outputDirectory + "response_mass_FSR_"+args.channel+".pdf"
         	drawutil.responseM(outpdf_mass, unfoldFSR_mass)
-        	outpdf_mass = outputDirectory + "efficiency_mass_FSR.pdf"
+        	outpdf_mass = outputDirectory + "efficiency_mass_FSR_"+args.channel+".pdf"
         	drawutil.efficiency(outpdf_mass, unfoldFSR_mass)
 
 		unfoldutil.setUnfoldInputHist(unfoldFSR_pt, hunfolded_pt)
@@ -310,8 +310,8 @@ if args.getUnfoldResults:
         	unfoldutil.doUnfold(unfoldFSR_pt)
         	unfoldutil.doUnfold(unfoldFSR_mass)
 
-        	outpdf = outputDirectory + "ratio_FSR.pdf"
-        	outpdf_mass = outputDirectory + "ratio_mass_FSR.pdf"
+        	outpdf = outputDirectory + "ratio_FSR_"+args.channel+".pdf"
+        	outpdf_mass = outputDirectory + "ratio_mass_FSR_"+args.channel+".pdf"
         	# check unfolded distribution
         	drawutil.basicRatio(outpdf, unfoldFSR_pt, unfoldFSR_mass, unfoldInputList['sig'])
         	drawutil.basicRatioMass(outpdf_mass, unfoldFSR_mass, unfoldInputList['sig'])

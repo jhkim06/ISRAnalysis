@@ -156,8 +156,8 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist, TS
 	TUnfoldBinningV17 *massbin = massBinning_rec();
 	
 	// TODO based on the info in recoHistsinfo make map for systematics
-	for(int i=0;i<nentries;i++){
-	//for(int i=0;i<10000;i++){
+	//for(int i=0;i<nentries;i++){
+	for(int i=0;i<10000;i++){
 	  if(i%10000000==0) cout<<i<<endl;
 	  treco->GetEntry(i);
 
@@ -240,8 +240,8 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, const sigHistsinf
 	TUnfoldBinningV17 *massBin_gen = massBinning_gen();
 	
 	// TODO based on the info in recoHistsinfo make map for systematics
-	for(int i=0;i<nentries;i++){
-	//for(int i=0;i<10000;i++){
+	//for(int i=0;i<nentries;i++){
+	for(int i=0;i<10000;i++){
 	  if(i%10000000==0) cout<<i<<endl;
 	  tsignal->GetEntry(i);
 	
