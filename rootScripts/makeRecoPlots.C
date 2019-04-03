@@ -11,8 +11,6 @@
 #include "TUnfoldBinning.h"
 #include "tree.h"
 
-#include "makeRecoPlots.h"
-
 const int pt_unfold = 1;
 const int mass_unfold = 2;
 
@@ -44,6 +42,8 @@ public:
 
 	inline TUnfoldBinningV17* GetPtBinningRec(){ return &ptBinningRec;}
 	inline TUnfoldBinningV17* GetMassBinningRec(){ return &massBinningRec;}
+	inline TUnfoldBinningV17* GetPtBinningGen(){ return &ptBinningGen;}
+	inline TUnfoldBinningV17* GetMassBinningGen(){ return &massBinningGen;}
 
 	// set histograms: get histogram names from python script and create histograms
 	void CreateHistMap(const int which_unfold, TString hname);
@@ -366,6 +366,12 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &sigH
         fileout2->cd();
         recoHist.GetPtBinningRec()->Write();
         recoHist.GetMassBinningRec()->Write();
+
+        fileout1->cd();
+        sigHist.GetPtBinningRec()->Write();
+        sigHist.GetMassBinningRec()->Write();
+        sigHist.GetPtBinningGen()->Write();
+        sigHist.GetMassBinningGen()->Write();
 	
 	delete hZptWeight;
 	delete fZptWeight;

@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(description='Unfolding for ISR analysis')
 
 parser.add_argument('--channel' , dest = 'channel', default = 'electron', help = 'select channel electron or muon')
 parser.add_argument('--year' , dest = 'year', default = '2016', help = 'select year')
-parser.add_argument('--postfix' , dest = 'postfix', default = 'norminal', help = 'select histogram name')
+parser.add_argument('--postfix' , dest = 'postfix', default = 'nominal', help = 'select histogram name')
 parser.add_argument('--createInputHists'  , action='store_true'  , help = 'create input histograms')
 parser.add_argument('--createMatrixOnly'  , action='store_true'  , default = False, help = 'create histograms only for signal sample')
 parser.add_argument('--getUnfoldResults'  , action='store_true'  , help = 'Get unfolding resutls')
@@ -208,7 +208,7 @@ if args.getUnfoldResults:
         postfix = args.postfix
 	postfix_matrix = args.postfix
 	if args.doSeperateUnfold:
-		postfix = "norminal"
+		postfix = "nominal"
 		postfix_matrix = "detector"
 
         # set unfolding class 

@@ -11,8 +11,6 @@
 #include "TUnfoldBinning.h"
 #include "TUnfoldDensity.h"
 
-#include "makeRecoPlots.h"
-
 TUnfoldDensityV17* setTUnfoldDensity(TFile *filein, TString var, TString matrixName, bool isfsr){
 
 	TH2* hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
@@ -20,18 +18,20 @@ TUnfoldDensityV17* setTUnfoldDensity(TFile *filein, TString var, TString matrixN
 	TUnfoldBinningV17* binning_Gen = NULL;
 
  	if( var.CompareTo("Pt") == 0 ){
-	  if(!isfsr) binning_Rec = ptBinning_rec();
-          else binning_Rec = ptBinning_gen();
 
-	  binning_Gen = ptBinning_gen();
+	  if(!isfsr) binning_Rec = (TUnfoldBinningV17*)filein->Get("Rec_Pt");
+          else binning_Rec = (TUnfoldBinningV17*)filein->Get("Gen_Pt");
+
+	  binning_Gen = (TUnfoldBinningV17*)filein->Get("Gen_Pt");
         }
         if( var.CompareTo("Mass") == 0 ){
-	  if(!isfsr) binning_Rec = massBinning_rec();
-	   else binning_Rec = massBinning_gen();
 
-	  binning_Gen = massBinning_gen();
+          if(!isfsr) binning_Rec = (TUnfoldBinningV17*)filein->Get("Rec_Mass");
+          else binning_Rec = (TUnfoldBinningV17*)filein->Get("Gen_Mass");
+
+          binning_Gen = (TUnfoldBinningV17*)filein->Get("Gen_Mass");
+
         }
-
 
         TUnfoldDensityV17 *unfold;
         unfold = new TUnfoldDensityV17(hmcGenRec,

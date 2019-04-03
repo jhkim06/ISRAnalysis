@@ -20,8 +20,6 @@
 #include "TUnfoldBinning.h"
 #include "TUnfoldDensity.h"
 
-#include "makeRecoPlots.h"
-
 #include "./tdrstyle.C"
 #include "./CMS_lumi.C"
 
@@ -190,7 +188,7 @@ void getAveragesSysMass(vector<Double_t> &err, TString sysName, int sysSize, TUn
 
            	        TH1* hsysmass_temp;
 
-           	        hsysmass_temp=(TH1*)unfold_mass->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys, sysName+"_"+isys, "Gen", "*[UO]", kTRUE);
+           	        hsysmass_temp=(TH1*)unfold_mass->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys, sysName+"_"+isys, "Gen_Mass", "*[UO]", kTRUE);
            	        hsysmass_temp->Add(hmass_temp);
 			hsysmass_temp->GetXaxis()->SetRange(hsysmass_temp->GetXaxis()->FindBin(massBins[ibin]+0.01),hsysmass_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
 
@@ -232,7 +230,7 @@ void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfo
 
            	   TH1* hsyspt_temp;
 
-           	   hsyspt_temp=(TH1*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys, sysName+"_"+isys, "Gen", "pt[UO];mass[UOC"+ibinMass+"]", kTRUE);
+           	   hsyspt_temp=(TH1*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys, sysName+"_"+isys, "Gen_Pt", "pt[UO];mass[UOC"+ibinMass+"]", kTRUE);
 		   hsyspt_temp->Add(hpt_temp);
 
                    Double_t temp_err =  fabs( defaultMean - hsyspt_temp->GetMean() );
@@ -262,7 +260,7 @@ void getRatioSys(TUnfoldDensityV17* unfold_pt, TString sysName, int sysSize, TH1
 	for(int i = 0; i < sysSize; i++){
            	TString isys;
            	isys.Form("%d", i);
-		hDeltas.push_back((TH1*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys, sysName+"_"+isys, "Gen", "*[UO]", kFALSE));
+		hDeltas.push_back((TH1*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys, sysName+"_"+isys, "Gen_Pt", "*[UO]", kFALSE));
 		hSys.push_back(unfold_pt->GetOutput("hunfolded_pt"+sysName+"_"+isys,0,0,"*[UO]",kFALSE));
 
 		hSys.at(i)->Add(hDeltas.at(i));
@@ -354,7 +352,7 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensityV17* unfold_pt){
                            TString isys;
                            isys.Form("%d", i);
 
-			   TH1F * hsyspt_temp_=((TH1F*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys+ibinMass, sysName+"_"+isys+ibinMass, "Gen", "pt[UO];mass[UOC"+ibinMass+"]", kTRUE));
+			   TH1F * hsyspt_temp_=((TH1F*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys+ibinMass, sysName+"_"+isys+ibinMass, "Gen_Pt", "pt[UO];mass[UOC"+ibinMass+"]", kTRUE));
 			   hsyspt_temp_->Add(hpt_temp);
         	           // get "envelope"
         	           Double_t temp_err =  fabs(hpt_temp->GetBinContent(ibin) - hsyspt_temp_->GetBinContent(ibin));
@@ -388,7 +386,7 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensityV17* unfold_pt){
            	        isys.Form("%d", i);
 
 
-           	        hsyspt_temp=((TH1F*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys+ibinMass, sysName+"_"+isys+ibinMass, "Gen", "pt[UO];mass[UOC"+ibinMass+"]", kTRUE));
+           	        hsyspt_temp=((TH1F*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys+ibinMass, sysName+"_"+isys+ibinMass, "Gen_Pt", "pt[UO];mass[UOC"+ibinMass+"]", kTRUE));
            	        hsyspt_temp->Add(hpt_temp);
 
 
@@ -1043,8 +1041,8 @@ void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
         TH1* ratioDown=(TH1*)hunfolded->Clone("ratioDown"); //
         TH1* sysErrRatio = (TH1*)hunfolded->Clone("hsysErrRatio");
 
-        ratioUp->  Add((TH1*)unfold->GetDeltaSysSource("AlphaS_0","SysAlphaS_0","SysAlphaS_0","Gen","*[UO]",kTRUE)); // add systematic delta 
-        ratioDown->Add((TH1*)unfold->GetDeltaSysSource("AlphaS_1","SysAlphaS_1","SysAlphaS_1","Gen","*[UO]",kTRUE)); // add systematic delta 
+        ratioUp->  Add((TH1*)unfold->GetDeltaSysSource("AlphaS_0","SysAlphaS_0","SysAlphaS_0","Gen_Mass","*[UO]",kTRUE)); // add systematic delta 
+        ratioDown->Add((TH1*)unfold->GetDeltaSysSource("AlphaS_1","SysAlphaS_1","SysAlphaS_1","Gen_Mass","*[UO]",kTRUE)); // add systematic delta 
 
         TH1 *histMCTruth=unfold->GetBias("histMCTruth",0,0,"*[UO]",kTRUE);
         ratio->Divide(histMCTruth);
