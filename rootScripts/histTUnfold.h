@@ -1,0 +1,70 @@
+#ifndef HISTUNFOLD_H
+#define HISTUNFOLD_H
+
+#include <iostream>
+#include <map>
+#include <cmath>
+#include <TMath.h>
+#include <TFile.h>
+#include <TTree.h>
+#include <TH1.h>
+#include <TDOMParser.h>
+#include <TXMLDocument.h>
+#include "TUnfoldBinningXML.h"
+#include "TUnfoldBinning.h"
+
+const int pt_unfold = 1;
+const int mass_unfold = 2;
+
+// FIXME change name since this class will be used for all input root files
+class histTUnfold {
+
+private:
+
+	// binning definition for pt
+	TUnfoldBinningV17* ptBinningRec;
+	TUnfoldBinningV17* ptBinningGen;
+
+	// binning definition for mass
+	TUnfoldBinningV17* massBinningRec;
+	TUnfoldBinningV17* massBinningGen;
+
+  	std::map<TString, TH1*> histMaps;
+  	std::map<TString, TH2*> hist2DMaps;
+public:
+
+  	std::map<TString, Double_t> sysNamesWeights;
+  	Bool_t isInc, isSig;
+
+  	// binning
+	void SetPtBinningRec();
+	void SetPtBinningGen();
+	void SetMassBinningRec();
+	void SetMassBinningGen();
+
+	inline TUnfoldBinningV17* GetPtBinningRec(){ return ptBinningRec;}
+	inline TUnfoldBinningV17* GetMassBinningRec(){ return massBinningRec;}
+	inline TUnfoldBinningV17* GetPtBinningGen(){ return ptBinningGen;}
+	inline TUnfoldBinningV17* GetMassBinningGen(){ return massBinningGen;}
+
+	// set histograms: get histogram names from python script and create histograms
+	void CreateHistMap(const int which_unfold, TString hname);
+	void CreateHist2DMap(const int which_unfold, TString hname);
+
+  	void FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen);
+  	void FillHistogram(const int which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco);
+
+  	histTUnfold(std::map<TString, TH1*> histMaps_, std::map<TString, TH2*> hist2DMaps_, Int_t isInc_):
+    		histMaps(std::move(histMaps_)), hist2DMaps(std::move(hist2DMaps_)), isInc(std::move(isInc_)) {}
+
+  	histTUnfold(std::map<TString, TH1*> histMaps_):
+    		histMaps(std::move(histMaps_)) {}
+
+	histTUnfold() {}
+
+	~histTUnfold(){
+
+        }
+};
+
+#endif
