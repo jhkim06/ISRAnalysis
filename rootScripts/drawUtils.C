@@ -82,7 +82,7 @@ void setTGraphAxis(TGraphErrors* data, Double_t x, Double_t xmin, Double_t xmax,
  	else data->SetMarkerStyle(25);
         data->SetMarkerSize(1.);
         data->SetLineColor(kBlack);
-        data->SetLineWidth(2);
+        data->SetLineWidth(1);
         data->SetMinimum(ymin);
         data->SetMaximum(ymax);
         data->GetXaxis()->SetLimits(xmin, xmax);
@@ -739,7 +739,7 @@ void drawCombinedISR(TString outpdf, TUnfoldDensityV17* unfold_pt2016, TUnfoldDe
         grUnfolded->SetMarkerStyle(20);
         grUnfolded->SetMarkerSize(1.);
         grUnfolded->SetLineStyle(1);
-        grUnfolded->SetLineWidth(2);
+        grUnfolded->SetLineWidth(1);
         grUnfolded->Draw("ape");
         setYaxisGraph(grUnfolded);
 
@@ -749,7 +749,7 @@ void drawCombinedISR(TString outpdf, TUnfoldDensityV17* unfold_pt2016, TUnfoldDe
         grUnfolded2017->SetMarkerStyle(21);
         grUnfolded2017->SetMarkerSize(1.);
         grUnfolded2017->SetLineStyle(1);
-        grUnfolded2017->SetLineWidth(2);
+        grUnfolded2017->SetLineWidth(1);
         grUnfolded2017->Draw("samepe");
 	
         vector<Double_t> meanmass_datacombined, meanmasserr_datacombined;
@@ -772,7 +772,7 @@ void drawCombinedISR(TString outpdf, TUnfoldDensityV17* unfold_pt2016, TUnfoldDe
         grUnfoldedCombined->SetMarkerStyle(31);
         grUnfoldedCombined->SetMarkerSize(1.);
         grUnfoldedCombined->SetLineStyle(1);
-        grUnfoldedCombined->SetLineWidth(2);
+        grUnfoldedCombined->SetLineWidth(1);
         grUnfoldedCombined->Draw("samepe");
 	
 
@@ -965,7 +965,7 @@ void drawISRfit(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17*
  	grUnfolded->SetMarkerStyle(20);
  	grUnfolded->SetMarkerSize(1.);
  	grUnfolded->SetLineStyle(1);
- 	grUnfolded->SetLineWidth(2);
+ 	grUnfolded->SetLineWidth(1);
  	grUnfolded->Draw("ape");
 	setYaxisGraph(grUnfolded);
 

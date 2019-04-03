@@ -1,3 +1,14 @@
+#include <iostream>
+#include <map>
+#include <cmath>
+#include <TMath.h>
+#include <TFile.h>
+#include <TTree.h>
+#include <TH1.h>
+#include <TDOMParser.h>
+#include <TXMLDocument.h>
+#include "TUnfoldBinningXML.h"
+#include "TUnfoldBinning.h"
 
  // variables in the input tree
  Double_t weightGen,weightRec, weightRecIdUp, weightRecIdDown;

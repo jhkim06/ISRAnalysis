@@ -3,12 +3,14 @@ import sys
 import ROOT as rt
 
 rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScripts/libunfold.so")
-rt.gROOT.ProcessLine(".L /home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScripts/makeRecoPlots.C++")
+rt.gROOT.ProcessLine(".L /home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScripts/histTUnfold.C++")
+rt.gInterpreter.ProcessLine('#include "/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScripts/histTUnfold.h"')
+rt.gROOT.ProcessLine(".L /home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScripts/saveHists.C++")
+
+import etc.histDef as fHistDef
 
 import gc
 gc.collect()
-
-import etc.histDef as fHistDef
 
 # input file paths, binning, output directory, for data and bkg reco histograms only
 def makeRecoHists(sample, outputDirectory, channel):
@@ -26,6 +28,15 @@ def makeRecoHists(sample, outputDirectory, channel):
         # need to create histogram before the file loop to save one histogram from the input files
         recoHists = rt.histTUnfold(rt.std.map("TString, TH1*")())
 
+        test = rt.histTUnfold(rt.std.map("TString, TH1*")())
+	#rt.gInterpreter.GenerateDictionary("histTUnfold()", "histTUnfold.h")
+	vrecoHists = rt.std.vector("histTUnfold")()
+	vrecoHists.push_back(test)
+	vrecoHists.at(0).SetPtBinningRec()
+	vrecoHists.at(0).SetMassBinningRec()
+	vrecoHists.at(0).CreateHistMap(1, "test")
+	vrecoHists.at(0).CreateHistMap(2, "test")
+
 	recoHists.SetPtBinningRec()
 	recoHists.SetMassBinningRec()
 
@@ -36,7 +47,7 @@ def makeRecoHists(sample, outputDirectory, channel):
 
 		infile = rt.TFile(filepath,'r')
 		print filepath
-		rt.recoHists(infile, outfile, recoHists, channel)
+		rt.saveRecoHists(infile, outfile, recoHists, channel)
 
                 del infile
 
@@ -44,6 +55,7 @@ def makeRecoHists(sample, outputDirectory, channel):
         outfile.Delete()
 
         del recoHists
+	del vrecoHists
         return outDic
 
 def makeSigHists(sample, outputDirectory, channel):
@@ -102,7 +114,7 @@ def makeSigHists(sample, outputDirectory, channel):
 		#   print "this is M-10to50 DY sample"
                 #   temp_kfactor = 6225.42/5765.4
 		print "temp_kfactor: " + str(temp_kfactor)
-		rt.sigHists(infile, outfile, outfile_, sigHists, recoHists, channel, temp_kfactor)
+		rt.saveSigHists(infile, outfile, outfile_, sigHists, recoHists, channel, temp_kfactor)
 
                 del infile
 
