@@ -32,7 +32,11 @@ class sigHistsinfo {
 
 private:
 
-	TUnfoldBinningV17 *binningRec;
+	TUnfoldBinningV17 ptBinningRec;
+	TUnfoldBinningV17 ptBinningGen;
+
+	TUnfoldBinningV17 massBinningRec;
+	TUnfoldBinningV17 massBinningGen;
 
 public:
 
@@ -42,6 +46,11 @@ public:
   	// binning
   
   	Bool_t isInc;
+
+	void SetPtBinningRec();
+	void SetPtBinningGen();
+	void SetMassBinningRec();
+	void SetMassBinningGen();
 
   	void FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen);
   	// FillMigrationM(bool selected, TString hname, Double_t RecoMass, Double_t truthMass, Double_t wreco, Double, wgen);
@@ -82,7 +91,7 @@ void sigHistsinfo::FillMigration2DM(const int which_unfold, bool selected, TStri
 
 }
 
-TUnfoldBinningV17* ptBinning_rec(){
+void sigHistsinfo::SetPtBinningRec(){
 
  // FIXME save binning information in other place and read from there
  const int nmassbin_fine=5;
@@ -98,14 +107,12 @@ TUnfoldBinningV17* ptBinning_rec(){
  const int nptbin_fine=17;
  double ptbin_fine[nptbin_fine+1]={0., 2., 4., 6., 8., 10., 12., 14., 18., 22., 28., 35., 45., 55., 65., 75., 85., 100.};
 
- TUnfoldBinningV17 *binning_Rec=new TUnfoldBinningV17("Rec");
- binning_Rec->AddAxis("pt",nptbin_fine,ptbin_fine,false,true);
- binning_Rec->AddAxis("mass",nmassbin_fine,massbin_fine,true,true);
-
- return binning_Rec;
+ ptBinningRec=new TUnfoldBinningV17("Rec");
+ ptBinningRec.AddAxis("pt",nptbin_fine,ptbin_fine,false,true);
+ ptBinningRec.AddAxis("mass",nmassbin_fine,massbin_fine,true,true);
 }
 
-TUnfoldBinningV17* ptBinning_gen(){
+void sigHistsinfo::SetPtBinningGen(){
 
  // FIXME save binning information in other place and read from there
  const int nmassbin_wide=5;
@@ -124,14 +131,13 @@ TUnfoldBinningV17* ptBinning_gen(){
  const int nptbin_wide=17;
  double ptbin_wide[nptbin_wide+1]={0., 2., 4., 6., 8., 10., 12., 14., 18., 22., 28., 35., 45., 55., 65., 75., 85., 100.};
 
- TUnfoldBinningV17 *binning_Gen=new TUnfoldBinningV17("Gen");
- binning_Gen->AddAxis("pt",nptbin_wide,ptbin_wide,false,true);
- binning_Gen->AddAxis("mass",nmassbin_wide,massbin_wide,true,true);
+ ptBinningGen=new TUnfoldBinningV17("Gen");
+ ptBinningGen.AddAxis("pt",nptbin_wide,ptbin_wide,false,true);
+ ptBinningGen.AddAxis("mass",nmassbin_wide,massbin_wide,true,true);
 
- return binning_Gen;
 }
 
-TUnfoldBinningV17* massBinning_rec(){
+void sigHistsinfo::SetMassBinningRec(){
 
  // FIXME save binning information in other place and read from there
  //const int nbin_fine=58;
@@ -139,13 +145,11 @@ TUnfoldBinningV17* massBinning_rec(){
  //double bin_fine[nbin_fine+1]={40,42.5,45,47.5,50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
  double bin_fine[nbin_fine+1]={50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
 
- TUnfoldBinningV17 *binning_Rec=new TUnfoldBinningV17("Rec");
- binning_Rec->AddAxis("reco mass",nbin_fine,bin_fine,false,false);
-
- return binning_Rec;
+ massBinningRec=new TUnfoldBinningV17("Rec");
+ massBinningRec.AddAxis("reco mass",nbin_fine,bin_fine,false,false);
 }
 
-TUnfoldBinningV17* massBinning_gen(){
+void sigHistsinfo::SetMassBinningGen(){
 
  // FIXME save binning information in other place and read from there
  //const int nbin_wide=29;
@@ -153,10 +157,8 @@ TUnfoldBinningV17* massBinning_gen(){
  //double bin_wide[nbin_wide+1]={40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
  double bin_wide[nbin_wide+1]={50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
 
- TUnfoldBinningV17 *binning_Gen=new TUnfoldBinningV17("Gen");
- binning_Gen->AddAxis("gen mass",nbin_wide,bin_wide,true,true);
-
- return binning_Gen;
+ massBinningGen=new TUnfoldBinningV17("Gen");
+ massBinningGen.AddAxis("gen mass",nbin_wide,bin_wide,true,true);
 }
 
 // create hisgotram using TUnfoldBinningV17
