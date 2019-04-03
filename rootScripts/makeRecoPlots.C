@@ -16,82 +16,104 @@
 const int pt_unfold = 1;
 const int mass_unfold = 2;
 
-class recoHistsinfo {
-
-public:
-
-  std::map<TString, Double_t> sysNamesWeights; // will be initialze in the function makeRecoHists
-  std::map<TString, TH1*> histMaps;
-  // binning
-  
-  recoHistsinfo(std::map<TString, TH1*> histMaps_):
-   histMaps(std::move(histMaps_)) {}
-};
-
-class sigHistsinfo {
+// FIXME change name since this class will be used for all input root files
+class histTUnfold {
 
 private:
 
+	// binning definition for pt
 	TUnfoldBinningV17 ptBinningRec;
 	TUnfoldBinningV17 ptBinningGen;
 
+	// binning definition for mass
 	TUnfoldBinningV17 massBinningRec;
 	TUnfoldBinningV17 massBinningGen;
 
+  	std::map<TString, TH1*> histMaps;
+  	std::map<TString, TH2*> hist2DMaps;
 public:
 
   	std::map<TString, Double_t> sysNamesWeights;
-  	std::map<TString, TH1*> histMaps;
-  	std::map<TString, TH2*> hist2DMaps;
-  	// binning
-  
-  	Bool_t isInc;
+  	Bool_t isInc, isSig;
 
+  	// binning
 	void SetPtBinningRec();
 	void SetPtBinningGen();
 	void SetMassBinningRec();
 	void SetMassBinningGen();
 
-  	void FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen);
-  	// FillMigrationM(bool selected, TString hname, Double_t RecoMass, Double_t truthMass, Double_t wreco, Double, wgen);
+	inline TUnfoldBinningV17* GetPtBinningRec(){ return &ptBinningRec;}
+	inline TUnfoldBinningV17* GetMassBinningRec(){ return &massBinningRec;}
 
-  	sigHistsinfo(std::map<TString, TH1*> histMaps_, std::map<TString, TH2*> hist2DMaps_, Int_t isInc_):
+	// set histograms: get histogram names from python script and create histograms
+	void CreateHistMap(const int which_unfold, TString hname);
+	void CreateHist2DMap(const int which_unfold, TString hname);
+
+  	void FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen);
+  	void FillHistogram(const int which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco);
+
+  	histTUnfold(std::map<TString, TH1*> histMaps_, std::map<TString, TH2*> hist2DMaps_, Int_t isInc_):
     		histMaps(std::move(histMaps_)), hist2DMaps(std::move(hist2DMaps_)), isInc(std::move(isInc_)) {}
+
+  	histTUnfold(std::map<TString, TH1*> histMaps_):
+    		histMaps(std::move(histMaps_)) {}
 };
 
-void sigHistsinfo::FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen){
 
-	//FIXME put binning definition into the class
-        TUnfoldBinningV17 *ptBin_rec = ptBinning_rec();
-        TUnfoldBinningV17 *ptBin_gen = ptBinning_gen();
-        TUnfoldBinningV17 *massBin_rec = massBinning_rec();
-        TUnfoldBinningV17 *massBin_gen = massBinning_gen();
+void histTUnfold::CreateHistMap(const int which_unfold, TString hname){
+
+        if(which_unfold == pt_unfold){
+                 histMaps.insert(std::pair<TString, TH1*>("pt_"+hname, ptBinningRec.CreateHistogram("hPtRec"+hname)));
+        }
+
+        if(which_unfold == mass_unfold){
+                 histMaps.insert(std::pair<TString, TH1*>("mass_"+hname, massBinningRec.CreateHistogram("hMassRec"+hname)));
+        }
+}
+
+void histTUnfold::CreateHist2DMap(const int which_unfold, TString hname){
+
+	if(which_unfold == pt_unfold){
+		 hist2DMaps.insert(std::pair<TString, TH2*>("pt_"+hname, TUnfoldBinningV17::CreateHistogramOfMigrations(&ptBinningGen, &ptBinningRec,"hmcPtGenRec" + hname)));
+	}
+
+	if(which_unfold == mass_unfold){
+		 hist2DMaps.insert(std::pair<TString, TH2*>("mass_"+hname, TUnfoldBinningV17::CreateHistogramOfMigrations(&massBinningGen, &massBinningRec,"hmcMassGenRec" + hname)));
+	}
+}
+
+void histTUnfold::FillHistogram(const int which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco){
+
+	if(which_unfold == pt_unfold){
+		(histMaps.find(hname)->second)->Fill(ptBinningRec.GetGlobalBinNumber(recoPt, recoMass),  wreco);
+	}
+
+	if(which_unfold == mass_unfold){
+		if(recoPt < 100.) (histMaps.find(hname)->second)->Fill(massBinningRec.GetGlobalBinNumber(recoMass),  wreco);
+	}
+}
+
+void histTUnfold::FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen){
 
 	int binZero=0;
 
 	if(selected){
 		if( which_unfold == pt_unfold){
-			(hist2DMaps.find(hname)->second)->Fill(ptBin_gen->GetGlobalBinNumber(truthPt, truthMass), ptBin_rec->GetGlobalBinNumber(recoPt, RecoMass), wgen*wreco);
-			(hist2DMaps.find(hname)->second)->Fill(ptBin_gen->GetGlobalBinNumber(truthPt, truthMass), binZero, wgen*(1.-wreco));
+			(hist2DMaps.find(hname)->second)->Fill(ptBinningGen.GetGlobalBinNumber(truthPt, truthMass), ptBinningRec.GetGlobalBinNumber(recoPt, RecoMass), wgen*wreco);
+			(hist2DMaps.find(hname)->second)->Fill(ptBinningGen.GetGlobalBinNumber(truthPt, truthMass), binZero, wgen*(1.-wreco));
 		}
                 if( which_unfold == mass_unfold){
-                        if(recoPt < 100.) (hist2DMaps.find(hname)->second)->Fill(massBin_gen->GetGlobalBinNumber(truthMass), massBin_rec->GetGlobalBinNumber(RecoMass), wgen*wreco);
-                        if(recoPt < 100.) (hist2DMaps.find(hname)->second)->Fill(massBin_gen->GetGlobalBinNumber(truthMass), binZero, wgen*(1.-wreco));
+                        if(recoPt < 100.) (hist2DMaps.find(hname)->second)->Fill(massBinningGen.GetGlobalBinNumber(truthMass), massBinningRec.GetGlobalBinNumber(RecoMass), wgen*wreco);
+                        if(recoPt < 100.) (hist2DMaps.find(hname)->second)->Fill(massBinningGen.GetGlobalBinNumber(truthMass), binZero, wgen*(1.-wreco));
                 }
 	}
 	else{
-		if( which_unfold == pt_unfold) (hist2DMaps.find(hname)->second)->Fill(ptBin_gen->GetGlobalBinNumber(truthPt, truthMass), binZero, wgen);
-		if( which_unfold == mass_unfold) (hist2DMaps.find(hname)->second)->Fill(massBin_gen->GetGlobalBinNumber(truthMass), binZero, wgen);
+		if( which_unfold == pt_unfold) (hist2DMaps.find(hname)->second)->Fill(ptBinningGen.GetGlobalBinNumber(truthPt, truthMass), binZero, wgen);
+		if( which_unfold == mass_unfold) (hist2DMaps.find(hname)->second)->Fill(massBinningGen.GetGlobalBinNumber(truthMass), binZero, wgen);
 	}
-
-	delete ptBin_rec;
-	delete ptBin_gen;
-	delete massBin_rec;
-	delete massBin_gen;
-
 }
 
-void sigHistsinfo::SetPtBinningRec(){
+void histTUnfold::SetPtBinningRec(){
 
  // FIXME save binning information in other place and read from there
  const int nmassbin_fine=5;
@@ -107,12 +129,12 @@ void sigHistsinfo::SetPtBinningRec(){
  const int nptbin_fine=17;
  double ptbin_fine[nptbin_fine+1]={0., 2., 4., 6., 8., 10., 12., 14., 18., 22., 28., 35., 45., 55., 65., 75., 85., 100.};
 
- ptBinningRec=new TUnfoldBinningV17("Rec");
+ ptBinningRec=*(new TUnfoldBinningV17("Rec_Pt"));
  ptBinningRec.AddAxis("pt",nptbin_fine,ptbin_fine,false,true);
  ptBinningRec.AddAxis("mass",nmassbin_fine,massbin_fine,true,true);
 }
 
-void sigHistsinfo::SetPtBinningGen(){
+void histTUnfold::SetPtBinningGen(){
 
  // FIXME save binning information in other place and read from there
  const int nmassbin_wide=5;
@@ -131,13 +153,13 @@ void sigHistsinfo::SetPtBinningGen(){
  const int nptbin_wide=17;
  double ptbin_wide[nptbin_wide+1]={0., 2., 4., 6., 8., 10., 12., 14., 18., 22., 28., 35., 45., 55., 65., 75., 85., 100.};
 
- ptBinningGen=new TUnfoldBinningV17("Gen");
+ ptBinningGen=*(new TUnfoldBinningV17("Gen_Pt"));
  ptBinningGen.AddAxis("pt",nptbin_wide,ptbin_wide,false,true);
  ptBinningGen.AddAxis("mass",nmassbin_wide,massbin_wide,true,true);
 
 }
 
-void sigHistsinfo::SetMassBinningRec(){
+void histTUnfold::SetMassBinningRec(){
 
  // FIXME save binning information in other place and read from there
  //const int nbin_fine=58;
@@ -145,11 +167,11 @@ void sigHistsinfo::SetMassBinningRec(){
  //double bin_fine[nbin_fine+1]={40,42.5,45,47.5,50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
  double bin_fine[nbin_fine+1]={50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
 
- massBinningRec=new TUnfoldBinningV17("Rec");
+ massBinningRec=*(new TUnfoldBinningV17("Rec_Mass"));
  massBinningRec.AddAxis("reco mass",nbin_fine,bin_fine,false,false);
 }
 
-void sigHistsinfo::SetMassBinningGen(){
+void histTUnfold::SetMassBinningGen(){
 
  // FIXME save binning information in other place and read from there
  //const int nbin_wide=29;
@@ -157,36 +179,11 @@ void sigHistsinfo::SetMassBinningGen(){
  //double bin_wide[nbin_wide+1]={40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
  double bin_wide[nbin_wide+1]={50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
 
- massBinningGen=new TUnfoldBinningV17("Gen");
+ massBinningGen=*(new TUnfoldBinningV17("Gen_Mass"));
  massBinningGen.AddAxis("gen mass",nbin_wide,bin_wide,true,true);
 }
 
-// create hisgotram using TUnfoldBinningV17
-TH1* ptHistogram(TString name){
- return ptBinning_rec()->CreateHistogram("hPtRec"+name);
-}
-
-TH1* massHistogram(TString name){
- return massBinning_rec()->CreateHistogram("hMassRec"+name);
-}
-
-TH2* ptMatrix(TString name){
- return TUnfoldBinningV17::CreateHistogramOfMigrations(ptBinning_gen(),ptBinning_rec(),"hmcPtGenRec" + name);
-}
-
-TH2* ptFSRMatrix(TString name){
- return TUnfoldBinningV17::CreateHistogramOfMigrations(ptBinning_gen(),ptBinning_gen(),"hmcPtGenRec" + name); // FIXME change name later
-}
-
-TH2* massMatrix(TString name){
- return TUnfoldBinningV17::CreateHistogramOfMigrations(massBinning_gen(),massBinning_rec(),"hmcMassGenRec" + name);
-}
-
-TH2* massFSRMatrix(TString name){
- return TUnfoldBinningV17::CreateHistogramOfMigrations(massBinning_gen(),massBinning_gen(),"hmcMassGenRec" + name);
-}
-
-void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist, TString channel){ // TODO add list of systematics
+void recoHists(TFile *filein, TFile *fileout1, histTUnfold &recoHist, TString channel){ // TODO add list of systematics
 
 	gROOT->SetBatch();
 	TH1::SetDefaultSumw2();
@@ -204,10 +201,7 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist, TS
 	treco->SetBranchAddress("bTagReweight",&bTagReweight); // FIXME may it is better to change name bTagReweight to bTagSF
 	nentries=treco->GetEntries();
 	
-	TUnfoldBinningV17 *ptbin = ptBinning_rec();
-	TUnfoldBinningV17 *massbin = massBinning_rec();
-	
-	// TODO based on the info in recoHistsinfo make map for systematics
+	// TODO based on the info in histTUnfold make map for systematics
 	for(int i=0;i<nentries;i++){
 	//for(int i=0;i<10000;i++){
 	  if(i%10000000==0) cout<<i<<endl;
@@ -220,26 +214,16 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist, TS
 	   if(isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15){
 	         fileout1->cd();
 
-                 (recoHist.histMaps.find("pt_norminal")->second)->Fill(ptbin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec*bTagReweight);
-                 if(ptRec->at(2) < 100) (recoHist.histMaps.find("mass_norminal")->second)->Fill(massbin->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
-
-                 (recoHist.histMaps.find("pt_ZptWeight")->second)->Fill(ptbin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec*bTagReweight);
-                 if(ptRec->at(2) < 100) (recoHist.histMaps.find("mass_ZptWeight")->second)->Fill(massbin->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
+		 recoHist.FillHistogram(pt_unfold, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+		 recoHist.FillHistogram(mass_unfold, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
 	   }
-
-           if(isdilep && ispassRec){
-                 fileout1->cd();
-
-                 (recoHist.histMaps.find("pt_noBveto")->second)->Fill(ptbin->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec);
-                 if(ptRec->at(2) < 100) (recoHist.histMaps.find("mass_noBveto")->second)->Fill(massbin->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec);
-
-           }
-
 	
 	}// event loop
+
+	fileout1->cd();
+	recoHist.GetPtBinningRec()->Write();
+	recoHist.GetMassBinningRec()->Write();
 	
-	delete ptbin;
-	delete massbin;
 	delete treco;
 	//fileout->cd();
 	
@@ -248,7 +232,7 @@ void recoHists(TFile *filein, TFile *fileout1, const recoHistsinfo &recoHist, TS
 	// delete outputFile;
 }
 
-void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, sigHistsinfo &sigHist, recoHistsinfo &recoHist, TString channel, Double_t temp_kfactor){ // TODO add list of systematics
+void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &sigHist, histTUnfold &recoHist, TString channel, Double_t temp_kfactor){ // TODO add list of systematics
 
 	gROOT->SetBatch();
 	TH1::SetDefaultSumw2();
@@ -285,15 +269,9 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, sigHistsinfo &sig
 	
 	nentries=tsignal->GetEntries();
 	
-	TUnfoldBinningV17 *ptBin_rec = ptBinning_rec();
-	TUnfoldBinningV17 *ptBin_gen = ptBinning_gen();
-	
-	TUnfoldBinningV17 *massBin_rec = massBinning_rec();
-	TUnfoldBinningV17 *massBin_gen = massBinning_gen();
-	
-	// TODO based on the info in recoHistsinfo make map for systematics
-	//for(int i=0;i<nentries;i++){
-	for(int i=0;i<10000;i++){
+	// TODO based on the info in histTUnfold make map for systematics
+	for(int i=0;i<nentries;i++){
+	//for(int i=0;i<10000;i++){
 	  if(i%10000000==0) cout<<i<<endl;
 	  tsignal->GetEntry(i);
 	
@@ -318,8 +296,8 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, sigHistsinfo &sig
 	      if(isdilep && ispassRec){
 	            fileout1->cd();
 
-                    (sigHist.histMaps.find("pt_norminal")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec*bTagReweight);
-                    if(ptRec->at(2) < 100) (sigHist.histMaps.find("mass_norminal")->second)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
+		    sigHist.FillHistogram(pt_unfold, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+		    sigHist.FillHistogram(mass_unfold, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
 
 	      }
 	   }
@@ -331,58 +309,34 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, sigHistsinfo &sig
 	        if(isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15){
 	           if(DYtautau){
 	              fileout2->cd();
-                      (recoHist.histMaps.find("pt_norminal")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec*bTagReweight);
-                      if(ptRec->at(2) < 100) (recoHist.histMaps.find("mass_norminal")->second)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
 
-                      (recoHist.histMaps.find("pt_ZptWeight")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec*bTagReweight);
-                      if(ptRec->at(2) < 100) (recoHist.histMaps.find("mass_ZptWeight")->second)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
+		      recoHist.FillHistogram(pt_unfold, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+		      recoHist.FillHistogram(mass_unfold, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+
 	           }
 	           else{
 	              fileout1->cd();
 
-                      (sigHist.histMaps.find("pt_norminal")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec*bTagReweight);
-                      if(ptRec->at(2) < 100) (sigHist.histMaps.find("mass_norminal")->second)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec*bTagReweight);
-
-                      (sigHist.histMaps.find("pt_ZptWeight")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*zptWeight*weightRec*bTagReweight);
-                      if(ptRec->at(2) < 100) (sigHist.histMaps.find("mass_ZptWeight")->second)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*zptWeight*weightRec*bTagReweight);
+		      sigHist.FillHistogram(pt_unfold, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+		      sigHist.FillHistogram(mass_unfold, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
 
 	           }
 	        }
 
-                if(isdilep && ispassRec){
-                   if(DYtautau){
-                      fileout2->cd();
-                      (recoHist.histMaps.find("pt_noBveto")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec);
-                      if(ptRec->at(2) < 100) (recoHist.histMaps.find("mass_noBveto")->second)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec);
-                   }
-                   else{
-                      fileout1->cd();
-
-                      (sigHist.histMaps.find("pt_noBveto")->second)->Fill(ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)),               weightGen*weightRec);
-                      if(ptRec->at(2) < 100) (sigHist.histMaps.find("mass_noBveto")->second)->Fill(massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec);
-
-                   }
-                }
-
 	       /////////////////////////////////////////// fill migration matrix ////////////////////////////////////////
 	       //
 	       if(issignal){
+	           fileout1->cd();
 
 		   Double_t diptrec = -999., dimassrec = -999.;
 		   Double_t diptgen = -999., dimassgen = -999.;
 
 	           bool selected = (isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15);	
-		   // check if there are selected dilepton at detector
+		   // check if there are selected dilepton at detector to avoid memory error
 		   if(ptRec->size() == 3){ diptrec = ptRec->at(2), dimassrec = mRec->at(2);}
 
-		   sigHist.FillMigration2DM( pt_unfold, selected, "pt_norminal",  diptrec, dimassrec, ptPreFSR->at(2), mPreFSR->at(2), weightRec*bTagReweight, weightGen); 
-	           sigHist.FillMigration2DM( mass_unfold, selected, "mass_norminal", diptrec, dimassrec, ptPreFSR->at(2), mPreFSR->at(2), weightRec*bTagReweight, weightGen); 
-
-		   sigHist.FillMigration2DM( pt_unfold, selected, "pt_detector",  diptrec, dimassrec, ptPostFSR->at(2), mPostFSR->at(2), weightRec*bTagReweight, weightGen); 
-	           sigHist.FillMigration2DM( mass_unfold, selected, "mass_detector", diptrec, dimassrec, ptPostFSR->at(2), mPostFSR->at(2), weightRec*bTagReweight, weightGen); 
-
-		   sigHist.FillMigration2DM( pt_unfold, selected, "pt_ZptWeight",  diptrec, dimassrec, ptPreFSR->at(2), mPreFSR->at(2), weightRec*bTagReweight, weightGen*zptWeight); 
-	           sigHist.FillMigration2DM( mass_unfold, selected, "mass_ZptWeight", diptrec, dimassrec, ptPreFSR->at(2), mPreFSR->at(2), weightRec*bTagReweight, weightGen*zptWeight); 
+		   sigHist.FillMigration2DM( pt_unfold, selected, "pt_nominal",  diptrec, dimassrec, ptPreFSR->at(2), mPreFSR->at(2), weightRec*bTagReweight, weightGen); 
+	           sigHist.FillMigration2DM( mass_unfold, selected, "mass_nominal", diptrec, dimassrec, ptPreFSR->at(2), mPreFSR->at(2), weightRec*bTagReweight, weightGen); 
 
 		   // scale systematic
 		   for(unsigned int i=0; i<Scale->size(); i++){
@@ -401,40 +355,6 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, sigHistsinfo &sig
                         sigHist.FillMigration2DM( pt_unfold, selected, "pt_AlphaS_"+is,  diptrec, dimassrec, ptPreFSR->at(2), mPreFSR->at(2), weightRec*bTagReweight, weightGen*AlphaS->at(i));
                         sigHist.FillMigration2DM( mass_unfold, selected, "mass_AlphaS_"+is, diptrec, dimassrec, ptPreFSR->at(2), mPreFSR->at(2), weightRec*bTagReweight, weightGen*AlphaS->at(i));
                    }
-
-		   // without b veto
-                   if( isdilep && ispassRec ) {
-                      int ptBinZero=0;
-                      (sigHist.hist2DMaps.find("pt_noBveto")->second)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBin_rec->GetGlobalBinNumber(ptRec->at(2),mRec->at(2)), weightGen*weightRec);
-                      (sigHist.hist2DMaps.find("pt_noBveto")->second)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero, weightGen*(1.-weightRec));
-
-                      int massBinZero=0;
-                      if(ptRec->at(2) < 100) (sigHist.hist2DMaps.find("mass_noBveto")->second)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBin_rec->GetGlobalBinNumber(mRec->at(2)), weightGen*weightRec);
-                      if(ptRec->at(2) < 100) (sigHist.hist2DMaps.find("mass_noBveto")->second)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBinZero,                                  weightGen*(1.-weightRec));
-                   }// events passing reco selection
-                   else{
-                       int ptBinZero=0;
-                       (sigHist.hist2DMaps.find("pt_noBveto")->second)->Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBinZero, weightGen);
-
-                       int massBinZero=0;
-                       (sigHist.hist2DMaps.find("mass_noBveto")->second)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBinZero, weightGen);
-                   }
-
-
-		   //////////////////// QED FSR migration matrix /////////////////////////////////////////////////////////////
-		   //
-		   if(isfiducialPostFSR){
-                     (sigHist.hist2DMaps.find("pt_FSR")->second)->  Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2), mPreFSR->at(2)), ptBin_gen->GetGlobalBinNumber(ptPostFSR->at(2),mPostFSR->at(2)), weightGen);
-                     (sigHist.hist2DMaps.find("mass_FSR")->second)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)), massBin_gen->GetGlobalBinNumber(mPostFSR->at(2)), weightGen);
-		   }
-		   else{
-	               int ptBinZero=0;
-	               if(isfiducialPreFSR) (sigHist.hist2DMaps.find("pt_FSR")->second)->  Fill(ptBin_gen->GetGlobalBinNumber(ptPreFSR->at(2),   mPreFSR->at(2)), ptBinZero,  weightGen); 
-
-	               int massBinZero=0;
-                       if(isfiducialPreFSR) (sigHist.hist2DMaps.find("mass_FSR")->second)->Fill(massBin_gen->GetGlobalBinNumber(mPreFSR->at(2)),                  massBinZero, weightGen);
-		   }
-	           //
 	
 	       }// DY to ee or mumu events only
 	       //
@@ -442,13 +362,13 @@ void sigHists(TFile *filein, TFile *fileout1, TFile *fileout2, sigHistsinfo &sig
 	
 	   }// for DYtoLL MC case
 	}// event loop
+
+        fileout2->cd();
+        recoHist.GetPtBinningRec()->Write();
+        recoHist.GetMassBinningRec()->Write();
 	
 	delete hZptWeight;
 	delete fZptWeight;
-	delete ptBin_rec;
-	delete ptBin_gen;
-	delete massBin_rec;
-	delete massBin_gen;
 	delete tsignal;
 	//fileout->cd();
 	

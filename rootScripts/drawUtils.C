@@ -1163,7 +1163,8 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
    	Int_t linecolorTop = kGreen+2;
    	Int_t fillcolorTop = kGreen-5;
 
-	TUnfoldBinningV17 *ptbin = ptBinning_rec();
+	//TUnfoldBinningV17 *ptbin = ptBinning_rec();
+	TUnfoldBinningV17* ptbin=(TUnfoldBinningV17*)fdata->Get("Rec_Pt");
 
 	TH1* hdata = (TH1*)fdata->Get(hname);
   	TH1* hdataNoUO = ptbin->ExtractHistogram("hdata", hdata, 0, kFALSE, "*[UO]");
@@ -1352,7 +1353,8 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
    	Int_t linecolorTop = kGreen+2;
    	Int_t fillcolorTop = kGreen-5;
 
-	TUnfoldBinningV17 *massbin = massBinning_rec();
+	//TUnfoldBinningV17 *massbin = massBinning_rec();
+	TUnfoldBinningV17* massbin=(TUnfoldBinningV17*)fdata->Get("Rec_Mass");
 
 	TH1* hdata = (TH1*)fdata->Get(hname);
   	TH1* hdataNoUO = massbin->ExtractHistogram("hdata", hdata, 0, kTRUE, "*[UO]");
