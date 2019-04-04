@@ -29,7 +29,7 @@ def makeRecoHists(sample, outputDirectory, channel):
         recoHists = rt.histTUnfold(rt.std.map("TString, TH1*")())
 
         test = rt.histTUnfold(rt.std.map("TString, TH1*")())
-	#rt.gInterpreter.GenerateDictionary("histTUnfold()", "histTUnfold.h")
+	# https://root.cern.ch/faq/how-generate-dictionary
 	vrecoHists = rt.std.vector("histTUnfold")()
 	vrecoHists.push_back(test)
 	vrecoHists.at(0).SetPtBinningRec()
