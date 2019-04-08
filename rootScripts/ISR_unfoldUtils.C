@@ -1,12 +1,4 @@
-#include <iostream>
-#include <map>
-#include <cmath>
-#include <TMath.h>
-#include <TFile.h>
-#include <TTree.h>
-#include <TH1.h>
-#include <TDOMParser.h>
-#include <TXMLDocument.h>
+#include "ISR_unfoldUtils.h"
 #include "TUnfoldBinningXML.h"
 #include "TUnfoldBinning.h"
 #include "TUnfoldDensity.h"
@@ -14,30 +6,31 @@
 TUnfoldDensityV17* setTUnfoldDensity(TFile *filein, TString var, TString matrixName, bool isfsr){
 
 	TH2* hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
-	TUnfoldBinningV17* binning_Rec = NULL;
-	TUnfoldBinningV17* binning_Gen = NULL;
+	TUnfoldBinning* binning_Rec = NULL;
+	TUnfoldBinning* binning_Gen = NULL;
 
  	if( var.CompareTo("Pt") == 0 ){
 
-	  if(!isfsr) binning_Rec = (TUnfoldBinningV17*)filein->Get("Rec_Pt");
-          else binning_Rec = (TUnfoldBinningV17*)filein->Get("Gen_Pt");
+	  if(!isfsr) binning_Rec = (TUnfoldBinning*)filein->Get("Rec_Pt");
+          else binning_Rec = (TUnfoldBinning*)filein->Get("Gen_Pt");
 
-	  binning_Gen = (TUnfoldBinningV17*)filein->Get("Gen_Pt");
+	  binning_Gen = (TUnfoldBinning*)filein->Get("Gen_Pt");
         }
         if( var.CompareTo("Mass") == 0 ){
 
-          if(!isfsr) binning_Rec = (TUnfoldBinningV17*)filein->Get("Rec_Mass");
-          else binning_Rec = (TUnfoldBinningV17*)filein->Get("Gen_Mass");
+          if(!isfsr) binning_Rec = (TUnfoldBinning*)filein->Get("Rec_Mass");
+          else binning_Rec = (TUnfoldBinning*)filein->Get("Gen_Mass");
 
-          binning_Gen = (TUnfoldBinningV17*)filein->Get("Gen_Mass");
+          binning_Gen = (TUnfoldBinning*)filein->Get("Gen_Mass");
 
         }
 
+
         TUnfoldDensityV17 *unfold;
         unfold = new TUnfoldDensityV17(hmcGenRec,
-                                       TUnfoldV17::kHistMapOutputHoriz,
+                                       TUnfold::kHistMapOutputHoriz,
                                        TUnfold::kRegModeNone, // fixed to use no regularisation temporary
-                                       TUnfoldV17::kEConstraintArea,
+                                       TUnfold::kEConstraintArea,
                                        TUnfoldDensityV17::kDensityModeBinWidth,
                                        binning_Gen,binning_Rec);
 

@@ -22,12 +22,12 @@ class histTUnfold {
 private:
 
 	// binning definition for pt
-	TUnfoldBinningV17* ptBinningRec;
-	TUnfoldBinningV17* ptBinningGen;
+	TUnfoldBinning* ptBinningRec;
+	TUnfoldBinning* ptBinningGen;
 
 	// binning definition for mass
-	TUnfoldBinningV17* massBinningRec;
-	TUnfoldBinningV17* massBinningGen;
+	TUnfoldBinning* massBinningRec;
+	TUnfoldBinning* massBinningGen;
 
   	std::map<TString, TH1*> histMaps;
   	std::map<TString, TH2*> hist2DMaps;
@@ -42,10 +42,10 @@ public:
 	void SetMassBinningRec();
 	void SetMassBinningGen();
 
-	inline TUnfoldBinningV17* GetPtBinningRec(){ return ptBinningRec;}
-	inline TUnfoldBinningV17* GetMassBinningRec(){ return massBinningRec;}
-	inline TUnfoldBinningV17* GetPtBinningGen(){ return ptBinningGen;}
-	inline TUnfoldBinningV17* GetMassBinningGen(){ return massBinningGen;}
+	inline TUnfoldBinning* GetPtBinningRec(){ return ptBinningRec;}
+	inline TUnfoldBinning* GetMassBinningRec(){ return massBinningRec;}
+	inline TUnfoldBinning* GetPtBinningGen(){ return ptBinningGen;}
+	inline TUnfoldBinning* GetMassBinningGen(){ return massBinningGen;}
 
 	// set histograms: get histogram names from python script and create histograms
 	void CreateHistMap(const int which_unfold, TString hname);

@@ -1,27 +1,6 @@
-#include <iostream>
-#include <map>
-#include <cmath>
-#include <TMath.h>
-#include <TFile.h>
-#include <TTree.h>
-#include <TH1.h>
-#include <TGraphErrors.h>
-#include <TCanvas.h>
-#include <TStyle.h>
-#include <TLegend.h>
-#include <TLine.h>
-#include <TGaxis.h>
-#include <TMathText.h>
-#include <TLatex.h>
-#include <THStack.h>
-#include <TDOMParser.h>
-#include <TXMLDocument.h>
-#include "TUnfoldBinningXML.h"
-#include "TUnfoldBinning.h"
-#include "TUnfoldDensity.h"
-
-#include "./tdrstyle.C"
-#include "./CMS_lumi.C"
+#include "ISR_drawUtils.h"
+#include "tdrstyle.C"
+#include "CMS_lumi.C"
 
 void setYaxisHist(TH1* hist){
 
@@ -63,7 +42,7 @@ void setXaxisGraph(TGraphErrors* gr){
         gr->GetXaxis()->SetTitleSize(20);
 }
 
-void setTGraphAxis(TGraphErrors* data, Double_t x, Double_t xmin, Double_t xmax, Double_t ymin, Double_t ymax, TGraphErrors* mc = nullptr,  TGraphErrors* sys = nullptr, bool axis = true){
+void setTGraphAxis(TGraphErrors* data, Double_t x, Double_t xmin, Double_t xmax, Double_t ymin, Double_t ymax, TGraphErrors* mc,  TGraphErrors* sys, bool axis){
 
 
         TString mass;
@@ -118,19 +97,6 @@ TLine* drawVerLine(Double_t x1, Double_t y1, Double_t x2, Double_t y2){
         return l_;
 }
 
-void drawTest(TString outpdf, TUnfoldDensityV17* unfold_pt){
-
-        TH1* hunfolded_pt = unfold_pt->GetOutput("hunfolded_pt",0,0,"pt[UO];mass[UOC2]",kTRUE);
-
-        TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
-        c1->cd();
-        gStyle->SetOptStat(0);
-	hunfolded_pt->Draw("hist");
-
-	c1->SaveAs(outpdf);
-        delete c1;
-        delete hunfolded_pt;
-}
 
 void getAveragesMass(vector<Double_t> &mean, vector<Double_t> &err, TH1* hmass){
 
@@ -145,7 +111,7 @@ void getAveragesMass(vector<Double_t> &mean, vector<Double_t> &err, TH1* hmass){
 }
 
 // TODO make a function to get systematic error on the average pt for each systematic source
-void getAveragesPt(vector<Double_t> &mean, vector<Double_t> &err, TUnfoldDensityV17* unfold_pt, bool isData){
+void getAveragesPt(vector<Double_t> &mean, vector<Double_t> &err, TUnfoldDensity* unfold_pt, bool isData){
 
 	int nMassBin = 5;
 
@@ -165,7 +131,7 @@ void getAveragesPt(vector<Double_t> &mean, vector<Double_t> &err, TUnfoldDensity
         }           
 }
 
-void getAveragesSysMass(vector<Double_t> &err, TString sysName, int sysSize, TUnfoldDensityV17* unfold_mass){
+void getAveragesSysMass(vector<Double_t> &err, TString sysName, int sysSize, TUnfoldDensity* unfold_mass){
 
         //Double_t massBins[6] = {40., 60., 80., 100., 200., 350.};
         Double_t massBins[6] = {50., 65., 80., 100., 200., 350.};
@@ -207,7 +173,7 @@ void getAveragesSysMass(vector<Double_t> &err, TString sysName, int sysSize, TUn
 
 }
 
-void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfoldDensityV17* unfold_pt){
+void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfoldDensity* unfold_pt){
 
         int nMassBin = 5;
 
@@ -247,7 +213,7 @@ void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfo
         }
 }
 
-void getRatioSys(TUnfoldDensityV17* unfold_pt, TString sysName, int sysSize, TH1 *sysRatio){
+void getRatioSys(TUnfoldDensity* unfold_pt, TString sysName, int sysSize, TH1 *sysRatio){
 
 	vector<TH1*> hDeltas;
 	vector<TH1*> hSys;
@@ -296,7 +262,7 @@ void getRatioSys(TUnfoldDensityV17* unfold_pt, TString sysName, int sysSize, TH1
 	hSys.shrink_to_fit();
 }
 
-void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensityV17* unfold_pt){
+void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt){
 
         gROOT->SetBatch();
 
@@ -425,7 +391,7 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensityV17* unfold_pt){
 	}
 }
 
-void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* unfold_mass, TFile *filein){
+void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TFile *filein){
 
         gROOT->SetBatch();
 
@@ -621,7 +587,7 @@ void drawRatio(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* 
         delete c1;
 }
 
-void drawCombinedISR(TString outpdf, TUnfoldDensityV17* unfold_pt2016, TUnfoldDensityV17* unfold_mass2016, TUnfoldDensityV17* unfold_pt2017, TUnfoldDensityV17* unfold_mass2017){
+void drawCombinedISR(TString outpdf, TUnfoldDensity* unfold_pt2016, TUnfoldDensity* unfold_mass2016, TUnfoldDensity* unfold_pt2017, TUnfoldDensity* unfold_mass2017){
 
         gROOT->SetBatch();
 
@@ -893,7 +859,7 @@ void drawCombinedISR(TString outpdf, TUnfoldDensityV17* unfold_pt2016, TUnfoldDe
 
 }
 
-void drawISRfit(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17* unfold_mass, TFile *filein){
+void drawISRfit(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TFile *filein){
 
         gROOT->SetBatch();
 
@@ -1026,7 +992,7 @@ void drawISRfit(TString outpdf, TUnfoldDensityV17* unfold_pt, TUnfoldDensityV17*
 
 }
 
-void drawMassRatio(TString outpdf, TUnfoldDensityV17* unfold, TFile *filein){
+void drawMassRatio(TString outpdf, TUnfoldDensity* unfold, TFile *filein){
 
         gROOT->SetBatch();
 
@@ -1161,8 +1127,8 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
    	Int_t linecolorTop = kGreen+2;
    	Int_t fillcolorTop = kGreen-5;
 
-	//TUnfoldBinningV17 *ptbin = ptBinning_rec();
-	TUnfoldBinningV17* ptbin=(TUnfoldBinningV17*)fdata->Get("Rec_Pt");
+	//TUnfoldBinning *ptbin = ptBinning_rec();
+	TUnfoldBinning* ptbin=(TUnfoldBinning*)fdata->Get("Rec_Pt");
 
 	TH1* hdata = (TH1*)fdata->Get(hname);
   	TH1* hdataNoUO = ptbin->ExtractHistogram("hdata", hdata, 0, kFALSE, "*[UO]");
@@ -1351,8 +1317,8 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
    	Int_t linecolorTop = kGreen+2;
    	Int_t fillcolorTop = kGreen-5;
 
-	//TUnfoldBinningV17 *massbin = massBinning_rec();
-	TUnfoldBinningV17* massbin=(TUnfoldBinningV17*)fdata->Get("Rec_Mass");
+	//TUnfoldBinning *massbin = massBinning_rec();
+	TUnfoldBinning* massbin=(TUnfoldBinning*)fdata->Get("Rec_Mass");
 
 	TH1* hdata = (TH1*)fdata->Get(hname);
   	TH1* hdataNoUO = massbin->ExtractHistogram("hdata", hdata, 0, kTRUE, "*[UO]");
@@ -1505,7 +1471,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         delete massbin;
 }
 
-void responseM(TString outpdf, TUnfoldDensityV17* unfold){
+void responseM(TString outpdf, TUnfoldDensity* unfold){
 	gROOT->SetBatch();
 	TH2 *histProbability=unfold->GetProbabilityMatrix("histProbability"); // get response matrix
 
@@ -1550,7 +1516,7 @@ void responseM(TString outpdf, TUnfoldDensityV17* unfold){
         delete c1;
 }
 
-void efficiency(TString outpdf, TUnfoldDensityV17* unfold){
+void efficiency(TString outpdf, TUnfoldDensity* unfold){
 
         gROOT->SetBatch();
         TH2 *histProbability=unfold->GetProbabilityMatrix("histProbability"); // get response matrix

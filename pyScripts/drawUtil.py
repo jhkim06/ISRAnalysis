@@ -2,8 +2,7 @@ import os
 import sys
 import ROOT as rt
 
-rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScripts/libunfold.so")
-rt.gROOT.ProcessLine(".L /home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScripts/drawUtils.C++")
+rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/libdrawUtils_C.so")
 
 import gc
 gc.collect()

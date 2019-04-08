@@ -1,4 +1,4 @@
-#include "histTUnfold.h"
+#include "ISR_histTUnfold.h"
 
 void histTUnfold::CreateHistMap(const int which_unfold, TString hname){
 
@@ -14,11 +14,11 @@ void histTUnfold::CreateHistMap(const int which_unfold, TString hname){
 void histTUnfold::CreateHist2DMap(const int which_unfold, TString hname){
 
 	if(which_unfold == pt_unfold){
-		 hist2DMaps.insert(std::pair<TString, TH2*>("pt_"+hname, TUnfoldBinningV17::CreateHistogramOfMigrations(ptBinningGen, ptBinningRec,"hmcPtGenRec" + hname)));
+		 hist2DMaps.insert(std::pair<TString, TH2*>("pt_"+hname, TUnfoldBinning::CreateHistogramOfMigrations(ptBinningGen, ptBinningRec,"hmcPtGenRec" + hname)));
 	}
 
 	if(which_unfold == mass_unfold){
-		 hist2DMaps.insert(std::pair<TString, TH2*>("mass_"+hname, TUnfoldBinningV17::CreateHistogramOfMigrations(massBinningGen, massBinningRec,"hmcMassGenRec" + hname)));
+		 hist2DMaps.insert(std::pair<TString, TH2*>("mass_"+hname, TUnfoldBinning::CreateHistogramOfMigrations(massBinningGen, massBinningRec,"hmcMassGenRec" + hname)));
 	}
 }
 
@@ -69,7 +69,7 @@ void histTUnfold::SetPtBinningRec(){
  const int nptbin_fine=17;
  double ptbin_fine[nptbin_fine+1]={0., 2., 4., 6., 8., 10., 12., 14., 18., 22., 28., 35., 45., 55., 65., 75., 85., 100.};
 
- ptBinningRec= new TUnfoldBinningV17("Rec_Pt");
+ ptBinningRec= new TUnfoldBinning("Rec_Pt");
  ptBinningRec->AddAxis("pt",nptbin_fine,ptbin_fine,false,true);
  ptBinningRec->AddAxis("mass",nmassbin_fine,massbin_fine,true,true);
 }
@@ -93,7 +93,7 @@ void histTUnfold::SetPtBinningGen(){
  const int nptbin_wide=17;
  double ptbin_wide[nptbin_wide+1]={0., 2., 4., 6., 8., 10., 12., 14., 18., 22., 28., 35., 45., 55., 65., 75., 85., 100.};
 
- ptBinningGen=(new TUnfoldBinningV17("Gen_Pt"));
+ ptBinningGen=(new TUnfoldBinning("Gen_Pt"));
  ptBinningGen->AddAxis("pt",nptbin_wide,ptbin_wide,false,true);
  ptBinningGen->AddAxis("mass",nmassbin_wide,massbin_wide,true,true);
 
@@ -107,7 +107,7 @@ void histTUnfold::SetMassBinningRec(){
  //double bin_fine[nbin_fine+1]={40,42.5,45,47.5,50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
  double bin_fine[nbin_fine+1]={50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
 
- massBinningRec=(new TUnfoldBinningV17("Rec_Mass"));
+ massBinningRec=(new TUnfoldBinning("Rec_Mass"));
  massBinningRec->AddAxis("reco mass",nbin_fine,bin_fine,false,false);
 }
 
@@ -119,6 +119,6 @@ void histTUnfold::SetMassBinningGen(){
  //double bin_wide[nbin_wide+1]={40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
  double bin_wide[nbin_wide+1]={50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
 
- massBinningGen=(new TUnfoldBinningV17("Gen_Mass"));
+ massBinningGen=(new TUnfoldBinning("Gen_Mass"));
  massBinningGen->AddAxis("gen mass",nbin_wide,bin_wide,true,true);
 }

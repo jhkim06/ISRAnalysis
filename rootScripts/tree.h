@@ -1,14 +1,10 @@
-#include <iostream>
-#include <map>
 #include <cmath>
 #include <TMath.h>
 #include <TFile.h>
 #include <TTree.h>
 #include <TH1.h>
-#include <TDOMParser.h>
-#include <TXMLDocument.h>
-#include "TUnfoldBinningXML.h"
-#include "TUnfoldBinning.h"
+
+using namespace std;
 
  // variables in the input tree
  Double_t weightGen,weightRec, weightRecIdUp, weightRecIdDown;
@@ -19,7 +15,7 @@
  vector<Double_t> *weightGenPdf = 0;
 
  int ispassRec,DYtautau, isBveto;
- int isfiducialPostFSR, isfiducialPreFSR; 
+ int isfiducialPostFSR, isfiducialPreFSR;
  int nentries;
 
  vector<Double_t> *ptPreFSR = 0;
@@ -45,3 +41,4 @@
  Double_t ZPtCor;
  Double_t bTagReweight;
  Int_t isdielectron, isdimuon;
+
