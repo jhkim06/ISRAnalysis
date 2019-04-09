@@ -2,7 +2,7 @@ import os
 import sys
 import ROOT as rt
 
-#rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/libhistTUnfold_C.so")
+rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/libhistTUnfold_C.so")
 rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/libsaveHists_C.so") # since ISR_histTUnfold.h included in ISR_saveHists.h ?
 
 import etc.histDef as fHistDef
