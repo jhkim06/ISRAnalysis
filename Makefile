@@ -22,6 +22,9 @@ LDFLAGS=$(ROOTLDFLAGS) -L$(LIBDIR) -Wl,-rpath $(LIBDIR)
 
 LIB=unfold
 
+_lib=$(LIBDIR)libisrunfold.so
+lib:$(_lib)
+
 SRCCODE=$(shell ls $(SRC)ISR_*.C)
 
 _OBJ=$(SRCCODE:%.C=%_C.o)
@@ -40,8 +43,8 @@ $(LIBDIR)%_C_ACLiC_dict.cxx: $(SRC)%.h $(SRC)Linkdef.h
 $(LIBDIR)%_C.o: $(SRC)%.C 
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-libisrunfold.so: $(OBJ) $(DIC) 
-	c++ $(CXXFLAGS) -shared -o $(LIBDIR)$@ $^ $(LDFLAGS) -l$(LIB) \
+$(_lib): $(OBJ) $(DIC) 
+	c++ $(CXXFLAGS) -shared -o $@ $^ $(LDFLAGS) -l$(LIB) \
 	$(ROOTLIBS)
 
 clean:
