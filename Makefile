@@ -22,51 +22,28 @@ LDFLAGS=$(ROOTLDFLAGS) -L$(LIBDIR) -Wl,-rpath $(LIBDIR)
 
 LIB=unfold
 
-# use % later to shorten the length
+SRCCODE=$(shell ls $(SRC)ISR_*.C)
+
+_OBJ=$(SRCCODE:%.C=%_C.o)
+OBJ=$(subst rootScripts,lib,$(_OBJ))
+
+_DIC = $(SRCCODE:%.C=%_C_ACLiC_dict.cxx)                             
+DIC = $(subst rootScripts,lib,$(_DIC))
+
+# 
 # make object files
-ISR_histTUnfold_C.o: $(SRC)ISR_histTUnfold.C
-	c++  $(CXXFLAGS) -c $^ -o $(LIBDIR)$@
+#
 
-ISR_saveHists_C.o: $(SRC)ISR_saveHists.C
-	c++  $(CXXFLAGS) -c $^ -o $(LIBDIR)$@
+$(LIBDIR)%_C_ACLiC_dict.cxx: $(SRC)%.h $(SRC)Linkdef.h
+	rootcling -f $@ -c `root-config --ldflags` -I$(HTUNFOLDV17) -p $^
 
-ISR_unfoldUtils_C.o: $(SRC)ISR_unfoldUtils.C
-	c++  $(CXXFLAGS) -c $^ -o $(LIBDIR)$@
+$(LIBDIR)%_C.o: $(SRC)%.C 
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-ISR_drawUtils_C.o: $(SRC)ISR_drawUtils.C
-	c++  $(CXXFLAGS) -c $^ -o $(LIBDIR)$@
-
-# make dictionary
-ISR_histTUnfold_C_ACLiC_dict.cxx: $(SRC)ISR_histTUnfold.h $(SRC)Linkdef.h
-	rootcling -f $(LIBDIR)$@ -c `root-config --ldflags`  -I$(HTUNFOLDV17) -p $^
-
-ISR_saveHists_C_ACLiC_dict.cxx: $(SRC)ISR_saveHists.h $(SRC)Linkdef.h
-	rootcling -f $(LIBDIR)$@ -c `root-config --ldflags`  -I$(HTUNFOLDV17) -p $^
-
-ISR_unfoldUtils_C_ACLiC_dict.cxx: $(SRC)ISR_unfoldUtils.h $(SRC)Linkdef.h
-	rootcling -f $(LIBDIR)$@ -c `root-config --ldflags`  -I$(HTUNFOLDV17) -p $^
-
-ISR_drawUtils_C_ACLiC_dict.cxx: $(SRC)ISR_drawUtils.h $(SRC)Linkdef.h
-	rootcling -f $(LIBDIR)$@ -c `root-config --ldflags`  -I$(HTUNFOLDV17) -p $^
-
-# make shared library to be loaded in python 
-libhistTUnfold_C.so: $(LIBDIR)ISR_histTUnfold_C_ACLiC_dict.cxx $(LIBDIR)ISR_histTUnfold_C.o
+libisrunfold.so: $(OBJ) $(DIC) 
 	c++ $(CXXFLAGS) -shared -o $(LIBDIR)$@ $^ $(LDFLAGS) -l$(LIB) \
 	$(ROOTLIBS)
-
-libsaveHists_C.so: $(LIBDIR)ISR_saveHists_C_ACLiC_dict.cxx $(LIBDIR)ISR_saveHists_C.o
-	c++ $(CXXFLAGS) -shared -o $(LIBDIR)$@ $^ $(LDFLAGS) -l$(LIB) \
-	$(ROOTLIBS)
-
-libunfoldUtils_C.so: $(LIBDIR)ISR_unfoldUtils_C_ACLiC_dict.cxx $(LIBDIR)ISR_unfoldUtils_C.o
-	c++ $(CXXFLAGS) -shared -o $(LIBDIR)$@ $^ $(LDFLAGS) -l$(LIB) \
-	$(ROOTLIBS)
-
-libdrawUtils_C.so: $(LIBDIR)ISR_drawUtils_C_ACLiC_dict.cxx $(LIBDIR)ISR_drawUtils_C.o
-	c++ $(CXXFLAGS) -shared -o $(LIBDIR)$@ $^ $(LDFLAGS) -l$(LIB) \
-	$(ROOTLIBS)
-
 
 clean:
-	rm $(LIBDIR)/ISR_*
-	rm $(LIBDIR)/libhistTUnfold*
+	rm $(LIBDIR)ISR_*
+	rm $(LIBDIR)libisrunfold.so

@@ -2,7 +2,7 @@ import os
 import sys
 import ROOT as rt
 
-rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/libdrawUtils_C.so")
+rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/libisrunfold.so")
 
 import gc
 gc.collect()
