@@ -1113,7 +1113,7 @@ void drawMassRatio(TString outpdf, TUnfoldDensity* unfold, TFile *filein){
         delete c1;
 }
 
-void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets, TString channel){
+void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets, TFile *fqcd, TString channel){
 
 	setTDRStyle();
 	writeExtraText = true;       // if extra text
@@ -1148,6 +1148,13 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
 	TH1* hwjets = (TH1*)fWjets->Get(hname);
   	TH1* hwjetsNoUO = ptbin->ExtractHistogram("hwjets", hwjets, 0, kFALSE, "*[UO]");
 
+        TH1* hqcd;
+	TH1* hqcdNoUO;
+        if(fqcd != NULL){ 
+		hqcd = (TH1*)fqcd->Get(hname);
+		hqcdNoUO = ptbin->ExtractHistogram("hqcd", hqcd, 0, kFALSE, "*[UO]");
+	}
+
    	THStack *hsMCs = new THStack("hsMCs","hsMCs");
         hdysigNoUO->SetLineColor(linecolorZ);
         hdysigNoUO->SetFillColor(fillcolorZ);
@@ -1159,7 +1166,10 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         hvvNoUO->SetFillColor(fillcolorEWK);
         hwjetsNoUO->SetLineColor(linecolorEWK-1);
         hwjetsNoUO->SetFillColor(fillcolorEWK-1);
+        if(fqcd != NULL) hqcdNoUO->SetLineColor(linecolorEWK-2);
+        if(fqcd != NULL) hqcdNoUO->SetFillColor(fillcolorEWK-2);
 
+	if(fqcd != NULL) hsMCs->Add(hqcdNoUO);
 	hsMCs->Add(hwjetsNoUO);
 	hsMCs->Add(hvvNoUO);
 	hsMCs->Add(httbarNoUO);
@@ -1187,7 +1197,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         setYaxisHist(hdataNoUO);
 	hsMCs->Draw("hist same");
         hdataNoUO->GetXaxis()->SetLabelSize(0.);
-        hdataNoUO->GetYaxis()->SetTitle("Number of events per bin");
+        hdataNoUO->GetYaxis()->SetTitle("Events/ Bin");
         hdataNoUO->GetYaxis()->SetRangeUser(5.,hdataNoUO->GetMaximum() * 1e2);
         hdataNoUO->Draw("p9histsamee");
         pad1->RedrawAxis();
@@ -1202,7 +1212,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
                 grid_vertical.DrawLine(totoalNbin/5 * (ii+1) + 0.5, hdataNoUO->GetMinimum(), totoalNbin/5 * (ii+1) + 0.5, hdataNoUO->GetMaximum() );
         }
 
-	TLegend *fLeg = new TLegend(0.6,0.6,0.95,0.85);
+	TLegend *fLeg = new TLegend(0.6,0.6,0.95,0.9);
         fLeg->SetTextSize(50);
         fLeg->SetTextFont(63);
         fLeg->SetFillStyle(0);
@@ -1214,6 +1224,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
  	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
  	fLeg->AddEntry(hvvNoUO, "VV", "F");
  	fLeg->AddEntry(hwjetsNoUO, "Wjets", "F");
+ 	if(fqcd != NULL) fLeg->AddEntry(hqcdNoUO, "QCD", "F");
 	fLeg->Draw();
 
         c1->cd();
@@ -1232,6 +1243,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
 	hmcs->Add(httbarNoUO);
 	hmcs->Add(hvvNoUO);
 	hmcs->Add(hwjetsNoUO);
+	if(fqcd != NULL) hmcs->Add(hqcdNoUO);
 
         ratio->Divide(hmcs);
         ratio->Draw("pe");
@@ -1303,7 +1315,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         delete ptbin;
 }
 
-void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets, TString channel){
+void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets, TFile *fqcd, TString channel){
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
@@ -1338,6 +1350,13 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
 	TH1* hwjets = (TH1*)fWjets->Get(hname);
   	TH1* hwjetsNoUO = massbin->ExtractHistogram("hwjets", hwjets, 0, kTRUE, "*[UO]");
 
+        TH1* hqcd;
+        TH1* hqcdNoUO;
+        if(fqcd != NULL){
+                hqcd = (TH1*)fqcd->Get(hname);
+                hqcdNoUO = massbin->ExtractHistogram("hqcd", hqcd, 0, kTRUE, "*[UO]");
+        }
+
    	THStack *hsMCs = new THStack("hsMCs","hsMCs");
         hdysigNoUO->SetLineColor(linecolorZ);
         hdysigNoUO->SetFillColor(fillcolorZ);
@@ -1349,7 +1368,10 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         hvvNoUO->SetFillColor(fillcolorEWK);
         hwjetsNoUO->SetLineColor(linecolorEWK-1);
         hwjetsNoUO->SetFillColor(fillcolorEWK-1);
+        if(fqcd != NULL) hqcdNoUO->SetLineColor(linecolorEWK-2);
+        if(fqcd != NULL) hqcdNoUO->SetFillColor(fillcolorEWK-2);
 
+        if(fqcd != NULL) hsMCs->Add(hqcdNoUO);
 	hsMCs->Add(hwjetsNoUO);
 	hsMCs->Add(hvvNoUO);
 	hsMCs->Add(httbarNoUO);
@@ -1382,7 +1404,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         hdataNoUO->Draw("p9histsamee");
 	pad1->RedrawAxis();
 	
-        TLegend *fLeg = new TLegend(0.6,0.6,0.95,0.85);
+        TLegend *fLeg = new TLegend(0.6,0.6,0.95,0.9);
         fLeg->SetTextSize(50);
         fLeg->SetTextFont(63);
         fLeg->SetFillStyle(0);
@@ -1394,6 +1416,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
  	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
  	fLeg->AddEntry(hvvNoUO, "VV", "F");
  	fLeg->AddEntry(hwjetsNoUO, "Wjets", "F");
+        if(fqcd != NULL) fLeg->AddEntry(hqcdNoUO, "QCD", "F");
 	fLeg->Draw();
 
         c1->cd();
@@ -1412,6 +1435,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
 	hmcs->Add(httbarNoUO);
 	hmcs->Add(hvvNoUO);
 	hmcs->Add(hwjetsNoUO);
+        if(fqcd != NULL) hmcs->Add(hqcdNoUO);
 
         ratio->Divide(hmcs);
         ratio->Draw("pe");
@@ -1419,7 +1443,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         ratio->SetMarkerSize(1.5);
         ratio->SetLineColor(kBlack);
         ratio->SetMinimum(0.8);
-        ratio->SetMaximum(1.5);
+        ratio->SetMaximum(1.2);
         ratio->GetYaxis()->SetTitle("data/MC");
         ratio->GetYaxis()->CenterTitle();
         setYaxisHist(ratio);

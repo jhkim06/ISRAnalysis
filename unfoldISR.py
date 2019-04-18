@@ -233,6 +233,7 @@ if args.getUnfoldResults:
         unfoldutil.subtractBkgs(unfold_pt, "Pt", postfix, unfoldInputList['TTbar'], "TTbar")
         unfoldutil.subtractBkgs(unfold_pt, "Pt", postfix, unfoldInputList['VV'], "VV")
         unfoldutil.subtractBkgs(unfold_pt, "Pt", postfix, unfoldInputList['Wjets'], "Wjets")
+        if args.channel == "muon": unfoldutil.subtractBkgs(unfold_pt, "Pt", postfix, unfoldInputList['QCD'], "QCD")
 
 	# for mass unfolding
         unfoldutil.setUnfoldInput(unfold_mass, "Mass", postfix, unfoldInputList['data'])
@@ -242,6 +243,7 @@ if args.getUnfoldResults:
         unfoldutil.subtractBkgs(unfold_mass, "Mass", postfix, unfoldInputList['TTbar'], "TTbar")
         unfoldutil.subtractBkgs(unfold_mass, "Mass", postfix, unfoldInputList['VV'], "VV")
         unfoldutil.subtractBkgs(unfold_mass, "Mass", postfix, unfoldInputList['Wjets'], "Wjets")
+        if args.channel == "muon": unfoldutil.subtractBkgs(unfold_pt, "Mass", postfix, unfoldInputList['QCD'], "QCD")
 
 	# do unfolding with bkg subtracted data and the migration matrix
         unfoldutil.doUnfold(unfold_pt)
@@ -272,10 +274,13 @@ if args.getUnfoldResults:
 	# check reco level distribution
 	# FIXME use TUnfoldDensityV17::GetBackground()
         outpdf = outputDirectory + "recoPt_"+args.channel+".pdf"
-        drawutil.recoPt(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], args.channel);
+        if args.channel == "muon": drawutil.recoPt(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], unfoldInputList['QCD'], args.channel) #None for electron channel
+	else : drawutil.recoPt(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], None, args.channel)
 
         outpdf = outputDirectory + "recoMass_"+args.channel+".pdf"
-        drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], args.channel);
+        if args.channel == "muon": drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], unfoldInputList['QCD'], args.channel);
+	else : drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], None, args.channel)
+
 
         outpdf = outputDirectory + "recoPtdist_"+args.channel+".pdf"
 	drawutil.drawUnfoldedPt(outpdf, unfold_pt)
