@@ -16,7 +16,7 @@
 #include "TUnfoldDensity.h"
 
 TUnfoldDensityV17* setTUnfoldDensity(TFile *filein, TString var, TString matrixName, bool isfsr);
-void setVetorSystematic(TFile *filein, TUnfoldDensityV17* unfold, TString var, TString sysMatrixName, int size);
+void setVetorSystematic(TFile *filein, TUnfoldDensityV17* unfold, TString var, TString sysMatrixName, int size );
 void setInput(TUnfoldDensityV17* unfold, TString var, TString postfix, TFile *filein);
 void setInputHist(TUnfoldDensityV17* unfold, TH1* hist);
 void subBkgs(TUnfoldDensityV17* unfold, TString var, TString hname, TFile *filein, TString name);

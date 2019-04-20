@@ -79,6 +79,12 @@ def makeSigHists(sample, outputDirectory, channel):
 	sigHists.CreateHist2DMap(1, "nominal") 
 	sigHists.CreateHist2DMap(2, "nominal") 
 
+	sigHists.CreateHist2DMap(1, "unfoldsys_0") 
+	sigHists.CreateHist2DMap(2, "unfoldsys_0") 
+
+	sigHists.CreateHist2DMap(1, "FSRDR0p1") 
+	sigHists.CreateHist2DMap(2, "FSRDR0p1") 
+
 	sigHists.CreateHistMap(1, "nominal") 
 	sigHists.CreateHistMap(2, "nominal") 
 

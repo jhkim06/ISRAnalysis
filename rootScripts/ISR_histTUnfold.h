@@ -51,7 +51,7 @@ public:
 	void CreateHistMap(const int which_unfold, TString hname);
 	void CreateHist2DMap(const int which_unfold, TString hname);
 
-  	void FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen);
+  	void FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen, Double_t corr = 1.);
   	void FillHistogram(const int which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco);
 
   	histTUnfold(std::map<TString, TH1*> histMaps_, std::map<TString, TH2*> hist2DMaps_, Int_t isInc_):

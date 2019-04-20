@@ -1,18 +1,8 @@
 #ifndef SAVEHISTS_H
 #define SAVEHISTS_H
 
-#include <iostream>
-#include <map>
-#include <cmath>
-#include <TMath.h>
-#include <TFile.h>
-#include <TTree.h>
-#include <TH1.h>
-#include <TDOMParser.h>
-#include <TXMLDocument.h>
-#include "TUnfoldBinningXML.h"
-#include "TUnfoldBinning.h"
-
+#include "vector"
+#include "TLorentzVector.h"
 #include "ISR_histTUnfold.h"
 
 using namespace std;

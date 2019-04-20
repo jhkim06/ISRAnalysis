@@ -37,7 +37,7 @@ DIC = $(subst rootScripts,lib,$(_DIC))
 # make object files
 #
 
-$(LIBDIR)%_C_ACLiC_dict.cxx: $(SRC)%.h $(SRC)Linkdef.h
+$(LIBDIR)%_C_ACLiC_dict.cxx: $(SRC)%.h  $(SRC)Linkdef.h
 	rootcling -f $@ -c `root-config --ldflags` -I$(HTUNFOLDV17) -p $^
 
 $(LIBDIR)%_C.o: $(SRC)%.C 

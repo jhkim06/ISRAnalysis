@@ -45,7 +45,6 @@ void setVetorSystematic(TFile *filein, TUnfoldDensityV17* unfold, TString var, T
            TString ithSys; ithSys.Form("%d",i);
            unfold->AddSysError((TH2*)filein->Get("hmc" + var + "GenRec" + sysMatrixName+"_"+ithSys), sysMatrixName+"_"+ithSys, TUnfold::kHistMapOutputHoriz, TUnfoldSys::kSysErrModeMatrix);
         }
-
 }
 
 void setInput(TUnfoldDensityV17* unfold, TString var, TString postfix, TFile *filein){

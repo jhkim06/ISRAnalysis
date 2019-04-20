@@ -37,9 +37,11 @@ void getAveragesPt(vector<Double_t> &mean, vector<Double_t> &err, TUnfoldDensity
 void getAveragesSysMass(vector<Double_t> &err, TString sysName, int sysSize, TUnfoldDensity* unfold_mass);
 void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfoldDensity* unfold_pt);
 void getRatioSys(TUnfoldDensity* unfold_pt, TString sysName, int sysSize, TH1 *sysRatio);
+void getRatioSysMass(TUnfoldDensity* unfold_mass, TString sysName, int sysSize, TH1 *sysRatio);
 void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt);
 void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TFile *filein);
 void drawCombinedISR(TString outpdf, TUnfoldDensity* unfold_pt2016, TUnfoldDensity* unfold_mass2016, TUnfoldDensity* unfold_pt2017, TUnfoldDensity* unfold_mass2017);
+void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfoldDensity* unfold_massElectron, TUnfoldDensity* unfold_ptMuon, TUnfoldDensity* unfold_massMuon);
 void drawISRfit(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TFile *filein);
 void drawMassRatio(TString outpdf, TUnfoldDensity* unfold, TFile *filein);
 void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets, TFile *fqcd, TString channel);

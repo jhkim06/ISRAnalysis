@@ -24,6 +24,10 @@ def drawCombinedISR(outpdf, unfold_pt2016, unfold_mass2016, unfold_pt2017, unfol
 
 	rt.drawCombinedISR(outpdf, unfold_pt2016, unfold_mass2016, unfold_pt2017, unfold_mass2017 )
 
+def drawEMuCombinedISR(outpdf, unfold_ptElectron, unfold_massElectron, unfold_ptMuon, unfold_massMuon ):
+
+        rt.drawEMuCombinedISR(outpdf, unfold_ptElectron, unfold_massElectron, unfold_ptMuon, unfold_massMuon )
+
 def isrFit(outpdf, unfold_pt, unfold_mass, filepath):
 
         print "############################ draw fit ###############################################"

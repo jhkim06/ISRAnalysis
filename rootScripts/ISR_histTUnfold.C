@@ -33,17 +33,17 @@ void histTUnfold::FillHistogram(const int which_unfold, TString hname, Double_t 
 	}
 }
 
-void histTUnfold::FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen){
+void histTUnfold::FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen, Double_t corr){
 
 	int binZero=0;
 
 	if(selected){
 		if( which_unfold == pt_unfold){
-			(hist2DMaps.find(hname)->second)->Fill(ptBinningGen->GetGlobalBinNumber(truthPt, truthMass), ptBinningRec->GetGlobalBinNumber(recoPt, RecoMass), wgen*wreco);
+			(hist2DMaps.find(hname)->second)->Fill(ptBinningGen->GetGlobalBinNumber(truthPt, truthMass), ptBinningRec->GetGlobalBinNumber(recoPt, RecoMass), wgen*wreco*corr);
 			(hist2DMaps.find(hname)->second)->Fill(ptBinningGen->GetGlobalBinNumber(truthPt, truthMass), binZero, wgen*(1.-wreco));
 		}
                 if( which_unfold == mass_unfold){
-                        if(recoPt < 100.) (hist2DMaps.find(hname)->second)->Fill(massBinningGen->GetGlobalBinNumber(truthMass), massBinningRec->GetGlobalBinNumber(RecoMass), wgen*wreco);
+                        if(recoPt < 100.) (hist2DMaps.find(hname)->second)->Fill(massBinningGen->GetGlobalBinNumber(truthMass), massBinningRec->GetGlobalBinNumber(RecoMass), wgen*wreco*corr);
                         if(recoPt < 100.) (hist2DMaps.find(hname)->second)->Fill(massBinningGen->GetGlobalBinNumber(truthMass), binZero, wgen*(1.-wreco));
                 }
 	}
@@ -107,6 +107,12 @@ void histTUnfold::SetMassBinningRec(){
  //double bin_fine[nbin_fine+1]={40,42.5,45,47.5,50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
  double bin_fine[nbin_fine+1]={50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
 
+ //const int nbin_fine=300;
+ //double bin_fine[nbin_fine+1];
+ //for(int i = 0; i < nbin_fine + 1; i++){
+ //    bin_fine[i] = 50. + (double)i;
+ //}
+
  massBinningRec=(new TUnfoldBinning("Rec_Mass"));
  massBinningRec->AddAxis("reco mass",nbin_fine,bin_fine,false,false);
 }
@@ -118,6 +124,12 @@ void histTUnfold::SetMassBinningGen(){
  const int nbin_wide=27;
  //double bin_wide[nbin_wide+1]={40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
  double bin_wide[nbin_wide+1]={50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
+
+ //const int nbin_wide=150;
+ //double bin_wide[nbin_wide+1];
+ //for(int i = 0; i < nbin_wide + 1; i++){
+ //    bin_wide[i] = 50. + (double)(i*2);
+ //}
 
  massBinningGen=(new TUnfoldBinning("Gen_Mass"));
  massBinningGen->AddAxis("gen mass",nbin_wide,bin_wide,true,true);
