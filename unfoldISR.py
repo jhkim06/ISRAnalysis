@@ -229,6 +229,7 @@ if args.getEMuCombinedResults:
 
         postfix = args.postfix
         postfix_matrix = args.postfix
+	#postfix_matrix = "FSRDR1p9"
 
 	## Electron
         # set unfolding class 
@@ -263,6 +264,24 @@ if args.getEMuCombinedResults:
         unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron,   "Pt",   "Scale", 9)
         unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "Scale", 9)
 
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron, "Pt", "unfoldsys", 1)
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "unfoldsys", 1)
+
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron, "Pt", "PU", 2)
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "PU", 2)
+
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron, "Pt", "trgSF", 2)
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "trgSF", 2)
+
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron, "Pt", "recoSF", 2)
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "recoSF", 2)
+
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron, "Pt", "IdSF", 2)
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "IdSF", 2)
+
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron, "Pt", "IsoSF", 2)
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "IsoSF", 2)
+
 	## Muon
         # set unfolding class 
         unfold_ptMuon =   unfoldutil.setUnfold(unfoldInputListMuon['sig'], "Pt",   postfix_matrix, False)
@@ -296,9 +315,25 @@ if args.getEMuCombinedResults:
         unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon,   "Pt",   "Scale", 9)
         unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "Scale", 9)
 
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon, "Pt", "unfoldsys", 1)
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "unfoldsys", 1)
+
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon, "Pt", "PU", 2)
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "PU", 2)
+
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon, "Pt", "trgSF", 2)
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "trgSF", 2)
+
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon, "Pt", "recoSF", 2)
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "recoSF", 2)
+
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon, "Pt", "IdSF", 2)
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "IdSF", 2)
+
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon, "Pt", "IsoSF", 2)
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "IsoSF", 2)
+
 	drawutil.drawEMuCombinedISR("./EMu.pdf", unfold_ptElectron, unfold_massElectron, unfold_ptMuon, unfold_massMuon )
-
-
 
 
 if args.getUnfoldResults:
@@ -323,7 +358,7 @@ if args.getUnfoldResults:
 	
         postfix = args.postfix
 	postfix_matrix = args.postfix
-	#postfix_matrix = "unfoldsys_0"
+	#postfix_matrix = "FSRDR0p2"
 	if args.doSeperateUnfold:
 		postfix = "nominal"
 		postfix_matrix = "detector"
@@ -387,10 +422,25 @@ if args.getUnfoldResults:
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt, "Pt", "unfoldsys", 1)
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "unfoldsys", 1)
 
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt, "Pt", "PU", 2)
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "PU", 2)
+
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt, "Pt", "trgSF", 2)
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "trgSF", 2)
+
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt, "Pt", "recoSF", 2)
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "recoSF", 2)
+
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt, "Pt", "IdSF", 2)
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "IdSF", 2)
+
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt, "Pt", "IsoSF", 2)
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "IsoSF", 2)
+
         # check unfolded distribution
         outpdf = outputDirectory + "ratio_"+args.channel+".pdf"
         outpdf_mass = outputDirectory + "ratio_mass_"+args.channel+".pdf"
-        drawutil.basicRatio(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'])
+        drawutil.basicRatio(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'], args.channel)
         drawutil.basicRatioMass(outpdf_mass, unfold_mass, unfoldInputList['sig'])
 
         outpdf = outputDirectory + "isrFit_"+args.channel+".pdf"
@@ -441,7 +491,7 @@ if args.getUnfoldResults:
         	outpdf = outputDirectory + "ratio_FSR_"+args.channel+".pdf"
         	outpdf_mass = outputDirectory + "ratio_mass_FSR_"+args.channel+".pdf"
         	# check unfolded distribution
-        	drawutil.basicRatio(outpdf, unfoldFSR_pt, unfoldFSR_mass, unfoldInputList['sig'])
+        	drawutil.basicRatio(outpdf, unfoldFSR_pt, unfoldFSR_mass, unfoldInputList['sig'], basicRatio)
         	drawutil.basicRatioMass(outpdf_mass, unfoldFSR_mass, unfoldInputList['sig'])
 		
 		del unfoldFSR_pt

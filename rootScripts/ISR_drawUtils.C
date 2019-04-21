@@ -247,7 +247,8 @@ void getRatioSysMass(TUnfoldDensity* unfold_mass, TString sysName, int sysSize, 
 	   		  err = temp_err;
 	           }
 	   }
-	   sysRatio->SetBinError(ibin, err);
+	   //sysRatio->SetBinError(ibin, err);
+	   sysRatio->SetBinError(ibin, sqrt(pow(err,2) + pow(sysRatio->GetBinError(ibin),2)));
         }
 
 	for(int i = 0; i < sysSize; i++){
@@ -357,8 +358,8 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt){
         	hpt_temp->SetLineColor(kBlack);
 
 
-                int sysSize = 1;
-                TString sysName = "unfoldsys";
+                int sysSize = 2;
+                TString sysName = "IsoSF";
 
         	for(int ibin = 1; ibin<hpterr_temp->GetNbinsX()+1;ibin++){
 
@@ -442,7 +443,106 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt){
 	}
 }
 
-void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TFile *filein){
+void initHistContent(TH1* hist, Double_t value){
+
+        for(int ibin = 1; ibin<hist->GetNbinsX()+1;ibin++){
+                hist->SetBinContent(ibin, value);
+        }
+}
+
+void initHistError(TH1* hist, Double_t value){
+
+        for(int ibin = 1; ibin<hist->GetNbinsX()+1;ibin++){
+                hist->SetBinError(ibin, value);
+        }
+}
+
+TUnfoldDensityV17* getSysMatrix(TString var, TString sysName, TString channel){
+
+	TFile* filein;
+	if( channel.CompareTo("electron") == 0 ) filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DYtoEE.root");
+	if( channel.CompareTo("muon") == 0 ) filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/muon/DYtoEE.root");
+        TH2* hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + sysName);
+	hmcGenRec->SetDirectory(0);
+        TUnfoldBinning* binning_Rec = NULL;
+        TUnfoldBinning* binning_Gen = NULL;
+
+        if( var.CompareTo("Pt") == 0 ){
+
+          binning_Rec = (TUnfoldBinning*)filein->Get("Rec_Pt");
+          binning_Gen = (TUnfoldBinning*)filein->Get("Gen_Pt");
+        }
+        if( var.CompareTo("Mass") == 0 ){
+
+          binning_Rec = (TUnfoldBinning*)filein->Get("Rec_Mass");
+          binning_Gen = (TUnfoldBinning*)filein->Get("Gen_Mass");
+
+        }
+
+        TUnfoldDensityV17 *unfold;
+        unfold = new TUnfoldDensityV17(hmcGenRec,
+                                       TUnfold::kHistMapOutputHoriz,
+                                       TUnfold::kRegModeNone, // fixed to use no regularisation temporary
+                                       TUnfold::kEConstraintArea,
+                                       TUnfoldDensityV17::kDensityModeBinWidth,
+                                       binning_Gen,binning_Rec);
+
+        TH1* hmcRec = (TH1*)filein->Get("h" + var + "Recnominal");
+	unfold->SetInput(hmcRec, 1); // dummy input
+
+	return unfold;
+}
+
+void sysMCErrRatio(TUnfoldDensity* unfold_pt, TH1* sysRatio, TString var, TString sysName, int size, TString channel){
+
+	vector<TH1*> hMCSys;
+	vector<TUnfoldDensityV17*> hMCSysM;
+
+	TH1* hunfolded_pt = unfold_pt->GetOutput("hunfolded_pt_temp",0,0,"*[UO]",kFALSE);
+	TH1* ratio=(TH1*)hunfolded_pt->Clone("ratio");
+        TH1 *histMCTruth_pt=unfold_pt->GetBias("histMC_pt",0,0,"*[UO]",kFALSE);
+        ratio->Divide(histMCTruth_pt); // default ratio 
+
+	for(int i=0; i<size; i++){
+                TString isys;
+                isys.Form("%d", i);
+		hMCSysM.push_back(getSysMatrix("Pt", sysName+"_"+isys, channel));
+		hMCSys.push_back((TH1*)hunfolded_pt->Clone("ratio"+isys)); // default data
+		hMCSys.at(i)->Divide(hMCSysM.at(i)->GetBias("histMC_pt"+isys,0,0,"*[UO]",kFALSE));
+	}
+
+        for(int ibin = 1; ibin<histMCTruth_pt->GetNbinsX()+1;ibin++){
+
+           sysRatio->SetBinContent(ibin, ratio->GetBinContent(ibin));
+           //sysRatio->SetBinContent(ibin, 1.);
+
+           Double_t err = -999.;
+           for(int i = 0; i < size; i++){
+                   if(i==5 || i==7) continue;
+                   // get "envelope"
+                   Double_t temp_err =  fabs(hMCSys.at(i)->GetBinContent(ibin) - ratio->GetBinContent(ibin));
+		   cout << i << " th sys, bin: " << ibin << " err: " << temp_err << " sys bin: " << hMCSys.at(i)->GetBinContent(ibin) << endl;
+                   if( temp_err > err){
+                          err = temp_err;
+                   }
+           }
+           sysRatio->SetBinError(ibin, sqrt(pow(err,2) + pow(sysRatio->GetBinError(ibin),2)));
+        }
+
+        for(int i = 0; i < size; i++){
+           delete hMCSysM.at(i);
+           delete hMCSys.at(i);
+
+        }
+
+        hMCSys.clear();
+        hMCSys.shrink_to_fit();
+
+        hMCSysM.clear();
+        hMCSysM.shrink_to_fit();
+}
+
+void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TFile *filein, TString channel){  
 
         gROOT->SetBatch();
 
@@ -452,7 +552,10 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
 
 	// pt distribution for 5 mass bins in one histogram
 	TH1* hunfolded_pt = unfold_pt->GetOutput("hunfolded_pt",0,0,"*[UO]",kFALSE);
+        TH1 *histMCTruth_pt=unfold_pt->GetBias("histMCTruth_pt",0,0,"*[UO]",kFALSE);
 	TH1* ratio=(TH1*)hunfolded_pt->Clone("ratio");
+	initHistError(ratio, 1.); // TODO need to 
+        ratio->Divide(histMCTruth_pt);
 
 	// get systematic for ratio plot
         TH1* sysErrRatio = (TH1*)hunfolded_pt->Clone("hsysErrRatio");
@@ -460,9 +563,23 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
 	getRatioSys(unfold_pt, "AlphaS", (int)2, sysErrRatio);	
 	getRatioSys(unfold_pt, "Scale", (int)9, sysErrRatio);	
 	getRatioSys(unfold_pt, "unfoldsys", (int)1, sysErrRatio);	
+	getRatioSys(unfold_pt, "PU", (int)2, sysErrRatio);	
+	getRatioSys(unfold_pt, "trgSF", (int)2, sysErrRatio);	
+	getRatioSys(unfold_pt, "recoSF", (int)2, sysErrRatio);	
+	getRatioSys(unfold_pt, "IdSF", (int)2, sysErrRatio);	
+	getRatioSys(unfold_pt, "IsoSF", (int)2, sysErrRatio);	
 
-        TH1 *histMCTruth_pt=unfold_pt->GetBias("histMCTruth_pt",0,0,"*[UO]",kFALSE);
-        ratio->Divide(histMCTruth_pt);
+        // stat error for measurement
+        TH1* statErrRatio = (TH1*)hunfolded_pt->Clone("hstatErrRatio");
+        statErrRatio->Divide(histMCTruth_pt);
+        initHistContent(statErrRatio, 1.);
+
+        TH1* sysErrRatioMC = (TH1*)hunfolded_pt->Clone("hsysErrRatio");
+	sysErrRatioMC->Reset();
+        sysMCErrRatio(unfold_pt, sysErrRatioMC, "Pt", "AlphaS", (int)2, channel);
+        sysMCErrRatio(unfold_pt, sysErrRatioMC, "Pt", "Scale", (int)9, channel);
+        sysMCErrRatio(unfold_pt, sysErrRatioMC, "Pt", "unfoldsys", (int)1, channel);
+
 
 	// mass distribution
         TH1* hunfolded_mass = unfold_mass->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
@@ -517,12 +634,15 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
   	hunfolded_pt->SetTitle("");
   	hunfolded_pt->Draw("p9histe");
   	hunfolded_pt->SetMarkerStyle(20);
-  	hunfolded_pt->SetMarkerSize(1.5);
+  	hunfolded_pt->SetMarkerSize(1.2);
   	hunfolded_pt->SetLineColor(kBlack);
         setYaxisHist(hunfolded_pt);
   	hunfolded_pt->GetXaxis()->SetLabelSize(0.);
   	hunfolded_pt->GetYaxis()->SetTitle("Events/ bin");
-  	histMCTruth_pt->Draw("histsames");
+  	//histMCTruth_pt->Draw("histsames");
+  	histMCTruth_pt->Draw("p9sames");
+  	histMCTruth_pt->SetMarkerStyle(20);
+  	histMCTruth_pt->SetMarkerColor(2);
   	histMCTruth_pt->SetLineColor(2);
   	hunfolded_pt->GetYaxis()->SetRangeUser(100.,hunfolded_pt->GetMaximum()>histMCTruth_pt->GetMaximum()?10.*hunfolded_pt->GetMaximum():10.*histMCTruth_pt->GetMaximum());
         pad1->Update();
@@ -570,10 +690,11 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
 
   	ratio->Draw("pe");
   	ratio->SetMarkerStyle(20);
-  	ratio->SetMarkerSize(1.5);
-  	ratio->SetLineColor(kBlack);
-  	ratio->SetMinimum(0.5);
-  	ratio->SetMaximum(1.5);
+  	ratio->SetMarkerSize(1.0);
+  	ratio->SetLineColor(kRed);
+  	ratio->SetMarkerColor(kRed);
+  	ratio->SetMinimum(0.6);
+  	ratio->SetMaximum(1.4);
   	ratio->SetTitle("");
         setYaxisHist(ratio);
         setXaxisHist(ratio);
@@ -585,13 +706,25 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
 	// draw systematic error
   	sysErrRatio->Draw("E2same");
   	sysErrRatio->SetMarkerSize(0);
-  	sysErrRatio->SetFillColorAlpha(kBlack,0.5);
+  	sysErrRatio->SetFillStyle(3004);
+  	sysErrRatio->SetFillColor(kBlack);
+  	//sysErrRatio->SetFillColorAlpha(kBlack,0.5);
+
+	statErrRatio->Draw("pesame");
+	statErrRatio->SetMarkerSize(0);
+  	statErrRatio->SetLineColor(kBlack);
+
+	sysErrRatioMC->Draw("E2same");
+	sysErrRatioMC->SetMarkerSize(0);
+  	//sysErrRatioMC->SetFillStyle(3004);
+  	sysErrRatioMC->SetFillColor(kRed);
+  	sysErrRatioMC->SetFillColorAlpha(kRed,0.3);
 
         TLine *l_;
         l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
         l_->Draw("same");
         l_->SetLineStyle(1);
-        l_->SetLineColor(kRed);
+        l_->SetLineColor(kBlack);
 
         for( int ii=0; ii<5; ii++ )
         {
@@ -1076,34 +1209,24 @@ void drawMassRatio(TString outpdf, TUnfoldDensity* unfold, TFile *filein){
         extraText  = "Preliminary";
 
 	TH1* hunfolded = unfold->GetOutput("hunfolded",0,0,"*[UO]",kTRUE);
+        TH1 *histMCTruth=unfold->GetBias("histMCTruth",0,0,"*[UO]",kTRUE);
 	TH1* ratio=(TH1*)hunfolded->Clone("ratio");
 
-        //TH1* ratioUp=(TH1*)hunfolded->Clone("ratioUp");     // default unfoled data
-        //TH1* ratioDown=(TH1*)hunfolded->Clone("ratioDown"); //
+	// systematic error for measurement
         TH1* sysErrRatio = (TH1*)hunfolded->Clone("hsysErrRatio");
+        sysErrRatio->Reset();
+
+	// stat error for measurement
+        TH1* statErrRatio = (TH1*)hunfolded->Clone("hstatErrRatio");
+        statErrRatio->Divide(histMCTruth);
+	initHistContent(statErrRatio, 1.);
+        //statErrRatio->Reset();
 	
+        getRatioSysMass(unfold, "AlphaS", (int)2, sysErrRatio);
+        getRatioSysMass(unfold, "Scale", (int)9, sysErrRatio);
 	getRatioSysMass(unfold, "unfoldsys", (int)1, sysErrRatio);
-	//getRatioSysMass(unfold, "Scale", (int)9, sysErrRatio);
 
-        //ratioUp->  Add((TH1*)unfold->GetDeltaSysSource("AlphaS_0","SysAlphaS_0","SysAlphaS_0","Gen_Mass","*[UO]",kTRUE)); // add systematic delta 
-        //ratioDown->Add((TH1*)unfold->GetDeltaSysSource("AlphaS_1","SysAlphaS_1","SysAlphaS_1","Gen_Mass","*[UO]",kTRUE)); // add systematic delta 
-
-        TH1 *histMCTruth=unfold->GetBias("histMCTruth",0,0,"*[UO]",kTRUE);
         ratio->Divide(histMCTruth);
-
-        //ratioUp->Divide(histMCTruth);
-        //ratioDown->Divide(histMCTruth);
-
-        //for(int ibin = 1; ibin<ratioUp->GetNbinsX()+1;ibin++){
-
-        //   Double_t errUp = 0., errDown = 0.;
-        //   errUp = fabs(ratioUp->GetBinContent(ibin) - ratio->GetBinContent(ibin));
-        //   errDown = fabs(ratioDown->GetBinContent(ibin) - ratio->GetBinContent(ibin));
-
-        //   sysErrRatio->SetBinContent(ibin, ratio->GetBinContent(ibin));
-        //   sysErrRatio->SetBinError(ibin, errUp >= errDown ? errUp : errDown);
-        //   if(sysErrRatio->GetBinError(ibin)==0) sysErrRatio->SetBinError(ibin, 10e-5);
-        //}
 
 
   	TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 1000*1.5);
@@ -1173,6 +1296,9 @@ void drawMassRatio(TString outpdf, TUnfoldDensity* unfold, TFile *filein){
         sysErrRatio->Draw("E2same");
         sysErrRatio->SetMarkerSize(0);
         sysErrRatio->SetFillColorAlpha(kBlack,0.3);
+
+	statErrRatio->Draw("E2same");
+        sysErrRatio->SetMarkerSize(0);
 
         TLine *l_;
         l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
@@ -1673,10 +1799,13 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         vector<Double_t> AlphaSErrElectron;
         getAveragesSysPt(AlphaSErrElectron, "AlphaS", (int)2, unfold_ptElectron);
 
+        vector<Double_t> unfoldsysErrElectron;
+        getAveragesSysPt(unfoldsysErrElectron, "unfoldsys", (int)1, unfold_ptElectron);
+
         vector<Double_t> totalPtSysElectron;
         vector<Double_t> totalPtErrElectron;
         for(unsigned int i=0;i<ScaleErrElectron.size();i++){
-                totalPtErrElectron.push_back(sqrt(pow(ScaleErrElectron.at(i),2)+pow(AlphaSErrElectron.at(i),2)+pow(meanpterr_dataElectron.at(i),2)));
+                totalPtErrElectron.push_back(sqrt(pow(ScaleErrElectron.at(i),2)+pow(AlphaSErrElectron.at(i),2)+pow(meanpterr_dataElectron.at(i),2)+pow(unfoldsysErrElectron.at(i),2)));
                 totalPtSysElectron.push_back(sqrt(pow(ScaleErrElectron.at(i),2)+pow(AlphaSErrElectron.at(i),2)));
         }
 

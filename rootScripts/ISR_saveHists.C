@@ -129,6 +129,22 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
         TLorentzVector *particlePostFSR;
         TLorentzVector *anparticlePostFSR;
 
+   Double_t        PUweight;
+   Double_t        PUweight_Up;
+   Double_t        PUweight_Dn;
+   Double_t        trgSF;
+   Double_t        trgSF_Up;
+   Double_t        trgSF_Dn;
+   Double_t        recoSF;
+   Double_t        recoSF_Up;
+   Double_t        recoSF_Dn;
+   Double_t        IdSF;
+   Double_t        IdSF_Up;
+   Double_t        IdSF_Dn;
+   Double_t        IsoSF;
+   Double_t        IsoSF_Up;
+   Double_t        IsoSF_Dn;
+
         TBranch        *b_particleFSR;   //!
         TBranch        *b_anparticleFSR;   //!
         TBranch        *b_particlePostFSR;   //!
@@ -171,6 +187,23 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
 
         tsignal->SetBranchAddress("AlphaS",&AlphaS);
         tsignal->SetBranchAddress("Scale",&Scale);
+
+   tsignal->SetBranchAddress("PUweight", &PUweight);
+   tsignal->SetBranchAddress("PUweight_Up", &PUweight_Up);
+   tsignal->SetBranchAddress("PUweight_Dn", &PUweight_Dn);
+   tsignal->SetBranchAddress("trgSF", &trgSF);
+   tsignal->SetBranchAddress("trgSF_Up", &trgSF_Up);
+   tsignal->SetBranchAddress("trgSF_Dn", &trgSF_Dn);
+   tsignal->SetBranchAddress("recoSF", &recoSF);
+   tsignal->SetBranchAddress("recoSF_Up", &recoSF_Up);
+   tsignal->SetBranchAddress("recoSF_Dn", &recoSF_Dn);
+   tsignal->SetBranchAddress("IdSF", &IdSF);
+   tsignal->SetBranchAddress("IdSF_Up", &IdSF_Up);
+   tsignal->SetBranchAddress("IdSF_Dn", &IdSF_Dn);
+   tsignal->SetBranchAddress("IsoSF", &IsoSF);
+   tsignal->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
+   tsignal->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
+
 
         TFile* fpthist = new TFile("/home/jhkim/ISR2016/unfolding/systematic/hPtRecnominal.root");
         TH1* hptcorr=(TH1*)fpthist->Get("data_");
@@ -251,7 +284,6 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
 
                    Double_t diptrec = -999., dimassrec = -999.;
                    Double_t diptgen = -999., dimassgen = -999.;
-                   Double_t diptgenDR0p1 = -999., dimassgenDR0p1 = -999.;
 
                    bool selected = (isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15);
                    // check if there are selected dilepton at detector to avoid memory error
@@ -259,26 +291,47 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
 		   diptgen = ptPreFSR->at(2);
 		   dimassgen = mPreFSR->at(2);
 
+		   TLorentzVector temp_particlePostFSR[19];
+		   TLorentzVector temp_anparticlePostFSR[19];
+ 		   Double_t drcut[19] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9};
+
 		   // add fsr photon in dr < 0.1 for lepton
-		   for(int gsize = 0; gsize < particleFSR->size(); gsize++){
-		      Double_t temp_dr = sqrt(pow(particlePostFSR->Phi()-particleFSR->at(gsize).Phi(),2)+pow(particlePostFSR->Eta()-particleFSR->at(gsize).Eta(),2));
-		      if(temp_dr < 0.1) *particlePostFSR += particleFSR->at(gsize);
+		   for(int idrcut = 0; idrcut < 19; idrcut++){
+		      temp_particlePostFSR[idrcut] = *particlePostFSR;
+		      for(int gsize = 0; gsize < particleFSR->size(); gsize++){
+
+		      	Double_t temp_dr = sqrt(pow(particlePostFSR->Phi()-particleFSR->at(gsize).Phi(),2)+pow(particlePostFSR->Eta()-particleFSR->at(gsize).Eta(),2));
+		      	if(temp_dr < drcut[idrcut]) temp_particlePostFSR[idrcut] += particleFSR->at(gsize);
+		      }
 		   }
 
-                   for(int gsize = 0; gsize < anparticleFSR->size(); gsize++){
-                      Double_t temp_dr = sqrt(pow(anparticlePostFSR->Phi()-anparticleFSR->at(gsize).Phi(),2)+pow(anparticlePostFSR->Eta()-anparticleFSR->at(gsize).Eta(),2));
-                      if(temp_dr < 0.1) *anparticlePostFSR += anparticleFSR->at(gsize);
+                   for(int idrcut = 0; idrcut < 19; idrcut++){
+                      temp_anparticlePostFSR[idrcut] = *anparticlePostFSR;
+                      for(int gsize = 0; gsize < anparticleFSR->size(); gsize++){
+
+                        Double_t temp_dr = sqrt(pow(anparticlePostFSR->Phi()-anparticleFSR->at(gsize).Phi(),2)+pow(anparticlePostFSR->Eta()-anparticleFSR->at(gsize).Eta(),2));
+                        if(temp_dr < drcut[idrcut]) temp_anparticlePostFSR[idrcut] += anparticleFSR->at(gsize);
+                      }
                    }
-
-		  diptgenDR0p1 = ((*particlePostFSR)+(*anparticlePostFSR)).Pt();
-		  dimassgenDR0p1 = ((*particlePostFSR)+(*anparticlePostFSR)).M();
-
 
                    sigHist.FillMigration2DM( pt_unfold, selected, "pt_nominal",  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
                    sigHist.FillMigration2DM( mass_unfold, selected, "mass_nominal", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
 
-                   sigHist.FillMigration2DM( pt_unfold, selected, "pt_FSRDR0p1",  diptrec, dimassrec, diptgenDR0p1, dimassgenDR0p1, weightRec*bTagReweight, weightGen);
-                   sigHist.FillMigration2DM( mass_unfold, selected, "mass_FSRDR0p1", diptrec, dimassrec, diptgenDR0p1, dimassgenDR0p1, weightRec*bTagReweight, weightGen);
+		   for(int idrcut = 0; idrcut < 19; idrcut++){
+		   	Double_t temp_dipt = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).Pt();
+		   	Double_t temp_dimass = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).M();
+			TString dr_;
+                   	if(idrcut<9) {
+                        dr_.Form("%d", idrcut+1);
+                        sigHist.FillMigration2DM( pt_unfold, selected, "pt_FSRDR0p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                   	sigHist.FillMigration2DM( mass_unfold, selected, "mass_FSRDR0p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+	                }
+			else{
+                        dr_.Form("%d", (idrcut+1)%10);
+                        sigHist.FillMigration2DM( pt_unfold, selected, "pt_FSRDR1p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                   	sigHist.FillMigration2DM( mass_unfold, selected, "mass_FSRDR1p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+			}
+	           }
 
 		   // unfolding systematic
 		   Double_t ptCorr = hptcorr->GetBinContent(binning_ptRec->GetGlobalBinNumber(diptrec, dimassrec));
@@ -305,6 +358,81 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
                         sigHist.FillMigration2DM( pt_unfold, selected, "pt_AlphaS_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*AlphaS->at(i));
                         sigHist.FillMigration2DM( mass_unfold, selected, "mass_AlphaS_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*AlphaS->at(i));
                    }
+
+	   	   // PU
+                   for(unsigned int i=0; i<2; i++){
+                        TString is;
+                        is.Form("%d", i);
+
+                        if(i==0){
+			   sigHist.FillMigration2DM( pt_unfold, selected, "pt_PU_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Up/PUweight, weightGen);
+                           sigHist.FillMigration2DM( mass_unfold, selected, "mass_PU_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Up/PUweight, weightGen);
+			}
+			else{
+			   sigHist.FillMigration2DM( pt_unfold, selected, "pt_PU_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Dn/PUweight, weightGen);
+                           sigHist.FillMigration2DM( mass_unfold, selected, "mass_PU_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Dn/PUweight, weightGen);
+			}
+                   }
+
+                   // trgSF
+                   for(unsigned int i=0; i<2; i++){
+                        TString is;
+                        is.Form("%d", i);
+                   
+                        if(i==0){
+                           sigHist.FillMigration2DM( pt_unfold, selected, "pt_trgSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Up/trgSF, weightGen);
+                           sigHist.FillMigration2DM( mass_unfold, selected, "mass_trgSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Up/trgSF, weightGen);
+                        }
+                        else{
+                           sigHist.FillMigration2DM( pt_unfold, selected, "pt_trgSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Dn/trgSF, weightGen);
+                           sigHist.FillMigration2DM( mass_unfold, selected, "mass_trgSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Dn/trgSF, weightGen);
+                        }
+                   }       
+
+                   // recoSF
+                   for(unsigned int i=0; i<2; i++){
+                        TString is; 
+                        is.Form("%d", i); 
+                   
+                        if(i==0){
+                           sigHist.FillMigration2DM( pt_unfold, selected, "pt_recoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Up/recoSF, weightGen);
+                           sigHist.FillMigration2DM( mass_unfold, selected, "mass_recoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Up/recoSF, weightGen);
+                        }   
+                        else{
+                           sigHist.FillMigration2DM( pt_unfold, selected, "pt_recoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Dn/recoSF, weightGen);
+                           sigHist.FillMigration2DM( mass_unfold, selected, "mass_recoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Dn/recoSF, weightGen);
+                        }   
+                   }  
+
+                   // IdSF
+                   for(unsigned int i=0; i<2; i++){
+                        TString is; 
+                        is.Form("%d", i); 
+                   
+                        if(i==0){
+                           sigHist.FillMigration2DM( pt_unfold, selected, "pt_IdSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Up/IdSF, weightGen);
+                           sigHist.FillMigration2DM( mass_unfold, selected, "mass_IdSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Up/IdSF, weightGen);
+                        }   
+                        else{
+                           sigHist.FillMigration2DM( pt_unfold, selected, "pt_IdSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Dn/IdSF, weightGen);
+                           sigHist.FillMigration2DM( mass_unfold, selected, "mass_IdSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Dn/IdSF, weightGen);
+                        }   
+                   }  
+
+                   // IsoSF
+                   for(unsigned int i=0; i<2; i++){
+                        TString is; 
+                        is.Form("%d", i); 
+                   
+                        if(i==0){
+                           sigHist.FillMigration2DM( pt_unfold, selected, "pt_IsoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Up/IsoSF, weightGen);
+                           sigHist.FillMigration2DM( mass_unfold, selected, "mass_IsoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Up/IsoSF, weightGen);
+                        }   
+                        else{
+                           sigHist.FillMigration2DM( pt_unfold, selected, "pt_IsoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Dn/IsoSF, weightGen);
+                           sigHist.FillMigration2DM( mass_unfold, selected, "mass_IsoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Dn/IsoSF, weightGen);
+                        }   
+                   }  
 
                }// DY to ee or mumu events only
                //

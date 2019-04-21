@@ -78,12 +78,35 @@ def makeSigHists(sample, outputDirectory, channel):
       
 	sigHists.CreateHist2DMap(1, "nominal") 
 	sigHists.CreateHist2DMap(2, "nominal") 
+	
+	# PU
+	for i in range(2):
+		sigHists.CreateHist2DMap(1, "PU_"+str(i)) 
+		sigHists.CreateHist2DMap(2, "PU_"+str(i)) 
 
+		sigHists.CreateHist2DMap(1, "trgSF_"+str(i)) 
+		sigHists.CreateHist2DMap(2, "trgSF_"+str(i)) 
+
+		sigHists.CreateHist2DMap(1, "recoSF_"+str(i)) 
+		sigHists.CreateHist2DMap(2, "recoSF_"+str(i)) 
+
+		sigHists.CreateHist2DMap(1, "IdSF_"+str(i)) 
+		sigHists.CreateHist2DMap(2, "IdSF_"+str(i)) 
+
+		sigHists.CreateHist2DMap(1, "IsoSF_"+str(i)) 
+		sigHists.CreateHist2DMap(2, "IsoSF_"+str(i)) 
+
+	# unfolding systematic using Z pt correction (need to be checked)
 	sigHists.CreateHist2DMap(1, "unfoldsys_0") 
 	sigHists.CreateHist2DMap(2, "unfoldsys_0") 
 
-	sigHists.CreateHist2DMap(1, "FSRDR0p1") 
-	sigHists.CreateHist2DMap(2, "FSRDR0p1") 
+        for i in range(19):
+		if i < 9:
+			sigHists.CreateHist2DMap(1, "FSRDR0p"+str(i+1)) 
+			sigHists.CreateHist2DMap(2, "FSRDR0p"+str(i+1)) 
+		else:
+			sigHists.CreateHist2DMap(1, "FSRDR1p"+str((i+1)%10)) 
+			sigHists.CreateHist2DMap(2, "FSRDR1p"+str((i+1)%10)) 
 
 	sigHists.CreateHistMap(1, "nominal") 
 	sigHists.CreateHistMap(2, "nominal") 

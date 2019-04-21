@@ -7,13 +7,13 @@ rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/libisrunfold.s
 import gc
 gc.collect()
 
-def basicRatio(outpdf, unfold_pt, unfold_mass, filepath):
+def basicRatio(outpdf, unfold_pt, unfold_mass, filepath, channel):
 
         print "############################ draw ###############################################"
         print "Open " + filepath
         infile = rt.TFile(filepath,'r')
 
-	rt.drawRatio(outpdf, unfold_pt, unfold_mass, infile)	
+	rt.drawRatio(outpdf, unfold_pt, unfold_mass, infile, channel)	
         del infile
 
 def drawUnfoldedPt(outpdf, unfold_pt):
