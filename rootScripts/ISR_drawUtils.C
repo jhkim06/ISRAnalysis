@@ -143,11 +143,11 @@ void getAveragesSysMass(vector<Double_t> &err, TString sysName, int sysSize, TUn
                 hmass_temp->GetXaxis()->SetRange(hmass_temp->GetXaxis()->FindBin(massBins[ibin]+0.01),hmass_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
 
            	Double_t defaultMean = hmass_temp->GetMean();
-		std::cout << "mass " << ibin << " mean : " << defaultMean << std::endl;
+		//std::cout << "mass " << ibin << " mean : " << defaultMean << std::endl;
 
            	Double_t err_ = -999.;
            	for(int i = 0; i < sysSize; i++){
-           	        if(i==5 || i==7) continue;
+			if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
 
            	        TString isys;
            	        isys.Form("%d", i);
@@ -173,7 +173,51 @@ void getAveragesSysMass(vector<Double_t> &err, TString sysName, int sysSize, TUn
 
 }
 
-void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfoldDensity* unfold_pt){
+void getAveragesSysPtMC(vector<Double_t> &err, TString sysName, int sysSize, TUnfoldDensity* unfold_pt, TString channel, bool relative){
+
+        int nMassBin = 5;
+
+        for(int i = 0; i < nMassBin; i++){
+           TString ibinMass;
+           ibinMass.Form("%d", i);
+
+           TH1* hpt_temp;
+
+           hpt_temp=unfold_pt->GetBias("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); // mc default
+
+	   Double_t defaultMean = hpt_temp->GetMean();
+
+	   Double_t err_ = -999.;
+           for(int i = 0; i < sysSize; i++){
+		   if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
+
+               	   TString isys;
+                   isys.Form("%d", i);
+	
+		   TUnfoldDensityV17* hmatrix_temp = getSysMatrix("Pt", sysName+"_"+isys, channel); // temp matrix
+           	   TH1* hsyspt_temp;
+
+           	   hsyspt_temp=(TH1*)hmatrix_temp->GetBias(sysName+"_"+isys, 0,0, "pt[UO];mass[UOC"+ibinMass+"]", kTRUE);
+
+                   Double_t temp_err =  fabs( defaultMean - hsyspt_temp->GetMean() );
+		   if( err_ < temp_err ){
+		     err_ = temp_err;
+ 		   }
+
+		  delete hmatrix_temp;
+		  delete hsyspt_temp;
+	   }
+	  
+           if(sysName.CompareTo("PDFerror") == 0) err_ = err_ /3.;
+	  
+	   if(!relative) err.push_back(err_);
+	   else err.push_back(err_/defaultMean);
+
+           delete hpt_temp;
+        }
+}
+
+void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfoldDensity* unfold_pt, bool relative){
 
         int nMassBin = 5;
 
@@ -189,7 +233,7 @@ void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfo
 
 	   Double_t err_ = -999.;
            for(int i = 0; i < sysSize; i++){
-                   if(i==5 || i==7) continue;
+                   if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
 
                	   TString isys;
                    isys.Form("%d", i);
@@ -206,10 +250,44 @@ void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfo
 
 		  delete hsyspt_temp;
 	   }
+
+           if(sysName.CompareTo("PDFerror") == 0) err_ = err_ /3.;
 	  
-	   err.push_back(err_);
+	   if(!relative) err.push_back(err_);
+	   else err.push_back(err_/defaultMean * 100.);
 
            delete hpt_temp;
+        }
+}
+
+void getAveragesSysPt_v2(vector<Double_t> &err, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_pt_up, TUnfoldDensity* unfold_pt_dn){
+
+        int nMassBin = 5;
+
+        for(int i = 0; i < nMassBin; i++){
+           TString ibinMass;
+           ibinMass.Form("%d", i);
+
+           TH1* hpt_temp;
+           TH1* hpt_temp_up;
+           TH1* hpt_temp_dn;
+
+           hpt_temp=unfold_pt->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+           hpt_temp_up=unfold_pt_up->GetOutput("hunfolded_pt_temp_up",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+           hpt_temp_dn=unfold_pt_dn->GetOutput("hunfolded_pt_temp_dn",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+
+           Double_t defaultMean = hpt_temp->GetMean();
+           Double_t defaultMean_up = hpt_temp_up->GetMean();
+           Double_t defaultMean_dn = hpt_temp_dn->GetMean();
+
+
+	  Double_t err_ = fabs(defaultMean-defaultMean_up)>fabs(defaultMean-defaultMean_dn)?fabs(defaultMean-defaultMean_up):fabs(defaultMean-defaultMean_dn);
+
+          err.push_back(err_/defaultMean * 100.);
+
+          delete hpt_temp;
+          delete hpt_temp_up;
+          delete hpt_temp_dn;
         }
 }
 
@@ -240,7 +318,7 @@ void getRatioSysMass(TUnfoldDensity* unfold_mass, TString sysName, int sysSize, 
 
            Double_t err = -999.;
 	   for(int i = 0; i < sysSize; i++){
-		   if(i==5 || i==7) continue;
+		   if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
 		   // get "envelope"
 	   	   Double_t temp_err =  fabs(hSys.at(i)->GetBinContent(ibin) - ratio->GetBinContent(ibin));
 	           if( temp_err > err){
@@ -291,7 +369,7 @@ void getRatioSys(TUnfoldDensity* unfold_pt, TString sysName, int sysSize, TH1 *s
 
            Double_t err = -999.;
 	   for(int i = 0; i < sysSize; i++){
-		   if(i==5 || i==7) continue;
+		   if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
 		   // get "envelope"
 	   	   Double_t temp_err =  fabs(hSys.at(i)->GetBinContent(ibin) - ratio->GetBinContent(ibin));
 	           if( temp_err > err){
@@ -307,6 +385,7 @@ void getRatioSys(TUnfoldDensity* unfold_pt, TString sysName, int sysSize, TH1 *s
 
 	}
 	delete hunfolded_pt;
+	delete histMCTruth_pt;
 	hDeltas.clear();
 	hDeltas.shrink_to_fit();
 
@@ -314,13 +393,13 @@ void getRatioSys(TUnfoldDensity* unfold_pt, TString sysName, int sysSize, TH1 *s
 	hSys.shrink_to_fit();
 }
 
-void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt){
+void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt, TString sysName, int sysSize){
 
         gROOT->SetBatch();
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
-        extraText  = "Preliminary";
+        extraText  = "work in progress";
 
         for(int imass = 0; imass < 5; imass++){
 
@@ -357,15 +436,28 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt){
         	hpt_temp->SetMarkerSize(.7);
         	hpt_temp->SetLineColor(kBlack);
 
+                TString mean_nom;
+                mean_nom.Form("%.5f", hpt_temp->GetMean());
 
-                int sysSize = 2;
-                TString sysName = "IsoSF";
+                TLegend* leg_nom = new TLegend(0.2, 0.70, 0.95, 0.9,"","brNDC");
+                leg_nom->SetNColumns(2);
+                leg_nom->SetTextSize(0.05);
+                leg_nom->SetFillStyle(0);
+                leg_nom->SetBorderSize(0);
+
+                leg_nom->AddEntry(hpt_temp, "Nominal mean: " + mean_nom, "l");
+                leg_nom->Draw();
+
+
+
+                //int sysSize = 9;
+                //TString sysName = "Scale";
 
         	for(int ibin = 1; ibin<hpterr_temp->GetNbinsX()+1;ibin++){
 
         	   Double_t err = -999.;
         	   for(int i = 0; i < sysSize; i++){
-        	           if(i==5 || i==7) continue;
+			   if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
 
                            TString isys;
                            isys.Form("%d", i);
@@ -398,11 +490,10 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt){
            	TH1F *hsyspt_temp;
 		TH1F *ratio;
            	for(int i = 0; i < sysSize; i++){
-           	        if(i==5 || i==7) continue;
+			if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
 
            	        TString isys;
            	        isys.Form("%d", i);
-
 
            	        hsyspt_temp=((TH1F*)unfold_pt->GetDeltaSysSource(sysName+"_"+isys, sysName+"_"+isys+ibinMass, sysName+"_"+isys+ibinMass, "Gen_Pt", "pt[UO];mass[UOC"+ibinMass+"]", kTRUE));
            	        hsyspt_temp->Add(hpt_temp);
@@ -414,6 +505,7 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt){
 			pad2->cd();
                 	if(i==0)ratio->Draw("hist");
 			else ratio->Draw("samehist");
+			ratio->GetYaxis()->SetTitle("nominal/systematic");
                 	ratio->SetLineColor(i+1);
                 	ratio->SetMarkerColor(i+1);
                 	ratio->SetMinimum(0.9);
@@ -426,15 +518,15 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt){
                 	TString mean_;
                 	mean_.Form("%.5f", hsyspt_temp->GetMean());
 
-
         		leg_->AddEntry(ratio, sysName+"_"+isys + " " + mean_, "l");
         		leg_->Draw();
 
            	}
 
 
+        	CMS_lumi( pad1, 4, 0 );
 		c1->cd();
-        	c1->SaveAs(outpdf+"_"+ibinMass+".pdf");
+        	c1->SaveAs(outpdf+sysName+"_"+ibinMass+".pdf");
 		delete hpt_temp;
 		delete hpterr_temp;
 		delete pad1;
@@ -518,10 +610,10 @@ void sysMCErrRatio(TUnfoldDensity* unfold_pt, TH1* sysRatio, TString var, TStrin
 
            Double_t err = -999.;
            for(int i = 0; i < size; i++){
-                   if(i==5 || i==7) continue;
+		   if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
                    // get "envelope"
                    Double_t temp_err =  fabs(hMCSys.at(i)->GetBinContent(ibin) - ratio->GetBinContent(ibin));
-		   cout << i << " th sys, bin: " << ibin << " err: " << temp_err << " sys bin: " << hMCSys.at(i)->GetBinContent(ibin) << endl;
+		   //cout << i << " th sys, bin: " << ibin << " err: " << temp_err << " sys bin: " << hMCSys.at(i)->GetBinContent(ibin) << endl;
                    if( temp_err > err){
                           err = temp_err;
                    }
@@ -548,7 +640,7 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
-        extraText  = "Preliminary";
+        extraText  = "work in progress";
 
 	// pt distribution for 5 mass bins in one histogram
 	TH1* hunfolded_pt = unfold_pt->GetOutput("hunfolded_pt",0,0,"*[UO]",kFALSE);
@@ -568,6 +660,7 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
 	getRatioSys(unfold_pt, "recoSF", (int)2, sysErrRatio);	
 	getRatioSys(unfold_pt, "IdSF", (int)2, sysErrRatio);	
 	getRatioSys(unfold_pt, "IsoSF", (int)2, sysErrRatio);	
+	getRatioSys(unfold_pt, "PDFerror", (int)100, sysErrRatio);	
 
         // stat error for measurement
         TH1* statErrRatio = (TH1*)hunfolded_pt->Clone("hstatErrRatio");
@@ -579,7 +672,7 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
         sysMCErrRatio(unfold_pt, sysErrRatioMC, "Pt", "AlphaS", (int)2, channel);
         sysMCErrRatio(unfold_pt, sysErrRatioMC, "Pt", "Scale", (int)9, channel);
         sysMCErrRatio(unfold_pt, sysErrRatioMC, "Pt", "unfoldsys", (int)1, channel);
-
+        sysMCErrRatio(unfold_pt, sysErrRatioMC, "Pt", "PDFerror", (int)100, channel);
 
 	// mass distribution
         TH1* hunfolded_mass = unfold_mass->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
@@ -623,7 +716,7 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
   	c1->cd();
   	gStyle->SetOptStat(0);
 
-  	TPad *pad1 = new TPad("pad1","pad1",0,0.4,1,1);
+  	TPad *pad1 = new TPad("pad1","pad1",0,0.45,1,1);
         setPadMargins(pad1);
         pad1->SetBottomMargin(0.0);
   	pad1->SetTicks(1);
@@ -674,14 +767,14 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
   	//leg_->SetFillStyle(1);
   	leg_->SetBorderSize(0);
   	leg_->AddEntry(hunfolded_pt, "Unfolded data", "p");
-  	leg_->AddEntry(histMCTruth_pt, "Truth", "l");
+  	leg_->AddEntry(histMCTruth_pt, "Truth", "p");
   	leg_->Draw();
 
   	c1->cd();
 
-  	TPad *pad2 = new TPad("pad2","pad2",0,0.,1,0.4);
+  	TPad *pad2 = new TPad("pad2","pad2",0,0.,1,0.43);
         setPadMargins(pad2);
-        pad2->SetTopMargin(0.0);
+        pad2->SetTopMargin(0.05);
         pad2->SetBottomMargin(0.3);
   	pad2->SetTicks(1);
   	pad2->SetGridy(1);
@@ -700,15 +793,15 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
         setXaxisHist(ratio);
   	ratio->GetYaxis()->SetNdivisions(515);
         ratio->GetYaxis()->SetTitle("Unfolded/MC");
-        ratio->GetXaxis()->SetTitle("p_{T} bin");
+        ratio->GetXaxis()->SetTitle("p_{T} bin index");
         ratio->GetYaxis()->CenterTitle();
 
 	// draw systematic error
   	sysErrRatio->Draw("E2same");
   	sysErrRatio->SetMarkerSize(0);
-  	sysErrRatio->SetFillStyle(3004);
+  	//sysErrRatio->SetFillStyle(3004);
   	sysErrRatio->SetFillColor(kBlack);
-  	//sysErrRatio->SetFillColorAlpha(kBlack,0.5);
+  	sysErrRatio->SetFillColorAlpha(kBlack,0.25);
 
 	statErrRatio->Draw("pesame");
 	statErrRatio->SetMarkerSize(0);
@@ -790,7 +883,7 @@ void drawCombinedISR(TString outpdf, TUnfoldDensity* unfold_pt2016, TUnfoldDensi
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
-        extraText  = "Preliminary";
+        extraText  = "work in progress";
 
         // mass distribution
         TH1* hunfolded_mass2016 = unfold_mass2016->GetOutput("hunfolded_mass2016",0,0,"*[UO]",kTRUE);
@@ -1062,7 +1155,7 @@ void drawISRfit(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfol
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
-        extraText  = "Preliminary";
+        extraText  = "work in progress";
 
         // mass distribution
         TH1* hunfolded_mass = unfold_mass->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
@@ -1206,7 +1299,7 @@ void drawMassRatio(TString outpdf, TUnfoldDensity* unfold, TFile *filein){
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
-        extraText  = "Preliminary";
+        extraText  = "work in progress";
 
 	TH1* hunfolded = unfold->GetOutput("hunfolded",0,0,"*[UO]",kTRUE);
         TH1 *histMCTruth=unfold->GetBias("histMCTruth",0,0,"*[UO]",kTRUE);
@@ -1321,7 +1414,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
 
 	setTDRStyle();
 	writeExtraText = true;       // if extra text
-	extraText  = "Preliminary";
+	extraText  = "work in progress";
 
 	TString hname = "hPtRec" + postfix;
   	Int_t linecolorZ   = kOrange-3;
@@ -1380,14 +1473,14 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
 	hsMCs->Add(hdybkgNoUO);
 	hsMCs->Add(hdysigNoUO);
 
-        TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 950*1.5, 1000*1.5);
+        TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
         c1->cd();
         gStyle->SetOptStat(0);
 
         TPad *pad1 = new TPad("pad1","pad1",0,0.35,1,1);
         setPadMargins(pad1);
         pad1->SetTopMargin(0.1);
-        pad1->SetBottomMargin(0.01);
+        pad1->SetBottomMargin(0.0);
         pad1->SetTicks(0,1);
         pad1->SetLogy();
         pad1->Draw();
@@ -1417,7 +1510,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         }
 
 	TLegend *fLeg = new TLegend(0.6,0.6,0.95,0.9);
-        fLeg->SetTextSize(50);
+        fLeg->SetTextSize(20);
         fLeg->SetTextFont(63);
         fLeg->SetFillStyle(0);
         fLeg->SetBorderSize(0);
@@ -1425,7 +1518,7 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
  	if( channel.CompareTo("electron") == 0 ) fLeg->AddEntry(hdysigNoUO, "Z/#gamma* #rightarrow ee", "F");
  	if( channel.CompareTo("muon") == 0 )     fLeg->AddEntry(hdysigNoUO, "Z/#gamma* #rightarrow #mu#mu", "F");
  	fLeg->AddEntry(hdybkgNoUO, "Z/#gamma* #rightarrow #tau#tau", "F");
- 	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
+ 	fLeg->AddEntry(httbarNoUO, "t#bar{t}", "F");
  	fLeg->AddEntry(hvvNoUO, "VV", "F");
  	fLeg->AddEntry(hwjetsNoUO, "Wjets", "F");
  	if(fqcd != NULL) fLeg->AddEntry(hqcdNoUO, "QCD", "F");
@@ -1435,7 +1528,8 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
 
         TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.35);
         setPadMargins(pad2);
-        pad2->SetBottomMargin(0.22);
+        pad2->SetTopMargin(0.);
+        pad2->SetBottomMargin(0.3);
         pad2->SetTicks(1);
         pad2->SetGridy();
         pad2->Draw();
@@ -1461,8 +1555,8 @@ void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TF
         setYaxisHist(ratio);
         setXaxisHist(ratio);
         ratio->GetYaxis()->SetNdivisions(515);
-        if( channel.CompareTo("electron") == 0 ) ratio->GetXaxis()->SetTitle("Mass, p_{T}(ee) bin");
-        if( channel.CompareTo("muon") == 0 ) ratio->GetXaxis()->SetTitle("Mass, p_{T}(#mu#mu) bin");
+        if( channel.CompareTo("electron") == 0 ) ratio->GetXaxis()->SetTitle("p_{T}(ee) bin index");
+        if( channel.CompareTo("muon") == 0 ) ratio->GetXaxis()->SetTitle(" p_{T}(#mu#mu) bin index");
 
         TLine *l_;
         l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
@@ -1523,7 +1617,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
-        extraText  = "Preliminary";
+        extraText  = "work in progress";
 
 	TString hname = "hMassRec" + postfix;
   	Int_t linecolorZ   = kOrange-3;
@@ -1582,13 +1676,13 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
 	hsMCs->Add(hdybkgNoUO);
 	hsMCs->Add(hdysigNoUO);
 
-        TCanvas* c1=new TCanvas("c1", "c1", 950*1.5, 1000*1.5);
+        TCanvas* c1=new TCanvas("c1", "c1", 50, 50,800, 800);
         c1->cd();
         gStyle->SetOptStat(0);
 
         TPad *pad1 = new TPad("pad1","pad1",0,0.35,1,1);
         setPadMargins(pad1);
-        pad1->SetBottomMargin(0.01);
+        pad1->SetBottomMargin(0.);
         pad1->SetTopMargin(0.1);
         pad1->SetTicks(0,1);
         pad1->SetLogy();
@@ -1609,7 +1703,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
 	pad1->RedrawAxis();
 	
         TLegend *fLeg = new TLegend(0.6,0.5,0.95,0.9);
-        fLeg->SetTextSize(50);
+        fLeg->SetTextSize(20);
         fLeg->SetTextFont(63);
         fLeg->SetFillStyle(0);
         fLeg->SetBorderSize(0);
@@ -1617,7 +1711,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
  	if( channel.CompareTo("electron") == 0 ) fLeg->AddEntry(hdysigNoUO, "Z/#gamma* #rightarrow ee", "F");
  	if( channel.CompareTo("muon") == 0 )     fLeg->AddEntry(hdysigNoUO, "Z/#gamma* #rightarrow #mu#mu", "F");
  	fLeg->AddEntry(hdybkgNoUO, "Z/#gamma* #rightarrow #tau#tau", "F");
- 	fLeg->AddEntry(httbarNoUO, "ttbar", "F");
+ 	fLeg->AddEntry(httbarNoUO, "t#bar{t}", "F");
  	fLeg->AddEntry(hvvNoUO, "VV", "F");
  	fLeg->AddEntry(hwjetsNoUO, "Wjets", "F");
         if(fqcd != NULL) fLeg->AddEntry(hqcdNoUO, "QCD", "F");
@@ -1627,7 +1721,7 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
 
         TPad *pad2 = new TPad("pad2","pad2",0,0.0,1,0.35);
         setPadMargins(pad2);
-        pad2->SetBottomMargin(0.22);
+        pad2->SetBottomMargin(0.3);
         pad2->SetTicks(1);
         pad2->SetGridy();
         pad2->Draw();
@@ -1646,8 +1740,8 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         ratio->SetMarkerStyle(20);
         ratio->SetMarkerSize(1.5);
         ratio->SetLineColor(kBlack);
-        ratio->SetMinimum(0.0);
-        ratio->SetMaximum(2.0);
+        ratio->SetMinimum(0.6);
+        ratio->SetMaximum(1.4);
         ratio->GetYaxis()->SetTitle("Data/MC");
         ratio->GetYaxis()->CenterTitle();
         setYaxisHist(ratio);
@@ -1777,7 +1871,7 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
-        extraText  = "Preliminary";
+        extraText  = "work in progress";
 
         // mass distribution
         TH1* hunfolded_massElectron = unfold_massElectron->GetOutput("hunfolded_massElectron",0,0,"*[UO]",kTRUE);
@@ -1793,6 +1887,15 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         getAveragesPt(meanpt_dataElectron, meanpterr_dataElectron, unfold_ptElectron, true);
         getAveragesPt(meanpt_mcElectron, meanpterr_mcElectron, unfold_ptElectron, false);
 
+        vector<Double_t> ScaleErrMC;
+        getAveragesSysPtMC(ScaleErrMC, "Scale", (int)9, unfold_ptElectron, "electron");
+
+        vector<Double_t> AlphaSErrMC;
+        getAveragesSysPtMC(AlphaSErrMC, "AlphaS", (int)2, unfold_ptElectron, "electron");
+
+        vector<Double_t> unfoldsysErrMC;
+        getAveragesSysPtMC(unfoldsysErrMC, "unfoldsys", (int)1, unfold_ptElectron, "electron");
+
         vector<Double_t> ScaleErrElectron;
         getAveragesSysPt(ScaleErrElectron, "Scale", (int)9, unfold_ptElectron);
 
@@ -1802,12 +1905,35 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         vector<Double_t> unfoldsysErrElectron;
         getAveragesSysPt(unfoldsysErrElectron, "unfoldsys", (int)1, unfold_ptElectron);
 
+        vector<Double_t> PUErrElectron;
+        getAveragesSysPt(PUErrElectron, "PU", (int)2, unfold_ptElectron);
+
+        vector<Double_t> trgSFErrElectron;
+        getAveragesSysPt(trgSFErrElectron, "trgSF", (int)2, unfold_ptElectron);
+
+        vector<Double_t> IdSFErrElectron;
+        getAveragesSysPt(IdSFErrElectron, "IdSF", (int)2, unfold_ptElectron);
+
+        vector<Double_t> recoSFErrElectron;
+        getAveragesSysPt(recoSFErrElectron, "recoSF", (int)2, unfold_ptElectron);
+
+        vector<Double_t> PDFErrElectron;
+        getAveragesSysPt(PDFErrElectron, "PDFerror", (int)100, unfold_ptElectron);
+
         vector<Double_t> totalPtSysElectron;
         vector<Double_t> totalPtErrElectron;
         for(unsigned int i=0;i<ScaleErrElectron.size();i++){
-                totalPtErrElectron.push_back(sqrt(pow(ScaleErrElectron.at(i),2)+pow(AlphaSErrElectron.at(i),2)+pow(meanpterr_dataElectron.at(i),2)+pow(unfoldsysErrElectron.at(i),2)));
+                totalPtErrElectron.push_back(sqrt(pow(ScaleErrElectron.at(i),2)+pow(AlphaSErrElectron.at(i),2)+pow(meanpterr_dataElectron.at(i),2)+pow(unfoldsysErrElectron.at(i),2)+pow(PUErrElectron.at(i),2)+pow(trgSFErrElectron.at(i),2)+pow(IdSFErrElectron.at(i),2)+pow(recoSFErrElectron.at(i),2)+pow(PDFErrElectron.at(i),2)));
                 totalPtSysElectron.push_back(sqrt(pow(ScaleErrElectron.at(i),2)+pow(AlphaSErrElectron.at(i),2)));
         }
+
+        vector<Double_t> totalPtSysMC;
+        vector<Double_t> totalPtErrMC;
+        for(unsigned int i=0;i<ScaleErrMC.size();i++){
+                totalPtErrMC.push_back(sqrt(pow(meanpterr_mcElectron.at(i),2) + pow(ScaleErrMC.at(i),2) + pow(AlphaSErrMC.at(i),2) + pow(unfoldsysErrMC.at(i),2)  ));
+                totalPtSysMC.push_back(sqrt(pow(ScaleErrMC.at(i),2)));
+        }
+
 
         // get average mass
         //
@@ -1847,10 +1973,29 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         vector<Double_t> AlphaSErrMuon;
         getAveragesSysPt(AlphaSErrMuon, "AlphaS", (int)2, unfold_ptMuon);
 
+        vector<Double_t> unfoldsysErrMuon;
+        getAveragesSysPt(unfoldsysErrMuon, "unfoldsys", (int)1, unfold_ptMuon);
+
+        vector<Double_t> PUErrMuon;
+        getAveragesSysPt(PUErrMuon, "PU", (int)2, unfold_ptMuon);
+
+        vector<Double_t> trgSFErrMuon;
+        getAveragesSysPt(trgSFErrMuon, "trgSF", (int)2, unfold_ptMuon);
+
+        vector<Double_t> IdSFErrMuon;
+        getAveragesSysPt(IdSFErrMuon, "IdSF", (int)2, unfold_ptMuon);
+
+        vector<Double_t> recoSFErrMuon;
+        getAveragesSysPt(recoSFErrMuon, "recoSF", (int)2, unfold_ptMuon);
+
+        vector<Double_t> PDFErrMuon;
+        getAveragesSysPt(PDFErrMuon, "PDFerror", (int)100, unfold_ptMuon);
+
         vector<Double_t> totalPtSysMuon;
         vector<Double_t> totalPtErrMuon;
         for(unsigned int i=0;i<ScaleErrMuon.size();i++){
-                totalPtErrMuon.push_back(sqrt(pow(ScaleErrMuon.at(i),2)+pow(AlphaSErrMuon.at(i),2)+pow(meanpterr_dataMuon.at(i),2)));
+                //totalPtErrMuon.push_back(sqrt(pow(ScaleErrMuon.at(i),2)+pow(AlphaSErrMuon.at(i),2)+pow(meanpterr_dataMuon.at(i),2)));
+                totalPtErrMuon.push_back(sqrt(pow(ScaleErrMuon.at(i),2)+pow(AlphaSErrMuon.at(i),2)+pow(meanpterr_dataMuon.at(i),2)+pow(unfoldsysErrMuon.at(i),2)+pow(PUErrMuon.at(i),2)+pow(trgSFErrMuon.at(i),2)+pow(IdSFErrMuon.at(i),2)+pow(recoSFErrMuon.at(i),2)+pow(PDFErrMuon.at(i),2)));
                 totalPtSysMuon.push_back(sqrt(pow(ScaleErrMuon.at(i),2)+pow(AlphaSErrMuon.at(i),2)));
         }
 
@@ -1887,10 +2032,11 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         pad1->cd();
 
         TGraphErrors *grUnfolded = new TGraphErrors(5, &meanmass_dataElectron[0], &meanpt_dataElectron[0], &totalMassErrElectron[0], &totalPtErrElectron[0]);
-        grUnfolded->SetLineColor(kBlack);
-        grUnfolded->SetMarkerColor(kBlack);
-        grUnfolded->SetMarkerStyle(24);
-        grUnfolded->SetMarkerSize(1.5);
+        //TGraphErrors *grUnfolded = new TGraphErrors(5, &meanmass_dataElectron[0], &meanpt_dataElectron[0], &totalMassErrElectron[0], &meanpterr_dataElectron[0]);
+        grUnfolded->SetLineColor(kRed);
+        grUnfolded->SetMarkerColor(kRed);
+        grUnfolded->SetMarkerStyle(20);
+        grUnfolded->SetMarkerSize(1.2);
         grUnfolded->SetLineStyle(1);
         grUnfolded->SetLineWidth(1);
         grUnfolded->Draw("ape");
@@ -1902,42 +2048,44 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         //grUnfolded->GetXaxis()->SetLimits(30.,800.);
 
         TGraphErrors *grUnfoldedMuon = new TGraphErrors(5, &meanmass_dataMuon[0], &meanpt_dataMuon[0], &totalMassErrMuon[0], &totalPtErrMuon[0]);
-        grUnfoldedMuon->SetLineColor(kBlack);
-        grUnfoldedMuon->SetMarkerColor(kBlack);
-        grUnfoldedMuon->SetMarkerStyle(25);
-        grUnfoldedMuon->SetMarkerSize(1.5);
+        //TGraphErrors *grUnfoldedMuon = new TGraphErrors(5, &meanmass_dataMuon[0], &meanpt_dataMuon[0], &totalMassErrMuon[0], &meanpterr_dataMuon[0]);
+        grUnfoldedMuon->SetLineColor(kBlue);
+        grUnfoldedMuon->SetMarkerColor(kBlue);
+        grUnfoldedMuon->SetMarkerStyle(21);
+        grUnfoldedMuon->SetMarkerSize(1.2);
         grUnfoldedMuon->SetLineStyle(1);
         grUnfoldedMuon->SetLineWidth(1);
         grUnfoldedMuon->Draw("samepe");
 
-	TGraphErrors *grMC = new TGraphErrors(5, &meanmass_mcElectron[0], &meanpt_mcElectron[0], &meanmasserr_mcElectron[0], &meanpterr_mcElectron[0]);
+	TGraphErrors *grMC = new TGraphErrors(5, &meanmass_mcElectron[0], &meanpt_mcElectron[0], &meanmasserr_mcElectron[0], &totalPtErrMC[0]);
+	//TGraphErrors *grMC = new TGraphErrors(5, &meanmass_mcElectron[0], &meanpt_mcElectron[0], &meanmasserr_mcElectron[0], &meanpterr_mcElectron[0]);
         grMC->SetLineColor(kRed);
         grMC->SetMarkerColor(kRed);
-        grMC->SetMarkerStyle(20);
+        grMC->SetMarkerStyle(21);
         grMC->SetMarkerSize(1.5);
         grMC->SetLineStyle(1);
         grMC->SetLineWidth(1);
-        grMC->Draw("samepe");
+        //grMC->Draw("samepe");
 	
         TF1 *f1 = new TF1("f1", "[0]+2.*[1]*log(x)", 40., 350.);
         f1->GetXaxis()->SetRangeUser(40., 350.);
-        f1->SetLineColor(kBlack);
-        grUnfolded->Fit(f1, "R"); // R: fitting sub range
+        f1->SetLineColor(kRed);
+        grUnfolded->Fit(f1, "R0"); // R: fitting sub range
         f1->Draw("same");
 
         TF1 *f2 = new TF1("f2", "[0]+2.*[1]*log(x)", 40., 350.);
         f2->GetXaxis()->SetRangeUser(40., 350.);
-        f2->SetLineColor(kBlack);
-        grUnfoldedMuon->Fit(f2, "R"); // R: fitting sub range
+        f2->SetLineColor(kBlue);
+        grUnfoldedMuon->Fit(f2, "R0"); // R: fitting sub range
         f2->Draw("same");
 
-        TLegend* leg_ = new TLegend(0.55, 0.25, 0.9, 0.45,"","brNDC");
+        TLegend* leg_ = new TLegend(0.22, 0.55, 0.55, 0.75,"","brNDC");
         leg_->SetTextSize(0.03);
         //leg_->SetFillStyle(1);
         leg_->SetBorderSize(0);
         leg_->AddEntry(grUnfolded, "Unfolded electron data", "pe");
         leg_->AddEntry(grUnfoldedMuon, "Unfolded muon data", "pe");
-        leg_->AddEntry(grMC, "DY MC at pre FSR (aMC@NLO)", "pe");
+        //leg_->AddEntry(grMC, "DY MC at pre FSR (aMC@NLO)", "pe");
         leg_->Draw();
 
         c1->cd();
@@ -1946,4 +2094,321 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         c1->cd();
         c1->SaveAs(outpdf);
 
+}
+
+void drawSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TString channel, TUnfoldDensity* unfold_pt_up, TUnfoldDensity* unfold_pt_dn){
+
+        gROOT->SetBatch();
+
+        setTDRStyle();
+        writeExtraText = true;       // if extra text
+        extraText  = "work in progress";
+
+        // mass distribution
+        TH1* hunfolded_mass = unfold_mass->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
+        TH1 *histMCTruth_mass=unfold_mass->GetBias("histMCTruth_mass",0,0,"*[UO]",kTRUE);
+
+        vector<Double_t> meanmass_data, meanmasserr_data;
+        vector<Double_t> meanmass_mc, meanmasserr_mc;
+
+        vector<Double_t> meanpt_data, meanpterr_data;
+        vector<Double_t> meanpt_mc, meanpterr_mc;
+
+        // get average pt for each mass bin
+        getAveragesPt(meanpt_data, meanpterr_data, unfold_pt, true);
+        getAveragesPt(meanpt_mc, meanpterr_mc, unfold_pt, false);
+
+        vector<Double_t> ScaleErr;
+        getAveragesSysPt(ScaleErr, "Scale", (int)9, unfold_pt, true);
+
+        vector<Double_t> AlphaSErr;
+        getAveragesSysPt(AlphaSErr, "AlphaS", (int)2, unfold_pt, true);
+
+        vector<Double_t> unfoldsysErr;
+        getAveragesSysPt(unfoldsysErr, "unfoldsys", (int)1, unfold_pt, true);
+
+        vector<Double_t> PUErr;
+        getAveragesSysPt(PUErr, "PU", (int)2, unfold_pt, true);
+
+        vector<Double_t> trgSFErr;
+        getAveragesSysPt(trgSFErr, "trgSF", (int)2, unfold_pt, true);
+
+        vector<Double_t> recoSFErr;
+        getAveragesSysPt(recoSFErr, "recoSF", (int)2, unfold_pt, true);
+
+        vector<Double_t> IdErr;
+        getAveragesSysPt(IdErr, "IdSF", (int)2, unfold_pt, true);
+
+        vector<Double_t> IsoErr;
+        getAveragesSysPt(IsoErr, "IsoSF", (int)2, unfold_pt, true);
+
+        vector<Double_t> PDFErr;
+        getAveragesSysPt(PDFErr, "PDFerror", (int)100, unfold_pt, true);
+
+        // get average mass
+        //
+        getAveragesMass(meanmass_data, meanmasserr_data, hunfolded_mass);
+        getAveragesMass(meanmass_mc, meanmasserr_mc, histMCTruth_mass);
+
+        vector<Double_t> ScaleMassErr;
+        getAveragesSysMass(ScaleMassErr, "Scale", (int)9, unfold_mass);
+
+        vector<Double_t> AlphaSMassErr;
+        getAveragesSysMass(AlphaSMassErr, "AlphaS", (int)2, unfold_mass);
+
+
+	 TH1* hScaleSysError = new TH1D("scale","scale",5,0,5);
+	 TH1* hAlphaSSysError = new TH1D("alphas","alphas",5,0,5);
+	 TH1* hUnfoldingError = new TH1D("unfoldsys","unfoldsys",5,0,5);
+	 TH1* hPUError = new TH1D("pu","pu",5,0,5);
+	 TH1* htrgSFError = new TH1D("trgsf","trgsf",5,0,5);
+	 TH1* hrecoSFError = new TH1D("recosf","recosf",5,0,5);
+	 TH1* hIdSFError = new TH1D("idsf","idsf",5,0,5);
+	 TH1* hIsoSFError = new TH1D("isosf","isosf",5,0,5);
+	 TH1* hPDFError = new TH1D("pdf","pdf",5,0,5);
+	 TH1* hStaticError = new TH1D("static","static",5,0,5);
+	
+	 for(int i=0; i<5;i++){
+		hScaleSysError->SetBinContent(i+1, ScaleErr.at(i));
+		hStaticError->SetBinContent(i+1, meanpterr_data.at(i));
+		hAlphaSSysError->SetBinContent(i+1, AlphaSErr.at(i));
+		hPUError->SetBinContent(i+1, PUErr.at(i));
+		htrgSFError->SetBinContent(i+1, trgSFErr.at(i));
+		hrecoSFError->SetBinContent(i+1, recoSFErr.at(i));
+		hIdSFError->SetBinContent(i+1, IdErr.at(i));
+		hIsoSFError->SetBinContent(i+1, IsoErr.at(i));
+		hPDFError->SetBinContent(i+1, PDFErr.at(i));
+		hUnfoldingError->SetBinContent(i+1, unfoldsysErr.at(i));
+	 }
+	
+	 TCanvas * c2 = new TCanvas("c2","c2",50, 50, 800,800);
+	 c2->SetTopMargin(0.07);
+	 c2->SetBottomMargin(0.15);
+	 c2->SetRightMargin(0.05);
+	 c2->SetLeftMargin(0.2);
+	 //c2->SetGrid(0,1);
+	 c2->SetTickx(0);
+	 c2->SetTicky(0);
+	 c2->cd();
+	
+	 Double_t markerSize = 5.;
+	
+	 hScaleSysError->Draw("hist");
+	 hScaleSysError->GetXaxis()->SetTickLength(0);
+
+	 hScaleSysError->GetXaxis()->SetBinLabel(hScaleSysError->GetXaxis()->FindBin(0.), "50~65");
+	 hScaleSysError->GetXaxis()->SetBinLabel(hScaleSysError->GetXaxis()->FindBin(1.), "65~80");
+	 hScaleSysError->GetXaxis()->SetBinLabel(hScaleSysError->GetXaxis()->FindBin(2.), "80~100");
+	 hScaleSysError->GetXaxis()->SetBinLabel(hScaleSysError->GetXaxis()->FindBin(3.), "100~200");
+	 hScaleSysError->GetXaxis()->SetBinLabel(hScaleSysError->GetXaxis()->FindBin(4.), "200~350");
+
+	 hScaleSysError->SetLineColor(kOrange);
+	 if( channel.CompareTo("electron") == 0 )  hScaleSysError->GetYaxis()->SetTitle("Relative error on <p_{T}^{#font[11]{ee}}> (%)");
+	 else  hScaleSysError->GetYaxis()->SetTitle("Relative error on <p_{T}^{#font[11]{#mu#mu}}> (%)");
+	 if( channel.CompareTo("electron") == 0 )hScaleSysError->GetXaxis()->SetTitle("Mass(m_{#font[11]{ee}}) region (GeV)");
+	 else hScaleSysError->GetXaxis()->SetTitle("Mass(m_{#font[11]{#mu#mu}}) region (GeV)");
+	 hScaleSysError->SetMinimum(0.);
+	 hScaleSysError->SetMaximum(1.2);
+	 setYaxisHist(hScaleSysError);
+	 setXaxisHist(hScaleSysError);
+	 hScaleSysError->SetLineWidth(2);
+	 hScaleSysError->GetXaxis()->SetLabelOffset(0.01);
+	 hScaleSysError->GetXaxis()->SetTitleOffset(1.25);
+	
+	 hAlphaSSysError->Draw("histsame");
+	 hAlphaSSysError->SetLineWidth(2);
+	 hAlphaSSysError->SetLineColor(kPink);
+	
+	 hStaticError->Draw("histsame");
+	 hStaticError->SetLineColor(kRed);
+	 hStaticError->SetLineWidth(2);
+	 hStaticError->SetLineStyle(9);
+	
+	 hIdSFError->Draw("histsame");
+	 hIdSFError->SetLineColor(4);
+	
+	 if( channel.CompareTo("electron") == 0 ) hrecoSFError->Draw("histsame");
+	 if( channel.CompareTo("electron") == 0 ) hrecoSFError->SetLineColor(5);
+
+	 if( channel.CompareTo("muon") == 0 ) hIsoSFError->Draw("histsame");
+	 if( channel.CompareTo("muon") == 0 ) hIsoSFError->SetLineColor(5);
+	
+	 htrgSFError->Draw("histsame");
+	 htrgSFError->SetLineColor(6);
+	
+	 hPUError->Draw("histsame");
+	 hPUError->SetLineColor(7);
+	
+	 hUnfoldingError->Draw("histsame");
+	 hUnfoldingError->SetLineColor(kBlack);
+	 hUnfoldingError->SetLineWidth(2);
+
+	 hPDFError->Draw("histsame");
+	 hPDFError->SetLineWidth(2);
+	 hPDFError->SetLineColor(kMagenta);
+
+	 TLegend* legSys = new TLegend(0.25, 0.65, 0.9, 0.9,"","brNDC");
+	 legSys->SetNColumns(2);
+	 legSys->SetTextSize(0.03);
+	 legSys->SetFillStyle(0);
+	 legSys->SetBorderSize(0);
+	
+	 legSys->AddEntry(hPDFError, "PDF error", "l");
+	 legSys->AddEntry(hScaleSysError, "Scale", "l");
+	 legSys->AddEntry(hAlphaSSysError, "#alpha_{s}", "l");
+	 legSys->AddEntry(hUnfoldingError, "Unfolding", "l");
+	 legSys->AddEntry(hStaticError, "Stat.", "l");
+	 legSys->AddEntry(hIdSFError, "ID SF", "l");
+	 if( channel.CompareTo("electron") == 0 ) legSys->AddEntry(hrecoSFError, "Reco SF", "l");
+	 if( channel.CompareTo("muon") == 0 ) legSys->AddEntry(hIsoSFError, "Iso SF", "l");
+	 legSys->AddEntry(htrgSFError, "Trigger SF", "l");
+	 legSys->AddEntry(hPUError, "Pileup reweight", "l");
+	 legSys->Draw();
+	
+	 CMS_lumi( c2, 4, 0 );
+	 c2->cd();
+	 c2->SaveAs(outpdf);
+	
+}
+
+void drawMCSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TString channel){
+
+        gROOT->SetBatch();
+
+        setTDRStyle();
+        writeExtraText = true;       // if extra text
+        extraText  = "work in progress";
+
+        vector<Double_t> meanpt_mc, meanpterr_mc;
+        getAveragesPt(meanpt_mc, meanpterr_mc, unfold_pt, false);
+
+        vector<Double_t> ScaleErr;
+        getAveragesSysPtMC(ScaleErr, "Scale", (int)9, unfold_pt, channel, true);
+
+        vector<Double_t> AlphaSErr;
+        getAveragesSysPtMC(AlphaSErr, "AlphaS", (int)2, unfold_pt, channel, true);
+
+        vector<Double_t> unfoldsysErr;
+        getAveragesSysPtMC(unfoldsysErr, "unfoldsys", (int)1, unfold_pt, channel, true);
+
+        vector<Double_t> PUErr;
+        getAveragesSysPtMC(PUErr, "PU", (int)2, unfold_pt, channel, true);
+
+        vector<Double_t> trgSFErr;
+        getAveragesSysPtMC(trgSFErr, "trgSF", (int)2, unfold_pt, channel, true);
+
+        vector<Double_t> recoSFErr;
+        getAveragesSysPtMC(recoSFErr, "recoSF", (int)2, unfold_pt, channel, true);
+
+        vector<Double_t> IdErr;
+        getAveragesSysPtMC(IdErr, "IdSF", (int)2, unfold_pt, channel, true);
+
+        vector<Double_t> IsoErr;
+        getAveragesSysPtMC(IsoErr, "IsoSF", (int)2, unfold_pt, channel, true);
+
+        vector<Double_t> PDFErr;
+        getAveragesSysPtMC(PDFErr, "PDFerror", (int)100, unfold_pt, channel, true);
+
+	TH1* hScaleSysError = new TH1D("scale","scale",5,0,5);
+	TH1* hAlphaSSysError = new TH1D("alphas","alphas",5,0,5);
+	TH1* hUnfoldingError = new TH1D("unfoldsys","unfoldsys",5,0,5);
+	TH1* hPUError = new TH1D("pu","pu",5,0,5);
+	TH1* htrgSFError = new TH1D("trgsf","trgsf",5,0,5);
+	TH1* hrecoSFError = new TH1D("recosf","recosf",5,0,5);
+	TH1* hIdSFError = new TH1D("idsf","idsf",5,0,5);
+	TH1* hIsoSFError = new TH1D("isosf","isosf",5,0,5);
+	TH1* hPDFError = new TH1D("pdf","pdf",5,0,5);
+	TH1* hStaticError = new TH1D("static","static",5,0,5);
+	
+	for(int i=0; i<5;i++){
+	       hScaleSysError->SetBinContent(i+1, ScaleErr.at(i));
+	       hStaticError->SetBinContent(i+1, meanpterr_mc.at(i));
+	       hAlphaSSysError->SetBinContent(i+1, AlphaSErr.at(i));
+	       hPUError->SetBinContent(i+1, PUErr.at(i));
+	       htrgSFError->SetBinContent(i+1, trgSFErr.at(i));
+	       hrecoSFError->SetBinContent(i+1, recoSFErr.at(i));
+	       hIdSFError->SetBinContent(i+1, IdErr.at(i));
+	       hIsoSFError->SetBinContent(i+1, IsoErr.at(i));
+	       hPDFError->SetBinContent(i+1, PDFErr.at(i));
+	       hUnfoldingError->SetBinContent(i+1, unfoldsysErr.at(i));
+	}
+	
+	TCanvas * c2 = new TCanvas("c2","c2",50, 50, 800,800);
+	c2->SetTopMargin(0.07);
+	c2->SetBottomMargin(0.15);
+	c2->SetRightMargin(0.05);
+	c2->SetLeftMargin(0.2);
+	//c2->SetGrid(0,1);
+	c2->SetTickx(0);
+	c2->SetTicky(0);
+	c2->cd();
+	
+	Double_t markerSize = 5.;
+	
+	hScaleSysError->Draw("hist");
+	hScaleSysError->GetXaxis()->SetTickLength(0);
+	hScaleSysError->GetXaxis()->SetBinLabel(hScaleSysError->GetXaxis()->FindBin(0.), "50~65");
+	hScaleSysError->GetXaxis()->SetBinLabel(hScaleSysError->GetXaxis()->FindBin(1.), "65~80");
+	hScaleSysError->GetXaxis()->SetBinLabel(hScaleSysError->GetXaxis()->FindBin(2.), "80~100");
+	hScaleSysError->GetXaxis()->SetBinLabel(hScaleSysError->GetXaxis()->FindBin(3.), "100~200");
+	hScaleSysError->GetXaxis()->SetBinLabel(hScaleSysError->GetXaxis()->FindBin(4.), "200~350");
+	hScaleSysError->SetLineColor(1);
+	if( channel.CompareTo("electron") == 0 )  hScaleSysError->GetYaxis()->SetTitle("Relative error on <p_{T}^{#font[11]{ee}}> (%)");
+	else  hScaleSysError->GetYaxis()->SetTitle("Relative error on <p_{T}^{#font[11]{#mu#mu}}> (%)");
+	if( channel.CompareTo("electron") == 0 )hScaleSysError->GetXaxis()->SetTitle("Mass(m_{#font[11]{ee}}) region (GeV)");
+	else hScaleSysError->GetXaxis()->SetTitle("Mass(m_{#font[11]{#mu#mu}}) region (GeV)");
+	//hScaleSysError->GetXaxis()->CenterTitle();
+	hScaleSysError->SetMinimum(0.);
+	hScaleSysError->SetMaximum(.1);
+	setYaxisHist(hScaleSysError);
+	setXaxisHist(hScaleSysError);
+	hScaleSysError->SetLineWidth(1);
+	hScaleSysError->GetXaxis()->SetTitleOffset(1.25);
+	
+	hAlphaSSysError->Draw("histsame");
+	hAlphaSSysError->SetLineColor(2);
+	
+	hStaticError->Draw("histsame");
+	hStaticError->SetLineColor(3);
+	hStaticError->SetLineWidth(2);
+	
+	hIdSFError->Draw("histsame");
+	hIdSFError->SetLineColor(4);
+	
+	hrecoSFError->Draw("histsame");
+	hrecoSFError->SetLineColor(5);
+	
+	htrgSFError->Draw("histsame");
+	htrgSFError->SetLineColor(6);
+	
+	hPUError->Draw("histsame");
+	hPUError->SetLineColor(7);
+	
+	hUnfoldingError->Draw("histsame");
+	hUnfoldingError->SetLineColor(9);
+
+	hPDFError->Draw("histsame");
+	hPDFError->SetLineColor(40);
+
+	TLegend* legSys = new TLegend(0.25, 0.6, 0.7, 0.9,"","brNDC");
+	legSys->SetNColumns(2);
+	legSys->SetTextSize(0.03);
+	legSys->SetFillStyle(0);
+	legSys->SetBorderSize(0);
+	
+	legSys->AddEntry(hUnfoldingError, "Unfolding", "l");
+	legSys->AddEntry(hScaleSysError, "Scale", "l");
+	legSys->AddEntry(hAlphaSSysError, "#alpha_{s}", "l");
+	legSys->AddEntry(hStaticError, "Stat.", "l");
+	legSys->AddEntry(hIdSFError, "ID SF", "l");
+	legSys->AddEntry(hrecoSFError, "Reco SF", "l");
+	legSys->AddEntry(htrgSFError, "Trigger SF", "l");
+	legSys->AddEntry(hPUError, "Pileup reweight", "l");
+	legSys->AddEntry(hPDFError, "PDF", "l");
+	legSys->Draw();
+	
+	CMS_lumi( c2, 4, 0 );
+	c2->cd();
+	c2->SaveAs(outpdf);
+	
 }

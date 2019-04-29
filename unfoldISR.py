@@ -282,6 +282,9 @@ if args.getEMuCombinedResults:
         unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron, "Pt", "IsoSF", 2)
         unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "IsoSF", 2)
 
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron, "Pt", "PDFerror", 100)
+        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "PDFerror", 100)
+
 	## Muon
         # set unfolding class 
         unfold_ptMuon =   unfoldutil.setUnfold(unfoldInputListMuon['sig'], "Pt",   postfix_matrix, False)
@@ -332,6 +335,9 @@ if args.getEMuCombinedResults:
 
         unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon, "Pt", "IsoSF", 2)
         unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "IsoSF", 2)
+
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon, "Pt", "PDFerror", 100)
+        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "PDFerror", 100)
 
 	drawutil.drawEMuCombinedISR("./EMu.pdf", unfold_ptElectron, unfold_massElectron, unfold_ptMuon, unfold_massMuon )
 
@@ -401,7 +407,6 @@ if args.getUnfoldResults:
         else :
 		unfoldutil.setUnfoldInput(unfold_mass, "Mass", postfix, unfoldInputList['sig'])
 
-
 	# do unfolding with bkg subtracted data and the migration matrix
         unfoldutil.doUnfold(unfold_pt)
         unfoldutil.doUnfold(unfold_mass)
@@ -437,6 +442,9 @@ if args.getUnfoldResults:
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt, "Pt", "IsoSF", 2)
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "IsoSF", 2)
 
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt, "Pt", "PDFerror", 100)
+        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "PDFerror", 100)
+
         # check unfolded distribution
         outpdf = outputDirectory + "ratio_"+args.channel+".pdf"
         outpdf_mass = outputDirectory + "ratio_mass_"+args.channel+".pdf"
@@ -446,9 +454,15 @@ if args.getUnfoldResults:
         outpdf = outputDirectory + "isrFit_"+args.channel+".pdf"
         drawutil.isrFit(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'])
 
+	# draw systematic sources
+        outpdf = outputDirectory + "sys_"+args.channel+".pdf"
+	drawutil.drawSys(outpdf, unfold_pt, unfold_mass, args.channel);
+
+        outpdf = outputDirectory + "MCsys_"+args.channel+".pdf"
+	drawutil.drawMCSys(outpdf, unfold_pt, unfold_mass, args.channel);
+
 	# check reco level distribution
 	# FIXME use TUnfoldDensityV17::GetBackground()
-
 
 	if not args.closure:
         	outpdf = outputDirectory + "recoPt_"+args.channel+".pdf"
@@ -460,7 +474,15 @@ if args.getUnfoldResults:
 		else : drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], None, args.channel)
 
         	outpdf = outputDirectory + "recoPtdist_"+args.channel+".pdf"
-		drawutil.drawUnfoldedPt(outpdf, unfold_pt)
+		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "Scale", 9)
+		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "AlphaS", 2)
+		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "unfoldsys", 1)
+		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "PU", 2)
+		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "trgSF", 2)
+		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "recoSF", 2)
+		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "IdSF", 2)
+		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "IsoSF", 2)
+		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "PDFerror", 100)
 
 	if args.doSeperateUnfold:
 		# FSR unfolding

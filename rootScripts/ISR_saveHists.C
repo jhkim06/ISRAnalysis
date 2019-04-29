@@ -8,12 +8,23 @@ void saveRecoHists(TFile *filein, TFile *fileout1, histTUnfold &recoHist, TStrin
         TH1::SetDefaultSumw2();
 
  	// variables in the input tree
- 	Double_t weightGen,weightRec, weightRecIdUp, weightRecIdDown;
- 	Double_t weightRecTriUp, weightRecTriDown;
- 	Double_t weightRecRecoUp, weightRecRecoDown;
- 	Double_t weightGenPileUp, weightGenPileDown;
- 	vector<Double_t> *weightGenScale = 0;
- 	vector<Double_t> *weightGenPdf = 0;
+ 	Double_t weightGen,weightRec ;
+
+        Double_t        PUweight;
+        Double_t        PUweight_Up;
+        Double_t        PUweight_Dn;
+        Double_t        trgSF;
+        Double_t        trgSF_Up;
+        Double_t        trgSF_Dn;
+        Double_t        recoSF;
+        Double_t        recoSF_Up;
+        Double_t        recoSF_Dn;
+        Double_t        IdSF;
+        Double_t        IdSF_Up;
+        Double_t        IdSF_Dn;
+        Double_t        IsoSF;
+        Double_t        IsoSF_Up;
+        Double_t        IsoSF_Dn;
 
  	int ispassRec,DYtautau, isBveto;
  	int isfiducialPostFSR, isfiducialPreFSR;
@@ -54,6 +65,22 @@ void saveRecoHists(TFile *filein, TFile *fileout1, histTUnfold &recoHist, TStrin
         treco->SetBranchAddress("weightRec",&weightRec);
         treco->SetBranchAddress("DYtautau",&DYtautau);
         treco->SetBranchAddress("bTagReweight",&bTagReweight); // FIXME may it is better to change name bTagReweight to bTagSF
+
+        treco->SetBranchAddress("PUweight", &PUweight);
+        treco->SetBranchAddress("PUweight_Up", &PUweight_Up);
+        treco->SetBranchAddress("PUweight_Dn", &PUweight_Dn);
+        treco->SetBranchAddress("trgSF", &trgSF);
+        treco->SetBranchAddress("trgSF_Up", &trgSF_Up);
+        treco->SetBranchAddress("trgSF_Dn", &trgSF_Dn);
+        treco->SetBranchAddress("recoSF", &recoSF);
+        treco->SetBranchAddress("recoSF_Up", &recoSF_Up);
+        treco->SetBranchAddress("recoSF_Dn", &recoSF_Dn);
+        treco->SetBranchAddress("IdSF", &IdSF);
+        treco->SetBranchAddress("IdSF_Up", &IdSF_Up);
+        treco->SetBranchAddress("IdSF_Dn", &IdSF_Dn);
+        treco->SetBranchAddress("IsoSF", &IsoSF);
+        treco->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
+        treco->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
         nentries=treco->GetEntries();
 
         // TODO based on the info in histTUnfold make map for systematics
@@ -94,12 +121,7 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
         TH1::SetDefaultSumw2();
 
         // variables in the input tree
-        Double_t weightGen,weightRec, weightRecIdUp, weightRecIdDown;
-        Double_t weightRecTriUp, weightRecTriDown;
-        Double_t weightRecRecoUp, weightRecRecoDown;
-        Double_t weightGenPileUp, weightGenPileDown;
-        vector<Double_t> *weightGenScale = 0;
-        vector<Double_t> *weightGenPdf = 0;
+        Double_t weightGen,weightRec;
 
         int ispassRec,DYtautau, isBveto;
         int isfiducialPostFSR, isfiducialPreFSR;
@@ -122,6 +144,7 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
         vector<Double_t> *l1PreFire = 0;
         vector<Double_t> *AlphaS = 0;
         vector<Double_t> *Scale = 0;
+        vector<Double_t> *PDFerror = 0;
         Int_t nVtx;
 
         vector<TLorentzVector> *particleFSR;
@@ -129,21 +152,21 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
         TLorentzVector *particlePostFSR;
         TLorentzVector *anparticlePostFSR;
 
-   Double_t        PUweight;
-   Double_t        PUweight_Up;
-   Double_t        PUweight_Dn;
-   Double_t        trgSF;
-   Double_t        trgSF_Up;
-   Double_t        trgSF_Dn;
-   Double_t        recoSF;
-   Double_t        recoSF_Up;
-   Double_t        recoSF_Dn;
-   Double_t        IdSF;
-   Double_t        IdSF_Up;
-   Double_t        IdSF_Dn;
-   Double_t        IsoSF;
-   Double_t        IsoSF_Up;
-   Double_t        IsoSF_Dn;
+        Double_t        PUweight;
+        Double_t        PUweight_Up;
+        Double_t        PUweight_Dn;
+        Double_t        trgSF;
+        Double_t        trgSF_Up;
+        Double_t        trgSF_Dn;
+        Double_t        recoSF;
+        Double_t        recoSF_Up;
+        Double_t        recoSF_Dn;
+        Double_t        IdSF;
+        Double_t        IdSF_Up;
+        Double_t        IdSF_Dn;
+        Double_t        IsoSF;
+        Double_t        IsoSF_Up;
+        Double_t        IsoSF_Dn;
 
         TBranch        *b_particleFSR;   //!
         TBranch        *b_anparticleFSR;   //!
@@ -155,10 +178,10 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
         particlePostFSR = 0;
         anparticlePostFSR = 0;
 
- 	Int_t IsElEl, IsMuMu;
- 	Double_t ZPtCor;
- 	Double_t bTagReweight;
- 	Int_t isdielectron, isdimuon;
+        Int_t IsElEl, IsMuMu;
+        Double_t ZPtCor;
+        Double_t bTagReweight;
+        Int_t isdielectron, isdimuon;
 
         TTree *tsignal=(TTree *)filein->Get("tree");
         tsignal->SetBranchAddress("ptPreFSR",&ptPreFSR);
@@ -187,23 +210,23 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
 
         tsignal->SetBranchAddress("AlphaS",&AlphaS);
         tsignal->SetBranchAddress("Scale",&Scale);
+        tsignal->SetBranchAddress("PDFerror",&PDFerror);
 
-   tsignal->SetBranchAddress("PUweight", &PUweight);
-   tsignal->SetBranchAddress("PUweight_Up", &PUweight_Up);
-   tsignal->SetBranchAddress("PUweight_Dn", &PUweight_Dn);
-   tsignal->SetBranchAddress("trgSF", &trgSF);
-   tsignal->SetBranchAddress("trgSF_Up", &trgSF_Up);
-   tsignal->SetBranchAddress("trgSF_Dn", &trgSF_Dn);
-   tsignal->SetBranchAddress("recoSF", &recoSF);
-   tsignal->SetBranchAddress("recoSF_Up", &recoSF_Up);
-   tsignal->SetBranchAddress("recoSF_Dn", &recoSF_Dn);
-   tsignal->SetBranchAddress("IdSF", &IdSF);
-   tsignal->SetBranchAddress("IdSF_Up", &IdSF_Up);
-   tsignal->SetBranchAddress("IdSF_Dn", &IdSF_Dn);
-   tsignal->SetBranchAddress("IsoSF", &IsoSF);
-   tsignal->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
-   tsignal->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
-
+        tsignal->SetBranchAddress("PUweight", &PUweight);
+        tsignal->SetBranchAddress("PUweight_Up", &PUweight_Up);
+        tsignal->SetBranchAddress("PUweight_Dn", &PUweight_Dn);
+        tsignal->SetBranchAddress("trgSF", &trgSF);
+        tsignal->SetBranchAddress("trgSF_Up", &trgSF_Up);
+        tsignal->SetBranchAddress("trgSF_Dn", &trgSF_Dn);
+        tsignal->SetBranchAddress("recoSF", &recoSF);
+        tsignal->SetBranchAddress("recoSF_Up", &recoSF_Up);
+        tsignal->SetBranchAddress("recoSF_Dn", &recoSF_Dn);
+        tsignal->SetBranchAddress("IdSF", &IdSF);
+        tsignal->SetBranchAddress("IdSF_Up", &IdSF_Up);
+        tsignal->SetBranchAddress("IdSF_Dn", &IdSF_Dn);
+        tsignal->SetBranchAddress("IsoSF", &IsoSF);
+        tsignal->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
+        tsignal->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
 
         TFile* fpthist = new TFile("/home/jhkim/ISR2016/unfolding/systematic/hPtRecnominal.root");
         TH1* hptcorr=(TH1*)fpthist->Get("data_");
@@ -348,6 +371,15 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
 
                         sigHist.FillMigration2DM( pt_unfold, selected, "pt_Scale_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*Scale->at(i));
                         sigHist.FillMigration2DM( mass_unfold, selected, "mass_Scale_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*Scale->at(i));
+                   }
+
+		   // PDF error
+                   for(unsigned int i=0; i<PDFerror->size(); i++){
+                        TString is;
+                        is.Form("%d", i);
+
+                        sigHist.FillMigration2DM( pt_unfold, selected, "pt_PDFerror_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
+                        sigHist.FillMigration2DM( mass_unfold, selected, "mass_PDFerror_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
                    }
 
                    // alpha s systematic

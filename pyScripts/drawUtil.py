@@ -16,9 +16,9 @@ def basicRatio(outpdf, unfold_pt, unfold_mass, filepath, channel):
 	rt.drawRatio(outpdf, unfold_pt, unfold_mass, infile, channel)	
         del infile
 
-def drawUnfoldedPt(outpdf, unfold_pt):
+def drawUnfoldedPt(outpdf, unfold_pt, sysName, sysSize):
 
-	rt.drawUnfoldedPtDistWithSys(outpdf, unfold_pt)
+	rt.drawUnfoldedPtDistWithSys(outpdf, unfold_pt, sysName, sysSize)
 
 def drawCombinedISR(outpdf, unfold_pt2016, unfold_mass2016, unfold_pt2017, unfold_mass2017 ):
 
@@ -36,6 +36,15 @@ def isrFit(outpdf, unfold_pt, unfold_mass, filepath):
 
         rt.drawISRfit(outpdf, unfold_pt, unfold_mass, infile)
         del infile
+
+def drawSys(outpdf, unfold_pt, unfold_mass, channel):
+
+	rt.drawSystematicISR(outpdf, unfold_pt, unfold_mass, channel)
+
+def drawMCSys(outpdf, unfold_pt, unfold_mass, channel):
+
+        rt.drawMCSystematicISR(outpdf, unfold_pt, unfold_mass, channel)
+
 
 def drawTest(outpdf, unfold_pt):
 

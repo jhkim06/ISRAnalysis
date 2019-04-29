@@ -3,7 +3,6 @@ import sys
 import ROOT as rt
 
 rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/libisrunfold.so")
-#rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/libsaveHists_C.so") # since ISR_histTUnfold.h included in ISR_saveHists.h ?
 
 import etc.histDef as fHistDef
 
@@ -40,7 +39,7 @@ def makeRecoHists(sample, outputDirectory, channel):
 
 	recoHists.CreateHistMap(1, "nominal")
 	recoHists.CreateHistMap(2, "nominal")
-        
+
         for filepath in sample.path:	
 
 		infile = rt.TFile(filepath,'r')
@@ -120,6 +119,10 @@ def makeSigHists(sample, outputDirectory, channel):
 	for i in range(9):
 		sigHists.CreateHist2DMap(1, "Scale_"+str(i)) 
 		sigHists.CreateHist2DMap(2, "Scale_"+str(i)) 
+
+        for i in range(100):
+                sigHists.CreateHist2DMap(1, "PDFerror_"+str(i))
+                sigHists.CreateHist2DMap(2, "PDFerror_"+str(i))
 
 
         if sample.isInc: # for DY to tautau, make one more histogram
