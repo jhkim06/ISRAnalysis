@@ -7,14 +7,11 @@ rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/libisrunfold.s
 import gc
 gc.collect()
 
-def basicRatio(outpdf, unfold_pt, unfold_mass, filepath, channel):
+def basicRatio(outpdf, unfold_pt, unfold_mass, channel):
 
         print "############################ draw ###############################################"
-        print "Open " + filepath
-        infile = rt.TFile(filepath,'r')
 
-	rt.drawRatio(outpdf, unfold_pt, unfold_mass, infile, channel)	
-        del infile
+	rt.drawRatio(outpdf, unfold_pt, unfold_mass, channel)	
 
 def drawUnfoldedPt(outpdf, unfold_pt, sysName, sysSize):
 
@@ -24,18 +21,15 @@ def drawCombinedISR(outpdf, unfold_pt2016, unfold_mass2016, unfold_pt2017, unfol
 
 	rt.drawCombinedISR(outpdf, unfold_pt2016, unfold_mass2016, unfold_pt2017, unfold_mass2017 )
 
-def drawEMuCombinedISR(outpdf, unfold_ptElectron, unfold_massElectron, unfold_ptMuon, unfold_massMuon ):
+def drawEMuCombinedISR(outpdf, unfold_ptElectron, unfold_massElectron, unfold_ptMuon, unfold_massMuon, unfold_ptElectron_MG, unfold_massElectron_MG, unfold_ptMuon_MG, unfold_massMuon_MG ):
 
-        rt.drawEMuCombinedISR(outpdf, unfold_ptElectron, unfold_massElectron, unfold_ptMuon, unfold_massMuon )
+        rt.drawEMuCombinedISR(outpdf, unfold_ptElectron, unfold_massElectron, unfold_ptMuon, unfold_massMuon, unfold_ptElectron_MG, unfold_massElectron_MG, unfold_ptMuon_MG, unfold_massMuon_MG )
 
-def isrFit(outpdf, unfold_pt, unfold_mass, filepath):
+def isrFit(outpdf, unfold_pt, unfold_mass):
 
         print "############################ draw fit ###############################################"
-        print "Open " + filepath
-        infile = rt.TFile(filepath,'r')
 
-        rt.drawISRfit(outpdf, unfold_pt, unfold_mass, infile)
-        del infile
+        rt.drawISRfit(outpdf, unfold_pt, unfold_mass)
 
 def drawSys(outpdf, unfold_pt, unfold_mass, channel):
 
@@ -50,18 +44,15 @@ def drawTest(outpdf, unfold_pt):
 
         rt.drawTest(outpdf, unfold_pt)
 
-def basicRatioMass(outpdf, unfold, filepath):
+def basicRatioMass(outpdf, unfold):
 
         print "############################ draw ###############################################"
-        print "Open " + filepath
-        infile = rt.TFile(filepath,'r')
 
-        rt.drawMassRatio(outpdf, unfold, infile)
-        del infile
+        rt.drawMassRatio(outpdf, unfold)
 
-def responseM(outpdf, unfold):
+def responseM(outpdf, unfold, channel, var):
 
-	rt.responseM(outpdf, unfold)
+	rt.responseM(outpdf, unfold, channel, var)
 
 
 def efficiency(outpdf, unfold):

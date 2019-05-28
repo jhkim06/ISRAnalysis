@@ -314,47 +314,48 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
 		   diptgen = ptPreFSR->at(2);
 		   dimassgen = mPreFSR->at(2);
 
-		   TLorentzVector temp_particlePostFSR[19];
-		   TLorentzVector temp_anparticlePostFSR[19];
- 		   Double_t drcut[19] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9};
+		   //TLorentzVector temp_particlePostFSR[19];
+		   //TLorentzVector temp_anparticlePostFSR[19];
+ 		   //Double_t drcut[19] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9};
 
-		   // add fsr photon in dr < 0.1 for lepton
-		   for(int idrcut = 0; idrcut < 19; idrcut++){
-		      temp_particlePostFSR[idrcut] = *particlePostFSR;
-		      for(int gsize = 0; gsize < particleFSR->size(); gsize++){
+		   //// add fsr photon in dr < 0.1 for lepton
+		   //for(int idrcut = 0; idrcut < 19; idrcut++){
+		   //   temp_particlePostFSR[idrcut] = *particlePostFSR;
+		   //   for(int gsize = 0; gsize < particleFSR->size(); gsize++){
 
-		      	Double_t temp_dr = sqrt(pow(particlePostFSR->Phi()-particleFSR->at(gsize).Phi(),2)+pow(particlePostFSR->Eta()-particleFSR->at(gsize).Eta(),2));
-		      	if(temp_dr < drcut[idrcut]) temp_particlePostFSR[idrcut] += particleFSR->at(gsize);
-		      }
-		   }
+		   //   	Double_t temp_dr = sqrt(pow(particlePostFSR->Phi()-particleFSR->at(gsize).Phi(),2)+pow(particlePostFSR->Eta()-particleFSR->at(gsize).Eta(),2));
+		   //   	if(temp_dr < drcut[idrcut]) temp_particlePostFSR[idrcut] += particleFSR->at(gsize);
+		   //   }
+		   //}
 
-                   for(int idrcut = 0; idrcut < 19; idrcut++){
-                      temp_anparticlePostFSR[idrcut] = *anparticlePostFSR;
-                      for(int gsize = 0; gsize < anparticleFSR->size(); gsize++){
+                   //for(int idrcut = 0; idrcut < 19; idrcut++){
+                   //   temp_anparticlePostFSR[idrcut] = *anparticlePostFSR;
+                   //   for(int gsize = 0; gsize < anparticleFSR->size(); gsize++){
 
-                        Double_t temp_dr = sqrt(pow(anparticlePostFSR->Phi()-anparticleFSR->at(gsize).Phi(),2)+pow(anparticlePostFSR->Eta()-anparticleFSR->at(gsize).Eta(),2));
-                        if(temp_dr < drcut[idrcut]) temp_anparticlePostFSR[idrcut] += anparticleFSR->at(gsize);
-                      }
-                   }
+                   //     Double_t temp_dr = sqrt(pow(anparticlePostFSR->Phi()-anparticleFSR->at(gsize).Phi(),2)+pow(anparticlePostFSR->Eta()-anparticleFSR->at(gsize).Eta(),2));
+                   //     if(temp_dr < drcut[idrcut]) temp_anparticlePostFSR[idrcut] += anparticleFSR->at(gsize);
+                   //   }
+                   //}
+
+
+		   //for(int idrcut = 0; idrcut < 19; idrcut++){
+		   //	Double_t temp_dipt = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).Pt();
+		   //	Double_t temp_dimass = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).M();
+		   //     TString dr_;
+                   //	if(idrcut<9) {
+                   //     dr_.Form("%d", idrcut+1);
+                   //     sigHist.FillMigration2DM( pt_unfold, selected, "pt_FSRDR0p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                   //	sigHist.FillMigration2DM( mass_unfold, selected, "mass_FSRDR0p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+	           //     }
+		   //     else{
+                   //     dr_.Form("%d", (idrcut+1)%10);
+                   //     sigHist.FillMigration2DM( pt_unfold, selected, "pt_FSRDR1p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                   //	sigHist.FillMigration2DM( mass_unfold, selected, "mass_FSRDR1p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+		   //     }
+	           //}
 
                    sigHist.FillMigration2DM( pt_unfold, selected, "pt_nominal",  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
                    sigHist.FillMigration2DM( mass_unfold, selected, "mass_nominal", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
-
-		   for(int idrcut = 0; idrcut < 19; idrcut++){
-		   	Double_t temp_dipt = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).Pt();
-		   	Double_t temp_dimass = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).M();
-			TString dr_;
-                   	if(idrcut<9) {
-                        dr_.Form("%d", idrcut+1);
-                        sigHist.FillMigration2DM( pt_unfold, selected, "pt_FSRDR0p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                   	sigHist.FillMigration2DM( mass_unfold, selected, "mass_FSRDR0p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-	                }
-			else{
-                        dr_.Form("%d", (idrcut+1)%10);
-                        sigHist.FillMigration2DM( pt_unfold, selected, "pt_FSRDR1p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                   	sigHist.FillMigration2DM( mass_unfold, selected, "mass_FSRDR1p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-			}
-	           }
 
 		   // unfolding systematic
 		   Double_t ptCorr = hptcorr->GetBinContent(binning_ptRec->GetGlobalBinNumber(diptrec, dimassrec));
@@ -374,13 +375,13 @@ void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, histTUnfold &
                    }
 
 		   // PDF error
-                   for(unsigned int i=0; i<PDFerror->size(); i++){
-                        TString is;
-                        is.Form("%d", i);
+                   //for(unsigned int i=0; i<PDFerror->size(); i++){
+                   //     TString is;
+                   //     is.Form("%d", i);
 
-                        sigHist.FillMigration2DM( pt_unfold, selected, "pt_PDFerror_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
-                        sigHist.FillMigration2DM( mass_unfold, selected, "mass_PDFerror_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
-                   }
+                   //     sigHist.FillMigration2DM( pt_unfold, selected, "pt_PDFerror_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
+                   //     sigHist.FillMigration2DM( mass_unfold, selected, "mass_PDFerror_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
+                   //}
 
                    // alpha s systematic
                    for(unsigned int i=0; i<AlphaS->size(); i++){

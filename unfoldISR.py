@@ -188,7 +188,7 @@ if args.getCombinedResults:
 
 if args.getEMuCombinedResults:
 
-	outputDirectoryElectron = 'output/2016/' + "electron" + "/"
+	outputDirectoryElectron = 'output/2016/' + "electron_" + "/"
 	inputfhisttxtNameElectron = outputDirectoryElectron + "fhist.txt"
 
 	# read text file
@@ -201,12 +201,14 @@ if args.getEMuCombinedResults:
 	                unfoldInputListElectron['data'] = modifiedLine.split(' ')[2]
 	        if modifiedLine.split(' ')[1] == "sig":
 	                unfoldInputListElectron['sig'] = modifiedLine.split(' ')[2]
+	        if modifiedLine.split(' ')[1] == "sig_MG":
+	                unfoldInputListElectron['sig_MG'] = modifiedLine.split(' ')[2]
 	        if modifiedLine.split(' ')[1] == "bkg": # use the sample name as keyword for background
 	                unfoldInputListElectron[modifiedLine.split(' ')[0]] = modifiedLine.split(' ')[2]
 	
 	print unfoldInputListElectron
 
-        outputDirectoryMuon = 'output/2016/' + "muon" + "/"
+        outputDirectoryMuon = 'output/2016/' + "muon_" + "/"
         inputfhisttxtNameMuon = outputDirectoryMuon + "fhist.txt"
 
         # read text file
@@ -219,6 +221,8 @@ if args.getEMuCombinedResults:
                         unfoldInputListMuon['data'] = modifiedLine.split(' ')[2]
                 if modifiedLine.split(' ')[1] == "sig":
                         unfoldInputListMuon['sig'] = modifiedLine.split(' ')[2]
+                if modifiedLine.split(' ')[1] == "sig_MG":
+                        unfoldInputListMuon['sig_MG'] = modifiedLine.split(' ')[2]
                 if modifiedLine.split(' ')[1] == "bkg": # use the sample name as keyword for background
                         unfoldInputListMuon[modifiedLine.split(' ')[0]] = modifiedLine.split(' ')[2]
         
@@ -258,6 +262,35 @@ if args.getEMuCombinedResults:
         unfoldutil.doUnfold(unfold_ptElectron)
         unfoldutil.doUnfold(unfold_massElectron)
 
+        ############### results using Madgraph, change only response matrix
+        # set unfolding class 
+        unfold_ptElectron_MG =   unfoldutil.setUnfold(unfoldInputListElectron['sig_MG'], "Pt",   postfix_matrix, False)
+        unfold_massElectron_MG = unfoldutil.setUnfold(unfoldInputListElectron['sig_MG'], "Mass", postfix_matrix, False)
+
+        # get bkg subtracted data
+        unfoldutil.setUnfoldInput(unfold_ptElectron_MG, "Pt", postfix, unfoldInputListElectron['data'])
+        #unfoldutil.setUnfoldInput(unfold_ptElectron_MG, "Pt", unfoldInputListElectron['sig'])
+
+        unfoldutil.subtractBkgs(unfold_ptElectron_MG, "Pt", postfix, unfoldInputListElectron['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold_ptElectron_MG, "Pt", postfix, unfoldInputListElectron['TTbar'], "TTbar")
+        unfoldutil.subtractBkgs(unfold_ptElectron_MG, "Pt", postfix, unfoldInputListElectron['VV'], "VV")
+        unfoldutil.subtractBkgs(unfold_ptElectron_MG, "Pt", postfix, unfoldInputListElectron['Wjets'], "Wjets")
+
+        # for mass unfolding
+        unfoldutil.setUnfoldInput(unfold_massElectron_MG, "Mass", postfix, unfoldInputListElectron['data'])
+        #unfoldutil.setUnfoldInput(unfold_massElectron_MG, "Mass", unfoldInputListElectron['sig'])
+
+        unfoldutil.subtractBkgs(unfold_massElectron_MG, "Mass", postfix, unfoldInputListElectron['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold_massElectron_MG, "Mass", postfix, unfoldInputListElectron['TTbar'], "TTbar")
+        unfoldutil.subtractBkgs(unfold_massElectron_MG, "Mass", postfix, unfoldInputListElectron['VV'], "VV")
+        unfoldutil.subtractBkgs(unfold_massElectron_MG, "Mass", postfix, unfoldInputListElectron['Wjets'], "Wjets")
+
+        # do unfolding with bkg subtracted data and the migration matrix
+        unfoldutil.doUnfold(unfold_ptElectron_MG)
+        unfoldutil.doUnfold(unfold_massElectron_MG)
+
+        ###############
+
         unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron,   "Pt",   "AlphaS", 2)
         unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "AlphaS", 2)
 
@@ -282,8 +315,8 @@ if args.getEMuCombinedResults:
         unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron, "Pt", "IsoSF", 2)
         unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "IsoSF", 2)
 
-        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron, "Pt", "PDFerror", 100)
-        unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "PDFerror", 100)
+        #unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_ptElectron, "Pt", "PDFerror", 100)
+        #unfoldutil.setVectorSys(unfoldInputListElectron['sig'], unfold_massElectron, "Mass", "PDFerror", 100)
 
 	## Muon
         # set unfolding class 
@@ -312,6 +345,33 @@ if args.getEMuCombinedResults:
         unfoldutil.doUnfold(unfold_ptMuon)
         unfoldutil.doUnfold(unfold_massMuon)
 
+	############################
+        unfold_ptMuon_MG =   unfoldutil.setUnfold(unfoldInputListMuon['sig_MG'], "Pt",   postfix_matrix, False)
+        unfold_massMuon_MG = unfoldutil.setUnfold(unfoldInputListMuon['sig_MG'], "Mass", postfix_matrix, False)
+
+        # get bkg subtracted data
+        unfoldutil.setUnfoldInput(unfold_ptMuon_MG, "Pt", postfix, unfoldInputListMuon['data'])
+        #unfoldutil.setUnfoldInput(unfold_ptMuon_MG, "Pt", unfoldInputListMuon['sig'])
+
+        unfoldutil.subtractBkgs(unfold_ptMuon_MG, "Pt", postfix, unfoldInputListMuon['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold_ptMuon_MG, "Pt", postfix, unfoldInputListMuon['TTbar'], "TTbar")
+        unfoldutil.subtractBkgs(unfold_ptMuon_MG, "Pt", postfix, unfoldInputListMuon['VV'], "VV")
+        unfoldutil.subtractBkgs(unfold_ptMuon_MG, "Pt", postfix, unfoldInputListMuon['Wjets'], "Wjets")
+
+        # for mass unfolding
+        unfoldutil.setUnfoldInput(unfold_massMuon_MG, "Mass", postfix, unfoldInputListMuon['data'])
+        #unfoldutil.setUnfoldInput(unfold_massMuon_MG, "Mass", unfoldInputListMuon['sig'])
+
+        unfoldutil.subtractBkgs(unfold_massMuon_MG, "Mass", postfix, unfoldInputListMuon['DYtoEEtau'], "DYtoEEtau")
+        unfoldutil.subtractBkgs(unfold_massMuon_MG, "Mass", postfix, unfoldInputListMuon['TTbar'], "TTbar")
+        unfoldutil.subtractBkgs(unfold_massMuon_MG, "Mass", postfix, unfoldInputListMuon['VV'], "VV")
+        unfoldutil.subtractBkgs(unfold_massMuon_MG, "Mass", postfix, unfoldInputListMuon['Wjets'], "Wjets")
+
+        # do unfolding with bkg subtracted data and the migration matrix
+        unfoldutil.doUnfold(unfold_ptMuon_MG)
+        unfoldutil.doUnfold(unfold_massMuon_MG)
+ 	############################
+
         unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon,   "Pt",   "AlphaS", 2)
         unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "AlphaS", 2)
 
@@ -336,10 +396,10 @@ if args.getEMuCombinedResults:
         unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon, "Pt", "IsoSF", 2)
         unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "IsoSF", 2)
 
-        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon, "Pt", "PDFerror", 100)
-        unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "PDFerror", 100)
+        #unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_ptMuon, "Pt", "PDFerror", 100)
+        #unfoldutil.setVectorSys(unfoldInputListMuon['sig'], unfold_massMuon, "Mass", "PDFerror", 100)
 
-	drawutil.drawEMuCombinedISR("./EMu.pdf", unfold_ptElectron, unfold_massElectron, unfold_ptMuon, unfold_massMuon )
+	drawutil.drawEMuCombinedISR("./EMu.pdf", unfold_ptElectron, unfold_massElectron, unfold_ptMuon, unfold_massMuon, unfold_ptElectron_MG, unfold_massElectron_MG, unfold_ptMuon_MG, unfold_massMuon_MG)
 
 
 if args.getUnfoldResults:
@@ -375,12 +435,12 @@ if args.getUnfoldResults:
 
 	# print out response matrix and efficiency plot
         outpdf = outputDirectory + "response_"+args.channel+".pdf"
-        drawutil.responseM(outpdf, unfold_pt)
+        drawutil.responseM(outpdf, unfold_pt, args.channel, "Pt")
         outpdf = outputDirectory + "efficiency_"+args.channel+".pdf"
         drawutil.efficiency(outpdf, unfold_pt)
 
         outpdf_mass = outputDirectory + "response_mass_"+args.channel+".pdf"
-        drawutil.responseM(outpdf_mass, unfold_mass)
+        drawutil.responseM(outpdf_mass, unfold_mass, args.channel, "Mass")
         outpdf_mass = outputDirectory + "efficiency_mass_"+args.channel+".pdf"
         drawutil.efficiency(outpdf_mass, unfold_mass)
 
@@ -442,17 +502,17 @@ if args.getUnfoldResults:
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt, "Pt", "IsoSF", 2)
         unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "IsoSF", 2)
 
-        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt, "Pt", "PDFerror", 100)
-        unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "PDFerror", 100)
+        #unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_pt, "Pt", "PDFerror", 100)
+        #unfoldutil.setVectorSys(unfoldInputList['sig'], unfold_mass, "Mass", "PDFerror", 100)
 
         # check unfolded distribution
         outpdf = outputDirectory + "ratio_"+args.channel+".pdf"
         outpdf_mass = outputDirectory + "ratio_mass_"+args.channel+".pdf"
-        drawutil.basicRatio(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'], args.channel)
-        drawutil.basicRatioMass(outpdf_mass, unfold_mass, unfoldInputList['sig'])
+        drawutil.basicRatio(outpdf, unfold_pt, unfold_mass, args.channel)
+        drawutil.basicRatioMass(outpdf_mass, unfold_mass)
 
         outpdf = outputDirectory + "isrFit_"+args.channel+".pdf"
-        drawutil.isrFit(outpdf, unfold_pt, unfold_mass, unfoldInputList['sig'])
+        drawutil.isrFit(outpdf, unfold_pt, unfold_mass)
 
 	# draw systematic sources
         outpdf = outputDirectory + "sys_"+args.channel+".pdf"
@@ -473,7 +533,8 @@ if args.getUnfoldResults:
         	if args.channel == "muon": drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], unfoldInputList['QCD'], args.channel);
 		else : drawutil.recoMass(outpdf, postfix, unfoldInputList['data'], unfoldInputList['sig'], unfoldInputList['DYtoEEtau'], unfoldInputList['TTbar'], unfoldInputList['VV'], unfoldInputList['Wjets'], None, args.channel)
 
-        	outpdf = outputDirectory + "recoPtdist_"+args.channel+".pdf"
+                # draw systematic plots
+        	outpdf = outputDirectory + "sysPtdist_"+args.channel+"_"
 		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "Scale", 9)
 		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "AlphaS", 2)
 		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "unfoldsys", 1)
@@ -482,7 +543,7 @@ if args.getUnfoldResults:
 		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "recoSF", 2)
 		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "IdSF", 2)
 		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "IsoSF", 2)
-		drawutil.drawUnfoldedPt(outpdf, unfold_pt, "PDFerror", 100)
+		#drawutil.drawUnfoldedPt(outpdf, unfold_pt, "PDFerror", 100)
 
 	if args.doSeperateUnfold:
 		# FSR unfolding
@@ -495,12 +556,12 @@ if args.getUnfoldResults:
         	unfoldFSR_mass = unfoldutil.setUnfold(unfoldInputList['sig'], "Mass", "FSR", True)
 
         	outpdf = outputDirectory + "response_FSR_"+args.channel+".pdf"
-        	drawutil.responseM(outpdf, unfoldFSR_pt)
+        	drawutil.responseM(outpdf, unfoldFSR_pt, args.channel, "Pt")
         	outpdf = outputDirectory + "efficiency_FSR_"+args.channel+".pdf"
         	drawutil.efficiency(outpdf, unfoldFSR_pt)
 
         	outpdf_mass = outputDirectory + "response_mass_FSR_"+args.channel+".pdf"
-        	drawutil.responseM(outpdf_mass, unfoldFSR_mass)
+        	drawutil.responseM(outpdf_mass, unfoldFSR_mass, args.channel, "Mass")
         	outpdf_mass = outputDirectory + "efficiency_mass_FSR_"+args.channel+".pdf"
         	drawutil.efficiency(outpdf_mass, unfoldFSR_mass)
 
@@ -513,8 +574,8 @@ if args.getUnfoldResults:
         	outpdf = outputDirectory + "ratio_FSR_"+args.channel+".pdf"
         	outpdf_mass = outputDirectory + "ratio_mass_FSR_"+args.channel+".pdf"
         	# check unfolded distribution
-        	drawutil.basicRatio(outpdf, unfoldFSR_pt, unfoldFSR_mass, unfoldInputList['sig'], basicRatio)
-        	drawutil.basicRatioMass(outpdf_mass, unfoldFSR_mass, unfoldInputList['sig'])
+        	drawutil.basicRatio(outpdf, unfoldFSR_pt, unfoldFSR_mass, args.channel)
+        	drawutil.basicRatioMass(outpdf_mass, unfoldFSR_mas)
 		
 		del unfoldFSR_pt
 		del unfoldFSR_mass

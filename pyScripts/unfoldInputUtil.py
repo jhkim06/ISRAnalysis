@@ -99,13 +99,13 @@ def makeSigHists(sample, outputDirectory, channel):
 	sigHists.CreateHist2DMap(1, "unfoldsys_0") 
 	sigHists.CreateHist2DMap(2, "unfoldsys_0") 
 
-        for i in range(19):
-		if i < 9:
-			sigHists.CreateHist2DMap(1, "FSRDR0p"+str(i+1)) 
-			sigHists.CreateHist2DMap(2, "FSRDR0p"+str(i+1)) 
-		else:
-			sigHists.CreateHist2DMap(1, "FSRDR1p"+str((i+1)%10)) 
-			sigHists.CreateHist2DMap(2, "FSRDR1p"+str((i+1)%10)) 
+        #for i in range(19):
+	#	if i < 9:
+	#		sigHists.CreateHist2DMap(1, "FSRDR0p"+str(i+1)) 
+	#		sigHists.CreateHist2DMap(2, "FSRDR0p"+str(i+1)) 
+	#	else:
+	#		sigHists.CreateHist2DMap(1, "FSRDR1p"+str((i+1)%10)) 
+	#		sigHists.CreateHist2DMap(2, "FSRDR1p"+str((i+1)%10)) 
 
 	sigHists.CreateHistMap(1, "nominal") 
 	sigHists.CreateHistMap(2, "nominal") 
@@ -120,9 +120,9 @@ def makeSigHists(sample, outputDirectory, channel):
 		sigHists.CreateHist2DMap(1, "Scale_"+str(i)) 
 		sigHists.CreateHist2DMap(2, "Scale_"+str(i)) 
 
-        for i in range(100):
-                sigHists.CreateHist2DMap(1, "PDFerror_"+str(i))
-                sigHists.CreateHist2DMap(2, "PDFerror_"+str(i))
+        #for i in range(100):
+        #        sigHists.CreateHist2DMap(1, "PDFerror_"+str(i))
+        #        sigHists.CreateHist2DMap(2, "PDFerror_"+str(i))
 
 
         if sample.isInc: # for DY to tautau, make one more histogram

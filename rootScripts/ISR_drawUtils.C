@@ -188,11 +188,11 @@ void getAveragesSysPtMC(vector<Double_t> &err, TString sysName, int sysSize, TUn
 	   Double_t defaultMean = hpt_temp->GetMean();
 
 	   Double_t err_ = -999.;
-           for(int i = 0; i < sysSize; i++){
-		   if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
+           for(int j = 0; j < sysSize; j++){
+		   if((j==5 || j==7) && sysName.CompareTo("Scale") == 0) continue;
 
                	   TString isys;
-                   isys.Form("%d", i);
+                   isys.Form("%d", j);
 	
 		   TUnfoldDensityV17* hmatrix_temp = getSysMatrix("Pt", sysName+"_"+isys, channel); // temp matrix
            	   TH1* hsyspt_temp;
@@ -232,11 +232,11 @@ void getAveragesSysPt(vector<Double_t> &err, TString sysName, int sysSize, TUnfo
 	   Double_t defaultMean = hpt_temp->GetMean();
 
 	   Double_t err_ = -999.;
-           for(int i = 0; i < sysSize; i++){
-                   if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
+           for(int j = 0; j < sysSize; j++){
+                   if((j==5 || j==7) && sysName.CompareTo("Scale") == 0) continue;
 
                	   TString isys;
-                   isys.Form("%d", i);
+                   isys.Form("%d", j);
 
            	   TH1* hsyspt_temp;
 
@@ -408,7 +408,7 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt, TStrin
 
            	TH1* hpt_temp;
            	TH1* hpterr_temp;
-        	TLegend* leg_ = new TLegend(0.2, 0.70, 0.95, 0.9,"","brNDC");
+        	TLegend* leg_ = new TLegend(0.2, 0.70, 0.9, 0.95,"","brNDC");
 		leg_->SetNColumns(2);
         	leg_->SetTextSize(0.04);
         	leg_->SetFillStyle(0);
@@ -417,7 +417,7 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt, TStrin
            	hpt_temp=unfold_pt->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
            	hpterr_temp=unfold_pt->GetOutput("hunfolded_pterr_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
-        	TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 700*1.5, 800*1.5);
+        	TCanvas* c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
         	c1->cd();
         	gStyle->SetOptStat(0);
 
@@ -430,28 +430,26 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt, TStrin
         	pad1->Draw();
         	pad1->cd();
 
+		setYaxisHist(hpt_temp);
         	hpt_temp->SetTitle("");
         	hpt_temp->Draw("p9histe");
         	hpt_temp->SetMarkerStyle(20);
         	hpt_temp->SetMarkerSize(.7);
         	hpt_temp->SetLineColor(kBlack);
+		hpt_temp->GetYaxis()->SetTitle("Events/bin");
 
                 TString mean_nom;
                 mean_nom.Form("%.5f", hpt_temp->GetMean());
 
-                TLegend* leg_nom = new TLegend(0.2, 0.70, 0.95, 0.9,"","brNDC");
+                TLegend* leg_nom = new TLegend(0.65, 0.70, 0.85, 0.9,"","brNDC");
                 leg_nom->SetNColumns(2);
-                leg_nom->SetTextSize(0.05);
+                leg_nom->SetTextSize(0.055);
                 leg_nom->SetFillStyle(0);
                 leg_nom->SetBorderSize(0);
 
-                leg_nom->AddEntry(hpt_temp, "Nominal mean: " + mean_nom, "l");
+                leg_nom->AddEntry(hpt_temp, "Nominal mean: " + mean_nom, "pl");
                 leg_nom->Draw();
 
-
-
-                //int sysSize = 9;
-                //TString sysName = "Scale";
 
         	for(int ibin = 1; ibin<hpterr_temp->GetNbinsX()+1;ibin++){
 
@@ -482,6 +480,7 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt, TStrin
 
         	TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.6);
         	setPadMargins(pad2);
+        	pad2->SetTopMargin(0.05);
         	pad2->SetBottomMargin(0.2);
         	pad2->SetTicks(1);
         	pad2->SetGridy(1);
@@ -489,6 +488,9 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt, TStrin
 
            	TH1F *hsyspt_temp;
 		TH1F *ratio;
+		TH1F *hpdf = NULL;
+		if(sysName.CompareTo("PDFerror") == 0) hpdf = new TH1F(ibinMass+"_massbin_hpdf", ibinMass+"_massbin_hpdf", 80, hpt_temp->GetMean()-0.2, hpt_temp->GetMean()+0.2);
+
            	for(int i = 0; i < sysSize; i++){
 			if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
 
@@ -506,19 +508,38 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt, TStrin
                 	if(i==0)ratio->Draw("hist");
 			else ratio->Draw("samehist");
 			ratio->GetYaxis()->SetTitle("nominal/systematic");
+			ratio->GetXaxis()->SetTitle("p_{T} at pre FSR(GeV)");
                 	ratio->SetLineColor(i+1);
                 	ratio->SetMarkerColor(i+1);
                 	ratio->SetMinimum(0.9);
+			if(sysName.CompareTo("Scale") == 0 && imass == 2) ratio->SetMinimum(0.98);
                 	ratio->SetMaximum(1.1);
+			if(sysName.CompareTo("Scale") == 0 && imass == 2) ratio->SetMaximum(1.02);
                 	ratio->SetTitle("");
                 	setYaxisHist(ratio);
                 	setXaxisHist(ratio);
+			ratio->GetXaxis()->SetTitleOffset(1.5);
                 	ratio->GetYaxis()->SetNdivisions(515);
 
                 	TString mean_;
                 	mean_.Form("%.5f", hsyspt_temp->GetMean());
 
-        		leg_->AddEntry(ratio, sysName+"_"+isys + " " + mean_, "l");
+			if(hpdf != NULL) hpdf->Fill(hsyspt_temp->GetMean());
+
+			if(sysName.CompareTo("Scale") == 0){
+				if(i==0) leg_->AddEntry(ratio, "#mu_{R}=1.0 #mu_{F}=1.0 mean:" + mean_, "l");
+				if(i==1) leg_->AddEntry(ratio, "#mu_{R}=1.0 #mu_{F}=2.0 mean:" + mean_, "l");
+				if(i==2) leg_->AddEntry(ratio, "#mu_{R}=1.0 #mu_{F}=0.5 mean:" + mean_, "l");
+				if(i==3) leg_->AddEntry(ratio, "#mu_{R}=2.0 #mu_{F}=1.0 mean:" + mean_, "l");
+				if(i==4) leg_->AddEntry(ratio, "#mu_{R}=2.0 #mu_{F}=2.0 mean:" + mean_, "l");
+				//if(i==5) leg_->AddEntry(ratio, sysName+"_"+isys + " #mu_{R}=2.0 #mu_{F}=0.5 mean:" + mean_, "l");
+				if(i==6) leg_->AddEntry(ratio, "#mu_{R}=0.5 #mu_{F}=1.0 mean:" + mean_, "l");
+				//if(i==7) leg_->AddEntry(ratio, sysName+"_"+isys + " #mu_{R}=0.5 #mu_{F}=2. mean:" + mean_, "l");
+				if(i==8) leg_->AddEntry(ratio, "#mu_{R}=0.5 #mu_{F}=0.5 mean:" + mean_, "l");
+			}
+			else{
+				leg_->AddEntry(ratio, sysName+"_"+isys + " " + mean_, "l");
+			}
         		leg_->Draw();
 
            	}
@@ -527,11 +548,31 @@ void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt, TStrin
         	CMS_lumi( pad1, 4, 0 );
 		c1->cd();
         	c1->SaveAs(outpdf+sysName+"_"+ibinMass+".pdf");
-		delete hpt_temp;
 		delete hpterr_temp;
 		delete pad1;
 		delete c1;
 
+		if(hpdf != NULL){
+                	TCanvas* c2=new TCanvas("c2", "c2", 50, 50, 800, 800);
+			c2->SetTopMargin(0.1);
+        		c2->SetLeftMargin(0.2);
+        		c2->SetRightMargin(0.05);
+                	c2->cd();
+                	gStyle->SetOptStat(1);
+			hpdf->Draw("p9histe");
+			hpdf->GetXaxis()->SetTitle("<p_{T}> (GeV)");
+			hpdf->GetYaxis()->SetTitle("# of PDF error sets");
+			setYaxisHist(hpdf);
+			setXaxisHist(hpdf);
+			hpdf->GetXaxis()->SetTitleOffset(1.1);	
+			TLine* ver = drawVerLine(hpt_temp->GetMean(), 0., hpt_temp->GetMean(), hpdf->GetMaximum() * 2.);
+			ver->SetLineColor(kRed);
+			c2->SaveAs(outpdf+sysName+"_"+ibinMass+"pdferror.pdf");
+			delete hpdf;
+			delete ver;
+			delete c2;
+		}
+		delete hpt_temp;
 	}
 }
 
@@ -553,7 +594,7 @@ TUnfoldDensityV17* getSysMatrix(TString var, TString sysName, TString channel){
 
 	TFile* filein;
 	if( channel.CompareTo("electron") == 0 ) filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DYtoEE.root");
-	if( channel.CompareTo("muon") == 0 ) filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/muon/DYtoEE.root");
+	else if( channel.CompareTo("muon") == 0 ) filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/muon/DYtoEE.root");
         TH2* hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + sysName);
 	hmcGenRec->SetDirectory(0);
         TUnfoldBinning* binning_Rec = NULL;
@@ -585,7 +626,7 @@ TUnfoldDensityV17* getSysMatrix(TString var, TString sysName, TString channel){
 	return unfold;
 }
 
-void sysMCErrRatio(TUnfoldDensity* unfold_pt, TH1* sysRatio, TString var, TString sysName, int size, TString channel){
+void sysMCErrRatio(TUnfoldDensity* unfold_pt, TH1* sysRatio, TString sysName, int size, TString channel){
 
 	vector<TH1*> hMCSys;
 	vector<TUnfoldDensityV17*> hMCSysM;
@@ -634,7 +675,7 @@ void sysMCErrRatio(TUnfoldDensity* unfold_pt, TH1* sysRatio, TString var, TStrin
         hMCSysM.shrink_to_fit();
 }
 
-void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TFile *filein, TString channel){  
+void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TString channel){  
 
         gROOT->SetBatch();
 
@@ -660,7 +701,7 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
 	getRatioSys(unfold_pt, "recoSF", (int)2, sysErrRatio);	
 	getRatioSys(unfold_pt, "IdSF", (int)2, sysErrRatio);	
 	getRatioSys(unfold_pt, "IsoSF", (int)2, sysErrRatio);	
-	getRatioSys(unfold_pt, "PDFerror", (int)100, sysErrRatio);	
+	//getRatioSys(unfold_pt, "PDFerror", (int)100, sysErrRatio);	
 
         // stat error for measurement
         TH1* statErrRatio = (TH1*)hunfolded_pt->Clone("hstatErrRatio");
@@ -669,10 +710,10 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
 
         TH1* sysErrRatioMC = (TH1*)hunfolded_pt->Clone("hsysErrRatio");
 	sysErrRatioMC->Reset();
-        sysMCErrRatio(unfold_pt, sysErrRatioMC, "Pt", "AlphaS", (int)2, channel);
-        sysMCErrRatio(unfold_pt, sysErrRatioMC, "Pt", "Scale", (int)9, channel);
-        sysMCErrRatio(unfold_pt, sysErrRatioMC, "Pt", "unfoldsys", (int)1, channel);
-        sysMCErrRatio(unfold_pt, sysErrRatioMC, "Pt", "PDFerror", (int)100, channel);
+        sysMCErrRatio(unfold_pt, sysErrRatioMC, "AlphaS", (int)2, channel);
+        sysMCErrRatio(unfold_pt, sysErrRatioMC, "Scale", (int)9, channel);
+        sysMCErrRatio(unfold_pt, sysErrRatioMC, "unfoldsys", (int)1, channel);
+        //sysMCErrRatio(unfold_pt, sysErrRatioMC, "PDFerror", (int)100, channel);
 
 	// mass distribution
         TH1* hunfolded_mass = unfold_mass->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
@@ -739,16 +780,6 @@ void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold
   	histMCTruth_pt->SetLineColor(2);
   	hunfolded_pt->GetYaxis()->SetRangeUser(100.,hunfolded_pt->GetMaximum()>histMCTruth_pt->GetMaximum()?10.*hunfolded_pt->GetMaximum():10.*histMCTruth_pt->GetMaximum());
         pad1->Update();
-
-	TLine grid_;
-	grid_.SetLineColor(kRed);
-	grid_.SetLineStyle(kSolid);
-	for( int ii=0; ii<histMCTruth_pt->GetNbinsX(); ii++ )
-	{
-		Int_t i_bin = ii+1;
-		Double_t binEdge = hunfolded_pt->GetBinLowEdge(i_bin);
-	//	grid_.DrawLine(binEdge, 100, binEdge, histMCTruth_pt->GetBinContent(ii+1) );
-	}
 
 	int totoalNbin = ratio->GetXaxis()->GetNbins();
 
@@ -1082,14 +1113,14 @@ void drawCombinedISR(TString outpdf, TUnfoldDensity* unfold_pt2016, TUnfoldDensi
                 leg_->SetBorderSize(0);
 
                 // FIXME how to handle below memory allocation
-                TGraphErrors *grUnfolded = new TGraphErrors(1, &meanmass_data2016[imass], &meanpt_data2016[imass], &meanmasserr_data2016[imass], &meanpterr_data2016[imass]);
+                TGraphErrors *grUnfolded_ = new TGraphErrors(1, &meanmass_data2016[imass], &meanpt_data2016[imass], &meanmasserr_data2016[imass], &meanpterr_data2016[imass]);
                 TGraphErrors *sysData = new TGraphErrors(1, &meanmass_data2016[imass], &meanpt_data2016[imass], &totalMassSys2016[imass], &totalPtSys2016[imass]);
 
                 Double_t xmin = meanmass_data2016[imass] > meanmass_mc2016[imass] ? meanmass_mc2016[imass] - 1.: meanmass_data2016[imass] - 1.,
                          xmax = meanmass_data2016[imass] < meanmass_mc2016[imass] ? meanmass_mc2016[imass] + 1.: meanmass_data2016[imass] + 1.,
                          ymin = meanpt_data2016[imass] > meanpt_mc2016[imass] ? meanpt_mc2016[imass] - 0.7: meanpt_data2016[imass] - 0.7,
                          ymax = meanpt_data2016[imass] < meanpt_mc2016[imass] ? meanpt_mc2016[imass] + 0.7: meanpt_data2016[imass] + 0.7;
-                setTGraphAxis(grUnfolded, meanmass_data2016[imass], xmin, xmax, ymin, ymin + 3., nullptr, sysData, true);
+                setTGraphAxis(grUnfolded_, meanmass_data2016[imass], xmin, xmax, ymin, ymax + 3., nullptr, sysData, true);
 
                 TString pt;
                 TString stat;
@@ -1100,14 +1131,14 @@ void drawCombinedISR(TString outpdf, TUnfoldDensity* unfold_pt2016, TUnfoldDensi
                 sys.Form("%.2f", totalPtSys2016[imass]);
                 total.Form("%.2f", sqrt(pow(totalPtSys2016[imass],2)+pow( meanpterr_data2016[imass],2) ));
                 ptstring.SetTextSize(0.12);
-		leg_->AddEntry(grUnfolded, "#splitline{2016: "+pt+"#pm"+total+"}{        (#pm"+stat+"#pm"+sys+")}");
+		leg_->AddEntry(grUnfolded_, "#splitline{2016: "+pt+"#pm"+total+"}{        (#pm"+stat+"#pm"+sys+")}");
                 //ptstring.DrawLatex(meanmass_data2016[imass]*0.99, meanpt_data2016[imass]*1.02, pt+"#pm"+stat+"#pm"+sys);
 
 
-                TGraphErrors *grUnfolded2017 = new TGraphErrors(1, &meanmass_data2017[imass], &meanpt_data2017[imass], &meanmasserr_data2017[imass], &meanpterr_data2017[imass]);
+                TGraphErrors *grUnfolded2017_ = new TGraphErrors(1, &meanmass_data2017[imass], &meanpt_data2017[imass], &meanmasserr_data2017[imass], &meanpterr_data2017[imass]);
                 TGraphErrors *sysData2017 = new TGraphErrors(1, &meanmass_data2017[imass], &meanpt_data2017[imass], &totalMassSys2017[imass], &totalPtSys2017[imass]);
 
-                setTGraphAxis(grUnfolded2017, meanmass_data2017[imass], xmin, xmax, ymin, ymin + 3., nullptr, sysData2017, false); 
+                setTGraphAxis(grUnfolded2017_, meanmass_data2017[imass], xmin, xmax, ymin, ymin + 3., nullptr, sysData2017, false); 
 
                 pt.Form("%.2f", meanpt_data2017[imass]);
                 stat.Form("%.2f", meanpterr_data2017[imass]);
@@ -1117,7 +1148,7 @@ void drawCombinedISR(TString outpdf, TUnfoldDensity* unfold_pt2016, TUnfoldDensi
                 //ptstring.DrawLatex(meanmass_data2017[imass]*0.99, meanpt_data2017[imass]*1.02, pt+"#pm"+stat+"#pm"+sys);
 
 		//leg_->AddEntry(grUnfolded2017, "#splitline{2017: }{"+pt+"#pm"+stat+"#pm"+sys+"}");
-		leg_->AddEntry(grUnfolded2017, "#splitline{2017: "+pt+"#pm"+total+"}{        (#pm"+stat+"#pm"+sys+")}");
+		leg_->AddEntry(grUnfolded2017_, "#splitline{2017: "+pt+"#pm"+total+"}{        (#pm"+stat+"#pm"+sys+")}");
 
                 TGraphErrors *grUnfoldedcombined = new TGraphErrors(1, &meanmass_datacombined[imass], &meanpt_datacombined[imass], &meanmasserr_datacombined[imass], &meanpterr_datacombined[imass]);
                 TGraphErrors *sysDataCombined = new TGraphErrors(1, &meanmass_datacombined[imass], &meanpt_datacombined[imass], &meanmasssyserr_datacombined[imass], &meanptsyserr_datacombined[imass]);
@@ -1149,7 +1180,7 @@ void drawCombinedISR(TString outpdf, TUnfoldDensity* unfold_pt2016, TUnfoldDensi
 
 }
 
-void drawISRfit(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TFile *filein){
+void drawISRfit(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass){
 
         gROOT->SetBatch();
 
@@ -1293,7 +1324,7 @@ void drawISRfit(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfol
 
 }
 
-void drawMassRatio(TString outpdf, TUnfoldDensity* unfold, TFile *filein){
+void drawMassRatio(TString outpdf, TUnfoldDensity* unfold){
 
         gROOT->SetBatch();
 
@@ -1793,16 +1824,15 @@ void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, 
         delete massbin;
 }
 
-void responseM(TString outpdf, TUnfoldDensity* unfold){
+void responseM(TString outpdf, TUnfoldDensity* unfold, TString channel, TString var){
 	gROOT->SetBatch();
 	TH2 *histProbability=unfold->GetProbabilityMatrix("histProbability"); // get response matrix
 
-        TCanvas *c1 = new TCanvas("c1", "c1", 50, 50, 750, 750);
+        TCanvas *c1 = new TCanvas("c1", "c1", 50, 50, 800, 800);
         gStyle->SetOptStat(0);
-        gStyle->SetLineWidth(1);
-        c1->SetBottomMargin(0.15);
+        c1->SetBottomMargin(0.2);
         c1->SetTopMargin(0.05);
-        c1->SetLeftMargin(0.15);
+        c1->SetLeftMargin(0.2);
         c1->SetRightMargin(0.15);
         c1->SetTicks(1);
         c1->Draw();
@@ -1813,6 +1843,30 @@ void responseM(TString outpdf, TUnfoldDensity* unfold){
 
         histProbability->GetZaxis()->SetRangeUser(0., 1.);
         histProbability->Draw("colz");
+	histProbability->SetTitle("");
+
+        histProbability->GetYaxis()->SetLabelFont(63);
+        histProbability->GetYaxis()->SetLabelSize(30);
+        histProbability->GetYaxis()->SetTitleFont(63);
+        histProbability->GetYaxis()->SetTitleSize(40);
+        histProbability->GetYaxis()->SetTitleOffset(1.7);
+
+        histProbability->GetXaxis()->SetLabelFont(63);
+        histProbability->GetXaxis()->SetLabelSize(30);
+        histProbability->GetXaxis()->SetTitleFont(63);
+        histProbability->GetXaxis()->SetTitleSize(40);
+        histProbability->GetXaxis()->SetTitleOffset(1.5);
+
+	if(var.CompareTo("Pt") == 0){
+		histProbability->GetYaxis()->SetTitle("Mass, Pt bin index at Detector");
+		histProbability->GetXaxis()->SetTitle("Mass, Pt bin index at Pre FSR");
+	}
+
+        if(var.CompareTo("Mass") == 0){
+                histProbability->GetYaxis()->SetTitle("Mass at Detector (GeV)");
+                histProbability->GetXaxis()->SetTitle("Mass at Pre FSR (GeV)");
+        }
+
 
         TLine grid_;
         //grid_.SetLineColor(kGray+2);
@@ -1865,7 +1919,7 @@ void efficiency(TString outpdf, TUnfoldDensity* unfold){
 
 }
 
-void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfoldDensity* unfold_massElectron, TUnfoldDensity* unfold_ptMuon, TUnfoldDensity* unfold_massMuon){
+void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfoldDensity* unfold_massElectron, TUnfoldDensity* unfold_ptMuon, TUnfoldDensity* unfold_massMuon, TUnfoldDensity* unfold_ptElectron_MG, TUnfoldDensity* unfold_massElectron_MG, TUnfoldDensity* unfold_ptMuon_MG, TUnfoldDensity* unfold_massMuon_MG){
 
         gROOT->SetBatch();
 
@@ -1877,15 +1931,26 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         TH1* hunfolded_massElectron = unfold_massElectron->GetOutput("hunfolded_massElectron",0,0,"*[UO]",kTRUE);
         TH1 *histMCTruth_massElectron=unfold_massElectron->GetBias("histMCTruth_massElectron",0,0,"*[UO]",kTRUE);
 
+        TH1* hunfolded_massElectron_MG = unfold_massElectron_MG->GetOutput("hunfolded_massElectron",0,0,"*[UO]",kTRUE);
+
         vector<Double_t> meanmass_dataElectron, meanmasserr_dataElectron;
         vector<Double_t> meanmass_mcElectron, meanmasserr_mcElectron;
 
         vector<Double_t> meanpt_dataElectron, meanpterr_dataElectron;
         vector<Double_t> meanpt_mcElectron, meanpterr_mcElectron;
 
+        vector<Double_t> meanmass_dataElectron_MG, meanmasserr_dataElectron_MG;  // Madgraph
+        vector<Double_t> meanpt_dataElectron_MG, meanpterr_dataElectron_MG; // Madgraph
+
+        vector<Double_t> meanmass_dataMuon_MG, meanmasserr_dataMuon_MG;  // Madgraph
+        vector<Double_t> meanpt_dataMuon_MG, meanpterr_dataMuon_MG; // Madgraph
+
         // get average pt for each mass bin
         getAveragesPt(meanpt_dataElectron, meanpterr_dataElectron, unfold_ptElectron, true);
         getAveragesPt(meanpt_mcElectron, meanpterr_mcElectron, unfold_ptElectron, false);
+
+        getAveragesPt(meanpt_dataElectron_MG, meanpterr_dataElectron_MG, unfold_ptElectron_MG, true);
+        getAveragesPt(meanpt_dataMuon_MG, meanpterr_dataMuon_MG, unfold_ptMuon_MG, true);
 
         vector<Double_t> ScaleErrMC;
         getAveragesSysPtMC(ScaleErrMC, "Scale", (int)9, unfold_ptElectron, "electron");
@@ -1917,13 +1982,14 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         vector<Double_t> recoSFErrElectron;
         getAveragesSysPt(recoSFErrElectron, "recoSF", (int)2, unfold_ptElectron);
 
-        vector<Double_t> PDFErrElectron;
-        getAveragesSysPt(PDFErrElectron, "PDFerror", (int)100, unfold_ptElectron);
+        //vector<Double_t> PDFErrElectron;
+        //getAveragesSysPt(PDFErrElectron, "PDFerror", (int)100, unfold_ptElectron);
 
         vector<Double_t> totalPtSysElectron;
         vector<Double_t> totalPtErrElectron;
         for(unsigned int i=0;i<ScaleErrElectron.size();i++){
-                totalPtErrElectron.push_back(sqrt(pow(ScaleErrElectron.at(i),2)+pow(AlphaSErrElectron.at(i),2)+pow(meanpterr_dataElectron.at(i),2)+pow(unfoldsysErrElectron.at(i),2)+pow(PUErrElectron.at(i),2)+pow(trgSFErrElectron.at(i),2)+pow(IdSFErrElectron.at(i),2)+pow(recoSFErrElectron.at(i),2)+pow(PDFErrElectron.at(i),2)));
+                //totalPtErrElectron.push_back(sqrt(pow(ScaleErrElectron.at(i),2)+pow(AlphaSErrElectron.at(i),2)+pow(meanpterr_dataElectron.at(i),2)+pow(unfoldsysErrElectron.at(i),2)+pow(PUErrElectron.at(i),2)+pow(trgSFErrElectron.at(i),2)+pow(IdSFErrElectron.at(i),2)+pow(recoSFErrElectron.at(i),2)+pow(PDFErrElectron.at(i),2)));
+                totalPtErrElectron.push_back(sqrt(pow(ScaleErrElectron.at(i),2)+pow(AlphaSErrElectron.at(i),2)+pow(meanpterr_dataElectron.at(i),2)+pow(unfoldsysErrElectron.at(i),2)+pow(PUErrElectron.at(i),2)+pow(trgSFErrElectron.at(i),2)+pow(IdSFErrElectron.at(i),2)+pow(recoSFErrElectron.at(i),2)));
                 totalPtSysElectron.push_back(sqrt(pow(ScaleErrElectron.at(i),2)+pow(AlphaSErrElectron.at(i),2)));
         }
 
@@ -1934,11 +2000,19 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
                 totalPtSysMC.push_back(sqrt(pow(ScaleErrMC.at(i),2)));
         }
 
+        TH1* hunfolded_massMuon = unfold_massMuon->GetOutput("hunfolded_massMuon",0,0,"*[UO]",kTRUE);
+        TH1 *histMCTruth_massMuon=unfold_massMuon->GetBias("histMCTruth_massMuon",0,0,"*[UO]",kTRUE);
+
+        TH1* hunfolded_massMuon_MG = unfold_massMuon_MG->GetOutput("hunfolded_massMuon",0,0,"*[UO]",kTRUE);
+
 
         // get average mass
         //
         getAveragesMass(meanmass_dataElectron, meanmasserr_dataElectron, hunfolded_massElectron);
         getAveragesMass(meanmass_mcElectron, meanmasserr_mcElectron, histMCTruth_massElectron);
+
+        getAveragesMass(meanmass_dataElectron_MG, meanmasserr_dataElectron_MG, hunfolded_massElectron_MG);
+        getAveragesMass(meanmass_dataMuon_MG, meanmasserr_dataMuon_MG, hunfolded_massMuon_MG);
 
         vector<Double_t> ScaleMassErrElectron;
         getAveragesSysMass(ScaleMassErrElectron, "Scale", (int)9, unfold_massElectron);
@@ -1954,8 +2028,10 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         }
 
 
-        TH1* hunfolded_massMuon = unfold_massMuon->GetOutput("hunfolded_massMuon",0,0,"*[UO]",kTRUE);
-        TH1 *histMCTruth_massMuon=unfold_massMuon->GetBias("histMCTruth_massMuon",0,0,"*[UO]",kTRUE);
+        //TH1* hunfolded_massMuon = unfold_massMuon->GetOutput("hunfolded_massMuon",0,0,"*[UO]",kTRUE);
+        //TH1 *histMCTruth_massMuon=unfold_massMuon->GetBias("histMCTruth_massMuon",0,0,"*[UO]",kTRUE);
+
+        //TH1* hunfolded_massMuon_MG = unfold_massMuon_MG->GetOutput("hunfolded_massMuon",0,0,"*[UO]",kTRUE);
 
         vector<Double_t> meanmass_dataMuon, meanmasserr_dataMuon;
         vector<Double_t> meanmass_mcMuon, meanmasserr_mcMuon;
@@ -1988,14 +2064,15 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         vector<Double_t> recoSFErrMuon;
         getAveragesSysPt(recoSFErrMuon, "recoSF", (int)2, unfold_ptMuon);
 
-        vector<Double_t> PDFErrMuon;
-        getAveragesSysPt(PDFErrMuon, "PDFerror", (int)100, unfold_ptMuon);
+        //vector<Double_t> PDFErrMuon;
+        //getAveragesSysPt(PDFErrMuon, "PDFerror", (int)100, unfold_ptMuon);
 
         vector<Double_t> totalPtSysMuon;
         vector<Double_t> totalPtErrMuon;
         for(unsigned int i=0;i<ScaleErrMuon.size();i++){
                 //totalPtErrMuon.push_back(sqrt(pow(ScaleErrMuon.at(i),2)+pow(AlphaSErrMuon.at(i),2)+pow(meanpterr_dataMuon.at(i),2)));
-                totalPtErrMuon.push_back(sqrt(pow(ScaleErrMuon.at(i),2)+pow(AlphaSErrMuon.at(i),2)+pow(meanpterr_dataMuon.at(i),2)+pow(unfoldsysErrMuon.at(i),2)+pow(PUErrMuon.at(i),2)+pow(trgSFErrMuon.at(i),2)+pow(IdSFErrMuon.at(i),2)+pow(recoSFErrMuon.at(i),2)+pow(PDFErrMuon.at(i),2)));
+                //totalPtErrMuon.push_back(sqrt(pow(ScaleErrMuon.at(i),2)+pow(AlphaSErrMuon.at(i),2)+pow(meanpterr_dataMuon.at(i),2)+pow(unfoldsysErrMuon.at(i),2)+pow(PUErrMuon.at(i),2)+pow(trgSFErrMuon.at(i),2)+pow(IdSFErrMuon.at(i),2)+pow(recoSFErrMuon.at(i),2)+pow(PDFErrMuon.at(i),2)));
+                totalPtErrMuon.push_back(sqrt(pow(ScaleErrMuon.at(i),2)+pow(AlphaSErrMuon.at(i),2)+pow(meanpterr_dataMuon.at(i),2)+pow(unfoldsysErrMuon.at(i),2)+pow(PUErrMuon.at(i),2)+pow(trgSFErrMuon.at(i),2)+pow(IdSFErrMuon.at(i),2)+pow(recoSFErrMuon.at(i),2)));
                 totalPtSysMuon.push_back(sqrt(pow(ScaleErrMuon.at(i),2)+pow(AlphaSErrMuon.at(i),2)));
         }
 
@@ -2044,8 +2121,18 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         grUnfolded->GetXaxis()->SetTitle("Average Mass (GeV)");
         setYaxisGraph(grUnfolded);
         setXaxisGraph(grUnfolded);
-        //grUnfolded->GetYaxis()->SetRangeUser(0.,30.);
+        //grUnfolded->GetYaxis()->SetRangeUser(10.,30.);
         //grUnfolded->GetXaxis()->SetLimits(30.,800.);
+
+        TGraphErrors *grUnfolded_MG = new TGraphErrors(5, &meanmass_dataElectron_MG[0], &meanpt_dataElectron_MG[0], &meanmasserr_dataElectron_MG[0], &meanpterr_dataElectron_MG[0]);
+        //TGraphErrors *grUnfolded = new TGraphErrors(5, &meanmass_dataElectron[0], &meanpt_dataElectron[0], &totalMassErrElectron[0], &meanpterr_dataElectron[0]);
+        grUnfolded_MG->SetLineColor(kRed);
+        grUnfolded_MG->SetMarkerColor(kRed);
+        grUnfolded_MG->SetMarkerStyle(24);
+        grUnfolded_MG->SetMarkerSize(1.2);
+        grUnfolded_MG->SetLineStyle(1);
+        grUnfolded_MG->SetLineWidth(1);
+        grUnfolded_MG->Draw("samepe");
 
         TGraphErrors *grUnfoldedMuon = new TGraphErrors(5, &meanmass_dataMuon[0], &meanpt_dataMuon[0], &totalMassErrMuon[0], &totalPtErrMuon[0]);
         //TGraphErrors *grUnfoldedMuon = new TGraphErrors(5, &meanmass_dataMuon[0], &meanpt_dataMuon[0], &totalMassErrMuon[0], &meanpterr_dataMuon[0]);
@@ -2056,6 +2143,16 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
         grUnfoldedMuon->SetLineStyle(1);
         grUnfoldedMuon->SetLineWidth(1);
         grUnfoldedMuon->Draw("samepe");
+
+        TGraphErrors *grUnfoldedMuon_MG = new TGraphErrors(5, &meanmass_dataMuon_MG[0], &meanpt_dataMuon_MG[0], &meanmasserr_dataMuon_MG[0], &meanpterr_dataMuon_MG[0]);
+        //TGraphErrors *grUnfoldedMuon = new TGraphErrors(5, &meanmass_dataMuon[0], &meanpt_dataMuon[0], &totalMassErrMuon[0], &meanpterr_dataMuon[0]);
+        grUnfoldedMuon_MG->SetLineColor(kBlue);
+        grUnfoldedMuon_MG->SetMarkerColor(kBlue);
+        grUnfoldedMuon_MG->SetMarkerStyle(25);
+        grUnfoldedMuon_MG->SetMarkerSize(1.2);
+        grUnfoldedMuon_MG->SetLineStyle(1);
+        grUnfoldedMuon_MG->SetLineWidth(1);
+        grUnfoldedMuon_MG->Draw("samepe");
 
 	TGraphErrors *grMC = new TGraphErrors(5, &meanmass_mcElectron[0], &meanpt_mcElectron[0], &meanmasserr_mcElectron[0], &totalPtErrMC[0]);
 	//TGraphErrors *grMC = new TGraphErrors(5, &meanmass_mcElectron[0], &meanpt_mcElectron[0], &meanmasserr_mcElectron[0], &meanpterr_mcElectron[0]);
@@ -2096,7 +2193,7 @@ void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfo
 
 }
 
-void drawSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TString channel, TUnfoldDensity* unfold_pt_up, TUnfoldDensity* unfold_pt_dn){
+void drawSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TString channel){
 
         gROOT->SetBatch();
 
@@ -2142,8 +2239,8 @@ void drawSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity
         vector<Double_t> IsoErr;
         getAveragesSysPt(IsoErr, "IsoSF", (int)2, unfold_pt, true);
 
-        vector<Double_t> PDFErr;
-        getAveragesSysPt(PDFErr, "PDFerror", (int)100, unfold_pt, true);
+        //vector<Double_t> PDFErr;
+        //getAveragesSysPt(PDFErr, "PDFerror", (int)100, unfold_pt, true);
 
         // get average mass
         //
@@ -2165,7 +2262,7 @@ void drawSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity
 	 TH1* hrecoSFError = new TH1D("recosf","recosf",5,0,5);
 	 TH1* hIdSFError = new TH1D("idsf","idsf",5,0,5);
 	 TH1* hIsoSFError = new TH1D("isosf","isosf",5,0,5);
-	 TH1* hPDFError = new TH1D("pdf","pdf",5,0,5);
+	 //TH1* hPDFError = new TH1D("pdf","pdf",5,0,5);
 	 TH1* hStaticError = new TH1D("static","static",5,0,5);
 	
 	 for(int i=0; i<5;i++){
@@ -2177,7 +2274,7 @@ void drawSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity
 		hrecoSFError->SetBinContent(i+1, recoSFErr.at(i));
 		hIdSFError->SetBinContent(i+1, IdErr.at(i));
 		hIsoSFError->SetBinContent(i+1, IsoErr.at(i));
-		hPDFError->SetBinContent(i+1, PDFErr.at(i));
+		//hPDFError->SetBinContent(i+1, PDFErr.at(i));
 		hUnfoldingError->SetBinContent(i+1, unfoldsysErr.at(i));
 	 }
 	
@@ -2243,9 +2340,9 @@ void drawSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity
 	 hUnfoldingError->SetLineColor(kBlack);
 	 hUnfoldingError->SetLineWidth(2);
 
-	 hPDFError->Draw("histsame");
-	 hPDFError->SetLineWidth(2);
-	 hPDFError->SetLineColor(kMagenta);
+	 //hPDFError->Draw("histsame");
+	 //hPDFError->SetLineWidth(2);
+	 //hPDFError->SetLineColor(kMagenta);
 
 	 TLegend* legSys = new TLegend(0.25, 0.65, 0.9, 0.9,"","brNDC");
 	 legSys->SetNColumns(2);
@@ -2253,7 +2350,7 @@ void drawSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity
 	 legSys->SetFillStyle(0);
 	 legSys->SetBorderSize(0);
 	
-	 legSys->AddEntry(hPDFError, "PDF error", "l");
+	 //legSys->AddEntry(hPDFError, "PDF error", "l");
 	 legSys->AddEntry(hScaleSysError, "Scale", "l");
 	 legSys->AddEntry(hAlphaSSysError, "#alpha_{s}", "l");
 	 legSys->AddEntry(hUnfoldingError, "Unfolding", "l");
@@ -2268,6 +2365,8 @@ void drawSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity
 	 CMS_lumi( c2, 4, 0 );
 	 c2->cd();
 	 c2->SaveAs(outpdf);
+
+	 delete c2;
 	
 }
 
@@ -2306,8 +2405,8 @@ void drawMCSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensi
         vector<Double_t> IsoErr;
         getAveragesSysPtMC(IsoErr, "IsoSF", (int)2, unfold_pt, channel, true);
 
-        vector<Double_t> PDFErr;
-        getAveragesSysPtMC(PDFErr, "PDFerror", (int)100, unfold_pt, channel, true);
+        //vector<Double_t> PDFErr;
+        //getAveragesSysPtMC(PDFErr, "PDFerror", (int)100, unfold_pt, channel, true);
 
 	TH1* hScaleSysError = new TH1D("scale","scale",5,0,5);
 	TH1* hAlphaSSysError = new TH1D("alphas","alphas",5,0,5);
@@ -2317,7 +2416,7 @@ void drawMCSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensi
 	TH1* hrecoSFError = new TH1D("recosf","recosf",5,0,5);
 	TH1* hIdSFError = new TH1D("idsf","idsf",5,0,5);
 	TH1* hIsoSFError = new TH1D("isosf","isosf",5,0,5);
-	TH1* hPDFError = new TH1D("pdf","pdf",5,0,5);
+	//TH1* hPDFError = new TH1D("pdf","pdf",5,0,5);
 	TH1* hStaticError = new TH1D("static","static",5,0,5);
 	
 	for(int i=0; i<5;i++){
@@ -2329,7 +2428,7 @@ void drawMCSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensi
 	       hrecoSFError->SetBinContent(i+1, recoSFErr.at(i));
 	       hIdSFError->SetBinContent(i+1, IdErr.at(i));
 	       hIsoSFError->SetBinContent(i+1, IsoErr.at(i));
-	       hPDFError->SetBinContent(i+1, PDFErr.at(i));
+	       //hPDFError->SetBinContent(i+1, PDFErr.at(i));
 	       hUnfoldingError->SetBinContent(i+1, unfoldsysErr.at(i));
 	}
 	
@@ -2387,8 +2486,8 @@ void drawMCSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensi
 	hUnfoldingError->Draw("histsame");
 	hUnfoldingError->SetLineColor(9);
 
-	hPDFError->Draw("histsame");
-	hPDFError->SetLineColor(40);
+	//hPDFError->Draw("histsame");
+	//hPDFError->SetLineColor(40);
 
 	TLegend* legSys = new TLegend(0.25, 0.6, 0.7, 0.9,"","brNDC");
 	legSys->SetNColumns(2);
@@ -2404,7 +2503,7 @@ void drawMCSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensi
 	legSys->AddEntry(hrecoSFError, "Reco SF", "l");
 	legSys->AddEntry(htrgSFError, "Trigger SF", "l");
 	legSys->AddEntry(hPUError, "Pileup reweight", "l");
-	legSys->AddEntry(hPDFError, "PDF", "l");
+	//legSys->AddEntry(hPDFError, "PDF", "l");
 	legSys->Draw();
 	
 	CMS_lumi( c2, 4, 0 );

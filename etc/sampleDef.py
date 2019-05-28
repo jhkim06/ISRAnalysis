@@ -28,8 +28,9 @@ myinputDir_2017Legacy = '/home/jhkim/data/Data/Legacy/2017/'
 ISR2016Legacy = {
     'DATA_electron'     : isrSample('DoubleEGamma',  myinputDir_2016Legacy + 'DoubleEG_All.root ', isMC = False, isSig = False),
     'DATA_muon'     : isrSample('DoubleMuon',  myinputDir_2016Legacy + 'DoubleMuon_All.root', isMC = False, isSig = False),
-    'DY'       : isrSample('DYtoEE' ,       myinputDir_2016Legacy + 'DYJetsToLL_M-50.root', isMC = True, isSig = True, isInc = True),
-    'DY10to50' : isrSample('DYtoEE10to50' , myinputDir_2016Legacy + 'DYJetsToLL_M-10to50.root', isMC = True, isSig = True, isInc = True),
+    #'DY'       : isrSample('DYtoEE' ,       myinputDir_2016Legacy + 'DYJetsToLL_M-50.root', isMC = True, isSig = True, isInc = True),
+    'DY'       : isrSample('DYtoEE' ,       myinputDir_2016Legacy + 'DYJetsToLL_MG_M-50.root', isMC = True, isSig = True, isInc = True),
+    'DY10to50' : isrSample('DYtoEE10to50' , myinputDir_2016Legacy + 'DYJetsToLL_MG_M-10to50.root', isMC = True, isSig = True, isInc = True),
     'TTbar'      : isrSample('TTbar' ,          myinputDir_2016Legacy + 'TT.root', isMC = True, isSig = False),
     'VV'      : isrSample('VV' ,          myinputDir_2016Legacy + 'VV.root', isMC = True, isSig = False),
     'Wjets'      : isrSample('Wjets' ,          myinputDir_2016Legacy + 'Wjets.root', isMC = True, isSig = False),

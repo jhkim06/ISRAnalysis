@@ -41,19 +41,19 @@ void getAveragesSysPtMC(vector<Double_t> &err, TString sysName, int sysSize, TUn
 void getRatioSys(TUnfoldDensity* unfold_pt, TString sysName, int sysSize, TH1 *sysRatio);
 void getRatioSysMass(TUnfoldDensity* unfold_mass, TString sysName, int sysSize, TH1 *sysRatio);
 void drawUnfoldedPtDistWithSys(TString outpdf, TUnfoldDensity* unfold_pt, TString sysName, int sysSize);
-void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TFile *filein, TString channel);
+void drawRatio(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TString channel = "electron");
 void drawCombinedISR(TString outpdf, TUnfoldDensity* unfold_pt2016, TUnfoldDensity* unfold_mass2016, TUnfoldDensity* unfold_pt2017, TUnfoldDensity* unfold_mass2017);
-void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfoldDensity* unfold_massElectron, TUnfoldDensity* unfold_ptMuon, TUnfoldDensity* unfold_massMuon);
-void drawISRfit(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TFile *filein);
-void drawMassRatio(TString outpdf, TUnfoldDensity* unfold, TFile *filein);
+void drawEMuCombinedISR(TString outpdf, TUnfoldDensity* unfold_ptElectron, TUnfoldDensity* unfold_massElectron, TUnfoldDensity* unfold_ptMuon, TUnfoldDensity* unfold_massMuon, TUnfoldDensity* unfold_ptElectron_MG = NULL, TUnfoldDensity* unfold_massElectron_MG = NULL, TUnfoldDensity* unfold_ptMuon_MG = NULL, TUnfoldDensity* unfold_massMuon_MG = NULL);
+void drawISRfit(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass);
+void drawMassRatio(TString outpdf, TUnfoldDensity* unfold);
 void drawPtReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets, TFile *fqcd, TString channel);
 void drawMassReco(TString outpdf, TString postfix, TFile *fdata, TFile *fDYsig, TFile *fDYbkg, TFile *fTTbar, TFile *fVV, TFile *fWjets, TFile *fqcd, TString channel);
-void responseM(TString outpdf, TUnfoldDensity* unfold);
+void responseM(TString outpdf, TUnfoldDensity* unfold, TString channel = "electron", TString var = "Pt");
 void efficiency(TString outpdf, TUnfoldDensity* unfold);
 
 TUnfoldDensityV17* getSysMatrix(TString var, TString sysName, TString channel);
-void sysMCErrRatio(TUnfoldDensity* unfold_pt, TH1* sysRatio, TString var, TString sysName, int size, TString channel);
-void drawSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TString channel, TUnfoldDensity* unfold_pt_up = NULL, TUnfoldDensity* unfold_pt_dn = NULL);
+void sysMCErrRatio(TUnfoldDensity* unfold_pt, TH1* sysRatio, TString sysName, int size, TString channel);
+void drawSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TString channel);
 void drawMCSystematicISR(TString outpdf, TUnfoldDensity* unfold_pt, TUnfoldDensity* unfold_mass, TString channel);
 
 #endif
