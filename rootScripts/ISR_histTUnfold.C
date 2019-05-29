@@ -1,5 +1,11 @@
 #include "ISR_histTUnfold.h"
 
+void histTUnfold::SetsysMap(TString sysName, int nVariations){
+
+	sysMaps.insert(std::pair<TString, int>(sysName, nVariations));
+}
+
+
 void histTUnfold::CreateHistMap(int which_unfold, TString hname, TString postfix){
 
 
@@ -119,6 +125,72 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
 
         delete tree;
         //fileout->cd();
+}
+
+Double_t histTUnfold::GetSysWeights(TString sysName, bool isReco, int nthSys){
+
+	if(sysName == "PU"){
+		if(isReco){
+			if(nthSys = 0) return weightRec*bTagReweight*PUweight_Up/PUweight;
+			if(nthSys = 1) return weightRec*bTagReweight*PUweight_Dn/PUweight;
+		}
+		else{
+			return weightGen;
+		}
+	}// PU
+
+        else if(sysName == "trgSF"){
+                if(isReco){
+                        if(nthSys = 0) return weightRec*bTagReweight*trgSF_Up/trgSF;
+                        if(nthSys = 1) return weightRec*bTagReweight*trgSF_Dn/trgSF;
+                }
+                else{
+                        return weightGen;
+                }
+        }// trgSF
+
+        else if(sysName == "recoSF"){
+                if(isReco){
+                        if(nthSys = 0) return weightRec*bTagReweight*recoSF_Up/recoSF;
+                        if(nthSys = 1) return weightRec*bTagReweight*recoSF_Dn/recoSF;
+                }   
+                else{
+                        return weightGen;
+                }   
+        }// recoSF
+
+        else if(sysName == "IdSF"){
+                if(isReco){
+                        if(nthSys = 0) return weightRec*bTagReweight*IdSF_Up/IdSF;
+                        if(nthSys = 1) return weightRec*bTagReweight*IdSF_Dn/IdSF;
+                }   
+                else{
+                        return weightGen;
+                }   
+        }// IdSF
+
+        else if(sysName == "IsoSF"){
+                if(isReco){
+                        if(nthSys = 0) return weightRec*bTagReweight*IsoSF_Up/IsoSF;
+                        if(nthSys = 1) return weightRec*bTagReweight*IsoSF_Dn/IsoSF;
+                }   
+                else{
+                        return weightGen;
+                }   
+        }// IsoSF
+
+        else if(sysName == "AlphaS"){
+                if(isReco){
+                        return weightRec*bTagReweight*AlphaS->at(nthSys);
+                }   
+                else{
+                        return weightGen*AlphaS->at(nthSys);
+                }   
+        }// AlphaS
+	else{
+		return 1.;
+        }
+
 }
 
 void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, TString channel, Double_t temp_kfactor){ // TODO add list of systematics
@@ -342,88 +414,25 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                         FillMigration2DM( ptOrMass::MASS, selected, "mass_PDFerror_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
                    }
 
-                   // alpha s systematic
-                   for(unsigned int i=0; i<AlphaS->size(); i++){
-                        TString is;
-                        is.Form("%d", i);
+		   // loop to create systematic response matrix
+		   std::map<TString, int>::iterator it = sysMaps.begin();
+		   while(it != sysMaps.end()){
+			if(it->second == 2){ // FIXME
 
-                        FillMigration2DM( ptOrMass::PT, selected, "pt_AlphaS_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*AlphaS->at(i));
-                        FillMigration2DM( ptOrMass::MASS, selected, "mass_AlphaS_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*AlphaS->at(i));
-                   }
+			   for(int nSys = 0; nSys < it->second; nSys++){
+                               TString is;
+                               is.Form("%d", nSys);
 
-                   // PU
-                   for(unsigned int i=0; i<2; i++){
-                        TString is;
-                        is.Form("%d", i);
+			       Double_t wreco = GetSysWeights(it->first, true,  nSys);
+			       Double_t wgen  = GetSysWeights(it->first, false, nSys);
 
-                        if(i==0){
-                           FillMigration2DM( ptOrMass::PT, selected, "pt_PU_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Up/PUweight, weightGen);
-                           FillMigration2DM( ptOrMass::MASS, selected, "mass_PU_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Up/PUweight, weightGen);
-                        }
-                        else{
-                           FillMigration2DM( ptOrMass::PT, selected, "pt_PU_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Dn/PUweight, weightGen);
-                           FillMigration2DM( ptOrMass::MASS, selected, "mass_PU_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Dn/PUweight, weightGen);
-                        }
-                   }
-                   // trgSF
-                   for(unsigned int i=0; i<2; i++){
-                        TString is;
-                        is.Form("%d", i);
+                               FillMigration2DM( ptOrMass::PT,  selected,   "pt_"  + it->first+"_"+is,  diptrec, dimassrec, diptgen, dimassgen, wreco, wgen);
+                               FillMigration2DM( ptOrMass::MASS, selected,  "mass_"+ it->first+"_"+is,  diptrec, dimassrec, diptgen, dimassgen, wreco, wgen);
 
-                        if(i==0){
-                           FillMigration2DM( ptOrMass::PT, selected, "pt_trgSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Up/trgSF, weightGen);
-                           FillMigration2DM( ptOrMass::MASS, selected, "mass_trgSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Up/trgSF, weightGen);
-                        }
-                        else{
-                           FillMigration2DM( ptOrMass::PT, selected, "pt_trgSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Dn/trgSF, weightGen);
-                           FillMigration2DM( ptOrMass::MASS, selected, "mass_trgSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Dn/trgSF, weightGen);
-                        }
-                   }
-
-                   // recoSF
-                   for(unsigned int i=0; i<2; i++){
-                        TString is;
-                        is.Form("%d", i);
-
-                        if(i==0){
-                           FillMigration2DM( ptOrMass::PT, selected, "pt_recoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Up/recoSF, weightGen);
-                           FillMigration2DM( ptOrMass::MASS, selected, "mass_recoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Up/recoSF, weightGen);
-                        }
-                        else{
-                           FillMigration2DM( ptOrMass::PT, selected, "pt_recoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Dn/recoSF, weightGen);
-                           FillMigration2DM( ptOrMass::MASS, selected, "mass_recoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Dn/recoSF, weightGen);
-                        }
-                   }
-
-                   // IdSF
-                   for(unsigned int i=0; i<2; i++){
-                        TString is;
-                        is.Form("%d", i);
-
-                        if(i==0){
-                           FillMigration2DM( ptOrMass::PT, selected, "pt_IdSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Up/IdSF, weightGen);
-                           FillMigration2DM( ptOrMass::MASS, selected, "mass_IdSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Up/IdSF, weightGen);
-                        }
-                        else{
-                           FillMigration2DM( ptOrMass::PT, selected, "pt_IdSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Dn/IdSF, weightGen);
-                           FillMigration2DM( ptOrMass::MASS, selected, "mass_IdSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Dn/IdSF, weightGen);
-                        }
-                   }
-
-                   // IsoSF
-                   for(unsigned int i=0; i<2; i++){
-                        TString is;
-                        is.Form("%d", i);
-
-                        if(i==0){
-                           FillMigration2DM( ptOrMass::PT, selected, "pt_IsoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Up/IsoSF, weightGen);
-                           FillMigration2DM( ptOrMass::MASS, selected, "mass_IsoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Up/IsoSF, weightGen);
-                        }
-                        else{
-                           FillMigration2DM( ptOrMass::PT, selected, "pt_IsoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Dn/IsoSF, weightGen);
-                           FillMigration2DM( ptOrMass::MASS, selected, "mass_IsoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Dn/IsoSF, weightGen);
-                        }
-                   }
+ 		           }
+ 			}
+                        it++;
+ 		   }// loop for systematic
 
                }// DY to ee or mumu events only
                //

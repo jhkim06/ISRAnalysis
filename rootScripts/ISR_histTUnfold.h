@@ -36,6 +36,8 @@ private:
   	std::map<TString, TH1*> histMaps; 
 	// response matrix
   	std::map<TString, TH2*> hist2DMaps;
+	// map for systematic sources: systematic name, the number of systematic variations
+  	std::map<TString, int > sysMaps;
 
 	TTree *tree;
 
@@ -110,6 +112,9 @@ public:
 	// set histograms: get histogram names from python script and create histograms
 	void CreateHistMap(int which_unfold, TString hname, TString postfix = ""); // postfix for DY to tautau events
 	void CreateHist2DMap(int which_unfold, TString hname);
+	void SetsysMap(TString sysName, int nVariations);
+
+	Double_t GetSysWeights(TString sysName, bool isReco, int nthSys);
   	
 	// save histograms into root files  
 	void saveRecoHists(TFile *filein, TFile *fileout1, TString channel); 

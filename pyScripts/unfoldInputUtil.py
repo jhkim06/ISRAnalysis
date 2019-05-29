@@ -85,7 +85,7 @@ def makeSigHists(sample, outputDirectory, channel):
 	sigHists.CreateHistMap(ptOrMassEnum.PT.value, "nominal") 
 	sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal") 
 	
-	# PU
+	# 
 	for i in range(2):
 		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "PU_"+str(i)) 
 		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "PU_"+str(i)) 
@@ -102,9 +102,17 @@ def makeSigHists(sample, outputDirectory, channel):
 		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "IsoSF_"+str(i)) 
 		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "IsoSF_"+str(i)) 
 
+	sigHists.SetsysMap("PU", 2);
+	sigHists.SetsysMap("trgSF", 2);
+	sigHists.SetsysMap("recoSF", 2);
+	sigHists.SetsysMap("IdSF", 2);
+	sigHists.SetsysMap("IsoSF", 2);
+        
 	# unfolding systematic using Z pt correction (need to be checked)
 	sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "unfoldsys_0") 
 	sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "unfoldsys_0") 
+
+	sigHists.SetsysMap("unfoldsys", 1);
 
         for i in range(19):
 		if i < 9:
@@ -114,22 +122,28 @@ def makeSigHists(sample, outputDirectory, channel):
 			sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "FSRDR1p"+str((i+1)%10)) 
 			sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "FSRDR1p"+str((i+1)%10)) 
 
+	sigHists.SetsysMap("FSRDR", 19);
 
 	# AlphaS systematic
 	for i in range(2):
 		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "AlphaS_"+str(i)) 
 		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "AlphaS_"+str(i)) 
 
+	sigHists.SetsysMap("AlphaS", 2);
+
 	# Scale systematic
 	for i in range(9):
 		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "Scale_"+str(i)) 
 		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "Scale_"+str(i)) 
+
+	sigHists.SetsysMap("Scale", 9);
 
 	# PDF error
         for i in range(100):
                 sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "PDFerror_"+str(i))
                 sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "PDFerror_"+str(i))
 
+	sigHists.SetsysMap("PDFerror", 100);
 
         if sample.isInc: # for DY to tautau, make one more histogram
 	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
