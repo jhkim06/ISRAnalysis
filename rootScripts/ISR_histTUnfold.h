@@ -13,6 +13,9 @@
 #include "TUnfoldBinningXML.h"
 #include "TUnfoldBinning.h"
 
+#include "TLorentzVector.h"
+using namespace std;
+
 const int pt_unfold = 1;
 const int mass_unfold = 2;
 
@@ -31,6 +34,8 @@ private:
 
   	std::map<TString, TH1*> histMaps;
   	std::map<TString, TH2*> hist2DMaps;
+
+     	// weightMaps
 public:
 
   	std::map<TString, Double_t> sysNamesWeights;
@@ -48,8 +53,11 @@ public:
 	inline TUnfoldBinning* GetMassBinningGen(){ return massBinningGen;}
 
 	// set histograms: get histogram names from python script and create histograms
-	void CreateHistMap(const int which_unfold, TString hname);
+	void CreateHistMap(const int which_unfold, TString hname, TString postfix = "");
 	void CreateHist2DMap(const int which_unfold, TString hname);
+ 
+	void saveRecoHists(TFile *filein, TFile *fileout1, TString channel); 
+        void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, TString channel, Double_t temp_kfactor);
 
   	void FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen, Double_t corr = 1.);
   	void FillHistogram(const int which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco);

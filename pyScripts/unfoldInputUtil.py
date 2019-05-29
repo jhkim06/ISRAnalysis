@@ -31,8 +31,8 @@ def makeRecoHists(sample, outputDirectory, channel):
 	vrecoHists.push_back(test)
 	vrecoHists.at(0).SetPtBinningRec()
 	vrecoHists.at(0).SetMassBinningRec()
-	vrecoHists.at(0).CreateHistMap(1, "test")
-	vrecoHists.at(0).CreateHistMap(2, "test")
+	vrecoHists.at(0).CreateHistMap(1, "test") # 1: pt
+	vrecoHists.at(0).CreateHistMap(2, "test") # 2: mass
 
 	recoHists.SetPtBinningRec()
 	recoHists.SetMassBinningRec()
@@ -44,7 +44,7 @@ def makeRecoHists(sample, outputDirectory, channel):
 
 		infile = rt.TFile(filepath,'r')
 		print filepath
-		rt.saveRecoHists(infile, outfile, recoHists, channel)
+		recoHists.saveRecoHists(infile, outfile, channel)
 
                 del infile
 
@@ -57,7 +57,7 @@ def makeRecoHists(sample, outputDirectory, channel):
 
 def makeSigHists(sample, outputDirectory, channel):
         rt.gROOT.SetBatch()
-        print "####################### makeRecoHists #################################"
+        print "####################### makeSigHists #################################"
 
         outDic = {}
 
@@ -68,7 +68,6 @@ def makeSigHists(sample, outputDirectory, channel):
         outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "sig")
         # need to create histogram before the file loop to save one histogram from the input files
         sigHists  = rt.histTUnfold(rt.std.map("TString, TH1*")(), rt.std.map("TString, TH2*")(), sample.isInc) 
-        recoHists = rt.histTUnfold(rt.std.map("TString, TH1*")())
 
         sigHists.SetPtBinningRec()
         sigHists.SetMassBinningRec()
@@ -129,11 +128,11 @@ def makeSigHists(sample, outputDirectory, channel):
 	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
         	outDic[sample.name+"tau"] = fHistDef.inputfHists(sample.name+"tau", outputDirectory + sample.name+"tau.root", "bkg")
 
-        	recoHists.SetPtBinningRec()
-        	recoHists.SetMassBinningRec()
+        	sigHists.SetPtBinningRec()
+        	sigHists.SetMassBinningRec()
 
-	        recoHists.CreateHistMap(1, "nominal") 
-	        recoHists.CreateHistMap(2, "nominal") 
+	        sigHists.CreateHistMap(1, "nominal", "_tau") 
+	        sigHists.CreateHistMap(2, "nominal", "_tau") 
 
         for filepath in sample.path:	
 
@@ -144,7 +143,7 @@ def makeSigHists(sample, outputDirectory, channel):
 		#   print "this is M-10to50 DY sample"
                 #   temp_kfactor = 6225.42/5765.4
 		print "temp_kfactor: " + str(temp_kfactor)
-		rt.saveSigHists(infile, outfile, outfile_, sigHists, recoHists, channel, temp_kfactor)
+		sigHists.saveSigHists(infile, outfile, outfile_, channel, temp_kfactor)
 
                 del infile
 
@@ -156,7 +155,6 @@ def makeSigHists(sample, outputDirectory, channel):
         	outfile_.Delete()
 
         del sigHists
-        del recoHists
 
 	return outDic
 def makeMigrationM():
