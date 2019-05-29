@@ -1,55 +1,56 @@
 #include "ISR_histTUnfold.h"
 
-void histTUnfold::CreateHistMap(const int which_unfold, TString hname, TString postfix){
+void histTUnfold::CreateHistMap(int which_unfold, TString hname, TString postfix){
 
-        if(which_unfold == pt_unfold){
+
+        if(which_unfold == ptOrMass::PT){
                  histMaps.insert(std::pair<TString, TH1*>("pt_"+hname+postfix, ptBinningRec->CreateHistogram("hPtRec"+hname)));
         }
 
-        if(which_unfold == mass_unfold){
+        if(which_unfold == ptOrMass::MASS){
                  histMaps.insert(std::pair<TString, TH1*>("mass_"+hname+postfix, massBinningRec->CreateHistogram("hMassRec"+hname)));
         }
 }
 
-void histTUnfold::CreateHist2DMap(const int which_unfold, TString hname){
+void histTUnfold::CreateHist2DMap(int which_unfold, TString hname){
 
-	if(which_unfold == pt_unfold){
+	if(which_unfold == ptOrMass::PT){
 		 hist2DMaps.insert(std::pair<TString, TH2*>("pt_"+hname, TUnfoldBinning::CreateHistogramOfMigrations(ptBinningGen, ptBinningRec,"hmcPtGenRec" + hname)));
 	}
 
-	if(which_unfold == mass_unfold){
+	if(which_unfold == ptOrMass::MASS){
 		 hist2DMaps.insert(std::pair<TString, TH2*>("mass_"+hname, TUnfoldBinning::CreateHistogramOfMigrations(massBinningGen, massBinningRec,"hmcMassGenRec" + hname)));
 	}
 }
 
-void histTUnfold::FillHistogram(const int which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco){
+void histTUnfold::FillHistogram(ptOrMass which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco){
 
-	if(which_unfold == pt_unfold){
+	if(which_unfold == ptOrMass::PT){
 		(histMaps.find(hname)->second)->Fill(ptBinningRec->GetGlobalBinNumber(recoPt, recoMass),  wreco);
 	}
 
-	if(which_unfold == mass_unfold){
+	if(which_unfold == ptOrMass::MASS){
 		if(recoPt < 100.) (histMaps.find(hname)->second)->Fill(massBinningRec->GetGlobalBinNumber(recoMass),  wreco);
 	}
 }
 
-void histTUnfold::FillMigration2DM(const int which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen, Double_t corr){
+void histTUnfold::FillMigration2DM(ptOrMass which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen, Double_t corr){
 
 	int binZero=0;
 
 	if(selected){
-		if( which_unfold == pt_unfold){
+		if( which_unfold == ptOrMass::PT){
 			(hist2DMaps.find(hname)->second)->Fill(ptBinningGen->GetGlobalBinNumber(truthPt, truthMass), ptBinningRec->GetGlobalBinNumber(recoPt, RecoMass), wgen*wreco*corr);
 			(hist2DMaps.find(hname)->second)->Fill(ptBinningGen->GetGlobalBinNumber(truthPt, truthMass), binZero, wgen*(1.-wreco));
 		}
-                if( which_unfold == mass_unfold){
+                if( which_unfold == ptOrMass::MASS){
                         if(recoPt < 100.) (hist2DMaps.find(hname)->second)->Fill(massBinningGen->GetGlobalBinNumber(truthMass), massBinningRec->GetGlobalBinNumber(RecoMass), wgen*wreco*corr);
                         if(recoPt < 100.) (hist2DMaps.find(hname)->second)->Fill(massBinningGen->GetGlobalBinNumber(truthMass), binZero, wgen*(1.-wreco));
                 }
 	}
 	else{
-		if( which_unfold == pt_unfold) (hist2DMaps.find(hname)->second)->Fill(ptBinningGen->GetGlobalBinNumber(truthPt, truthMass), binZero, wgen);
-		if( which_unfold == mass_unfold) (hist2DMaps.find(hname)->second)->Fill(massBinningGen->GetGlobalBinNumber(truthMass), binZero, wgen);
+		if( which_unfold == ptOrMass::PT) (hist2DMaps.find(hname)->second)->Fill(ptBinningGen->GetGlobalBinNumber(truthPt, truthMass), binZero, wgen);
+		if( which_unfold == ptOrMass::MASS) (hist2DMaps.find(hname)->second)->Fill(massBinningGen->GetGlobalBinNumber(truthMass), binZero, wgen);
 	}
 }
 
@@ -105,9 +106,9 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
            if(isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15){
                  fileout1->cd();
 
-                 FillHistogram(pt_unfold, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight); // read name from histMaps
+                 FillHistogram(ptOrMass::PT, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight); // read name from histMaps
                  // a function to select weight regarding the histogram name
-                 FillHistogram(mass_unfold, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+                 FillHistogram(ptOrMass::MASS, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
            }
 
         }// event loop
@@ -233,8 +234,8 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
               if(isdilep && ispassRec){
                     fileout1->cd();
 
-                    FillHistogram(pt_unfold, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
-                    FillHistogram(mass_unfold, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+                    FillHistogram(ptOrMass::PT, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+                    FillHistogram(ptOrMass::MASS, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
 
               }
            }
@@ -247,15 +248,15 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                    if(DYtautau){
                       fileout2->cd();
 
-                      FillHistogram(pt_unfold, "pt_nominal_tau", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
-                      FillHistogram(mass_unfold, "mass_nominal_tau", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+                      FillHistogram(ptOrMass::PT, "pt_nominal_tau", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+                      FillHistogram(ptOrMass::MASS, "mass_nominal_tau", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
 
                    }
                    else{
                       fileout1->cd();
 
-                      FillHistogram(pt_unfold, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
-                      FillHistogram(mass_unfold, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+                      FillHistogram(ptOrMass::PT, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+                      FillHistogram(ptOrMass::MASS, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
 
                    }
                 }
@@ -302,34 +303,34 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                         TString dr_;
                       if(idrcut<9) {
                         dr_.Form("%d", idrcut+1);
-                        FillMigration2DM( pt_unfold, selected, "pt_FSRDR0p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                        FillMigration2DM( mass_unfold, selected, "mass_FSRDR0p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                        FillMigration2DM( ptOrMass::PT, selected, "pt_FSRDR0p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                        FillMigration2DM( ptOrMass::MASS, selected, "mass_FSRDR0p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
                         }
                         else{
                         dr_.Form("%d", (idrcut+1)%10);
-                        FillMigration2DM( pt_unfold, selected, "pt_FSRDR1p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                        FillMigration2DM( mass_unfold, selected, "mass_FSRDR1p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                        FillMigration2DM( ptOrMass::PT, selected, "pt_FSRDR1p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                        FillMigration2DM( ptOrMass::MASS, selected, "mass_FSRDR1p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
                         }
                    }
 
-                   FillMigration2DM( pt_unfold, selected, "pt_nominal",  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
-                   FillMigration2DM( mass_unfold, selected, "mass_nominal", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+                   FillMigration2DM( ptOrMass::PT, selected, "pt_nominal",  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+                   FillMigration2DM( ptOrMass::MASS, selected, "mass_nominal", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
 
                    // unfolding systematic
                    Double_t ptCorr = hptcorr->GetBinContent(binning_ptRec->GetGlobalBinNumber(diptrec, dimassrec));
                    Double_t massCorr = hmasscorr->GetBinContent(binning_massRec->GetGlobalBinNumber(dimassrec));
                    //std::cout << "massCorr: " << massCorr << " mass: " << dimassrec << " selected " << selected << std::endl;
 
-                   FillMigration2DM( pt_unfold, selected, "pt_unfoldsys_0",  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*ZPtCor);
-                   FillMigration2DM( mass_unfold, selected, "mass_unfoldsys_0", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*ZPtCor);
+                   FillMigration2DM( ptOrMass::PT, selected, "pt_unfoldsys_0",  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*ZPtCor);
+                   FillMigration2DM( ptOrMass::MASS, selected, "mass_unfoldsys_0", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*ZPtCor);
 
                    // scale systematic
                    for(unsigned int i=0; i<Scale->size(); i++){
                         TString is;
                         is.Form("%d", i);
 
-                        FillMigration2DM( pt_unfold, selected, "pt_Scale_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*Scale->at(i));
-                        FillMigration2DM( mass_unfold, selected, "mass_Scale_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*Scale->at(i));
+                        FillMigration2DM( ptOrMass::PT, selected, "pt_Scale_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*Scale->at(i));
+                        FillMigration2DM( ptOrMass::MASS, selected, "mass_Scale_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*Scale->at(i));
                    }
 
                    // PDF error
@@ -337,8 +338,8 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                         TString is;
                         is.Form("%d", i);
 
-                        FillMigration2DM( pt_unfold, selected, "pt_PDFerror_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
-                        FillMigration2DM( mass_unfold, selected, "mass_PDFerror_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
+                        FillMigration2DM( ptOrMass::PT, selected, "pt_PDFerror_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
+                        FillMigration2DM( ptOrMass::MASS, selected, "mass_PDFerror_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
                    }
 
                    // alpha s systematic
@@ -346,8 +347,8 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                         TString is;
                         is.Form("%d", i);
 
-                        FillMigration2DM( pt_unfold, selected, "pt_AlphaS_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*AlphaS->at(i));
-                        FillMigration2DM( mass_unfold, selected, "mass_AlphaS_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*AlphaS->at(i));
+                        FillMigration2DM( ptOrMass::PT, selected, "pt_AlphaS_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*AlphaS->at(i));
+                        FillMigration2DM( ptOrMass::MASS, selected, "mass_AlphaS_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*AlphaS->at(i));
                    }
 
                    // PU
@@ -356,12 +357,12 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                         is.Form("%d", i);
 
                         if(i==0){
-                           FillMigration2DM( pt_unfold, selected, "pt_PU_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Up/PUweight, weightGen);
-                           FillMigration2DM( mass_unfold, selected, "mass_PU_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Up/PUweight, weightGen);
+                           FillMigration2DM( ptOrMass::PT, selected, "pt_PU_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Up/PUweight, weightGen);
+                           FillMigration2DM( ptOrMass::MASS, selected, "mass_PU_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Up/PUweight, weightGen);
                         }
                         else{
-                           FillMigration2DM( pt_unfold, selected, "pt_PU_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Dn/PUweight, weightGen);
-                           FillMigration2DM( mass_unfold, selected, "mass_PU_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Dn/PUweight, weightGen);
+                           FillMigration2DM( ptOrMass::PT, selected, "pt_PU_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Dn/PUweight, weightGen);
+                           FillMigration2DM( ptOrMass::MASS, selected, "mass_PU_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*PUweight_Dn/PUweight, weightGen);
                         }
                    }
                    // trgSF
@@ -370,12 +371,12 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                         is.Form("%d", i);
 
                         if(i==0){
-                           FillMigration2DM( pt_unfold, selected, "pt_trgSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Up/trgSF, weightGen);
-                           FillMigration2DM( mass_unfold, selected, "mass_trgSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Up/trgSF, weightGen);
+                           FillMigration2DM( ptOrMass::PT, selected, "pt_trgSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Up/trgSF, weightGen);
+                           FillMigration2DM( ptOrMass::MASS, selected, "mass_trgSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Up/trgSF, weightGen);
                         }
                         else{
-                           FillMigration2DM( pt_unfold, selected, "pt_trgSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Dn/trgSF, weightGen);
-                           FillMigration2DM( mass_unfold, selected, "mass_trgSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Dn/trgSF, weightGen);
+                           FillMigration2DM( ptOrMass::PT, selected, "pt_trgSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Dn/trgSF, weightGen);
+                           FillMigration2DM( ptOrMass::MASS, selected, "mass_trgSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*trgSF_Dn/trgSF, weightGen);
                         }
                    }
 
@@ -385,12 +386,12 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                         is.Form("%d", i);
 
                         if(i==0){
-                           FillMigration2DM( pt_unfold, selected, "pt_recoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Up/recoSF, weightGen);
-                           FillMigration2DM( mass_unfold, selected, "mass_recoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Up/recoSF, weightGen);
+                           FillMigration2DM( ptOrMass::PT, selected, "pt_recoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Up/recoSF, weightGen);
+                           FillMigration2DM( ptOrMass::MASS, selected, "mass_recoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Up/recoSF, weightGen);
                         }
                         else{
-                           FillMigration2DM( pt_unfold, selected, "pt_recoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Dn/recoSF, weightGen);
-                           FillMigration2DM( mass_unfold, selected, "mass_recoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Dn/recoSF, weightGen);
+                           FillMigration2DM( ptOrMass::PT, selected, "pt_recoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Dn/recoSF, weightGen);
+                           FillMigration2DM( ptOrMass::MASS, selected, "mass_recoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*recoSF_Dn/recoSF, weightGen);
                         }
                    }
 
@@ -400,12 +401,12 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                         is.Form("%d", i);
 
                         if(i==0){
-                           FillMigration2DM( pt_unfold, selected, "pt_IdSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Up/IdSF, weightGen);
-                           FillMigration2DM( mass_unfold, selected, "mass_IdSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Up/IdSF, weightGen);
+                           FillMigration2DM( ptOrMass::PT, selected, "pt_IdSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Up/IdSF, weightGen);
+                           FillMigration2DM( ptOrMass::MASS, selected, "mass_IdSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Up/IdSF, weightGen);
                         }
                         else{
-                           FillMigration2DM( pt_unfold, selected, "pt_IdSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Dn/IdSF, weightGen);
-                           FillMigration2DM( mass_unfold, selected, "mass_IdSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Dn/IdSF, weightGen);
+                           FillMigration2DM( ptOrMass::PT, selected, "pt_IdSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Dn/IdSF, weightGen);
+                           FillMigration2DM( ptOrMass::MASS, selected, "mass_IdSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IdSF_Dn/IdSF, weightGen);
                         }
                    }
 
@@ -415,12 +416,12 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                         is.Form("%d", i);
 
                         if(i==0){
-                           FillMigration2DM( pt_unfold, selected, "pt_IsoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Up/IsoSF, weightGen);
-                           FillMigration2DM( mass_unfold, selected, "mass_IsoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Up/IsoSF, weightGen);
+                           FillMigration2DM( ptOrMass::PT, selected, "pt_IsoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Up/IsoSF, weightGen);
+                           FillMigration2DM( ptOrMass::MASS, selected, "mass_IsoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Up/IsoSF, weightGen);
                         }
                         else{
-                           FillMigration2DM( pt_unfold, selected, "pt_IsoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Dn/IsoSF, weightGen);
-                           FillMigration2DM( mass_unfold, selected, "mass_IsoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Dn/IsoSF, weightGen);
+                           FillMigration2DM( ptOrMass::PT, selected, "pt_IsoSF_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Dn/IsoSF, weightGen);
+                           FillMigration2DM( ptOrMass::MASS, selected, "mass_IsoSF_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight*IsoSF_Dn/IsoSF, weightGen);
                         }
                    }
 

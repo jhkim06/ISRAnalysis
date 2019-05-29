@@ -9,20 +9,26 @@ import etc.histDef as fHistDef
 import gc
 gc.collect()
 
+from enum import Enum
+
+class ptOrMassEnum(Enum):
+	PT   = 1
+	MASS = 2
+
 # input file paths, binning, output directory, for data and bkg reco histograms only
 def makeRecoHists(sample, outputDirectory, channel):
+
 
         rt.gROOT.SetBatch()
         print "####################### makeRecoHists #################################"
 
         outDic = {}
 
-        # don't need to check isMC for reco histogram 
 	outfile = rt.TFile(outputDirectory + sample.name+".root",'recreate')
         if not sample.isMC: outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "data")
         else : outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "bkg")
 
-        # need to create histogram before the file loop to save one histogram from the input files
+        # need to create histogram before the file loop to save one histogram from the mutiple input files
         recoHists = rt.histTUnfold(rt.std.map("TString, TH1*")())
 
         test = rt.histTUnfold(rt.std.map("TString, TH1*")())
@@ -31,14 +37,14 @@ def makeRecoHists(sample, outputDirectory, channel):
 	vrecoHists.push_back(test)
 	vrecoHists.at(0).SetPtBinningRec()
 	vrecoHists.at(0).SetMassBinningRec()
-	vrecoHists.at(0).CreateHistMap(1, "test") # 1: pt
-	vrecoHists.at(0).CreateHistMap(2, "test") # 2: mass
+	vrecoHists.at(0).CreateHistMap(ptOrMassEnum.PT.value, "test") # 1: pt
+	vrecoHists.at(0).CreateHistMap(ptOrMassEnum.MASS.value, "test") # 2: mass
 
 	recoHists.SetPtBinningRec()
 	recoHists.SetMassBinningRec()
 
-	recoHists.CreateHistMap(1, "nominal")
-	recoHists.CreateHistMap(2, "nominal")
+	recoHists.CreateHistMap(ptOrMassEnum.PT.value, "nominal")
+	recoHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal")
 
         for filepath in sample.path:	
 
@@ -61,12 +67,11 @@ def makeSigHists(sample, outputDirectory, channel):
 
         outDic = {}
 
-        # don't need to check isMC for reco histogram 
 	outfile = rt.TFile(outputDirectory + sample.name+".root",'recreate')
         outfile_ = None
 
         outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "sig")
-        # need to create histogram before the file loop to save one histogram from the input files
+        # need to create histogram before the file loop to save one histogram from the multile input files
         sigHists  = rt.histTUnfold(rt.std.map("TString, TH1*")(), rt.std.map("TString, TH2*")(), sample.isInc) 
 
         sigHists.SetPtBinningRec()
@@ -74,54 +79,56 @@ def makeSigHists(sample, outputDirectory, channel):
         sigHists.SetPtBinningGen()
         sigHists.SetMassBinningGen()
       
-	sigHists.CreateHist2DMap(1, "nominal") 
-	sigHists.CreateHist2DMap(2, "nominal") 
+	sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "nominal") 
+	sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "nominal") 
+
+	sigHists.CreateHistMap(ptOrMassEnum.PT.value, "nominal") 
+	sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal") 
 	
 	# PU
 	for i in range(2):
-		sigHists.CreateHist2DMap(1, "PU_"+str(i)) 
-		sigHists.CreateHist2DMap(2, "PU_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "PU_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "PU_"+str(i)) 
 
-		sigHists.CreateHist2DMap(1, "trgSF_"+str(i)) 
-		sigHists.CreateHist2DMap(2, "trgSF_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "trgSF_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "trgSF_"+str(i)) 
 
-		sigHists.CreateHist2DMap(1, "recoSF_"+str(i)) 
-		sigHists.CreateHist2DMap(2, "recoSF_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "recoSF_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "recoSF_"+str(i)) 
 
-		sigHists.CreateHist2DMap(1, "IdSF_"+str(i)) 
-		sigHists.CreateHist2DMap(2, "IdSF_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "IdSF_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "IdSF_"+str(i)) 
 
-		sigHists.CreateHist2DMap(1, "IsoSF_"+str(i)) 
-		sigHists.CreateHist2DMap(2, "IsoSF_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "IsoSF_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "IsoSF_"+str(i)) 
 
 	# unfolding systematic using Z pt correction (need to be checked)
-	sigHists.CreateHist2DMap(1, "unfoldsys_0") 
-	sigHists.CreateHist2DMap(2, "unfoldsys_0") 
+	sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "unfoldsys_0") 
+	sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "unfoldsys_0") 
 
-        #for i in range(19):
-	#	if i < 9:
-	#		sigHists.CreateHist2DMap(1, "FSRDR0p"+str(i+1)) 
-	#		sigHists.CreateHist2DMap(2, "FSRDR0p"+str(i+1)) 
-	#	else:
-	#		sigHists.CreateHist2DMap(1, "FSRDR1p"+str((i+1)%10)) 
-	#		sigHists.CreateHist2DMap(2, "FSRDR1p"+str((i+1)%10)) 
+        for i in range(19):
+		if i < 9:
+			sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "FSRDR0p"+str(i+1)) 
+			sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "FSRDR0p"+str(i+1)) 
+		else:
+			sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "FSRDR1p"+str((i+1)%10)) 
+			sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "FSRDR1p"+str((i+1)%10)) 
 
-	sigHists.CreateHistMap(1, "nominal") 
-	sigHists.CreateHistMap(2, "nominal") 
 
 	# AlphaS systematic
 	for i in range(2):
-		sigHists.CreateHist2DMap(1, "AlphaS_"+str(i)) 
-		sigHists.CreateHist2DMap(2, "AlphaS_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "AlphaS_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "AlphaS_"+str(i)) 
 
 	# Scale systematic
 	for i in range(9):
-		sigHists.CreateHist2DMap(1, "Scale_"+str(i)) 
-		sigHists.CreateHist2DMap(2, "Scale_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "Scale_"+str(i)) 
+		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "Scale_"+str(i)) 
 
-        #for i in range(100):
-        #        sigHists.CreateHist2DMap(1, "PDFerror_"+str(i))
-        #        sigHists.CreateHist2DMap(2, "PDFerror_"+str(i))
+	# PDF error
+        for i in range(100):
+                sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "PDFerror_"+str(i))
+                sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "PDFerror_"+str(i))
 
 
         if sample.isInc: # for DY to tautau, make one more histogram
@@ -131,8 +138,8 @@ def makeSigHists(sample, outputDirectory, channel):
         	sigHists.SetPtBinningRec()
         	sigHists.SetMassBinningRec()
 
-	        sigHists.CreateHistMap(1, "nominal", "_tau") 
-	        sigHists.CreateHistMap(2, "nominal", "_tau") 
+	        sigHists.CreateHistMap(ptOrMassEnum.PT.value, "nominal", "_tau") 
+	        sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal", "_tau") 
 
         for filepath in sample.path:	
 
