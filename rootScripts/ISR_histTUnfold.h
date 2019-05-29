@@ -19,7 +19,6 @@ using namespace std;
 const int pt_unfold = 1;
 const int mass_unfold = 2;
 
-// FIXME change name since this class will be used for all input root files
 class histTUnfold {
 
 private:
@@ -35,7 +34,60 @@ private:
   	std::map<TString, TH1*> histMaps;
   	std::map<TString, TH2*> hist2DMaps;
 
-     	// weightMaps
+	TTree *tree;
+
+        // variables in the input tree
+        Double_t weightGen,weightRec;
+
+        int ispassRec, DYtautau, isBveto;
+        int isfiducialPostFSR, isfiducialPreFSR;
+        int nentries;
+
+        vector<Double_t> *ptPreFSR;
+        vector<Double_t> *mPreFSR;
+        vector<Double_t> *ptPostFSR;
+        vector<Double_t> *mPostFSR;
+        vector<Double_t> *ptRec;
+        vector<Double_t> *etaRec;
+        vector<Double_t> *mRec;
+        vector<Double_t> *l1PreFire;
+        vector<Double_t> *AlphaS;
+        vector<Double_t> *Scale;
+        vector<Double_t> *PDFerror;
+        Int_t nVtx;
+
+        vector<TLorentzVector> *particleFSR;
+        vector<TLorentzVector> *anparticleFSR;
+        TLorentzVector *particlePostFSR;
+        TLorentzVector *anparticlePostFSR;
+
+        Double_t        PUweight;
+        Double_t        PUweight_Up;
+        Double_t        PUweight_Dn;
+        Double_t        trgSF;
+        Double_t        trgSF_Up;
+        Double_t        trgSF_Dn;
+        Double_t        recoSF;
+        Double_t        recoSF_Up;
+        Double_t        recoSF_Dn;
+        Double_t        IdSF;
+        Double_t        IdSF_Up;
+        Double_t        IdSF_Dn;
+        Double_t        IsoSF;
+        Double_t        IsoSF_Up;
+        Double_t        IsoSF_Dn;
+
+        TBranch        *b_particleFSR;   //!
+        TBranch        *b_anparticleFSR;   //!
+        TBranch        *b_particlePostFSR;   //!
+        TBranch        *b_anparticlePostFSR;   //!
+
+        Int_t IsElEl, IsMuMu;
+        Double_t ZPtCor;
+        Double_t bTagReweight;
+        Int_t isdielectron, isdimuon;
+
+
 public:
 
   	std::map<TString, Double_t> sysNamesWeights;
@@ -53,9 +105,10 @@ public:
 	inline TUnfoldBinning* GetMassBinningGen(){ return massBinningGen;}
 
 	// set histograms: get histogram names from python script and create histograms
-	void CreateHistMap(const int which_unfold, TString hname, TString postfix = "");
+	void CreateHistMap(const int which_unfold, TString hname, TString postfix = ""); // postfix for DY to tautau events
 	void CreateHist2DMap(const int which_unfold, TString hname);
- 
+  	
+	// save histograms into root files  
 	void saveRecoHists(TFile *filein, TFile *fileout1, TString channel); 
         void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, TString channel, Double_t temp_kfactor);
 

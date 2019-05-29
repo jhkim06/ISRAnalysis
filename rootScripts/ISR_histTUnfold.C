@@ -59,71 +59,44 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
         gInterpreter->GenerateDictionary("vector<TLorentzVector>","TLorentzVector.h;vector");
         TH1::SetDefaultSumw2();
 
-        // variables in the input tree
-        Double_t weightGen,weightRec ;
+ 	ptRec = 0;
+        mRec = 0; 	
 
-        Double_t        PUweight;
-        Double_t        PUweight_Up;
-        Double_t        PUweight_Dn;
-        Double_t        trgSF;
-        Double_t        trgSF_Up;
-        Double_t        trgSF_Dn;
-        Double_t        recoSF;
-        Double_t        recoSF_Up;
-        Double_t        recoSF_Dn;
-        Double_t        IdSF;
-        Double_t        IdSF_Up;
-        Double_t        IdSF_Dn;
-        Double_t        IsoSF;
-        Double_t        IsoSF_Up;
-        Double_t        IsoSF_Dn;
+        tree=(TTree *)filein->Get("tree");
+        tree->SetBranchAddress("ptRec",&ptRec);
+        tree->SetBranchAddress("mRec",&mRec);
+        tree->SetBranchAddress("IsElEl",&IsElEl);
+        tree->SetBranchAddress("IsMuMu",&IsMuMu);
+        tree->SetBranchAddress("ispassRec",&ispassRec);
+        tree->SetBranchAddress("isBveto",&isBveto);
+        tree->SetBranchAddress("weightGen",&weightGen);
+        tree->SetBranchAddress("weightRec",&weightRec);
+        tree->SetBranchAddress("DYtautau",&DYtautau);
+        tree->SetBranchAddress("bTagReweight",&bTagReweight); // FIXME may it is better to change name bTagReweight to bTagSF
 
-        int ispassRec,DYtautau, isBveto;
-        int isfiducialPostFSR, isfiducialPreFSR;
-        int nentries;
-
-        Int_t IsElEl, IsMuMu;
-        Double_t ZPtCor;
-        Double_t bTagReweight;
-        Int_t isdielectron, isdimuon;
-
-        vector<Double_t> *ptRec = 0;
-	vector<Double_t> *mRec = 0;
-
-        TTree *treco=(TTree *)filein->Get("tree");
-        treco->SetBranchAddress("ptRec",&ptRec);
-        treco->SetBranchAddress("mRec",&mRec);
-        treco->SetBranchAddress("IsElEl",&IsElEl);
-        treco->SetBranchAddress("IsMuMu",&IsMuMu);
-        treco->SetBranchAddress("ispassRec",&ispassRec);
-        treco->SetBranchAddress("isBveto",&isBveto);
-        treco->SetBranchAddress("weightGen",&weightGen);
-        treco->SetBranchAddress("weightRec",&weightRec);
-        treco->SetBranchAddress("DYtautau",&DYtautau);
-        treco->SetBranchAddress("bTagReweight",&bTagReweight); // FIXME may it is better to change name bTagReweight to bTagSF
-
-        treco->SetBranchAddress("PUweight", &PUweight);
-        treco->SetBranchAddress("PUweight_Up", &PUweight_Up);
-        treco->SetBranchAddress("PUweight_Dn", &PUweight_Dn);
-        treco->SetBranchAddress("trgSF", &trgSF);
-        treco->SetBranchAddress("trgSF_Up", &trgSF_Up);
-        treco->SetBranchAddress("trgSF_Dn", &trgSF_Dn);
-        treco->SetBranchAddress("recoSF", &recoSF);
-        treco->SetBranchAddress("recoSF_Up", &recoSF_Up);
-        treco->SetBranchAddress("recoSF_Dn", &recoSF_Dn);
-        treco->SetBranchAddress("IdSF", &IdSF);
-        treco->SetBranchAddress("IdSF_Up", &IdSF_Up);
-        treco->SetBranchAddress("IdSF_Dn", &IdSF_Dn);
-        treco->SetBranchAddress("IsoSF", &IsoSF);
-        treco->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
-        treco->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
-        nentries=treco->GetEntries();
+        tree->SetBranchAddress("PUweight", &PUweight);
+        tree->SetBranchAddress("PUweight_Up", &PUweight_Up);
+        tree->SetBranchAddress("PUweight_Dn", &PUweight_Dn);
+        tree->SetBranchAddress("trgSF", &trgSF);
+        tree->SetBranchAddress("trgSF_Up", &trgSF_Up);
+        tree->SetBranchAddress("trgSF_Dn", &trgSF_Dn);
+        tree->SetBranchAddress("recoSF", &recoSF);
+        tree->SetBranchAddress("recoSF_Up", &recoSF_Up);
+        tree->SetBranchAddress("recoSF_Dn", &recoSF_Dn);
+        tree->SetBranchAddress("IdSF", &IdSF);
+        tree->SetBranchAddress("IdSF_Up", &IdSF_Up);
+        tree->SetBranchAddress("IdSF_Dn", &IdSF_Dn);
+        tree->SetBranchAddress("IsoSF", &IsoSF);
+        tree->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
+        tree->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
+        nentries=tree->GetEntries();
 
         // TODO based on the info in histTUnfold make map for systematics
 
-        for(int i=0;i<10000;i++){
+	for(int i=0;i<nentries;i++){
+        //for(int i=0;i<10000;i++){
           if(i%10000000==0) cout<<i<<endl;
-          treco->GetEntry(i);
+          tree->GetEntry(i);
 
           int isdilep = 0;
           if( channel.CompareTo("electron") == 0 ) isdilep = IsElEl;
@@ -143,7 +116,7 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
         GetPtBinningRec()->Write();
         GetMassBinningRec()->Write();
 
-        delete treco;
+        delete tree;
         //fileout->cd();
 }
 
@@ -153,114 +126,67 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
         gInterpreter->GenerateDictionary("vector<TLorentzVector>","TLorentzVector.h;vector");
         TH1::SetDefaultSumw2();
 
-        // variables in the input tree
-        Double_t weightGen,weightRec;
-
-        int ispassRec,DYtautau, isBveto;
-        int isfiducialPostFSR, isfiducialPreFSR;
-        int nentries;
-
-        vector<Double_t> *ptPreFSR = 0;
-        vector<Double_t> *mPreFSR = 0;
-        vector<Double_t> *ptPostFSR = 0;
-        vector<Double_t> *mPostFSR = 0;
-        vector<Int_t> *qLep = 0;
-        vector<Double_t> *ptRec = 0;
-        vector<Double_t> *etaRec = 0;
-        vector<Double_t> *phiRec = 0;
-        vector<Double_t> *mRec = 0;
-        vector<Double_t> *TrigSF = 0;
-        vector<Double_t> *Id1SF = 0;
-        vector<Double_t> *Id2SF = 0;
-        vector<Double_t> *Reco1SF = 0;
-        vector<Double_t> *Reco2SF = 0;
-        vector<Double_t> *l1PreFire = 0;
-        vector<Double_t> *AlphaS = 0;
-        vector<Double_t> *Scale = 0;
-        vector<Double_t> *PDFerror = 0;
-        Int_t nVtx;
-
-        vector<TLorentzVector> *particleFSR;
-        vector<TLorentzVector> *anparticleFSR;
-        TLorentzVector *particlePostFSR;
-        TLorentzVector *anparticlePostFSR;
-
-
-        Double_t        PUweight;
-        Double_t        PUweight_Up;
-        Double_t        PUweight_Dn;
-        Double_t        trgSF;
-        Double_t        trgSF_Up;
-        Double_t        trgSF_Dn;
-        Double_t        recoSF;
-        Double_t        recoSF_Up;
-        Double_t        recoSF_Dn;
-        Double_t        IdSF;
-        Double_t        IdSF_Up;
-        Double_t        IdSF_Dn;
-        Double_t        IsoSF;
-        Double_t        IsoSF_Up;
-        Double_t        IsoSF_Dn;
-
-        TBranch        *b_particleFSR;   //!
-        TBranch        *b_anparticleFSR;   //!
-        TBranch        *b_particlePostFSR;   //!
-        TBranch        *b_anparticlePostFSR;   //!
+        ptPreFSR = 0;
+        mPreFSR = 0;
+        ptPostFSR = 0;
+        mPostFSR = 0;
+        ptRec = 0;
+        etaRec = 0;
+        mRec = 0;
+        l1PreFire = 0;
+        AlphaS = 0;
+        Scale = 0;
+        PDFerror = 0;
 
         particleFSR = 0;
         anparticleFSR = 0;
         particlePostFSR = 0;
         anparticlePostFSR = 0;
 
-        Int_t IsElEl, IsMuMu;
-        Double_t ZPtCor;
-        Double_t bTagReweight;
-        Int_t isdielectron, isdimuon;
+        tree=(TTree *)filein->Get("tree");
+        tree->SetBranchAddress("ptPreFSR",&ptPreFSR);
+        tree->SetBranchAddress("mPreFSR",&mPreFSR);
+        tree->SetBranchAddress("ptPostFSR",&ptPostFSR);
+        tree->SetBranchAddress("mPostFSR",&mPostFSR);
+        tree->SetBranchAddress("ptRec",&ptRec);
+        tree->SetBranchAddress("mRec",&mRec);
+        tree->SetBranchAddress("IsElEl",&IsElEl);
+        tree->SetBranchAddress("IsMuMu",&IsMuMu);
+        tree->SetBranchAddress("ispassRec",&ispassRec);
+        tree->SetBranchAddress("isBveto",&isBveto);
+        tree->SetBranchAddress("isdimuon",&isdimuon);
+        tree->SetBranchAddress("isdielectron",&isdielectron);
+        tree->SetBranchAddress("weightGen",&weightGen);
+        tree->SetBranchAddress("weightRec",&weightRec);
+        tree->SetBranchAddress("ZPtCor",&ZPtCor);
+        tree->SetBranchAddress("bTagReweight",&bTagReweight);
+        tree->SetBranchAddress("DYtautau",&DYtautau);
+        tree->SetBranchAddress("isfiducialPreFSR",&isfiducialPreFSR);
+        tree->SetBranchAddress("isfiducialPostFSR",&isfiducialPostFSR);
+        tree->SetBranchAddress("particleFSR", &particleFSR, &b_particleFSR);
+        tree->SetBranchAddress("anparticleFSR", &anparticleFSR, &b_anparticleFSR);
+        tree->SetBranchAddress("particlePostFSR", &particlePostFSR, &b_particlePostFSR);
+        tree->SetBranchAddress("anparticlePostFSR", &anparticlePostFSR, &b_anparticlePostFSR);
 
-        TTree *tsignal=(TTree *)filein->Get("tree");
-        tsignal->SetBranchAddress("ptPreFSR",&ptPreFSR);
-        tsignal->SetBranchAddress("mPreFSR",&mPreFSR);
-        tsignal->SetBranchAddress("ptPostFSR",&ptPostFSR);
-        tsignal->SetBranchAddress("mPostFSR",&mPostFSR);
-        tsignal->SetBranchAddress("ptRec",&ptRec);
-        tsignal->SetBranchAddress("mRec",&mRec);
-        tsignal->SetBranchAddress("IsElEl",&IsElEl);
-        tsignal->SetBranchAddress("IsMuMu",&IsMuMu);
-        tsignal->SetBranchAddress("ispassRec",&ispassRec);
-        tsignal->SetBranchAddress("isBveto",&isBveto);
-        tsignal->SetBranchAddress("isdimuon",&isdimuon);
-        tsignal->SetBranchAddress("isdielectron",&isdielectron);
-        tsignal->SetBranchAddress("weightGen",&weightGen);
-        tsignal->SetBranchAddress("weightRec",&weightRec);
-        tsignal->SetBranchAddress("ZPtCor",&ZPtCor);
-        tsignal->SetBranchAddress("bTagReweight",&bTagReweight);
-        tsignal->SetBranchAddress("DYtautau",&DYtautau);
-        tsignal->SetBranchAddress("isfiducialPreFSR",&isfiducialPreFSR);
-        tsignal->SetBranchAddress("isfiducialPostFSR",&isfiducialPostFSR);
-        tsignal->SetBranchAddress("particleFSR", &particleFSR, &b_particleFSR);
-        tsignal->SetBranchAddress("anparticleFSR", &anparticleFSR, &b_anparticleFSR);
-        tsignal->SetBranchAddress("particlePostFSR", &particlePostFSR, &b_particlePostFSR);
-        tsignal->SetBranchAddress("anparticlePostFSR", &anparticlePostFSR, &b_anparticlePostFSR);
+        tree->SetBranchAddress("AlphaS",&AlphaS);
+        tree->SetBranchAddress("Scale",&Scale);
+        tree->SetBranchAddress("PDFerror",&PDFerror);
 
-        tsignal->SetBranchAddress("AlphaS",&AlphaS);
-        tsignal->SetBranchAddress("Scale",&Scale);
-        tsignal->SetBranchAddress("PDFerror",&PDFerror);
-
-        tsignal->SetBranchAddress("PUweight", &PUweight);
-        tsignal->SetBranchAddress("PUweight_Up", &PUweight_Up);
-        tsignal->SetBranchAddress("PUweight_Dn", &PUweight_Dn);
-        tsignal->SetBranchAddress("trgSF", &trgSF);
-        tsignal->SetBranchAddress("trgSF_Up", &trgSF_Up);
-        tsignal->SetBranchAddress("trgSF_Dn", &trgSF_Dn);
-        tsignal->SetBranchAddress("recoSF", &recoSF);
-        tsignal->SetBranchAddress("recoSF_Up", &recoSF_Up);
-        tsignal->SetBranchAddress("recoSF_Dn", &recoSF_Dn);
-        tsignal->SetBranchAddress("IdSF", &IdSF);
-        tsignal->SetBranchAddress("IdSF_Up", &IdSF_Up);
-        tsignal->SetBranchAddress("IdSF_Dn", &IdSF_Dn);
-        tsignal->SetBranchAddress("IsoSF", &IsoSF);
-        tsignal->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
-        tsignal->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
+        tree->SetBranchAddress("PUweight", &PUweight);
+        tree->SetBranchAddress("PUweight_Up", &PUweight_Up);
+        tree->SetBranchAddress("PUweight_Dn", &PUweight_Dn);
+        tree->SetBranchAddress("trgSF", &trgSF);
+        tree->SetBranchAddress("trgSF_Up", &trgSF_Up);
+        tree->SetBranchAddress("trgSF_Dn", &trgSF_Dn);
+        tree->SetBranchAddress("recoSF", &recoSF);
+        tree->SetBranchAddress("recoSF_Up", &recoSF_Up);
+        tree->SetBranchAddress("recoSF_Dn", &recoSF_Dn);
+        tree->SetBranchAddress("IdSF", &IdSF);
+        tree->SetBranchAddress("IdSF_Up", &IdSF_Up);
+        tree->SetBranchAddress("IdSF_Dn", &IdSF_Dn);
+        tree->SetBranchAddress("IsoSF", &IsoSF);
+        tree->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
+        tree->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
 
         TFile* fpthist = new TFile("/home/jhkim/ISR2016/unfolding/systematic/hPtRecnominal.root");
         TH1* hptcorr=(TH1*)fpthist->Get("data_");
@@ -278,13 +204,13 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
         TH1 *hZptWeight;
         fZptWeight->GetObject("ZptWeight", hZptWeight);
 
-        nentries=tsignal->GetEntries();
+        nentries=tree->GetEntries();
 
         // TODO based on the info in histTUnfold make map for systematics
-        //for(int i=0;i<nentries;i++){
-        for(int i=0;i<10000;i++){
+        for(int i=0;i<nentries;i++){
+        //for(int i=0;i<10000;i++){
           if(i%10000000==0) cout<<i<<endl;
-          tsignal->GetEntry(i);
+          tree->GetEntry(i);
 
           weightGen *= temp_kfactor;
 
@@ -347,44 +273,44 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                    diptgen = ptPreFSR->at(2);
                    dimassgen = mPreFSR->at(2);
 
-                   //TLorentzVector temp_particlePostFSR[19];
-                   //TLorentzVector temp_anparticlePostFSR[19];
-                   //Double_t drcut[19] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9};
+                   TLorentzVector temp_particlePostFSR[19];
+                   TLorentzVector temp_anparticlePostFSR[19];
+                   Double_t drcut[19] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9};
 
-                   //// add fsr photon in dr < 0.1 for lepton
-                   //for(int idrcut = 0; idrcut < 19; idrcut++){
-                   //   temp_particlePostFSR[idrcut] = *particlePostFSR;
-                   //   for(int gsize = 0; gsize < particleFSR->size(); gsize++){
+                   // add fsr photon in dr < 0.1 for lepton
+                   for(int idrcut = 0; idrcut < 19; idrcut++){
+                      temp_particlePostFSR[idrcut] = *particlePostFSR;
+                      for(int gsize = 0; gsize < particleFSR->size(); gsize++){
 
-                   //           Double_t temp_dr = sqrt(pow(particlePostFSR->Phi()-particleFSR->at(gsize).Phi(),2)+pow(particlePostFSR->Eta()-particleFSR->at(gsize).Eta(),2));
-                   //           if(temp_dr < drcut[idrcut]) temp_particlePostFSR[idrcut] += particleFSR->at(gsize);
-                   //   }
-                   //}
+                              Double_t temp_dr = sqrt(pow(particlePostFSR->Phi()-particleFSR->at(gsize).Phi(),2)+pow(particlePostFSR->Eta()-particleFSR->at(gsize).Eta(),2));
+                              if(temp_dr < drcut[idrcut]) temp_particlePostFSR[idrcut] += particleFSR->at(gsize);
+                      }
+                   }
 
-                   //for(int idrcut = 0; idrcut < 19; idrcut++){
-                   //   temp_anparticlePostFSR[idrcut] = *anparticlePostFSR;
-                   //   for(int gsize = 0; gsize < anparticleFSR->size(); gsize++){
+                   for(int idrcut = 0; idrcut < 19; idrcut++){
+                      temp_anparticlePostFSR[idrcut] = *anparticlePostFSR;
+                      for(int gsize = 0; gsize < anparticleFSR->size(); gsize++){
 
-                   //     Double_t temp_dr = sqrt(pow(anparticlePostFSR->Phi()-anparticleFSR->at(gsize).Phi(),2)+pow(anparticlePostFSR->Eta()-anparticleFSR->at(gsize).Eta(),2));
-                   //     if(temp_dr < drcut[idrcut]) temp_anparticlePostFSR[idrcut] += anparticleFSR->at(gsize);
-                   //   }
-                   //}
+                        Double_t temp_dr = sqrt(pow(anparticlePostFSR->Phi()-anparticleFSR->at(gsize).Phi(),2)+pow(anparticlePostFSR->Eta()-anparticleFSR->at(gsize).Eta(),2));
+                        if(temp_dr < drcut[idrcut]) temp_anparticlePostFSR[idrcut] += anparticleFSR->at(gsize);
+                      }
+                   }
 
-                   //for(int idrcut = 0; idrcut < 19; idrcut++){
-                   //   Double_t temp_dipt = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).Pt();
-                   //   Double_t temp_dimass = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).M();
-                   //     TString dr_;
-                   //   if(idrcut<9) {
-                   //     dr_.Form("%d", idrcut+1);
-                   //     FillMigration2DM( pt_unfold, selected, "pt_FSRDR0p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                   //     FillMigration2DM( mass_unfold, selected, "mass_FSRDR0p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                   //     }
-                   //     else{
-                   //     dr_.Form("%d", (idrcut+1)%10);
-                   //     FillMigration2DM( pt_unfold, selected, "pt_FSRDR1p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                   //     FillMigration2DM( mass_unfold, selected, "mass_FSRDR1p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                   //     }
-                   //}
+                   for(int idrcut = 0; idrcut < 19; idrcut++){
+                      Double_t temp_dipt = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).Pt();
+                      Double_t temp_dimass = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).M();
+                        TString dr_;
+                      if(idrcut<9) {
+                        dr_.Form("%d", idrcut+1);
+                        FillMigration2DM( pt_unfold, selected, "pt_FSRDR0p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                        FillMigration2DM( mass_unfold, selected, "mass_FSRDR0p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                        }
+                        else{
+                        dr_.Form("%d", (idrcut+1)%10);
+                        FillMigration2DM( pt_unfold, selected, "pt_FSRDR1p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                        FillMigration2DM( mass_unfold, selected, "mass_FSRDR1p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                        }
+                   }
 
                    FillMigration2DM( pt_unfold, selected, "pt_nominal",  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
                    FillMigration2DM( mass_unfold, selected, "mass_nominal", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
@@ -407,13 +333,13 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                    }
 
                    // PDF error
-                   //for(unsigned int i=0; i<PDFerror->size(); i++){
-                   //     TString is;
-                   //     is.Form("%d", i);
+                   for(unsigned int i=0; i<PDFerror->size(); i++){
+                        TString is;
+                        is.Form("%d", i);
 
-                   //     FillMigration2DM( pt_unfold, selected, "pt_PDFerror_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
-                   //     FillMigration2DM( mass_unfold, selected, "mass_PDFerror_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
-                   //}
+                        FillMigration2DM( pt_unfold, selected, "pt_PDFerror_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
+                        FillMigration2DM( mass_unfold, selected, "mass_PDFerror_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
+                   }
 
                    // alpha s systematic
                    for(unsigned int i=0; i<AlphaS->size(); i++){
@@ -523,7 +449,7 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 
         delete hZptWeight;
         delete fZptWeight;
-        delete tsignal;
+        delete tree;
         //fileout->cd();
 
         // seems ptHistograms automatically written 
