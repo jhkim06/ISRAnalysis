@@ -131,8 +131,8 @@ Double_t histTUnfold::GetSysWeights(TString sysName, bool isReco, int nthSys){
 
 	if(sysName == "PU"){
 		if(isReco){
-			if(nthSys = 0) return weightRec*bTagReweight*PUweight_Up/PUweight;
-			if(nthSys = 1) return weightRec*bTagReweight*PUweight_Dn/PUweight;
+			if(nthSys == 0) return weightRec*bTagReweight*PUweight_Up/PUweight;
+			if(nthSys == 1) return weightRec*bTagReweight*PUweight_Dn/PUweight;
 		}
 		else{
 			return weightGen;
@@ -141,8 +141,8 @@ Double_t histTUnfold::GetSysWeights(TString sysName, bool isReco, int nthSys){
 
         else if(sysName == "trgSF"){
                 if(isReco){
-                        if(nthSys = 0) return weightRec*bTagReweight*trgSF_Up/trgSF;
-                        if(nthSys = 1) return weightRec*bTagReweight*trgSF_Dn/trgSF;
+                        if(nthSys == 0) return weightRec*bTagReweight*trgSF_Up/trgSF;
+                        if(nthSys == 1) return weightRec*bTagReweight*trgSF_Dn/trgSF;
                 }
                 else{
                         return weightGen;
@@ -151,8 +151,8 @@ Double_t histTUnfold::GetSysWeights(TString sysName, bool isReco, int nthSys){
 
         else if(sysName == "recoSF"){
                 if(isReco){
-                        if(nthSys = 0) return weightRec*bTagReweight*recoSF_Up/recoSF;
-                        if(nthSys = 1) return weightRec*bTagReweight*recoSF_Dn/recoSF;
+                        if(nthSys == 0) return weightRec*bTagReweight*recoSF_Up/recoSF;
+                        if(nthSys == 1) return weightRec*bTagReweight*recoSF_Dn/recoSF;
                 }   
                 else{
                         return weightGen;
@@ -161,8 +161,8 @@ Double_t histTUnfold::GetSysWeights(TString sysName, bool isReco, int nthSys){
 
         else if(sysName == "IdSF"){
                 if(isReco){
-                        if(nthSys = 0) return weightRec*bTagReweight*IdSF_Up/IdSF;
-                        if(nthSys = 1) return weightRec*bTagReweight*IdSF_Dn/IdSF;
+                        if(nthSys == 0) return weightRec*bTagReweight*IdSF_Up/IdSF;
+                        if(nthSys == 1) return weightRec*bTagReweight*IdSF_Dn/IdSF;
                 }   
                 else{
                         return weightGen;
@@ -171,8 +171,8 @@ Double_t histTUnfold::GetSysWeights(TString sysName, bool isReco, int nthSys){
 
         else if(sysName == "IsoSF"){
                 if(isReco){
-                        if(nthSys = 0) return weightRec*bTagReweight*IsoSF_Up/IsoSF;
-                        if(nthSys = 1) return weightRec*bTagReweight*IsoSF_Dn/IsoSF;
+                        if(nthSys == 0) return weightRec*bTagReweight*IsoSF_Up/IsoSF;
+                        if(nthSys == 1) return weightRec*bTagReweight*IsoSF_Dn/IsoSF;
                 }   
                 else{
                         return weightGen;
