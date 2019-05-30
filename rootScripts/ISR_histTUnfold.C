@@ -60,7 +60,7 @@ void histTUnfold::FillMigration2DM(ptOrMass which_unfold, bool selected, TString
 	}
 }
 
-void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel){ // TODO add list of systematics
+void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel){ // 
 
         gROOT->SetBatch();
         gInterpreter->GenerateDictionary("vector<TLorentzVector>","TLorentzVector.h;vector");
@@ -68,6 +68,11 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
 
  	ptRec = 0;
         mRec = 0; 	
+        AlphaS = 0;
+        Scale = 0;
+        PDFerror = 0;
+
+        ZPtCor = -999.;
 
         tree=(TTree *)filein->Get("tree");
         tree->SetBranchAddress("ptRec",&ptRec);
@@ -96,12 +101,22 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
         tree->SetBranchAddress("IsoSF", &IsoSF);
         tree->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
         tree->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
+
+	TBranch* b_alphas =(TBranch*) tree->GetListOfBranches()->FindObject("AlphaS");
+	TBranch* b_scale =(TBranch*) tree->GetListOfBranches()->FindObject("Scale");
+	TBranch* b_pdferror =(TBranch*) tree->GetListOfBranches()->FindObject("PDFerror");
+	TBranch* b_zptcorr =(TBranch*) tree->GetListOfBranches()->FindObject("ZPtCor");
+
+        if(b_alphas)   tree->SetBranchAddress("AlphaS",&AlphaS);
+        if(b_scale)    tree->SetBranchAddress("Scale",&Scale);
+        if(b_pdferror) tree->SetBranchAddress("PDFerror",&PDFerror);
+        if(b_zptcorr)  tree->SetBranchAddress("ZPtCor",&ZPtCor);	
+
+
         nentries=tree->GetEntries();
 
-        // TODO based on the info in histTUnfold make map for systematics
-
-	for(int i=0;i<nentries;i++){
-        //for(int i=0;i<10000;i++){
+	//for(int i=0;i<nentries;i++){
+        for(int i=0;i<10000;i++){
           if(i%10000000==0) cout<<i<<endl;
           tree->GetEntry(i);
 
@@ -112,9 +127,43 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
            if(isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15){
                  fileout1->cd();
 
-                 FillHistogram(ptOrMass::PT, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight); // read name from histMaps
-                 // a function to select weight regarding the histogram name
-                 FillHistogram(ptOrMass::MASS, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+		 Double_t wreco = weightGen*weightRec*bTagReweight;
+                 FillHistogram(ptOrMass::PT, "pt_nominal", ptRec->at(2), mRec->at(2), wreco);
+                 FillHistogram(ptOrMass::MASS, "mass_nominal", ptRec->at(2), mRec->at(2), wreco);
+
+                 for(int idrcut = 0; idrcut < 19; idrcut++){
+                    TString dr_;
+                    if(idrcut<9) {
+                      dr_.Form("%d", idrcut+1);
+                      FillHistogram(ptOrMass::PT,   "pt_FSRDR0p"+dr_,   ptRec->at(2), mRec->at(2), wreco);
+                      FillHistogram(ptOrMass::MASS, "mass_FSRDR0p"+dr_, ptRec->at(2), mRec->at(2), wreco);
+                    }
+                    else{
+                      dr_.Form("%d",(idrcut+1)%10);
+                      FillHistogram(ptOrMass::PT,   "pt_FSRDR1p"+dr_,   ptRec->at(2), mRec->at(2), wreco);
+                      FillHistogram(ptOrMass::MASS, "mass_FSRDR1p"+dr_, ptRec->at(2), mRec->at(2), wreco);
+                    }
+                 }
+
+                 // loop to create systematic response matrix
+                 std::map<TString, int>::iterator it = sysMaps.begin();
+                 while(it != sysMaps.end()){
+                      if(it->first != "FSRDR"){ // 
+
+                         for(int nSys = 0; nSys < it->second; nSys++){
+                             TString is;
+                             is.Form("%d", nSys);
+
+                             Double_t wreco = GetSysWeights(it->first, true,  nSys);
+
+                             FillHistogram(ptOrMass::PT,   "pt_"  + it->first+"_"+is,    ptRec->at(2), mRec->at(2), wreco);
+                             FillHistogram(ptOrMass::MASS, "mass_"  + it->first+"_"+is,  ptRec->at(2), mRec->at(2), wreco);
+
+                         }
+                      }
+                      it++;
+                 }// loop for systematic
+
            }
 
         }// event loop
@@ -181,19 +230,53 @@ Double_t histTUnfold::GetSysWeights(TString sysName, bool isReco, int nthSys){
 
         else if(sysName == "AlphaS"){
                 if(isReco){
-                        return weightRec*bTagReweight*AlphaS->at(nthSys);
+                        if(AlphaS != 0 && AlphaS->size() != 0) return weightRec*bTagReweight*AlphaS->at(nthSys);
+			else return weightRec*bTagReweight;
                 }   
                 else{
-                        return weightGen*AlphaS->at(nthSys);
+                        if(AlphaS != 0 && AlphaS->size() != 0) return weightGen*AlphaS->at(nthSys);
+			else return weightGen;
                 }   
         }// AlphaS
+        else if(sysName == "Scale"){
+                if(isReco){
+                        if(Scale != 0 && Scale->size() != 0 && nthSys < Scale->size()){
+                           return weightRec*bTagReweight*Scale->at(nthSys);
+                        }
+			else return weightRec*bTagReweight;
+                }
+                else{
+                        if(Scale != 0 && Scale->size() != 0) return weightGen*Scale->at(nthSys);
+			else return weightGen;
+                }
+        }// Scale
+        else if(sysName == "PDFerror"){
+                if(isReco){
+                        if(PDFerror != 0 && PDFerror->size() != 0) return weightRec*bTagReweight*PDFerror->at(nthSys);
+			else return weightRec*bTagReweight;
+                }
+                else{
+                        if(PDFerror != 0 && PDFerror->size() != 0) return weightGen*PDFerror->at(nthSys);
+			else return weightGen;
+                }
+        }// PDFerror
+        else if(sysName == "unfoldsys"){
+                if(isReco){
+                        if(ZPtCor != -999.) return weightRec*bTagReweight*ZPtCor;
+			else return weightRec*bTagReweight;
+                }
+                else{
+                        if(ZPtCor != -999) return weightGen*ZPtCor;
+			else return weightGen;
+                }
+        }// unfoldsys
 	else{
 		return 1.;
         }
 
 }
 
-void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, TString channel, Double_t temp_kfactor){ // TODO add list of systematics
+void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, TString channel, Double_t temp_kfactor){ // 
 
         gROOT->SetBatch();
         gInterpreter->GenerateDictionary("vector<TLorentzVector>","TLorentzVector.h;vector");
@@ -279,9 +362,8 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 
         nentries=tree->GetEntries();
 
-        // TODO based on the info in histTUnfold make map for systematics
-        for(int i=0;i<nentries;i++){
-        //for(int i=0;i<10000;i++){
+        //for(int i=0;i<nentries;i++){
+        for(int i=0;i<10000;i++){
           if(i%10000000==0) cout<<i<<endl;
           tree->GetEntry(i);
 
@@ -317,21 +399,56 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                 zptWeight = ZPtCor;
 
                 if(isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15){
+
+		   TString postfix = "";
                    if(DYtautau){
                       fileout2->cd();
+	  	      postfix = "_tau";
+		   }
+		   else{
+			fileout1->cd();
+	           }
 
-                      FillHistogram(ptOrMass::PT, "pt_nominal_tau", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
-                      FillHistogram(ptOrMass::MASS, "mass_nominal_tau", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+		   Double_t wreco = weightGen*weightRec*bTagReweight;
 
+                   FillHistogram(ptOrMass::PT, "pt_nominal"+postfix,     ptRec->at(2), mRec->at(2), wreco);
+                   FillHistogram(ptOrMass::MASS, "mass_nominal"+postfix, ptRec->at(2), mRec->at(2), wreco);
+
+                   for(int idrcut = 0; idrcut < 19; idrcut++){
+                      TString dr_;
+                      if(idrcut<9) {
+                        dr_.Form("%d", idrcut+1);
+                        FillHistogram(ptOrMass::PT,   "pt_FSRDR0p"+dr_+postfix,   ptRec->at(2), mRec->at(2), wreco);
+                        FillHistogram(ptOrMass::MASS, "mass_FSRDR0p"+dr_+postfix, ptRec->at(2), mRec->at(2), wreco);
+                      }
+                      else{
+                        dr_.Form("%d",(idrcut+1)%10);
+                        FillHistogram(ptOrMass::PT,   "pt_FSRDR1p"+dr_+postfix,   ptRec->at(2), mRec->at(2), wreco);
+                        FillHistogram(ptOrMass::MASS, "mass_FSRDR1p"+dr_+postfix, ptRec->at(2), mRec->at(2), wreco);
+                      }
                    }
-                   else{
-                      fileout1->cd();
 
-                      FillHistogram(ptOrMass::PT, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
-                      FillHistogram(ptOrMass::MASS, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*weightRec*bTagReweight);
+                   // loop to create systematic response matrix
+                   std::map<TString, int>::iterator it = sysMaps.begin();
+                   while(it != sysMaps.end()){
+                        if(it->first != "FSRDR"){ // 
 
-                   }
-                }
+                           for(int nSys = 0; nSys < it->second; nSys++){
+                               TString is;
+                               is.Form("%d", nSys);
+
+                               wreco = GetSysWeights(it->first, true,  nSys);
+
+                               FillHistogram(ptOrMass::PT,   "pt_"  + it->first+"_"+is+postfix,    ptRec->at(2), mRec->at(2), wreco);
+                               FillHistogram(ptOrMass::MASS, "mass_"  + it->first+"_"+is+postfix,  ptRec->at(2), mRec->at(2), wreco);
+
+                           }
+                        }
+                        it++;
+                   }// loop for systematic
+
+               }
+                
                /////////////////////////////////////////// fill migration matrix ////////////////////////////////////////
                //
                if(issignal){
@@ -372,52 +489,26 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                    for(int idrcut = 0; idrcut < 19; idrcut++){
                       Double_t temp_dipt = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).Pt();
                       Double_t temp_dimass = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).M();
-                        TString dr_;
+                      TString dr_;
                       if(idrcut<9) {
                         dr_.Form("%d", idrcut+1);
                         FillMigration2DM( ptOrMass::PT, selected, "pt_FSRDR0p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
                         FillMigration2DM( ptOrMass::MASS, selected, "mass_FSRDR0p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                        }
-                        else{
+                      }
+                      else{
                         dr_.Form("%d", (idrcut+1)%10);
                         FillMigration2DM( ptOrMass::PT, selected, "pt_FSRDR1p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
                         FillMigration2DM( ptOrMass::MASS, selected, "mass_FSRDR1p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                        }
+                      }
                    }
 
                    FillMigration2DM( ptOrMass::PT, selected, "pt_nominal",  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
                    FillMigration2DM( ptOrMass::MASS, selected, "mass_nominal", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
 
-                   // unfolding systematic
-                   Double_t ptCorr = hptcorr->GetBinContent(binning_ptRec->GetGlobalBinNumber(diptrec, dimassrec));
-                   Double_t massCorr = hmasscorr->GetBinContent(binning_massRec->GetGlobalBinNumber(dimassrec));
-                   //std::cout << "massCorr: " << massCorr << " mass: " << dimassrec << " selected " << selected << std::endl;
-
-                   FillMigration2DM( ptOrMass::PT, selected, "pt_unfoldsys_0",  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*ZPtCor);
-                   FillMigration2DM( ptOrMass::MASS, selected, "mass_unfoldsys_0", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*ZPtCor);
-
-                   // scale systematic
-                   for(unsigned int i=0; i<Scale->size(); i++){
-                        TString is;
-                        is.Form("%d", i);
-
-                        FillMigration2DM( ptOrMass::PT, selected, "pt_Scale_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*Scale->at(i));
-                        FillMigration2DM( ptOrMass::MASS, selected, "mass_Scale_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*Scale->at(i));
-                   }
-
-                   // PDF error
-                   for(unsigned int i=0; i<PDFerror->size(); i++){
-                        TString is;
-                        is.Form("%d", i);
-
-                        FillMigration2DM( ptOrMass::PT, selected, "pt_PDFerror_"+is,  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
-                        FillMigration2DM( ptOrMass::MASS, selected, "mass_PDFerror_"+is, diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen*PDFerror->at(i));
-                   }
-
 		   // loop to create systematic response matrix
 		   std::map<TString, int>::iterator it = sysMaps.begin();
 		   while(it != sysMaps.end()){
-			if(it->second == 2){ // FIXME
+			if(it->first != "FSRDR"){ // 
 
 			   for(int nSys = 0; nSys < it->second; nSys++){
                                TString is;
