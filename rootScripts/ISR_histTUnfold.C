@@ -115,8 +115,8 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
 
         nentries=tree->GetEntries();
 
-	//for(int i=0;i<nentries;i++){
-        for(int i=0;i<10000;i++){
+	for(int i=0;i<nentries;i++){
+        //for(int i=0;i<10000;i++){
           if(i%10000000==0) cout<<i<<endl;
           tree->GetEntry(i);
 
@@ -362,8 +362,8 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 
         nentries=tree->GetEntries();
 
-        //for(int i=0;i<nentries;i++){
-        for(int i=0;i<10000;i++){
+        for(int i=0;i<nentries;i++){
+        //for(int i=0;i<10000;i++){
           if(i%10000000==0) cout<<i<<endl;
           tree->GetEntry(i);
 
