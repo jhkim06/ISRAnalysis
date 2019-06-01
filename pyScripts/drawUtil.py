@@ -7,6 +7,9 @@ rt.gSystem.Load("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/libisrunfold.s
 import gc
 gc.collect()
 
+def test(listTUnfold):
+	rt.test(listTUnfold)
+
 def basicRatio(outpdf, unfold_pt, unfold_mass, channel):
 
         print "############################ draw ###############################################"

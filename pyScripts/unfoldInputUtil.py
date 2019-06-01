@@ -109,7 +109,6 @@ def makeSigHists(sample, outputDirectory, channel):
 
         sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100}
 
-
         for sysName, nSys in sysDict.items():
                 sigHists.SetsysMap(sysName, nSys);
 
