@@ -353,6 +353,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         TH1F *ratio;
         TH1F *ratio_sys_err;
 
+	// get nominal unfoled result
         hpt_temp_data   = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 	hpt_sys_err_temp= ((TH1F*)hpt_temp_data->Clone("sysErr")); 
 	hpt_temp_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
@@ -400,7 +401,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 		   hpt_sys_temp->SetLineColor(kBlack);
 		   hpt_sys_temp->SetLineStyle(2);
 		   TH1F * ratio_temp = ((TH1F*)hsyspt_temp->Clone("ratio"));
-		   ratio_temp->Divide(hpt_temp_data);
+		   ratio_temp->Divide(hpt_temp_mc);
                    // get "envelope"
                    Double_t temp_err =  fabs(hpt_temp_data->GetBinContent(ibin) - hsyspt_temp->GetBinContent(ibin));
 		   Double_t temp_sys_err = fabs(ratio->GetBinContent(ibin) - ratio_temp->GetBinContent(ibin));
