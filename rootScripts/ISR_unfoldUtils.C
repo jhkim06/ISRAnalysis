@@ -95,7 +95,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
 }
 
 void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth, bool isSys, double bias){
-	// No effects on the unfolded results due to bias factor 
+	// No effects on the unfolded results respect to bias factor 
 
 	TFile* filein = new TFile(filepath);
         TString nth_;
@@ -109,10 +109,13 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
 	}
 	else{
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
+                hRec->SetDirectory(0);
         	if( var.CompareTo("Pt") == 0 )   sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias); // 
-        	if( var.CompareTo("Mass") == 0 ) sysMassUnfold[postfix].at(nth)->SetInput(hRec, bias); // 
+        	if( var.CompareTo("Mass") == 0 ) sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); // 
 	}
+	delete hRec;
 	filein->Close();
+	delete filein;
 
 }
 
@@ -121,7 +124,7 @@ void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString 
 	TFile* filein = new TFile(filepath);
         TString nth_;
         nth_.Form("%d", nth);
-        TH1* hRec;
+        TH1* hRec = NULL;
 
 	if(!isSys){
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix);
@@ -130,12 +133,14 @@ void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString 
 	}
 	else{	
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
-        	//hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+		hRec->SetDirectory(0);
         	if( var.CompareTo("Pt") == 0 )   sysPtUnfold[postfix].at(nth)  ->SubtractBackground(hRec, bkgName);
         	if( var.CompareTo("Mass") == 0 ) sysMassUnfold[postfix].at(nth)->SubtractBackground(hRec, bkgName);
 	}
 	
+	delete hRec;
 	filein->Close();
+	delete filein;
 
 }
 
@@ -145,6 +150,7 @@ void ISRUnfold::doISRUnfold(){
 	nomMassUnfold->DoUnfold(0);
 
 	std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtUnfold.begin();
+
 	while(it != sysPtUnfold.end()){
 		int nSys = it->second.size();
 		for(int i = 0; i < nSys; i++){
@@ -301,21 +307,22 @@ void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TStr
                 TH1 * hsyspt_temp = sysPtUnfold[sysName].at(i)->GetInput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
                 ratio = ((TH1F*)hsyspt_temp->Clone("pt_temp"));
 		ratio->Divide(hpt_temp_data);
-                if(i==0 )ratio->Draw("hist");
+                if(i==0 ){
+ 			ratio->Draw("hist");
+        		ratio->GetYaxis()->SetTitle("Data/ MC");
+        		ratio->GetXaxis()->SetTitle("p_{T} at pre FSR(GeV)");
+        		ratio->SetMinimum(0.8);
+        		ratio->SetMaximum(1.2);
+        		ratio->SetTitle("");
+        		ratio->GetXaxis()->SetTitleOffset(1.5);
+        		ratio->GetYaxis()->SetNdivisions(515);
+                	ratio->SetLineColor(kBlack);
+                	ratio->SetLineStyle(2);
+		}
                 else ratio->Draw("histsame");
-                ratio->SetLineColor(kBlack);
-                ratio->SetLineStyle(2);
 
                 delete hsyspt_temp;
         }   
-
-        ratio->GetYaxis()->SetTitle("Data/ MC");
-        ratio->GetXaxis()->SetTitle("p_{T} at pre FSR(GeV)");
-        ratio->SetMinimum(0.8);
-        ratio->SetMaximum(1.2);
-        ratio->SetTitle("");
-        ratio->GetXaxis()->SetTitleOffset(1.5);
-        ratio->GetYaxis()->SetNdivisions(515);
 
 	CMS_lumi( c1, 4, 0 );
         c1->cd();

@@ -104,22 +104,24 @@ if args.getUnfoldResultsV2:
 	unfoldClass.setInput("Mass", postfix, unfoldInputList['data'])
 
 	# 
-        #unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
-        #unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'], "TTbar")
-        #unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'], "VV")
-        #unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'], "Wjets")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'], "TTbar")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'], "VV")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'], "Wjets")
 
-        #unfoldClass.subBkgs("Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
-        #unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'], "TTbar")
-        #unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'], "VV")
-        #unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'], "TTbar")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'], "VV")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets")
 
 
 	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100}
-	#sysDict = {"PU": 2}
+	#sysDict = {"recoSF": 2}
 
 	for sysName, nSys in sysDict.items():
 		for nthSys in range(0,nSys):
+
+			print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
 
 			# systematic test
 			postfix = sysName
@@ -129,15 +131,15 @@ if args.getUnfoldResultsV2:
 			unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'], nthSys, True)
 			unfoldClass.setInput("Mass", postfix, unfoldInputList['data'], nthSys, True)
 
-        		#unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
-        		#unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
-        		#unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'], "VV", nthSys, True)
-        		#unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
+        		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
+        		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
+        		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'], "VV", nthSys, True)
+        		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
 
-        		#unfoldClass.subBkgs("Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
-        		#unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
-        		#unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'], "VV", nthSys, True)
-        		#unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
+        		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
+        		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
+        		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'], "VV", nthSys, True)
+        		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
 
 	unfoldClass.doISRUnfold()
 
