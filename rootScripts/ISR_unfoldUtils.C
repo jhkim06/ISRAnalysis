@@ -284,7 +284,7 @@ void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TStr
         leg_nom->SetFillStyle(0);
         leg_nom->SetBorderSize(0);
 
-        leg_nom->AddEntry(hpt_temp_data, "Unfolded data (mean: " + mean_nom + ")", "pl");
+        leg_nom->AddEntry(hpt_temp_data, "Bkg subtracted data (mean: " + mean_nom + ")", "pl");
         leg_nom->Draw();
 
 	c1->cd();
@@ -309,7 +309,7 @@ void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TStr
 		ratio->Divide(hpt_temp_data);
                 if(i==0 ){
  			ratio->Draw("hist");
-        		ratio->GetYaxis()->SetTitle("Data/ MC");
+        		ratio->GetYaxis()->SetTitle("Systematic/ Nominal input");
         		ratio->GetXaxis()->SetTitle("p_{T} at pre FSR(GeV)");
         		ratio->SetMinimum(0.8);
         		ratio->SetMaximum(1.2);
@@ -319,7 +319,10 @@ void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TStr
                 	ratio->SetLineColor(kBlack);
                 	ratio->SetLineStyle(2);
 		}
-                else ratio->Draw("histsame");
+                else{
+		      ratio->Draw("histsame");
+                      ratio->SetLineStyle(2);
+		}
 
                 delete hsyspt_temp;
         }   
