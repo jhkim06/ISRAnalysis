@@ -259,6 +259,7 @@ void ISRUnfold::setMeanMass(){
 
            cout << i << " th mass bin, total mass systematic uncertainty: " << sqrt(totalSys) << " statistical error: " << meanMassStatErr_data.at(i) << endl;
            meanMassSysErr_data.push_back(sqrt(totalSys));
+	   meanMassTotErr_data.push_back(sqrt(totalSys + pow(meanMassStatErr_data.at(i),2)));
         }
 }
 
@@ -355,9 +356,60 @@ void ISRUnfold::setMeanPt(){
 	   
            cout << i << " th mass bin, total pt systematic uncertainty: " << sqrt(totalSys) << " statistical error: " << meanPtStatErr_data.at(i) << endl;
 	   meanPtSysErr_data.push_back(sqrt(totalSys));
+	   meanPtTotErr_data.push_back(sqrt(totalSys + pow(meanPtStatErr_data.at(i),2)));
 	}// loop for mass bins
 }
 
+void ISRUnfold::drawISRresult(TString outpdf){
+
+        gROOT->SetBatch();
+
+        setTDRStyle();
+        writeExtraText = true;       // if extra text
+        extraText  = "work in progress";
+
+        c1 = new TCanvas("c1","c1", 50, 50, 850, 700);
+        c1->cd();
+        gStyle->SetOptFit(0);
+
+        c1->SetBottomMargin(0.2);
+        c1->SetTopMargin(0.08);
+        c1->SetTicks(1);
+        c1->SetLogx();
+        c1->SetGridy();
+
+        TGraphErrors *grUnfolded = new TGraphErrors(5, &meanMass_data[0], &meanPt_data[0], &meanMassTotErr_data[0], &meanPtTotErr_data[0]);
+        grUnfolded->SetLineColor(kBlack);
+        grUnfolded->SetMarkerColor(kBlack);
+        grUnfolded->SetMarkerStyle(20);
+        grUnfolded->SetMarkerSize(1.);
+        grUnfolded->SetLineStyle(1);
+        grUnfolded->Draw("ape");
+        grUnfolded->GetYaxis()->SetRangeUser(10.,30.);
+        grUnfolded->GetXaxis()->SetLimits(30.,800.);
+        grUnfolded->GetYaxis()->SetTitle("Average p_{T} (GeV)");
+        grUnfolded->GetXaxis()->SetTitle("Average Mass (GeV)");
+
+        TGraphErrors *grMC = new TGraphErrors(5, &meanMass_mc[0], &meanPt_mc[0], &meanMassErr_mc[0], &meanPtErr_mc[0]);
+        grMC->SetLineColor(kRed);
+        grMC->SetMarkerColor(kRed);
+        grMC->SetMarkerStyle(20);
+        grMC->SetMarkerSize(1.);
+        grMC->SetLineStyle(1);
+        grMC->Draw("pe same");
+
+        TF1 *f1 = new TF1("f1", "[0]+[1]*log(x)", 40., 350.);
+        f1->GetXaxis()->SetRangeUser(40., 350.);
+        f1->SetLineColor(kBlack);
+        grUnfolded->Fit(f1, "R0"); // R: fitting sub range
+        f1->Draw("same");
+
+        CMS_lumi( c1, 4, 11 );
+        c1->SaveAs(outpdf);
+	delete grUnfolded;
+	delete grMC;
+	delete f1;
+}
 
 void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TString sysName){
 

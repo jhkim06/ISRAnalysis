@@ -40,8 +40,8 @@ private:
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassUnfold;
 
 	// nominal mean mass and pt for data and mc, and statistical and systematic errors 
-	vector<Double_t> meanMass_data, meanMassStatErr_data, meanMassSysErr_data;
-	vector<Double_t> meanPt_data,   meanPtStatErr_data,   meanPtSysErr_data;
+	vector<Double_t> meanMass_data, meanMassStatErr_data, meanMassSysErr_data, meanMassTotErr_data;
+	vector<Double_t> meanPt_data,   meanPtStatErr_data,   meanPtSysErr_data, meanPtTotErr_data;
 
 	// nominal mean mass and pt for MC at pre FSR
 	vector<Double_t> meanMass_mc, meanMassErr_mc;
@@ -83,11 +83,13 @@ public:
 	void drawNominalPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
 
 	// draw input histograms using GetInput	
-	//
 	void drawInputPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
 
 	void setMeanPt();
 	void setMeanMass();
+
+	// draw ISR result
+	void drawISRresult(TString outpdf);
 };
 
 #endif

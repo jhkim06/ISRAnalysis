@@ -94,11 +94,10 @@ if args.getUnfoldResultsV2:
         import pyScripts.drawUtil as drawutil
 
         postfix = args.postfix
-        postfix_matrix = args.postfix
 
         unfoldClass = rt.ISRUnfold()
-        unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix_matrix, False)
-        unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix_matrix, False)
+        unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, False)
+        unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, False)
 
 	unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'])
 	unfoldClass.setInput("Mass", postfix, unfoldInputList['data'])
@@ -167,6 +166,8 @@ if args.getUnfoldResultsV2:
                         unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 2, sysName);
                         unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 3, sysName);
                         unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 4, sysName);
+
+	unfoldClass.drawISRresult(outputDirectory + "ISRfit_" + args.channel + ".pdf")
 
 	del unfoldClass
 
