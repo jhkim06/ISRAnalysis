@@ -128,20 +128,21 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
                  fileout1->cd();
 
 		 Double_t wreco = weightRec*bTagReweight;
-                 FillHistogram(ptOrMass::PT, "pt_nominal", ptRec->at(2), mRec->at(2), weightGen*wreco);
-                 FillHistogram(ptOrMass::MASS, "mass_nominal", ptRec->at(2), mRec->at(2), weightGen*wreco);
+		 Double_t wgen = weightGen;
+                 FillHistogram(ptOrMass::PT, "pt_nominal", ptRec->at(2), mRec->at(2), wgen*wreco);
+                 FillHistogram(ptOrMass::MASS, "mass_nominal", ptRec->at(2), mRec->at(2), wgen*wreco);
 
                  for(int idrcut = 0; idrcut < 19; idrcut++){
                     TString dr_;
                     if(idrcut<9) {
                       dr_.Form("%d", idrcut+1);
-                      FillHistogram(ptOrMass::PT,   "pt_FSRDR0p"+dr_,   ptRec->at(2), mRec->at(2), weightGen*wreco);
-                      FillHistogram(ptOrMass::MASS, "mass_FSRDR0p"+dr_, ptRec->at(2), mRec->at(2), weightGen*wreco);
+                      FillHistogram(ptOrMass::PT,   "pt_FSRDR0p"+dr_,   ptRec->at(2), mRec->at(2), wgen*wreco);
+                      FillHistogram(ptOrMass::MASS, "mass_FSRDR0p"+dr_, ptRec->at(2), mRec->at(2), wgen*wreco);
                     }
                     else{
                       dr_.Form("%d",(idrcut+1)%10);
-                      FillHistogram(ptOrMass::PT,   "pt_FSRDR1p"+dr_,   ptRec->at(2), mRec->at(2), weightGen*wreco);
-                      FillHistogram(ptOrMass::MASS, "mass_FSRDR1p"+dr_, ptRec->at(2), mRec->at(2), weightGen*wreco);
+                      FillHistogram(ptOrMass::PT,   "pt_FSRDR1p"+dr_,   ptRec->at(2), mRec->at(2), wgen*wreco);
+                      FillHistogram(ptOrMass::MASS, "mass_FSRDR1p"+dr_, ptRec->at(2), mRec->at(2), wgen*wreco);
                     }
                  }
 
@@ -155,9 +156,10 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
                              is.Form("%d", nSys);
 
                              wreco = GetSysWeights(it->first, true,  nSys);
+                             wgen = GetSysWeights(it->first, false,  nSys);
 
-                             FillHistogram(ptOrMass::PT,   "pt_"  + it->first+"_"+is,    ptRec->at(2), mRec->at(2), weightGen*wreco);
-                             FillHistogram(ptOrMass::MASS, "mass_"  + it->first+"_"+is,  ptRec->at(2), mRec->at(2), weightGen*wreco);
+                             FillHistogram(ptOrMass::PT,   "pt_"  + it->first+"_"+is,    ptRec->at(2), mRec->at(2), wgen*wreco);
+                             FillHistogram(ptOrMass::MASS, "mass_"  + it->first+"_"+is,  ptRec->at(2), mRec->at(2), wgen*wreco);
 
                          }
                       }
@@ -230,8 +232,7 @@ Double_t histTUnfold::GetSysWeights(TString sysName, bool isReco, int nthSys){
 
         else if(sysName == "AlphaS"){
                 if(isReco){
-                        if(AlphaS != 0 && AlphaS->size() != 0) return weightRec*bTagReweight*AlphaS->at(nthSys);
-			else return weightRec*bTagReweight;
+			return weightRec*bTagReweight;
                 }   
                 else{
                         if(AlphaS != 0 && AlphaS->size() != 0) return weightGen*AlphaS->at(nthSys);
@@ -240,20 +241,16 @@ Double_t histTUnfold::GetSysWeights(TString sysName, bool isReco, int nthSys){
         }// AlphaS
         else if(sysName == "Scale"){
                 if(isReco){
-                        if(Scale != 0 && Scale->size() != 0 && nthSys < Scale->size()){
-                           return weightRec*bTagReweight*Scale->at(nthSys);
-                        }
-			else return weightRec*bTagReweight;
+			return weightRec*bTagReweight;
                 }
                 else{
-                        if(Scale != 0 && Scale->size() != 0) return weightGen*Scale->at(nthSys);
+                        if(Scale != 0 && Scale->size() != 0 && nthSys < Scale->size()) return weightGen*Scale->at(nthSys);
 			else return weightGen;
                 }
         }// Scale
         else if(sysName == "PDFerror"){
                 if(isReco){
-                        if(PDFerror != 0 && PDFerror->size() != 0) return weightRec*bTagReweight*PDFerror->at(nthSys);
-			else return weightRec*bTagReweight;
+			return weightRec*bTagReweight;
                 }
                 else{
                         if(PDFerror != 0 && PDFerror->size() != 0) return weightGen*PDFerror->at(nthSys);
@@ -262,8 +259,7 @@ Double_t histTUnfold::GetSysWeights(TString sysName, bool isReco, int nthSys){
         }// PDFerror
         else if(sysName == "unfoldsys"){
                 if(isReco){
-                        if(ZPtCor != -999.) return weightRec*bTagReweight*ZPtCor;
-			else return weightRec*bTagReweight;
+			return weightRec*bTagReweight;
                 }
                 else{
                         if(ZPtCor != -999) return weightGen*ZPtCor;
@@ -410,21 +406,22 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 	           }
 
 		   Double_t wreco = weightRec*bTagReweight;
+		   Double_t wgen = weightGen;
 
-                   FillHistogram(ptOrMass::PT, "pt_nominal"+postfix,     ptRec->at(2), mRec->at(2), weightGen*wreco);
-                   FillHistogram(ptOrMass::MASS, "mass_nominal"+postfix, ptRec->at(2), mRec->at(2), weightGen*wreco);
+                   FillHistogram(ptOrMass::PT, "pt_nominal"+postfix,     ptRec->at(2), mRec->at(2), wgen*wreco);
+                   FillHistogram(ptOrMass::MASS, "mass_nominal"+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
 
                    for(int idrcut = 0; idrcut < 19; idrcut++){
                       TString dr_;
                       if(idrcut<9) {
                         dr_.Form("%d", idrcut+1);
-                        FillHistogram(ptOrMass::PT,   "pt_FSRDR0p"+dr_+postfix,   ptRec->at(2), mRec->at(2), weightGen*wreco);
-                        FillHistogram(ptOrMass::MASS, "mass_FSRDR0p"+dr_+postfix, ptRec->at(2), mRec->at(2), weightGen*wreco);
+                        FillHistogram(ptOrMass::PT,   "pt_FSRDR0p"+dr_+postfix,   ptRec->at(2), mRec->at(2), wgen*wreco);
+                        FillHistogram(ptOrMass::MASS, "mass_FSRDR0p"+dr_+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
                       }
                       else{
                         dr_.Form("%d",(idrcut+1)%10);
-                        FillHistogram(ptOrMass::PT,   "pt_FSRDR1p"+dr_+postfix,   ptRec->at(2), mRec->at(2), weightGen*wreco);
-                        FillHistogram(ptOrMass::MASS, "mass_FSRDR1p"+dr_+postfix, ptRec->at(2), mRec->at(2), weightGen*wreco);
+                        FillHistogram(ptOrMass::PT,   "pt_FSRDR1p"+dr_+postfix,   ptRec->at(2), mRec->at(2), wgen*wreco);
+                        FillHistogram(ptOrMass::MASS, "mass_FSRDR1p"+dr_+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
                       }
                    }
 
@@ -438,9 +435,10 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                                is.Form("%d", nSys);
 
                                wreco = GetSysWeights(it->first, true,  nSys);
+                               wgen = GetSysWeights(it->first, false,  nSys);
 
-                               FillHistogram(ptOrMass::PT,   "pt_"  + it->first+"_"+is+postfix,    ptRec->at(2), mRec->at(2), weightGen*wreco);
-                               FillHistogram(ptOrMass::MASS, "mass_"  + it->first+"_"+is+postfix,  ptRec->at(2), mRec->at(2), weightGen*wreco);
+                               FillHistogram(ptOrMass::PT,   "pt_"  + it->first+"_"+is+postfix,    ptRec->at(2), mRec->at(2), wgen*wreco);
+                               FillHistogram(ptOrMass::MASS, "mass_"  + it->first+"_"+is+postfix,  ptRec->at(2), mRec->at(2), wgen*wreco);
 
                            }
                         }

@@ -39,12 +39,21 @@ private:
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtUnfold;
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassUnfold;
 
-	// nominal mean mass and pt for data and mc 
-	vector<Double_t> meanMass_data, meanMassErr_data;
-	vector<Double_t> meanMass_mc,   meanMassErr_mc;
+	// nominal mean mass and pt for data and mc, and statistical and systematic errors 
+	vector<Double_t> meanMass_data, meanMassStatErr_data, meanMassSysErr_data;
+	vector<Double_t> meanPt_data,   meanPtStatErr_data,   meanPtSysErr_data;
 
-	vector<Double_t> meanPt_data, meanPtErr_data;
+	// nominal mean mass and pt for MC at pre FSR
+	vector<Double_t> meanMass_mc, meanMassErr_mc;
 	vector<Double_t> meanPt_mc,   meanPtErr_mc;
+
+	// map to save systematic uncertainties on mass and pt for each source 
+	std::vector<std::map<TString, Double_t>>  meanMassErr_sysdata;
+	std::vector<std::map<TString, Double_t>>  meanPtErr_sysdata;
+
+	// map to save systematic variation of mean mass and pt for each source
+	std::vector<std::map<TString, std::vector<Double_t>>>  meanMass_sysdata;
+	std::vector<std::map<TString, std::vector<Double_t>>>  meanPt_sysdata;
 
 	TCanvas* c1;
 

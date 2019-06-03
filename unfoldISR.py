@@ -116,7 +116,7 @@ if args.getUnfoldResultsV2:
 
 
 	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100}
-	#sysDict = {"recoSF": 2}
+	#sysDict = {"Scale": 2}
 
 	for sysName, nSys in sysDict.items():
 		for nthSys in range(0,nSys):
@@ -141,26 +141,33 @@ if args.getUnfoldResultsV2:
         		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'], "VV", nthSys, True)
         		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
 
+	# unfold up to pre FSR level 
 	unfoldClass.doISRUnfold()
 
+	# set nominal value and also systematic values
 	unfoldClass.setMeanPt()
 	unfoldClass.setMeanMass()
 
         for sysName, nSys in sysDict.items():
 
-                        unfoldClass.drawNominalPlots(outputDirectory + "UnfoldedPt_"+args.channel+sysName, "Pt", 0, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "UnfoldedPt_"+args.channel+sysName, "Pt", 1, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "UnfoldedPt_"+args.channel+sysName, "Pt", 2, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "UnfoldedPt_"+args.channel+sysName, "Pt", 3, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "UnfoldedPt_"+args.channel+sysName, "Pt", 4, sysName);
+                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 0, sysName);
+                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 1, sysName);
+                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 2, sysName);
+                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 3, sysName);
+                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 4, sysName);
 
-                        unfoldClass.drawInputPlots(outputDirectory + "UnfoldedPt_"+args.channel+sysName, "Pt", 0, sysName);
-                        unfoldClass.drawInputPlots(outputDirectory + "UnfoldedPt_"+args.channel+sysName, "Pt", 1, sysName);
-                        unfoldClass.drawInputPlots(outputDirectory + "UnfoldedPt_"+args.channel+sysName, "Pt", 2, sysName);
-                        unfoldClass.drawInputPlots(outputDirectory + "UnfoldedPt_"+args.channel+sysName, "Pt", 3, sysName);
-                        unfoldClass.drawInputPlots(outputDirectory + "UnfoldedPt_"+args.channel+sysName, "Pt", 4, sysName);
+                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", 0, sysName);
+                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", 1, sysName);
+                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", 2, sysName);
+                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", 3, sysName);
+                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", 4, sysName);
 
-	#unfoldClass.drawNominalPlots("Mass");
+                        unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 0, sysName);
+                        unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 1, sysName);
+                        unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 2, sysName);
+                        unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 3, sysName);
+                        unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 4, sysName);
+
 	del unfoldClass
 
 def makeRecoPlots():
