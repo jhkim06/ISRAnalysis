@@ -96,7 +96,7 @@ private:
 public:
 
   	std::map<TString, Double_t> sysNamesWeights;
-  	Bool_t isInc, isSig;
+  	Bool_t isInc, isSig, isAlt;
 
   	// binning
 	void SetPtBinningRec();
@@ -123,8 +123,8 @@ public:
   	void FillMigration2DM(ptOrMass which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen, Double_t corr = 1.);
   	void FillHistogram(ptOrMass which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco);
 
-  	histTUnfold(std::map<TString, TH1*> histMaps_, std::map<TString, TH2*> hist2DMaps_, Int_t isInc_):
-    		histMaps(std::move(histMaps_)), hist2DMaps(std::move(hist2DMaps_)), isInc(std::move(isInc_)) {}
+  	histTUnfold(std::map<TString, TH1*> histMaps_, std::map<TString, TH2*> hist2DMaps_, Int_t isInc_, Int_t isAlt_):
+    		histMaps(std::move(histMaps_)), hist2DMaps(std::move(hist2DMaps_)), isInc(std::move(isInc_)), isAlt(std::move(isAlt_)) {}
 
   	histTUnfold(std::map<TString, TH1*> histMaps_):
     		histMaps(std::move(histMaps_)) {}

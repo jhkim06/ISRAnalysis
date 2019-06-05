@@ -315,30 +315,33 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
         tree->SetBranchAddress("DYtautau",&DYtautau);
         tree->SetBranchAddress("isfiducialPreFSR",&isfiducialPreFSR);
         tree->SetBranchAddress("isfiducialPostFSR",&isfiducialPostFSR);
-        tree->SetBranchAddress("particleFSR", &particleFSR, &b_particleFSR);
-        tree->SetBranchAddress("anparticleFSR", &anparticleFSR, &b_anparticleFSR);
-        tree->SetBranchAddress("particlePostFSR", &particlePostFSR, &b_particlePostFSR);
-        tree->SetBranchAddress("anparticlePostFSR", &anparticlePostFSR, &b_anparticlePostFSR);
 
-        tree->SetBranchAddress("AlphaS",&AlphaS);
-        tree->SetBranchAddress("Scale",&Scale);
-        tree->SetBranchAddress("PDFerror",&PDFerror);
+	if(!isAlt){
+        	tree->SetBranchAddress("particleFSR", &particleFSR, &b_particleFSR);
+        	tree->SetBranchAddress("anparticleFSR", &anparticleFSR, &b_anparticleFSR);
+        	tree->SetBranchAddress("particlePostFSR", &particlePostFSR, &b_particlePostFSR);
+        	tree->SetBranchAddress("anparticlePostFSR", &anparticlePostFSR, &b_anparticlePostFSR);
 
-        tree->SetBranchAddress("PUweight", &PUweight);
-        tree->SetBranchAddress("PUweight_Up", &PUweight_Up);
-        tree->SetBranchAddress("PUweight_Dn", &PUweight_Dn);
-        tree->SetBranchAddress("trgSF", &trgSF);
-        tree->SetBranchAddress("trgSF_Up", &trgSF_Up);
-        tree->SetBranchAddress("trgSF_Dn", &trgSF_Dn);
-        tree->SetBranchAddress("recoSF", &recoSF);
-        tree->SetBranchAddress("recoSF_Up", &recoSF_Up);
-        tree->SetBranchAddress("recoSF_Dn", &recoSF_Dn);
-        tree->SetBranchAddress("IdSF", &IdSF);
-        tree->SetBranchAddress("IdSF_Up", &IdSF_Up);
-        tree->SetBranchAddress("IdSF_Dn", &IdSF_Dn);
-        tree->SetBranchAddress("IsoSF", &IsoSF);
-        tree->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
-        tree->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
+        	tree->SetBranchAddress("AlphaS",&AlphaS);
+        	tree->SetBranchAddress("Scale",&Scale);
+        	tree->SetBranchAddress("PDFerror",&PDFerror);
+
+        	tree->SetBranchAddress("PUweight", &PUweight);
+        	tree->SetBranchAddress("PUweight_Up", &PUweight_Up);
+        	tree->SetBranchAddress("PUweight_Dn", &PUweight_Dn);
+        	tree->SetBranchAddress("trgSF", &trgSF);
+        	tree->SetBranchAddress("trgSF_Up", &trgSF_Up);
+        	tree->SetBranchAddress("trgSF_Dn", &trgSF_Dn);
+        	tree->SetBranchAddress("recoSF", &recoSF);
+        	tree->SetBranchAddress("recoSF_Up", &recoSF_Up);
+        	tree->SetBranchAddress("recoSF_Dn", &recoSF_Dn);
+        	tree->SetBranchAddress("IdSF", &IdSF);
+        	tree->SetBranchAddress("IdSF_Up", &IdSF_Up);
+        	tree->SetBranchAddress("IdSF_Dn", &IdSF_Dn);
+        	tree->SetBranchAddress("IsoSF", &IsoSF);
+        	tree->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
+        	tree->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
+	}
 
         TFile* fpthist = new TFile("/home/jhkim/ISR2016/unfolding/systematic/hPtRecnominal.root");
         TH1* hptcorr=(TH1*)fpthist->Get("data_");
@@ -397,7 +400,9 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                 if(isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15){
 
 		   TString postfix = "";
+		   
                    if(DYtautau){
+		      if(isAlt) continue;
                       fileout2->cd();
 	  	      postfix = "_tau";
 		   }
@@ -408,42 +413,44 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 		   Double_t wreco = weightRec*bTagReweight;
 		   Double_t wgen = weightGen;
 
-                   FillHistogram(ptOrMass::PT, "pt_nominal"+postfix,     ptRec->at(2), mRec->at(2), wgen*wreco);
-                   FillHistogram(ptOrMass::MASS, "mass_nominal"+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
+		   if(!isAlt){
+                   	FillHistogram(ptOrMass::PT, "pt_nominal"+postfix,     ptRec->at(2), mRec->at(2), wgen*wreco);
+                   	FillHistogram(ptOrMass::MASS, "mass_nominal"+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
 
-                   for(int idrcut = 0; idrcut < 19; idrcut++){
-                      TString dr_;
-                      if(idrcut<9) {
-                        dr_.Form("%d", idrcut+1);
-                        FillHistogram(ptOrMass::PT,   "pt_FSRDR0p"+dr_+postfix,   ptRec->at(2), mRec->at(2), wgen*wreco);
-                        FillHistogram(ptOrMass::MASS, "mass_FSRDR0p"+dr_+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
-                      }
-                      else{
-                        dr_.Form("%d",(idrcut+1)%10);
-                        FillHistogram(ptOrMass::PT,   "pt_FSRDR1p"+dr_+postfix,   ptRec->at(2), mRec->at(2), wgen*wreco);
-                        FillHistogram(ptOrMass::MASS, "mass_FSRDR1p"+dr_+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
-                      }
-                   }
+                   	for(int idrcut = 0; idrcut < 19; idrcut++){
+                   	   TString dr_;
+                   	   if(idrcut<9) {
+                   	     dr_.Form("%d", idrcut+1);
+                   	     FillHistogram(ptOrMass::PT,   "pt_FSRDR0p"+dr_+postfix,   ptRec->at(2), mRec->at(2), wgen*wreco);
+                   	     FillHistogram(ptOrMass::MASS, "mass_FSRDR0p"+dr_+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
+                   	   }
+                   	   else{
+                   	     dr_.Form("%d",(idrcut+1)%10);
+                   	     FillHistogram(ptOrMass::PT,   "pt_FSRDR1p"+dr_+postfix,   ptRec->at(2), mRec->at(2), wgen*wreco);
+                   	     FillHistogram(ptOrMass::MASS, "mass_FSRDR1p"+dr_+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
+                   	   }
+                   	}
 
-                   // loop to create systematic response matrix
-                   std::map<TString, int>::iterator it = sysMaps.begin();
-                   while(it != sysMaps.end()){
-                        if(it->first != "FSRDR"){ // 
+                   	// loop to create systematic response matrix
+                   	std::map<TString, int>::iterator it = sysMaps.begin();
+                   	while(it != sysMaps.end()){
+                   	     if(it->first != "FSRDR"){ // 
 
-                           for(int nSys = 0; nSys < it->second; nSys++){
-                               TString is;
-                               is.Form("%d", nSys);
+                   	        for(int nSys = 0; nSys < it->second; nSys++){
+                   	            TString is;
+                   	            is.Form("%d", nSys);
 
-                               wreco = GetSysWeights(it->first, true,  nSys);
-                               wgen = GetSysWeights(it->first, false,  nSys);
+                   	            wreco = GetSysWeights(it->first, true,  nSys);
+                   	            wgen = GetSysWeights(it->first, false,  nSys);
 
-                               FillHistogram(ptOrMass::PT,   "pt_"  + it->first+"_"+is+postfix,    ptRec->at(2), mRec->at(2), wgen*wreco);
-                               FillHistogram(ptOrMass::MASS, "mass_"  + it->first+"_"+is+postfix,  ptRec->at(2), mRec->at(2), wgen*wreco);
+                   	            FillHistogram(ptOrMass::PT,   "pt_"  + it->first+"_"+is+postfix,    ptRec->at(2), mRec->at(2), wgen*wreco);
+                   	            FillHistogram(ptOrMass::MASS, "mass_"  + it->first+"_"+is+postfix,  ptRec->at(2), mRec->at(2), wgen*wreco);
 
-                           }
-                        }
-                        it++;
-                   }// loop for systematic
+                   	        }
+                   	     }
+                   	     it++;
+                   	}// loop for systematic
+	           }
 
                }
                 
@@ -461,67 +468,70 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                    diptgen = ptPreFSR->at(2);
                    dimassgen = mPreFSR->at(2);
 
-                   TLorentzVector temp_particlePostFSR[19];
-                   TLorentzVector temp_anparticlePostFSR[19];
-                   Double_t drcut[19] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9};
-
-                   // add fsr photon in dr < 0.1 for lepton
-                   for(int idrcut = 0; idrcut < 19; idrcut++){
-                      temp_particlePostFSR[idrcut] = *particlePostFSR;
-                      for(int gsize = 0; gsize < particleFSR->size(); gsize++){
-
-                              Double_t temp_dr = sqrt(pow(particlePostFSR->Phi()-particleFSR->at(gsize).Phi(),2)+pow(particlePostFSR->Eta()-particleFSR->at(gsize).Eta(),2));
-                              if(temp_dr < drcut[idrcut]) temp_particlePostFSR[idrcut] += particleFSR->at(gsize);
-                      }
-                   }
-
-                   for(int idrcut = 0; idrcut < 19; idrcut++){
-                      temp_anparticlePostFSR[idrcut] = *anparticlePostFSR;
-                      for(int gsize = 0; gsize < anparticleFSR->size(); gsize++){
-
-                        Double_t temp_dr = sqrt(pow(anparticlePostFSR->Phi()-anparticleFSR->at(gsize).Phi(),2)+pow(anparticlePostFSR->Eta()-anparticleFSR->at(gsize).Eta(),2));
-                        if(temp_dr < drcut[idrcut]) temp_anparticlePostFSR[idrcut] += anparticleFSR->at(gsize);
-                      }
-                   }
-
-                   for(int idrcut = 0; idrcut < 19; idrcut++){
-                      Double_t temp_dipt = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).Pt();
-                      Double_t temp_dimass = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).M();
-                      TString dr_;
-                      if(idrcut<9) {
-                        dr_.Form("%d", idrcut+1);
-                        FillMigration2DM( ptOrMass::PT, selected, "pt_FSRDR0p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                        FillMigration2DM( ptOrMass::MASS, selected, "mass_FSRDR0p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                      }
-                      else{
-                        dr_.Form("%d", (idrcut+1)%10);
-                        FillMigration2DM( ptOrMass::PT, selected, "pt_FSRDR1p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                        FillMigration2DM( ptOrMass::MASS, selected, "mass_FSRDR1p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                      }
-                   }
-
-                   FillMigration2DM( ptOrMass::PT, selected, "pt_nominal",  diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+                   FillMigration2DM( ptOrMass::PT, selected,   "pt_nominal",   diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
                    FillMigration2DM( ptOrMass::MASS, selected, "mass_nominal", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
 
-		   // loop to create systematic response matrix
-		   std::map<TString, int>::iterator it = sysMaps.begin();
-		   while(it != sysMaps.end()){
-			if(it->first != "FSRDR"){ // 
+                   if(!isAlt){			
+                   	TLorentzVector temp_particlePostFSR[19];
+                   	TLorentzVector temp_anparticlePostFSR[19];
+                   	Double_t drcut[19] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9};
 
-			   for(int nSys = 0; nSys < it->second; nSys++){
-                               TString is;
-                               is.Form("%d", nSys);
+                   	// add fsr photon in dr < 0.1 for lepton
+                   	for(int idrcut = 0; idrcut < 19; idrcut++){
+                   	   temp_particlePostFSR[idrcut] = *particlePostFSR;
+                   	   for(int gsize = 0; gsize < particleFSR->size(); gsize++){
 
-			       Double_t wreco = GetSysWeights(it->first, true,  nSys);
-			       Double_t wgen  = GetSysWeights(it->first, false, nSys);
+                   	           Double_t temp_dr = sqrt(pow(particlePostFSR->Phi()-particleFSR->at(gsize).Phi(),2)+pow(particlePostFSR->Eta()-particleFSR->at(gsize).Eta(),2));
+                   	           if(temp_dr < drcut[idrcut]) temp_particlePostFSR[idrcut] += particleFSR->at(gsize);
+                   	   }
+                   	}
 
-                               FillMigration2DM( ptOrMass::PT,  selected,   "pt_"  + it->first+"_"+is,  diptrec, dimassrec, diptgen, dimassgen, wreco, wgen);
-                               FillMigration2DM( ptOrMass::MASS, selected,  "mass_"+ it->first+"_"+is,  diptrec, dimassrec, diptgen, dimassgen, wreco, wgen);
+                   	for(int idrcut = 0; idrcut < 19; idrcut++){
+                   	   temp_anparticlePostFSR[idrcut] = *anparticlePostFSR;
+                   	   for(int gsize = 0; gsize < anparticleFSR->size(); gsize++){
 
- 		           }
- 			}
-                        it++;
- 		   }// loop for systematic
+                   	     Double_t temp_dr = sqrt(pow(anparticlePostFSR->Phi()-anparticleFSR->at(gsize).Phi(),2)+pow(anparticlePostFSR->Eta()-anparticleFSR->at(gsize).Eta(),2));
+                   	     if(temp_dr < drcut[idrcut]) temp_anparticlePostFSR[idrcut] += anparticleFSR->at(gsize);
+                   	   }
+                   	}
+
+                   	for(int idrcut = 0; idrcut < 19; idrcut++){
+                   	   Double_t temp_dipt = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).Pt();
+                   	   Double_t temp_dimass = (temp_particlePostFSR[idrcut] + temp_anparticlePostFSR[idrcut]).M();
+                   	   TString dr_;
+                   	   if(idrcut<9) {
+                   	     dr_.Form("%d", idrcut+1);
+                   	     FillMigration2DM( ptOrMass::PT, selected, "pt_FSRDR0p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                   	     FillMigration2DM( ptOrMass::MASS, selected, "mass_FSRDR0p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                   	   }
+                   	   else{
+                   	     dr_.Form("%d", (idrcut+1)%10);
+                   	     FillMigration2DM( ptOrMass::PT, selected, "pt_FSRDR1p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                   	     FillMigration2DM( ptOrMass::MASS, selected, "mass_FSRDR1p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
+                   	   }
+                   	}
+
+
+		   	// loop to create systematic response matrix
+		   	std::map<TString, int>::iterator it = sysMaps.begin();
+		   	while(it != sysMaps.end()){
+		   	     if(it->first != "FSRDR"){ // 
+
+		   	        for(int nSys = 0; nSys < it->second; nSys++){
+                   	            TString is;
+                   	            is.Form("%d", nSys);
+
+		   	            Double_t wreco = GetSysWeights(it->first, true,  nSys);
+		   	            Double_t wgen  = GetSysWeights(it->first, false, nSys);
+
+                   	            FillMigration2DM( ptOrMass::PT,  selected,   "pt_"  + it->first+"_"+is,  diptrec, dimassrec, diptgen, dimassgen, wreco, wgen);
+                   	            FillMigration2DM( ptOrMass::MASS, selected,  "mass_"+ it->first+"_"+is,  diptrec, dimassrec, diptgen, dimassgen, wreco, wgen);
+
+ 		   	        }
+ 		   	     }
+                   	     it++;
+ 		   	}// loop for systematic
+		   }
 
                }// DY to ee or mumu events only
                //
@@ -529,9 +539,11 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 
            }// for DYtoLL MC case
         }// event loop
-        fileout2->cd();
-        GetPtBinningRec()->Write();
-        GetMassBinningRec()->Write();
+        if(!isAlt){
+		fileout2->cd();
+        	GetPtBinningRec()->Write();
+        	GetMassBinningRec()->Write();
+	}
 
         fileout1->cd();
         GetPtBinningRec()->Write();
@@ -610,6 +622,7 @@ void histTUnfold::SetMassBinningRec(){
  // FIXME save binning information in other place and read from there
  //const int nbin_fine=58;
  const int nbin_fine=54;
+
  //double bin_fine[nbin_fine+1]={40,42.5,45,47.5,50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
  double bin_fine[nbin_fine+1]={50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
 
@@ -628,6 +641,7 @@ void histTUnfold::SetMassBinningGen(){
  // FIXME save binning information in other place and read from there
  //const int nbin_wide=29;
  const int nbin_wide=27;
+
  //double bin_wide[nbin_wide+1]={40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
  double bin_wide[nbin_wide+1]={50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
 

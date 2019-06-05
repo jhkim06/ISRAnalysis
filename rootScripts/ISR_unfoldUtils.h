@@ -47,6 +47,9 @@ private:
 	vector<Double_t> meanMass_mc, meanMassErr_mc;
 	vector<Double_t> meanPt_mc,   meanPtErr_mc;
 
+	vector<Double_t> meanMass_mcAlt, meanMassErr_mcAlt;
+	vector<Double_t> meanPt_mcAlt,   meanPtErr_mcAlt;
+
 	// map to save systematic uncertainties on mass and pt for each source 
 	std::vector<std::map<TString, Double_t>>  meanMassErr_sysdata;
 	std::vector<std::map<TString, Double_t>>  meanPtErr_sysdata;

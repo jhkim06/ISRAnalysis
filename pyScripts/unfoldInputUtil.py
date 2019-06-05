@@ -92,9 +92,10 @@ def makeSigHists(sample, outputDirectory, channel):
 	outfile = rt.TFile(outputDirectory + sample.name+".root",'recreate')
         outfile_ = None
 
-        outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "sig")
+        if not sample.isAlt:  outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "sig") 
+	if sample.isAlt:      outDic[sample.name] = fHistDef.inputfHists(sample.name, outputDirectory + sample.name+".root", "sigAlt")
         # need to create histogram before the file loop to save one histogram from the multile input files
-        sigHists  = rt.histTUnfold(rt.std.map("TString, TH1*")(), rt.std.map("TString, TH2*")(), sample.isInc) 
+        sigHists  = rt.histTUnfold(rt.std.map("TString, TH1*")(), rt.std.map("TString, TH2*")(), sample.isInc, sample.isAlt) 
 
         sigHists.SetPtBinningRec()
         sigHists.SetMassBinningRec()
@@ -107,62 +108,63 @@ def makeSigHists(sample, outputDirectory, channel):
 	sigHists.CreateHistMap(ptOrMassEnum.PT.value, "nominal") 
 	sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal") 
 
-        sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100}
+	if not sample.isAlt:
+        	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100}
 
-        for sysName, nSys in sysDict.items():
-                sigHists.SetsysMap(sysName, nSys);
+        	for sysName, nSys in sysDict.items():
+        	        sigHists.SetsysMap(sysName, nSys);
 
-                for nthSys in range(0,nSys):
-                        sigHists.CreateHist2DMap(ptOrMassEnum.PT.value,   sysName+"_"+str(nthSys))
-                        sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, sysName+"_"+str(nthSys))
+        	        for nthSys in range(0,nSys):
+        	                sigHists.CreateHist2DMap(ptOrMassEnum.PT.value,   sysName+"_"+str(nthSys))
+        	                sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, sysName+"_"+str(nthSys))
 
-                        sigHists.CreateHistMap(ptOrMassEnum.PT.value,     sysName+"_"+str(nthSys))
-                        sigHists.CreateHistMap(ptOrMassEnum.MASS.value,   sysName+"_"+str(nthSys))
+        	                sigHists.CreateHistMap(ptOrMassEnum.PT.value,     sysName+"_"+str(nthSys))
+        	                sigHists.CreateHistMap(ptOrMassEnum.MASS.value,   sysName+"_"+str(nthSys))
 
-	
-        for i in range(19):
-		if i < 9:
-			sigHists.CreateHist2DMap(ptOrMassEnum.PT.value,   "FSRDR0p"+str(i+1)) 
-			sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "FSRDR0p"+str(i+1)) 
+		
+        	for i in range(19):
+			if i < 9:
+				sigHists.CreateHist2DMap(ptOrMassEnum.PT.value,   "FSRDR0p"+str(i+1)) 
+				sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "FSRDR0p"+str(i+1)) 
 
-                        sigHists.CreateHistMap(ptOrMassEnum.PT.value,   "FSRDR0p"+str(i+1))
-                        sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "FSRDR0p"+str(i+1))
+        	                sigHists.CreateHistMap(ptOrMassEnum.PT.value,   "FSRDR0p"+str(i+1))
+        	                sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "FSRDR0p"+str(i+1))
 
-		else:
-			sigHists.CreateHist2DMap(ptOrMassEnum.PT.value,   "FSRDR1p"+str((i+1)%10)) 
-			sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "FSRDR1p"+str((i+1)%10)) 
+			else:
+				sigHists.CreateHist2DMap(ptOrMassEnum.PT.value,   "FSRDR1p"+str((i+1)%10)) 
+				sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "FSRDR1p"+str((i+1)%10)) 
 
-                        sigHists.CreateHistMap(ptOrMassEnum.PT.value,     "FSRDR1p"+str((i+1)%10))
-                        sigHists.CreateHistMap(ptOrMassEnum.MASS.value,   "FSRDR1p"+str((i+1)%10))
+        	                sigHists.CreateHistMap(ptOrMassEnum.PT.value,     "FSRDR1p"+str((i+1)%10))
+        	                sigHists.CreateHistMap(ptOrMassEnum.MASS.value,   "FSRDR1p"+str((i+1)%10))
 
-	sigHists.SetsysMap("FSRDR", 19);
+		sigHists.SetsysMap("FSRDR", 19);
 
-        if sample.isInc: # for DY to tautau, make one more histogram
-	        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
-        	outDic[sample.name+"tau"] = fHistDef.inputfHists(sample.name+"tau", outputDirectory + sample.name+"tau.root", "bkg")
+        	if sample.isInc: # for DY to tautau, make one more histogram
+		        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
+        		outDic[sample.name+"tau"] = fHistDef.inputfHists(sample.name+"tau", outputDirectory + sample.name+"tau.root", "bkg")
 
-        	sigHists.SetPtBinningRec()
-        	sigHists.SetMassBinningRec()
+        		sigHists.SetPtBinningRec()
+        		sigHists.SetMassBinningRec()
 
-	        sigHists.CreateHistMap(ptOrMassEnum.PT.value,  "nominal", "_tau") 
-	        sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal", "_tau") 
+		        sigHists.CreateHistMap(ptOrMassEnum.PT.value,  "nominal", "_tau") 
+		        sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal", "_tau") 
 
-                for i in range(19):
-                        if i < 9:
-                                sigHists.CreateHistMap(ptOrMassEnum.PT.value,   "FSRDR0p"+str(i+1), "_tau") 
-                                sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "FSRDR0p"+str(i+1), "_tau") 
-                        else:
+        	        for i in range(19):
+        	                if i < 9:
+        	                        sigHists.CreateHistMap(ptOrMassEnum.PT.value,   "FSRDR0p"+str(i+1), "_tau") 
+        	                        sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "FSRDR0p"+str(i+1), "_tau") 
+        	                else:
 
-                                sigHists.CreateHistMap(ptOrMassEnum.PT.value,     "FSRDR1p"+str((i+1)%10), "_tau") 
-                                sigHists.CreateHistMap(ptOrMassEnum.MASS.value,   "FSRDR1p"+str((i+1)%10), "_tau") 
+        	                        sigHists.CreateHistMap(ptOrMassEnum.PT.value,     "FSRDR1p"+str((i+1)%10), "_tau") 
+        	                        sigHists.CreateHistMap(ptOrMassEnum.MASS.value,   "FSRDR1p"+str((i+1)%10), "_tau") 
 
 
-                for sysName, nSys in sysDict.items():
-                        sigHists.SetsysMap(sysName, nSys);
+        	        for sysName, nSys in sysDict.items():
+        	                sigHists.SetsysMap(sysName, nSys);
 
-                        for nthSys in range(0,nSys):
-                                sigHists.CreateHistMap(ptOrMassEnum.PT.value,     sysName+"_"+str(nthSys), "_tau")
-                                sigHists.CreateHistMap(ptOrMassEnum.MASS.value,   sysName+"_"+str(nthSys), "_tau")
+        	                for nthSys in range(0,nSys):
+        	                        sigHists.CreateHistMap(ptOrMassEnum.PT.value,     sysName+"_"+str(nthSys), "_tau")
+        	                        sigHists.CreateHistMap(ptOrMassEnum.MASS.value,   sysName+"_"+str(nthSys), "_tau")
 
 
         for filepath in sample.path:	
@@ -181,7 +183,7 @@ def makeSigHists(sample, outputDirectory, channel):
         outfile.Write()
         outfile.Delete()
 
-        if sample.isInc:
+        if sample.isInc and not sample.isAlt:
         	outfile_.Write()
         	outfile_.Delete()
 

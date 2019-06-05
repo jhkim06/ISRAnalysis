@@ -54,7 +54,10 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
 
 	TString matrixName = sysName + "_" + nth_;
 
-        TH2* hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
+        TH2* hmcGenRec = NULL;
+	if(sysName.CompareTo("Alt") == 0) hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
+        else hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
+
         //TH2* hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
         TUnfoldBinning* binning_Rec = NULL;
         TUnfoldBinning* binning_Gen = NULL;
@@ -109,6 +112,7 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
 	}
 	else{
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
+		if(postfix.CompareTo("Alt") == 0) hRec = (TH1*)filein->Get("h"+var+"Recnominal");
         	//hRec = (TH1*)filein->Get("h"+var+"Recnominal");
         	if( var.CompareTo("Pt") == 0 )   sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias); // 
         	if( var.CompareTo("Mass") == 0 ) sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); // 
@@ -132,6 +136,7 @@ void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString 
 	}
 	else{	
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
+                if(postfix.CompareTo("Alt") == 0 ) hRec = (TH1*)filein->Get("h"+var+"Recnominal");
         	//hRec = (TH1*)filein->Get("h"+var+"Recnominal");
         	if( var.CompareTo("Pt") == 0 )   sysPtUnfold[postfix].at(nth)  ->SubtractBackground(hRec, bkgName);
         	if( var.CompareTo("Mass") == 0 ) sysMassUnfold[postfix].at(nth)->SubtractBackground(hRec, bkgName);
@@ -174,16 +179,21 @@ void ISRUnfold::setMeanMass(){
 
         TH1* hunfolded_mass =  nomMassUnfold->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
         TH1 *histMCTruth_mass= nomMassUnfold->GetBias("histMCTruth_mass",0,0,"*[UO]",kTRUE);
+        TH1 *histMCTruth_massAlt= sysMassUnfold["Alt"].at(0)->GetBias("histMCTruth_massAlt",0,0,"*[UO]",kTRUE);
 
         for(int ibin = 0; ibin < 5; ibin++){
                 hunfolded_mass->GetXaxis()->  SetRange(hunfolded_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
                 histMCTruth_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+                histMCTruth_massAlt->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
 
                 meanMass_data.   push_back(hunfolded_mass->GetMean());
                 meanMassStatErr_data.push_back(hunfolded_mass->GetMeanError());
 
                 meanMass_mc.   push_back(histMCTruth_mass->GetMean());
                 meanMassErr_mc.push_back(histMCTruth_mass->GetMeanError());
+
+                meanMass_mcAlt.   push_back(histMCTruth_massAlt->GetMean());
+                meanMassErr_mcAlt.push_back(histMCTruth_massAlt->GetMeanError());
 
 	        std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysMassUnfold.begin();
                 std::map<TString, std::vector<Double_t>> temp_map; // temp map to save systematic results for a mass bin
@@ -275,15 +285,20 @@ void ISRUnfold::setMeanPt(){
 
            TH1* hpt_temp_data;
            TH1* hpt_temp_mc;
+           TH1* hpt_temp_mcAlt;
 
            hpt_temp_data = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
            hpt_temp_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+           hpt_temp_mcAlt   = sysPtUnfold["Alt"].at(0)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
            meanPt_data.   push_back(hpt_temp_data->GetMean());
            meanPtStatErr_data.push_back(hpt_temp_data->GetMeanError());
 
            meanPt_mc.   push_back(hpt_temp_mc->GetMean());
            meanPtErr_mc.push_back(hpt_temp_mc->GetMeanError());
+
+           meanPt_mcAlt.   push_back(hpt_temp_mcAlt->GetMean());
+           meanPtErr_mcAlt.push_back(hpt_temp_mcAlt->GetMeanError());
 
            std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtUnfold.begin();
 	   std::map<TString, std::vector<Double_t>> temp_map; // temp map to save systematic results for a mass bin
@@ -397,6 +412,14 @@ void ISRUnfold::drawISRresult(TString outpdf){
         grMC->SetMarkerSize(1.);
         grMC->SetLineStyle(1);
         grMC->Draw("pe same");
+
+        TGraphErrors *grMCAlt = new TGraphErrors(5, &meanMass_mcAlt[0], &meanPt_mcAlt[0], &meanMassErr_mcAlt[0], &meanPtErr_mcAlt[0]);
+        grMCAlt->SetLineColor(kRed);
+        grMCAlt->SetMarkerColor(kRed);
+        grMCAlt->SetMarkerStyle(24);
+        grMCAlt->SetMarkerSize(1.);
+        grMCAlt->SetLineStyle(1);
+        grMCAlt->Draw("pe same");
 
         TF1 *f1 = new TF1("f1", "[0]+[1]*log(x)", 40., 350.);
         f1->GetXaxis()->SetRangeUser(40., 350.);
@@ -599,7 +622,10 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 TH1 * hmcsys_temp = NULL;
        
                 if(var.CompareTo("Pt") == 0 )   hdatasys_temp = sysPtUnfold[sysName].at(i)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-		if(var.CompareTo("Pt") == 0 && sysName.CompareTo("Scale") == 0 && i == 1) hmcsys_temp = sysPtUnfold[sysName].at(i)->GetOutput("hunfolded_pt_systemp_",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
+		if(var.CompareTo("Pt") == 0 && sysName.CompareTo("Alt") == 0 ){
+	 		hmcsys_temp = sysPtUnfold[sysName].at(i)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
+			hmcsys_temp->SetDirectory(0);
+		}
 
                 if(var.CompareTo("Mass") == 0 ){
               		hdatasys_temp = sysMassUnfold[sysName].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
@@ -639,13 +665,14 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 hpt_sys_temp->SetLineColor(kBlack);
                 hpt_sys_temp->SetLineStyle(2);
 		if(hmcsys_temp!=NULL){
+			cout << "draw " << sysName << " MC histogram " << " 1 bin content: " << hmcsys_temp->GetBinContent(1) << endl;
 			hmcsys_temp->Draw("histsame");
 			hmcsys_temp->SetLineColor(kBlue);
 		}
 
 
               delete hdatasys_temp;
-	      delete hmcsys_temp;
+	      //delete hmcsys_temp;
           }
 
 	hunfolded_sys_err->Draw("E2same");
