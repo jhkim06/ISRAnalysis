@@ -575,7 +575,7 @@ void histTUnfold::SetPtBinningRec(){
 
  // FIXME save binning information in other place and read from there
  const int nmassbin_fine=5;
- double massbin_fine[nmassbin_fine+1]={50,60,80,100,200,350};
+ double massbin_fine[nmassbin_fine+1]={50,65,80,100,200,350};
 
  // pt bins for reco
  //const int nptbin_fine=50;
@@ -596,7 +596,7 @@ void histTUnfold::SetPtBinningGen(){
 
  // FIXME save binning information in other place and read from there
  const int nmassbin_wide=5;
- double massbin_wide[nmassbin_wide+1]={50,60,80,100,200,350};
+ double massbin_wide[nmassbin_wide+1]={50,65,80,100,200,350};
 
  // pt bins for gen
  //const int nptbin_wide=20;

@@ -128,13 +128,12 @@ if args.getUnfoldResultsV2:
 
 			# systematic test
 			postfix = sysName
-			RM_postfix = sysName
         		if sysName != "Alt": 
-				unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Pt",     RM_postfix, nthSys, False)
-        			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Mass",   RM_postfix, nthSys, False)
+				unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, nthSys, False)
+        			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, nthSys, False)
 			if sysName == "Alt":
-				unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Pt",     RM_postfix, nthSys, False)
-        			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Mass",   RM_postfix, nthSys, False)
+				unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Pt",     postfix, nthSys, False)
+        			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Mass",   postfix, nthSys, False)
 
 			unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'], nthSys, True)
 			unfoldClass.setInput("Mass", postfix, unfoldInputList['data'], nthSys, True)

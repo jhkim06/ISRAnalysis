@@ -175,7 +175,12 @@ void ISRUnfold::doISRUnfold(){
 
 void ISRUnfold::setMeanMass(){
 
-        Double_t massBins[6] = {50., 65., 80., 100., 200., 350.};
+        //Double_t massBins[6] = {50., 65., 80., 100., 200., 350.};
+
+        const TUnfoldBinningV17* temp_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
+	const TVectorD* temp_tvecd = temp_binning->GetDistributionBinning(1);
+	const Double_t* massBins = temp_tvecd->GetMatrixArray();
+
 
         TH1* hunfolded_mass =  nomMassUnfold->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
         TH1 *histMCTruth_mass= nomMassUnfold->GetBias("histMCTruth_mass",0,0,"*[UO]",kTRUE);
@@ -217,6 +222,7 @@ void ISRUnfold::setMeanMass(){
 
 	delete hunfolded_mass;
 	delete histMCTruth_mass;
+	delete histMCTruth_massAlt;
 
         // check systematic mean values
         int size = meanMass_sysdata.size();
@@ -319,6 +325,7 @@ void ISRUnfold::setMeanPt(){
 
            delete hpt_temp_data;
 	   delete hpt_temp_mc;
+	   delete hpt_temp_mcAlt;
         }
 
 	// check systematic mean values
@@ -401,7 +408,7 @@ void ISRUnfold::drawISRresult(TString outpdf){
         grUnfolded->SetLineStyle(1);
         grUnfolded->Draw("ape");
         grUnfolded->GetYaxis()->SetRangeUser(10.,30.);
-        grUnfolded->GetXaxis()->SetLimits(30.,800.);
+        grUnfolded->GetXaxis()->SetLimits(30.,500.);
         grUnfolded->GetYaxis()->SetTitle("Average p_{T} (GeV)");
         grUnfolded->GetXaxis()->SetTitle("Average Mass (GeV)");
 
@@ -553,7 +560,11 @@ void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TStr
 
 void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TString sysName){
 
-	const Double_t massBins[6] = {50., 65., 80., 100., 200., 350.};
+	//const Double_t massBins[6] = {50., 65., 80., 100., 200., 350.};
+
+        const TUnfoldBinningV17* temp_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
+        const TVectorD* temp_tvecd = temp_binning->GetDistributionBinning(1);
+        const Double_t* massBins = temp_tvecd->GetMatrixArray();
 
         gROOT->SetBatch();
 
