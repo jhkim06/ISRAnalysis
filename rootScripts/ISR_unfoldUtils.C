@@ -173,6 +173,93 @@ void ISRUnfold::doISRUnfold(){
 
 }
 
+// need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
+void ISRUnfold::DoFit(TString var, int nthMassBin){
+
+	TH1 *g_fcnHist=0;
+	TMatrixD *g_fcnMatrix=0;
+
+	TH1* hpt_temp_data;
+	TH1* hpt_temp_mc;
+	TH2 *hrho;
+
+        TString ibinMass;
+        ibinMass.Form("%d", nthMassBin);
+
+	hpt_temp_data = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+	hpt_temp_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+	hrho          = nomPtUnfold->GetRhoIJtotal("histRho", 0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
+	
+	cout << "rho matrix dimention: nbinx " << hrho->GetXaxis()->GetNbins() << " nbiny: " << hrho->GetXaxis()->GetNbins() << endl;
+	
+        int n=hpt_temp_data->GetNbinsX(); 
+
+        TMatrixDSym v(n);
+        //g_fcnMatrix=new TMatrixD(n,n);
+        for(int i=0;i<n;i++) {
+           for(int j=0;j<n;j++) {
+              v(i,j)=hrho->GetBinContent(i+1,j+1)*(hpt_temp_data->GetBinError(i+1)*hpt_temp_data->GetBinError(j+1));
+           }
+        }
+
+        TMatrixDSymEigen ev(v);
+        TMatrixD d(n,n);
+        TVectorD di(ev.GetEigenValues());
+        for(int i=0;i<n;i++) {
+           if(di(i)>0.0) {
+              d(i,i)=1./di(i);
+           } else {
+              cout<<"bad eigenvalue i="<<i<<" di="<<di(i)<<"\n";
+              exit(0);
+           }
+        }
+
+        TMatrixD O(ev.GetEigenVectors());
+        TMatrixD DOT(d,TMatrixD::kMultTranspose,O);
+        g_fcnMatrix=new TMatrixD(O,TMatrixD::kMult,DOT);
+        TMatrixD test(*g_fcnMatrix,TMatrixD::kMult,v);
+        int error=0;
+        for(int i=0;i<n;i++) {
+           if(TMath::Abs(test(i,i)-1.0)>1.E-7) {
+              error++;
+           }
+           for(int j=0;j<n;j++) {
+              if(i==j) continue;
+              if(TMath::Abs(test(i,j)>1.E-7)) error++;
+           }
+        }
+
+	// calculate chi2
+        double chi2 = 0.;
+        double ndf = 0.;
+        for(int i=0;i<hpt_temp_data->GetNbinsX();i++) {
+           double di=hpt_temp_data->GetBinContent(i+1)-hpt_temp_mc->GetBinContent(i+1);
+           if(g_fcnMatrix) {
+              for(int j=0;j<hpt_temp_data->GetNbinsX();j++) {
+                 double dj=hpt_temp_data->GetBinContent(j+1)-hpt_temp_mc->GetBinContent(j+1);
+                 chi2+=di*dj*(*g_fcnMatrix)(i,j);
+              }
+           } else {
+              double pull=di/hpt_temp_data->GetBinError(i+1);
+              chi2+=pull*pull;
+           }
+           ndf+=1.0;
+        }
+
+	cout << "chi2: " << chi2 << " ndf: " << ndf << endl;
+
+	delete g_fcnHist;
+        delete g_fcnMatrix;
+
+        delete hpt_temp_data;
+        delete hpt_temp_mc;
+        delete hrho;
+
+
+
+
+}
+
 void ISRUnfold::setMeanMass(){
 
         //Double_t massBins[6] = {50., 65., 80., 100., 200., 350.};
@@ -352,7 +439,7 @@ void ISRUnfold::setMeanPt(){
                         if( temp_err > err){
                                err = temp_err;
                         }
-			//cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl; 
+			cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl; 
 		}// loop for systematic variations
 		if((it->first).CompareTo("PDFerror") == 0){
 			err = hpdfsys->GetRMS();

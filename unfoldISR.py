@@ -118,8 +118,8 @@ if args.getUnfoldResultsV2:
         unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets")
 
 
-	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1}
-	#sysDict = {"Scale": 2}
+	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2}
+	#sysDict = {"Alt": 1, "L1Prefire": 2}
 
 	for sysName, nSys in sysDict.items():
 		for nthSys in range(0,nSys):
@@ -177,6 +177,13 @@ if args.getUnfoldResultsV2:
 
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_" + args.channel + ".pdf")
 
+
+	# calculate chi2 at unfoled distributions
+	unfoldClass.DoFit("Pt", 0)
+	unfoldClass.DoFit("Pt", 1)
+	unfoldClass.DoFit("Pt", 2)
+	unfoldClass.DoFit("Pt", 3)
+	unfoldClass.DoFit("Pt", 4)
 	del unfoldClass
 
 def makeRecoPlots():

@@ -20,6 +20,20 @@ enum ptOrMass{
   PT = 1, MASS
 };
 
+const int nmassBins_fine_muon = 58; 
+const int nmassBins_wide_muon = 29; 
+const Double_t massBins_fine_muon[nmassBins_fine_muon+1] =     {40,42.5,45,47.5,50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
+const Double_t massBins_wide_muon[nmassBins_wide_muon+1] =     {40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
+
+const int nmassBins_fine_electron = 54; 
+const int nmassBins_wide_electron = 27; 
+const Double_t massBins_fine_electron[nmassBins_fine_electron+1] = {50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
+const Double_t massBins_wide_electron[nmassBins_wide_electron+1] = {50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350}; 
+
+const int nmassBins_forPt = 5;
+const Double_t massBins_forPt_muon[nmassBins_forPt+1] =     {40,60,80,100,200,350};
+const Double_t massBins_forPt_electron[nmassBins_forPt+1] = {50,65,80,100,200,350};
+
 class histTUnfold {
 
 private:
@@ -53,9 +67,15 @@ private:
         vector<Double_t> *ptPostFSR;
         vector<Double_t> *mPostFSR;
         vector<Double_t> *ptRec;
-        vector<Double_t> *etaRec;
         vector<Double_t> *mRec;
-        vector<Double_t> *l1PreFire;
+        vector<Double_t> *ptRec_momentumUp;
+        vector<Double_t> *mRec_momentumUp;
+        vector<Double_t> *ptRec_momentumDown;
+        vector<Double_t> *mRec_momentumDown;
+        vector<Double_t> *ptRec_momentumResUp;
+        vector<Double_t> *mRec_momentumResUp;
+        vector<Double_t> *ptRec_momentumResDown;
+        vector<Double_t> *mRec_momentumResDown;
         vector<Double_t> *AlphaS;
         vector<Double_t> *Scale;
         vector<Double_t> *PDFerror;
@@ -81,6 +101,9 @@ private:
         Double_t        IsoSF;
         Double_t        IsoSF_Up;
         Double_t        IsoSF_Dn;
+        Double_t        L1Prefire;
+        Double_t        L1Prefire_Up;
+        Double_t        L1Prefire_Dn;
 
         TBranch        *b_particleFSR;   //!
         TBranch        *b_anparticleFSR;   //!
@@ -99,10 +122,10 @@ public:
   	Bool_t isInc, isSig, isAlt;
 
   	// binning
-	void SetPtBinningRec();
-	void SetPtBinningGen();
-	void SetMassBinningRec();
-	void SetMassBinningGen();
+	void SetPtBinningRec(TString channel);
+	void SetPtBinningGen(TString channel);
+	void SetMassBinningRec(TString channel);
+	void SetMassBinningGen(TString channel);
 
 	inline TUnfoldBinning* GetPtBinningRec(){ return ptBinningRec;}
 	inline TUnfoldBinning* GetMassBinningRec(){ return massBinningRec;}

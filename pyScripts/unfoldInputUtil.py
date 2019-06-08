@@ -36,19 +36,19 @@ def makeRecoHists(sample, outputDirectory, channel):
 	# https://root.cern.ch/faq/how-generate-dictionary
 	vrecoHists = rt.std.vector("histTUnfold")()
 	vrecoHists.push_back(test)
-	vrecoHists.at(0).SetPtBinningRec()
-	vrecoHists.at(0).SetMassBinningRec()
+	vrecoHists.at(0).SetPtBinningRec(channel)
+	vrecoHists.at(0).SetMassBinningRec(channel)
 	vrecoHists.at(0).CreateHistMap(ptOrMassEnum.PT.value, "test") # 1: pt
 	vrecoHists.at(0).CreateHistMap(ptOrMassEnum.MASS.value, "test") # 2: mass
   	######################################################################################
 
-	recoHists.SetPtBinningRec()
-	recoHists.SetMassBinningRec()
+	recoHists.SetPtBinningRec(channel)
+	recoHists.SetMassBinningRec(channel)
 
 	recoHists.CreateHistMap(ptOrMassEnum.PT.value, "nominal")
 	recoHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal")
 
- 	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100}
+ 	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "L1Prefire": 2, "LepScale": 2, "LepRes": 2} 
 
 	for sysName, nSys in sysDict.items():
         	recoHists.SetsysMap(sysName, nSys);
@@ -97,10 +97,10 @@ def makeSigHists(sample, outputDirectory, channel):
         # need to create histogram before the file loop to save one histogram from the multile input files
         sigHists  = rt.histTUnfold(rt.std.map("TString, TH1*")(), rt.std.map("TString, TH2*")(), sample.isInc, sample.isAlt) 
 
-        sigHists.SetPtBinningRec()
-        sigHists.SetMassBinningRec()
-        sigHists.SetPtBinningGen()
-        sigHists.SetMassBinningGen()
+        sigHists.SetPtBinningRec(channel)
+        sigHists.SetMassBinningRec(channel)
+        sigHists.SetPtBinningGen(channel)
+        sigHists.SetMassBinningGen(channel)
       
 	sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "nominal") 
 	sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "nominal") 
@@ -109,7 +109,7 @@ def makeSigHists(sample, outputDirectory, channel):
 	sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal") 
 
 	if not sample.isAlt:
-        	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100}
+        	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "L1Prefire": 2, "LepScale": 2, "LepRes": 2} 
 
         	for sysName, nSys in sysDict.items():
         	        sigHists.SetsysMap(sysName, nSys);
@@ -143,8 +143,8 @@ def makeSigHists(sample, outputDirectory, channel):
 		        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
         		outDic[sample.name+"tau"] = fHistDef.inputfHists(sample.name+"tau", outputDirectory + sample.name+"tau.root", "bkg")
 
-        		sigHists.SetPtBinningRec()
-        		sigHists.SetMassBinningRec()
+        		sigHists.SetPtBinningRec(channel)
+        		sigHists.SetMassBinningRec(channel)
 
 		        sigHists.CreateHistMap(ptOrMassEnum.PT.value,  "nominal", "_tau") 
 		        sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal", "_tau") 

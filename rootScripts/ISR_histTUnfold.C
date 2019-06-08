@@ -68,6 +68,14 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
 
  	ptRec = 0;
         mRec = 0; 	
+ 	ptRec_momentumUp = 0;
+        mRec_momentumUp = 0; 	
+ 	ptRec_momentumDown = 0;
+        mRec_momentumDown = 0; 	
+ 	ptRec_momentumResUp = 0;
+        mRec_momentumResUp = 0; 	
+ 	ptRec_momentumResDown = 0;
+        mRec_momentumResDown = 0; 	
         AlphaS = 0;
         Scale = 0;
         PDFerror = 0;
@@ -77,6 +85,14 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
         tree=(TTree *)filein->Get("tree");
         tree->SetBranchAddress("ptRec",&ptRec);
         tree->SetBranchAddress("mRec",&mRec);
+        tree->SetBranchAddress("ptRec_momentumUp",&ptRec_momentumUp);
+        tree->SetBranchAddress("mRec_momentumUp",&mRec_momentumUp);
+        tree->SetBranchAddress("ptRec_momentumDown",&ptRec_momentumDown);
+        tree->SetBranchAddress("mRec_momentumDown",&mRec_momentumDown);
+        tree->SetBranchAddress("ptRec_momentumResUp",&ptRec_momentumResUp);
+        tree->SetBranchAddress("mRec_momentumResUp",&mRec_momentumResUp);
+        tree->SetBranchAddress("ptRec_momentumResDown",&ptRec_momentumResDown);
+        tree->SetBranchAddress("mRec_momentumResDown",&mRec_momentumResDown);
         tree->SetBranchAddress("IsElEl",&IsElEl);
         tree->SetBranchAddress("IsMuMu",&IsMuMu);
         tree->SetBranchAddress("ispassRec",&ispassRec);
@@ -101,6 +117,9 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
         tree->SetBranchAddress("IsoSF", &IsoSF);
         tree->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
         tree->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
+        tree->SetBranchAddress("L1Prefire",    &L1Prefire);
+        tree->SetBranchAddress("L1Prefire_Up", &L1Prefire_Up);
+        tree->SetBranchAddress("L1Prefire_Dn", &L1Prefire_Dn);
 
 	TBranch* b_alphas =(TBranch*) tree->GetListOfBranches()->FindObject("AlphaS");
 	TBranch* b_scale =(TBranch*) tree->GetListOfBranches()->FindObject("Scale");
@@ -112,8 +131,9 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
         if(b_pdferror) tree->SetBranchAddress("PDFerror",&PDFerror);
         if(b_zptcorr)  tree->SetBranchAddress("ZPtCor",&ZPtCor);	
 
-
         nentries=tree->GetEntries();
+
+	double lep1_ptCut, lep2_ptCut;
 
 	for(int i=0;i<nentries;i++){
         //for(int i=0;i<10000;i++){
@@ -121,10 +141,19 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
           tree->GetEntry(i);
 
           int isdilep = 0;
-          if( channel.CompareTo("electron") == 0 ) isdilep = IsElEl;
-          if( channel.CompareTo("muon") == 0 ) isdilep = IsMuMu;
+          if( channel.CompareTo("electron") == 0 ){ 
+		isdilep = IsElEl;
+		lep1_ptCut = 25.;
+		lep2_ptCut = 15.;
+	  }
+          if( channel.CompareTo("muon") == 0 ){ 
+		isdilep = IsMuMu;
+		lep1_ptCut = 20.;
+		lep2_ptCut = 10.;
+	  }
 
-           if(isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15){
+	   // nominal dilepton event selection 
+           if(isdilep && ispassRec && isBveto && ptRec->at(0) > lep1_ptCut && ptRec->at(1) > lep2_ptCut){
                  fileout1->cd();
 
 		 Double_t wreco = weightRec*bTagReweight;
@@ -149,7 +178,7 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
                  // loop to create systematic response matrix
                  std::map<TString, int>::iterator it = sysMaps.begin();
                  while(it != sysMaps.end()){
-                      if(it->first != "FSRDR"){ // 
+                      if(it->first != "FSRDR" && it->first != "LepScale" && it->first != "LepRes"){ // TODO also skip lepton scale/resolution systematic 
 
                          for(int nSys = 0; nSys < it->second; nSys++){
                              TString is;
@@ -166,7 +195,49 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
                       it++;
                  }// loop for systematic
 
+           }// 
+
+	   // dilepton event selection with lepton momentum scale up
+	   if(isdilep && ispassRec && isBveto && ptRec_momentumUp->at(0) > lep1_ptCut && ptRec_momentumUp->at(1) > lep2_ptCut){
+                 fileout1->cd();
+
+                 Double_t wreco = weightRec*bTagReweight;
+                 Double_t wgen = weightGen;
+                 FillHistogram(ptOrMass::PT,   "pt_LepScale_0",     ptRec_momentumUp->at(2), mRec_momentumUp->at(2), wgen*wreco);
+                 FillHistogram(ptOrMass::MASS, "mass_LepScale_0",   ptRec_momentumUp->at(2), mRec_momentumUp->at(2), wgen*wreco);
+	   }
+
+           // dilepton event selection with lepton momentum scale down 
+           if(isdilep && ispassRec && isBveto && ptRec_momentumDown->at(0) > lep1_ptCut && ptRec_momentumDown->at(1) > lep2_ptCut){
+                 fileout1->cd();
+
+                 Double_t wreco = weightRec*bTagReweight;
+                 Double_t wgen = weightGen;
+                 FillHistogram(ptOrMass::PT,   "pt_LepScale_1",     ptRec_momentumDown->at(2), mRec_momentumDown->at(2), wgen*wreco);
+                 FillHistogram(ptOrMass::MASS, "mass_LepScale_1",   ptRec_momentumDown->at(2), mRec_momentumDown->at(2), wgen*wreco);
            }
+
+           // dilepton event selection with lepton momentum resolution up
+           if(isdilep && ispassRec && isBveto && ptRec_momentumResUp->at(0) > lep1_ptCut && ptRec_momentumResUp->at(1) > lep2_ptCut){
+                 fileout1->cd();
+
+                 Double_t wreco = weightRec*bTagReweight;
+                 Double_t wgen = weightGen;
+                 FillHistogram(ptOrMass::PT,   "pt_LepRes_0",     ptRec_momentumResUp->at(2), mRec_momentumResUp->at(2), wgen*wreco);
+                 FillHistogram(ptOrMass::MASS, "mass_LepRes_0",   ptRec_momentumResUp->at(2), mRec_momentumResUp->at(2), wgen*wreco);
+           }   
+
+           // dilepton event selection with lepton momentum resolution down
+           if(isdilep && ispassRec && isBveto && ptRec_momentumResDown->at(0) > lep1_ptCut && ptRec_momentumResDown->at(1) > lep2_ptCut){
+                 fileout1->cd();
+
+                 Double_t wreco = weightRec*bTagReweight;
+                 Double_t wgen = weightGen;
+                 FillHistogram(ptOrMass::PT,   "pt_LepRes_1",     ptRec_momentumResDown->at(2), mRec_momentumResDown->at(2), wgen*wreco);
+                 FillHistogram(ptOrMass::MASS, "mass_LepRes_1",   ptRec_momentumResDown->at(2), mRec_momentumResDown->at(2), wgen*wreco);
+           }   
+
+
 
         }// event loop
 
@@ -230,6 +301,16 @@ Double_t histTUnfold::GetSysWeights(TString sysName, bool isReco, int nthSys){
                 }   
         }// IsoSF
 
+        else if(sysName == "L1Prefire"){
+                if(isReco){
+                        if(nthSys == 0) return weightRec*bTagReweight*L1Prefire_Up/L1Prefire;
+                        if(nthSys == 1) return weightRec*bTagReweight*L1Prefire_Dn/L1Prefire;
+                }
+                else{
+                        return weightGen;
+                }
+        }// L1Prefire
+
         else if(sysName == "AlphaS"){
                 if(isReco){
 			return weightRec*bTagReweight;
@@ -283,9 +364,16 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
         ptPostFSR = 0;
         mPostFSR = 0;
         ptRec = 0;
-        etaRec = 0;
         mRec = 0;
-        l1PreFire = 0;
+        ptRec_momentumUp = 0;
+        mRec_momentumUp = 0;
+        ptRec_momentumDown = 0;
+        mRec_momentumDown = 0;
+        ptRec_momentumResUp = 0;
+        mRec_momentumResUp = 0;
+        ptRec_momentumResDown = 0;
+        mRec_momentumResDown = 0;
+
         AlphaS = 0;
         Scale = 0;
         PDFerror = 0;
@@ -302,6 +390,14 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
         tree->SetBranchAddress("mPostFSR",&mPostFSR);
         tree->SetBranchAddress("ptRec",&ptRec);
         tree->SetBranchAddress("mRec",&mRec);
+        tree->SetBranchAddress("ptRec_momentumUp",&ptRec_momentumUp);
+        tree->SetBranchAddress("mRec_momentumUp",&mRec_momentumUp);
+        tree->SetBranchAddress("ptRec_momentumDown",&ptRec_momentumDown);
+        tree->SetBranchAddress("mRec_momentumDown",&mRec_momentumDown);
+        tree->SetBranchAddress("ptRec_momentumResUp",&ptRec_momentumResUp);
+        tree->SetBranchAddress("mRec_momentumResUp",&mRec_momentumResUp);
+        tree->SetBranchAddress("ptRec_momentumResDown",&ptRec_momentumResDown);
+        tree->SetBranchAddress("mRec_momentumResDown",&mRec_momentumResDown);
         tree->SetBranchAddress("IsElEl",&IsElEl);
         tree->SetBranchAddress("IsMuMu",&IsMuMu);
         tree->SetBranchAddress("ispassRec",&ispassRec);
@@ -341,6 +437,9 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
         	tree->SetBranchAddress("IsoSF", &IsoSF);
         	tree->SetBranchAddress("IsoSF_Up", &IsoSF_Up);
         	tree->SetBranchAddress("IsoSF_Dn", &IsoSF_Dn);
+        	tree->SetBranchAddress("L1Prefire",    &L1Prefire);
+        	tree->SetBranchAddress("L1Prefire_Up", &L1Prefire_Up);
+        	tree->SetBranchAddress("L1Prefire_Dn", &L1Prefire_Dn);
 	}
 
         TFile* fpthist = new TFile("/home/jhkim/ISR2016/unfolding/systematic/hPtRecnominal.root");
@@ -361,6 +460,8 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 
         nentries=tree->GetEntries();
 
+        double lep1_ptCut, lep2_ptCut;
+
         for(int i=0;i<nentries;i++){
         //for(int i=0;i<10000;i++){
           if(i%10000000==0) cout<<i<<endl;
@@ -372,10 +473,14 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
           if( channel.CompareTo("electron") == 0 ){
                   isdilep = IsElEl;
                   issignal = isdielectron;
+                  lep1_ptCut = 25.;
+                  lep2_ptCut = 15.;
           }
           if( channel.CompareTo("muon") == 0 ){
                   isdilep = IsMuMu;
                   issignal = isdimuon;
+		  lep1_ptCut = 20.;
+		  lep2_ptCut = 10.;
           }
 
           if( std::isinf(bTagReweight) ){
@@ -397,7 +502,7 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                 Double_t zptWeight = 1.;
                 zptWeight = ZPtCor;
 
-                if(isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15){
+                if(isdilep && ispassRec && isBveto && ptRec->at(0) > lep1_ptCut && ptRec->at(1) > lep2_ptCut){
 
 		   TString postfix = "";
 		   
@@ -413,7 +518,10 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 		   Double_t wreco = weightRec*bTagReweight;
 		   Double_t wgen = weightGen;
 
+		   if( wreco == 0 ) continue; // FIXME check why zero value is saved (check L1Prefire for muon channel)
+
 		   if(!isAlt){
+						    //map name of histogram	
                    	FillHistogram(ptOrMass::PT, "pt_nominal"+postfix,     ptRec->at(2), mRec->at(2), wgen*wreco);
                    	FillHistogram(ptOrMass::MASS, "mass_nominal"+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
 
@@ -434,7 +542,7 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                    	// loop to create systematic response matrix
                    	std::map<TString, int>::iterator it = sysMaps.begin();
                    	while(it != sysMaps.end()){
-                   	     if(it->first != "FSRDR"){ // 
+                   	     if(it->first != "FSRDR" && it->first != "LepScale" && it->first != "LepRes"){ // 
 
                    	        for(int nSys = 0; nSys < it->second; nSys++){
                    	            TString is;
@@ -453,6 +561,64 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 	           }
 
                }
+		if(!isAlt){
+
+                   TString postfix = "";
+
+                   if(DYtautau){
+                      if(isAlt) continue;
+                      fileout2->cd();
+                      postfix = "_tau";
+                   }
+                   else{
+                        fileout1->cd();
+                   }
+
+                   Double_t wreco = weightRec*bTagReweight;
+                   Double_t wgen = weightGen;
+
+                   // dilepton event selection with lepton momentum scale up
+                   if(isdilep && ispassRec && isBveto && ptRec_momentumUp->at(0) > lep1_ptCut && ptRec_momentumUp->at(1) > lep2_ptCut){
+                         fileout1->cd();
+
+                         Double_t wreco = weightRec*bTagReweight;
+                         Double_t wgen = weightGen;
+                         FillHistogram(ptOrMass::PT,   "pt_LepScale_0"+postfix,     ptRec_momentumUp->at(2), mRec_momentumUp->at(2), wgen*wreco);
+                         FillHistogram(ptOrMass::MASS, "mass_LepScale_0"+postfix,   ptRec_momentumUp->at(2), mRec_momentumUp->at(2), wgen*wreco);
+                   }   
+
+                   // dilepton event selection with lepton momentum scale down 
+                   if(isdilep && ispassRec && isBveto && ptRec_momentumDown->at(0) > lep1_ptCut && ptRec_momentumDown->at(1) > lep2_ptCut){
+                         fileout1->cd();
+
+                         Double_t wreco = weightRec*bTagReweight;
+                         Double_t wgen = weightGen;
+                         FillHistogram(ptOrMass::PT,   "pt_LepScale_1"+postfix,     ptRec_momentumDown->at(2), mRec_momentumDown->at(2), wgen*wreco);
+                         FillHistogram(ptOrMass::MASS, "mass_LepScale_1"+postfix,   ptRec_momentumDown->at(2), mRec_momentumDown->at(2), wgen*wreco);
+                   }   
+
+                   // dilepton event selection with lepton momentum resolution up
+                   if(isdilep && ispassRec && isBveto && ptRec_momentumResUp->at(0) > lep1_ptCut && ptRec_momentumResUp->at(1) > lep2_ptCut){
+                         fileout1->cd();
+
+                         Double_t wreco = weightRec*bTagReweight;
+                         Double_t wgen = weightGen;
+                         FillHistogram(ptOrMass::PT,   "pt_LepRes_0"+postfix,     ptRec_momentumResUp->at(2), mRec_momentumResUp->at(2), wgen*wreco);
+                         FillHistogram(ptOrMass::MASS, "mass_LepRes_0"+postfix,   ptRec_momentumResUp->at(2), mRec_momentumResUp->at(2), wgen*wreco);
+                   }   
+
+                   // dilepton event selection with lepton momentum resolution down
+                   if(isdilep && ispassRec && isBveto && ptRec_momentumResDown->at(0) > lep1_ptCut && ptRec_momentumResDown->at(1) > lep2_ptCut){
+                         fileout1->cd();
+
+                         Double_t wreco = weightRec*bTagReweight;
+                         Double_t wgen = weightGen;
+                         FillHistogram(ptOrMass::PT,   "pt_LepRes_1"+postfix,     ptRec_momentumResDown->at(2), mRec_momentumResDown->at(2), wgen*wreco);
+                         FillHistogram(ptOrMass::MASS, "mass_LepRes_1"+postfix,   ptRec_momentumResDown->at(2), mRec_momentumResDown->at(2), wgen*wreco);
+                   }   
+		}
+
+
                 
                /////////////////////////////////////////// fill migration matrix ////////////////////////////////////////
                //
@@ -461,17 +627,60 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 
                    Double_t diptrec = -999., dimassrec = -999.;
                    Double_t diptgen = -999., dimassgen = -999.;
+			
+		   // systematic dilepton pt and mass
+                   Double_t diptrec_ScaleUp = -999., dimassrec_ScaleUp = -999.;
+                   Double_t diptrec_ScaleDn = -999., dimassrec_ScaleDn = -999.;
+                   Double_t diptrec_ResUp = -999., dimassrec_ResUp = -999.;
+                   Double_t diptrec_ResDn = -999., dimassrec_ResDn = -999.;
 
-                   bool selected = (isdilep && ispassRec && isBveto && ptRec->at(0) > 25 && ptRec->at(1) > 15);
+
+                   bool selected = (isdilep && ispassRec && isBveto && ptRec->at(0) > lep1_ptCut && ptRec->at(1) > lep2_ptCut);
+
                    // check if there are selected dilepton at detector to avoid memory error
-                   if(ptRec->size() == 3){ diptrec = ptRec->at(2), dimassrec = mRec->at(2);}
-                   diptgen = ptPreFSR->at(2);
+                   if(ptRec->size() == 3){ 
+			diptrec   = ptRec->at(2);
+	                dimassrec = mRec->at(2);
+		   }
+
+                   diptgen =   ptPreFSR->at(2);
                    dimassgen = mPreFSR->at(2);
 
                    FillMigration2DM( ptOrMass::PT, selected,   "pt_nominal",   diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
                    FillMigration2DM( ptOrMass::MASS, selected, "mass_nominal", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
 
                    if(!isAlt){			
+                   	bool selected_ScaleUp = (isdilep && ispassRec && isBveto && ptRec_momentumUp->at(0) 	  >   lep1_ptCut && ptRec_momentumUp->at(1) > lep2_ptCut);
+                   	bool selected_ScaleDn = (isdilep && ispassRec && isBveto && ptRec_momentumDown->at(0)    >   lep1_ptCut && ptRec_momentumDown->at(1) > lep2_ptCut);
+                   	bool selected_ResUp =   (isdilep && ispassRec && isBveto && ptRec_momentumResUp->at(0) >   lep1_ptCut && ptRec_momentumResUp->at(1) > lep2_ptCut);
+                   	bool selected_ResDn =   (isdilep && ispassRec && isBveto && ptRec_momentumResDown->at(0) >   lep1_ptCut && ptRec_momentumResDown->at(1) > lep2_ptCut);
+
+                   	if(ptRec->size() == 3){ 
+		   	     diptrec_ScaleUp   = ptRec_momentumUp->at(2);
+	           	     dimassrec_ScaleUp = mRec_momentumUp->at(2);
+
+		   	     diptrec_ScaleDn   = ptRec_momentumDown->at(2);
+	           	     dimassrec_ScaleDn = mRec_momentumDown->at(2);
+
+		   	     diptrec_ResUp   = ptRec_momentumResUp->at(2);
+	           	     dimassrec_ResUp = mRec_momentumResUp->at(2);
+
+		   	     diptrec_ResDn   = ptRec_momentumResDown->at(2);
+	           	     dimassrec_ResDn = mRec_momentumResDown->at(2);
+		   	}
+
+                   	FillMigration2DM( ptOrMass::PT, selected,   "pt_LepScale_0",   diptrec_ScaleUp, dimassrec_ScaleUp, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+                   	FillMigration2DM( ptOrMass::MASS, selected, "mass_LepScale_0", diptrec_ScaleUp, dimassrec_ScaleUp, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+
+                   	FillMigration2DM( ptOrMass::PT, selected,   "pt_LepScale_1",   diptrec_ScaleDn, dimassrec_ScaleDn, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+                   	FillMigration2DM( ptOrMass::MASS, selected, "mass_LepScale_1", diptrec_ScaleDn, dimassrec_ScaleDn, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+
+                   	FillMigration2DM( ptOrMass::PT, selected,   "pt_LepRes_0",   diptrec_ResUp, dimassrec_ResUp, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+                   	FillMigration2DM( ptOrMass::MASS, selected, "mass_LepRes_0", diptrec_ResUp, dimassrec_ResUp, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+
+                   	FillMigration2DM( ptOrMass::PT, selected,   "pt_LepRes_1",   diptrec_ResDn, dimassrec_ResDn, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+                   	FillMigration2DM( ptOrMass::MASS, selected, "mass_LepRes_1", diptrec_ResDn, dimassrec_ResDn, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+
                    	TLorentzVector temp_particlePostFSR[19];
                    	TLorentzVector temp_anparticlePostFSR[19];
                    	Double_t drcut[19] = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9};
@@ -569,88 +778,42 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 }
 
 
-
-
-void histTUnfold::SetPtBinningRec(){
-
- // FIXME save binning information in other place and read from there
- const int nmassbin_fine=5;
- double massbin_fine[nmassbin_fine+1]={50,65,80,100,200,350};
-
- // pt bins for reco
- //const int nptbin_fine=50;
- //double ptbin_fine[nptbin_fine+1];
- //for(int i = 0; i < nptbin_fine + 1; i++){
- //   ptbin_fine[i] = i*2;
- //}
+void histTUnfold::SetPtBinningRec(TString channel){
 
  const int nptbin_fine=17;
  double ptbin_fine[nptbin_fine+1]={0., 2., 4., 6., 8., 10., 12., 14., 18., 22., 28., 35., 45., 55., 65., 75., 85., 100.};
 
  ptBinningRec= new TUnfoldBinning("Rec_Pt");
  ptBinningRec->AddAxis("pt",nptbin_fine,ptbin_fine,false,true);
- ptBinningRec->AddAxis("mass",nmassbin_fine,massbin_fine,true,true);
+ if( channel.CompareTo("electron") == 0 ) ptBinningRec->AddAxis("mass", nmassBins_forPt, massBins_forPt_electron, true, true);
+ if( channel.CompareTo("muon") == 0 )     ptBinningRec->AddAxis("mass", nmassBins_forPt, massBins_forPt_muon, true, true);
 }
 
-void histTUnfold::SetPtBinningGen(){
+void histTUnfold::SetPtBinningGen(TString channel){
 
- // FIXME save binning information in other place and read from there
- const int nmassbin_wide=5;
- double massbin_wide[nmassbin_wide+1]={50,65,80,100,200,350};
+ const int nptbin_wide=9;
+ double ptbin_wide[nptbin_wide+1]={0., 4., 8., 12., 18., 28., 40., 55., 80., 100.};
 
- // pt bins for gen
- //const int nptbin_wide=20;
- //double ptbin_wide[nptbin_wide+1];
- //for(int i = 0; i < nptbin_wide + 1; i++){
- //    ptbin_wide[i] = i*5;
- //}
-
- //const int nptbin_wide=9;
- //double ptbin_wide[nptbin_wide+1]={0., 4., 8., 12., 18., 28., 40., 55., 80., 100.};
-
- const int nptbin_wide=17;
- double ptbin_wide[nptbin_wide+1]={0., 2., 4., 6., 8., 10., 12., 14., 18., 22., 28., 35., 45., 55., 65., 75., 85., 100.};
+ //const int nptbin_wide=17;
+ //double ptbin_wide[nptbin_wide+1]={0., 2., 4., 6., 8., 10., 12., 14., 18., 22., 28., 35., 45., 55., 65., 75., 85., 100.};
 
  ptBinningGen=(new TUnfoldBinning("Gen_Pt"));
  ptBinningGen->AddAxis("pt",nptbin_wide,ptbin_wide,false,true);
- ptBinningGen->AddAxis("mass",nmassbin_wide,massbin_wide,true,true);
+ if( channel.CompareTo("electron") == 0 ) ptBinningGen->AddAxis("mass", nmassBins_forPt, massBins_forPt_electron, true, true);
+ if( channel.CompareTo("muon") == 0 )     ptBinningGen->AddAxis("mass", nmassBins_forPt, massBins_forPt_muon, true, true);
 
 }
 
-void histTUnfold::SetMassBinningRec(){
-
- // FIXME save binning information in other place and read from there
- //const int nbin_fine=58;
- const int nbin_fine=54;
-
- //double bin_fine[nbin_fine+1]={40,42.5,45,47.5,50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
- double bin_fine[nbin_fine+1]={50,52.5,55,57.5,60,62.5,65,67.5,70,72.5,75,77.5,80,82.5,85,87.5,90,92.5,95,97.5,100,102.5,105,107.5,110,112.5,115,117.5,120,123,126,129.5,133,137,141,145.5,150,155,160,165.5,171,178,185,192.5,200,209,218,229,240,254,268,284,300,325,350};
-
- //const int nbin_fine=300;
- //double bin_fine[nbin_fine+1];
- //for(int i = 0; i < nbin_fine + 1; i++){
- //    bin_fine[i] = 50. + (double)i;
- //}
+void histTUnfold::SetMassBinningRec(TString channel){
 
  massBinningRec=(new TUnfoldBinning("Rec_Mass"));
- massBinningRec->AddAxis("reco mass",nbin_fine,bin_fine,false,false);
+ if( channel.CompareTo("electron") == 0 ) massBinningRec->AddAxis("reco mass", nmassBins_fine_electron, massBins_fine_electron, false, false);
+ if( channel.CompareTo("muon") == 0 )     massBinningRec->AddAxis("reco mass", nmassBins_fine_muon,     massBins_fine_muon, false, false);
 }
 
-void histTUnfold::SetMassBinningGen(){
-
- // FIXME save binning information in other place and read from there
- //const int nbin_wide=29;
- const int nbin_wide=27;
-
- //double bin_wide[nbin_wide+1]={40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
- double bin_wide[nbin_wide+1]={50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
-
- //const int nbin_wide=150;
- //double bin_wide[nbin_wide+1];
- //for(int i = 0; i < nbin_wide + 1; i++){
- //    bin_wide[i] = 50. + (double)(i*2);
- //}
+void histTUnfold::SetMassBinningGen(TString channel){
 
  massBinningGen=(new TUnfoldBinning("Gen_Mass"));
- massBinningGen->AddAxis("gen mass",nbin_wide,bin_wide,true,true);
+ if( channel.CompareTo("electron") == 0 ) massBinningGen->AddAxis("gen mass", nmassBins_wide_electron, massBins_wide_electron, true, true);
+ if( channel.CompareTo("muon") == 0 )     massBinningGen->AddAxis("gen mass", nmassBins_wide_muon,     massBins_wide_muon,     true, true);
 }

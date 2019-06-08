@@ -20,6 +20,7 @@
 #include <TMathText.h>
 #include <TLatex.h>
 #include <THStack.h>
+#include <TMatrixDSymEigen.h>
 #include "TUnfoldBinningXML.h"
 #include "TUnfoldBinning.h"
 #include "TUnfoldDensity.h"
@@ -91,6 +92,9 @@ public:
 
 	void setMeanPt();
 	void setMeanMass();
+
+	// need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
+	void DoFit(TString var = "Pt", int nthMassBin = 0); // chi2 fit for unfolded distribution
 
 	// draw ISR result
 	void drawISRresult(TString outpdf);
