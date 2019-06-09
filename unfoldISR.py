@@ -118,7 +118,7 @@ if args.getUnfoldResultsV2:
         unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets")
 
 
-	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2}
+	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1}
 	#sysDict = {"Alt": 1, "L1Prefire": 2}
 
 	for sysName, nSys in sysDict.items():
@@ -135,8 +135,11 @@ if args.getUnfoldResultsV2:
 				unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Pt",     postfix, nthSys, False)
         			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Mass",   postfix, nthSys, False)
 
-			unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'], nthSys, True)
-			unfoldClass.setInput("Mass", postfix, unfoldInputList['data'], nthSys, True)
+			bias = 1.;
+			if sysName == "unfoldBias": bias = 0. 
+			
+			unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'], nthSys, True, bias)
+			unfoldClass.setInput("Mass", postfix, unfoldInputList['data'], nthSys, True, bias)
 
         		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
         		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
@@ -175,7 +178,14 @@ if args.getUnfoldResultsV2:
                         unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 3, sysName);
                         unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 4, sysName);
 
+			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , 0, sysName)
+			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , 1, sysName)
+			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , 2, sysName)
+			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , 3, sysName)
+			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , 4, sysName)
+
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_" + args.channel + ".pdf")
+
 
 
 	# calculate chi2 at unfoled distributions

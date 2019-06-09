@@ -8,6 +8,7 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TH1.h>
+#include <TExec.h>
 #include <TDOMParser.h>
 #include <TXMLDocument.h>
 
@@ -90,11 +91,16 @@ public:
 	// draw input histograms using GetInput	
 	void drawInputPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
 
+	// draw nominal result with systematics 
+	void drawSysPlots(TString outpdf, int nthMassBin = 0, TString sysName = "");
+
+	void drawtext(TGraph* g);
+
 	void setMeanPt();
 	void setMeanMass();
 
 	// need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
-	void DoFit(TString var = "Pt", int nthMassBin = 0); // chi2 fit for unfolded distribution
+	double DoFit(TString var = "Pt", int nthMassBin = 0); // chi2 fit for unfolded distribution
 
 	// draw ISR result
 	void drawISRresult(TString outpdf);

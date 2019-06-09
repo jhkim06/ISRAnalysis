@@ -55,7 +55,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
 	TString matrixName = sysName + "_" + nth_;
 
         TH2* hmcGenRec = NULL;
-	if(sysName.CompareTo("Alt") == 0) hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
+	if(sysName.CompareTo("Alt") == 0 || sysName.CompareTo("unfoldBias") == 0) hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
         else hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
 
         //TH2* hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
@@ -112,7 +112,7 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
 	}
 	else{
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
-		if(postfix.CompareTo("Alt") == 0) hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+		if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0) hRec = (TH1*)filein->Get("h"+var+"Recnominal");
         	//hRec = (TH1*)filein->Get("h"+var+"Recnominal");
         	if( var.CompareTo("Pt") == 0 )   sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias); // 
         	if( var.CompareTo("Mass") == 0 ) sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); // 
@@ -136,7 +136,7 @@ void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString 
 	}
 	else{	
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
-                if(postfix.CompareTo("Alt") == 0 ) hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+                if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0) hRec = (TH1*)filein->Get("h"+var+"Recnominal");
         	//hRec = (TH1*)filein->Get("h"+var+"Recnominal");
         	if( var.CompareTo("Pt") == 0 )   sysPtUnfold[postfix].at(nth)  ->SubtractBackground(hRec, bkgName);
         	if( var.CompareTo("Mass") == 0 ) sysMassUnfold[postfix].at(nth)->SubtractBackground(hRec, bkgName);
@@ -174,7 +174,7 @@ void ISRUnfold::doISRUnfold(){
 }
 
 // need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
-void ISRUnfold::DoFit(TString var, int nthMassBin){
+double ISRUnfold::DoFit(TString var, int nthMassBin){
 
 	TH1 *g_fcnHist=0;
 	TMatrixD *g_fcnMatrix=0;
@@ -186,11 +186,11 @@ void ISRUnfold::DoFit(TString var, int nthMassBin){
         TString ibinMass;
         ibinMass.Form("%d", nthMassBin);
 
-	hpt_temp_data = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-	hpt_temp_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-	hrho          = nomPtUnfold->GetRhoIJtotal("histRho", 0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
+	hpt_temp_data = nomPtUnfold->GetOutput("hunfolded_pt_temp_chi",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+	hpt_temp_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp_chi",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+	hrho          = nomPtUnfold->GetRhoIJtotal("histRho_chi", 0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
 	
-	cout << "rho matrix dimention: nbinx " << hrho->GetXaxis()->GetNbins() << " nbiny: " << hrho->GetXaxis()->GetNbins() << endl;
+	//cout << "rho matrix dimention: nbinx " << hrho->GetXaxis()->GetNbins() << " nbiny: " << hrho->GetXaxis()->GetNbins() << endl;
 	
         int n=hpt_temp_data->GetNbinsX(); 
 
@@ -219,6 +219,7 @@ void ISRUnfold::DoFit(TString var, int nthMassBin){
         g_fcnMatrix=new TMatrixD(O,TMatrixD::kMult,DOT);
         TMatrixD test(*g_fcnMatrix,TMatrixD::kMult,v);
         int error=0;
+
         for(int i=0;i<n;i++) {
            if(TMath::Abs(test(i,i)-1.0)>1.E-7) {
               error++;
@@ -246,7 +247,6 @@ void ISRUnfold::DoFit(TString var, int nthMassBin){
            ndf+=1.0;
         }
 
-	cout << "chi2: " << chi2 << " ndf: " << ndf << endl;
 
 	delete g_fcnHist;
         delete g_fcnMatrix;
@@ -255,8 +255,7 @@ void ISRUnfold::DoFit(TString var, int nthMassBin){
         delete hpt_temp_mc;
         delete hrho;
 
-
-
+	return chi2/ndf;
 
 }
 
@@ -311,7 +310,7 @@ void ISRUnfold::setMeanMass(){
 	delete histMCTruth_mass;
 	delete histMCTruth_massAlt;
 
-        // check systematic mean values
+        // calculate systematic uncertaintiess
         int size = meanMass_sysdata.size();
         for(int i = 0; i < size; i++){
 
@@ -319,6 +318,7 @@ void ISRUnfold::setMeanMass(){
            std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata.at(i).begin();
            while(it != meanMass_sysdata.at(i).end()){
                 int size_ = it->second.size();
+                if((it->first).CompareTo("FSRDR") == 0){ it++; continue;}
 
                 TH1F *hpdfsys = NULL;
                 if((it->first).CompareTo("PDFerror") == 0) hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data.at(i)-0.2, meanMass_data.at(i)+0.2); // temp histogram to contain PDF variations
@@ -415,7 +415,7 @@ void ISRUnfold::setMeanPt(){
 	   delete hpt_temp_mcAlt;
         }
 
-	// check systematic mean values
+	// calculate systematic uncertainties
 	int size = meanPt_sysdata.size();
 	for(int i = 0; i < size; i++){
 
@@ -423,6 +423,7 @@ void ISRUnfold::setMeanPt(){
            std::map<TString, std::vector<Double_t>>::iterator it = meanPt_sysdata.at(i).begin();
            while(it != meanPt_sysdata.at(i).end()){
 		int size_ = it->second.size(); // size of systematic variations
+		if((it->first).CompareTo("FSRDR") == 0){ it++; continue;}
 		
 		TH1F *hpdfsys = NULL;
 		if((it->first).CompareTo("PDFerror") == 0) hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanPt_data.at(i)-0.2, meanPt_data.at(i)+0.2); // temp histogram to contain PDF variations
@@ -473,6 +474,21 @@ void ISRUnfold::drawISRresult(TString outpdf){
 
         gROOT->SetBatch();
 
+	Double_t zero_err[5] = {0.};
+
+	// temporary map to show variations respect to dR to add FSR photons
+	std::map<int, std::vector<Double_t>> FSR_temp_pt;
+	std::map<int, std::vector<Double_t>> FSR_temp_mass;
+
+	for(int i = 0; i < 5; i++){
+
+		int size = meanPt_sysdata.at(i)["FSRDR"].size();
+		for(int j = 0; j < size; j++){
+			FSR_temp_pt[j].  push_back((meanPt_sysdata.at(i)["FSRDR"]).at(j));
+			FSR_temp_mass[j].push_back((meanMass_sysdata.at(i)["FSRDR"]).at(j));
+		}
+	}
+
         setTDRStyle();
         writeExtraText = true;       // if extra text
         extraText  = "work in progress";
@@ -514,6 +530,20 @@ void ISRUnfold::drawISRresult(TString outpdf){
         grMCAlt->SetMarkerSize(1.);
         grMCAlt->SetLineStyle(1);
         grMCAlt->Draw("pe same");
+
+        grUnfolded->Draw("pe same");
+
+        //TGraphErrors *grFSRtest;
+        //int map_size = FSR_temp_mass.size();
+	//for(int i = 0; i < map_size; i++){
+        //	grFSRtest = new TGraphErrors(5, &(FSR_temp_mass[i])[0], &(FSR_temp_pt[i])[0], zero_err, zero_err);
+        //	grFSRtest->SetLineColor(kBlue);
+        //	grFSRtest->SetMarkerColor(kBlue);
+        //	grFSRtest->SetMarkerStyle(24);
+        //	grFSRtest->SetMarkerSize(0.5);
+        //	grFSRtest->SetLineStyle(1);
+        //	grFSRtest->Draw("pe same");
+	//}
 
         TF1 *f1 = new TF1("f1", "[0]+[1]*log(x)", 40., 350.);
         f1->GetXaxis()->SetRangeUser(40., 350.);
@@ -644,6 +674,102 @@ void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TStr
         delete c1;
 }
 
+// https://root.cern.ch/root/html/tutorials/graphs/graphtext.C.html
+void ISRUnfold::drawtext(TGraph *g)
+{
+   Int_t i,n;
+   Double_t x,y;
+   TLatex *l;
+
+   n = g->GetN();
+   for (i=0; i<n; i++) {
+       g->GetPoint(i,x,y);
+       l = new TLatex(x-0.1,y+0.02,Form("%d",i+1));
+       l->SetTextSize(0.015);
+       l->SetTextFont(42);
+       l->SetTextAlign(21);
+       l->Draw();
+   }
+}
+
+void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName){
+
+        gROOT->SetBatch();
+
+        TString ibinMass;
+        ibinMass.Form("%d", nthMassBin);
+
+        c1 = new TCanvas("c1","c1", 50, 50, 850, 700);
+        c1->cd();
+        gStyle->SetOptFit(0);
+
+        c1->SetBottomMargin(0.2);
+        c1->SetTopMargin(0.08);
+        c1->SetTicks(1);
+        //c1->SetGridx();
+        //c1->SetGridy();
+
+	int sysSize = sysPtUnfold[sysName].size();
+        double amaxMass=meanMass_data[nthMassBin]+ 2. * meanMassTotErr_data[nthMassBin];
+        double aminMass=meanMass_data[nthMassBin]- 2. * meanMassTotErr_data[nthMassBin];
+        double amaxPt=meanPt_data[nthMassBin]+ 2. * meanPtTotErr_data[nthMassBin];
+        double aminPt=meanPt_data[nthMassBin]- 2. * meanPtTotErr_data[nthMassBin];
+        for(int i=0;i<sysSize;i++) {
+           amaxMass=TMath::Max(amaxMass, (meanMass_sysdata.at(nthMassBin)[sysName])[i]);
+           aminMass=TMath::Min(aminMass, (meanMass_sysdata.at(nthMassBin)[sysName])[i]);
+
+           amaxPt=TMath::Max(amaxPt, (meanPt_sysdata.at(nthMassBin)[sysName])[i]);
+           aminPt=TMath::Min(aminPt, (meanPt_sysdata.at(nthMassBin)[sysName])[i]);
+        }
+
+
+        TGraphErrors *grUnfolded = new TGraphErrors(1, &meanMass_data[nthMassBin], &meanPt_data[nthMassBin], &meanMassTotErr_data[nthMassBin], &meanPtTotErr_data[nthMassBin]);
+        grUnfolded->SetLineColor(kBlack);
+        grUnfolded->SetMarkerColor(kBlack);
+        grUnfolded->SetMarkerStyle(20);
+        grUnfolded->SetMarkerSize(1.);
+        grUnfolded->SetLineStyle(1);
+        grUnfolded->Draw("ape");
+        grUnfolded->GetYaxis()->SetRangeUser(aminPt*0.995,amaxPt*1.005);
+        grUnfolded->GetXaxis()->SetLimits(aminMass*0.995,amaxMass*1.005);
+        grUnfolded->GetYaxis()->SetTitle("Average p_{T} (GeV)");
+        grUnfolded->GetXaxis()->SetTitle("Average Mass (GeV)");
+
+	// meanPtStatErr_data
+        TGraphErrors *grStatErr = new TGraphErrors(1, &meanMass_data[nthMassBin], &meanPt_data[nthMassBin], &meanMassStatErr_data[nthMassBin], &meanPtStatErr_data[nthMassBin]);
+        grStatErr->SetFillColor(kBlue);;
+	grStatErr->SetFillColorAlpha(kBlue,0.3);
+        grStatErr->Draw("sameE2");
+
+        TGraph *grSys = new TGraph(sysSize, &(meanMass_sysdata.at(nthMassBin)[sysName])[0], &(meanPt_sysdata.at(nthMassBin)[sysName])[0] );
+        grSys->SetLineColor(kRed);
+        grSys->SetMarkerColor(kRed);
+        grSys->SetMarkerStyle(20);
+        grSys->SetMarkerSize(0.8);
+        grSys->SetLineStyle(1);
+        grSys->Draw("pe same ");
+	drawtext(grSys);
+
+
+        grUnfolded->Draw("pe same");
+
+        TLegend* leg = new TLegend(0.6, 0.70, 0.85, 0.9,"","brNDC");
+        leg->SetTextSize(0.04);
+        leg->SetFillStyle(0);
+        leg->SetBorderSize(0);
+
+        leg->AddEntry(grUnfolded, "Nominal point", "pl");
+        leg->AddEntry(grSys, "Systematic (" + sysName + ")" , "pl");
+        leg->Draw();
+
+
+        CMS_lumi( c1, 4, 11 );
+        c1->SaveAs(outpdf+"_"+ibinMass+"_"+sysName+".pdf");
+        delete grUnfolded;
+	delete c1;
+
+}
+
 
 void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TString sysName){
 
@@ -720,7 +846,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 TH1 * hmcsys_temp = NULL;
        
                 if(var.CompareTo("Pt") == 0 )   hdatasys_temp = sysPtUnfold[sysName].at(i)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-		if(var.CompareTo("Pt") == 0 && sysName.CompareTo("Alt") == 0 ){
+		if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Alt") == 0 || sysName.CompareTo("FSRDR") == 0 ) && i == 0){
 	 		hmcsys_temp = sysPtUnfold[sysName].at(i)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
 			hmcsys_temp->SetDirectory(0);
 		}
@@ -788,6 +914,15 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 
         leg_nom->AddEntry(hunfolded_data, "Unfolded data (mean: " + mean_nom + ")", "pl");
         leg_nom->Draw();
+
+	TLatex chi2_norm;
+        TString chi2_;
+
+	// TODO add Mass option	
+	if(var.CompareTo("Pt") == 0 ){
+		chi2_.Form("%f",DoFit("Pt", nthMassBin));
+ 		chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
+	}
 
 	c1->cd();
 
