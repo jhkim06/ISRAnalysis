@@ -42,8 +42,11 @@ def makeRecoHists(sample, outputDirectory, channel):
 	vrecoHists.at(0).CreateHistMap(ptOrMassEnum.MASS.value, "test") # 2: mass
   	######################################################################################
 
-	recoHists.SetPtBinningRec(channel)
-	recoHists.SetMassBinningRec(channel)
+	#recoHists.SetPtBinningRec(channel)
+	#recoHists.SetMassBinningRec(channel)
+
+	recoHists.SetPtBinningRec("electron")
+	recoHists.SetMassBinningRec("electron")
 
 	recoHists.CreateHistMap(ptOrMassEnum.PT.value, "nominal")
 	recoHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal")
@@ -56,16 +59,6 @@ def makeRecoHists(sample, outputDirectory, channel):
 		for nthSys in range(0,nSys):
 			recoHists.CreateHistMap(ptOrMassEnum.PT.value,   sysName+"_"+str(nthSys))
 			recoHists.CreateHistMap(ptOrMassEnum.MASS.value, sysName+"_"+str(nthSys))
-
-       # for i in range(19):
-       #         if i < 9:
-       #                 recoHists.CreateHistMap(ptOrMassEnum.PT.value,   "FSRDR0p"+str(i+1))
-       #                 recoHists.CreateHistMap(ptOrMassEnum.MASS.value, "FSRDR0p"+str(i+1))
-       #         else:
-
-       #                 recoHists.CreateHistMap(ptOrMassEnum.PT.value,     "FSRDR1p"+str((i+1)%10))
-       #                 recoHists.CreateHistMap(ptOrMassEnum.MASS.value,   "FSRDR1p"+str((i+1)%10))
-
 
 
         for filepath in sample.path:	
@@ -101,12 +94,20 @@ def makeSigHists(sample, outputDirectory, channel):
         sigHists.SetMassBinningRec(channel)
         sigHists.SetPtBinningGen(channel)
         sigHists.SetMassBinningGen(channel)
+
+        #sigHists.SetPtBinningRec("electron")
+        #sigHists.SetMassBinningRec("electron")
+        #sigHists.SetPtBinningGen("electron")
+        #sigHists.SetMassBinningGen("electron")
       
 	sigHists.CreateHist2DMap(ptOrMassEnum.PT.value, "nominal") 
 	sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "nominal") 
 
 	sigHists.CreateHistMap(ptOrMassEnum.PT.value, "nominal") 
 	sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal") 
+
+	sigHists.CreateHistMap(ptOrMassEnum.PT.value, "nominal", "", False) 
+	sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal", "", False) 
 
 	if not sample.isAlt:
         	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30} 
@@ -121,23 +122,6 @@ def makeSigHists(sample, outputDirectory, channel):
         	                sigHists.CreateHistMap(ptOrMassEnum.PT.value,     sysName+"_"+str(nthSys))
         	                sigHists.CreateHistMap(ptOrMassEnum.MASS.value,   sysName+"_"+str(nthSys))
 
-		
-        	#for i in range(19):
-		#	if i < 9:
-		#		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value,   "FSRDR0p"+str(i+1)) 
-		#		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "FSRDR0p"+str(i+1)) 
-
-        	#                sigHists.CreateHistMap(ptOrMassEnum.PT.value,   "FSRDR0p"+str(i+1))
-        	#                sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "FSRDR0p"+str(i+1))
-
-		#	else:
-		#		sigHists.CreateHist2DMap(ptOrMassEnum.PT.value,   "FSRDR1p"+str((i+1)%10)) 
-		#		sigHists.CreateHist2DMap(ptOrMassEnum.MASS.value, "FSRDR1p"+str((i+1)%10)) 
-
-        	#               sigHists.CreateHistMap(ptOrMassEnum.PT.value,     "FSRDR1p"+str((i+1)%10))
-        	#                sigHists.CreateHistMap(ptOrMassEnum.MASS.value,   "FSRDR1p"+str((i+1)%10))
-
-		#sigHists.SetsysMap("FSRDR", 19);
 
         	if sample.isInc: # for DY to tautau, make one more histogram
 		        outfile_ = rt.TFile(outputDirectory + sample.name+"tau.root",'recreate')
@@ -146,17 +130,11 @@ def makeSigHists(sample, outputDirectory, channel):
         		sigHists.SetPtBinningRec(channel)
         		sigHists.SetMassBinningRec(channel)
 
+        		#sigHists.SetPtBinningRec("electron")
+        		#sigHists.SetMassBinningRec("electron")
+
 		        sigHists.CreateHistMap(ptOrMassEnum.PT.value,  "nominal", "_tau") 
 		        sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "nominal", "_tau") 
-
-        	        #for i in range(19):
-        	        #        if i < 9:
-        	        #                sigHists.CreateHistMap(ptOrMassEnum.PT.value,   "FSRDR0p"+str(i+1), "_tau") 
-        	        #                sigHists.CreateHistMap(ptOrMassEnum.MASS.value, "FSRDR0p"+str(i+1), "_tau") 
-        	        #        else:
-
-        	        #                sigHists.CreateHistMap(ptOrMassEnum.PT.value,     "FSRDR1p"+str((i+1)%10), "_tau") 
-        	        #                sigHists.CreateHistMap(ptOrMassEnum.MASS.value,   "FSRDR1p"+str((i+1)%10), "_tau") 
 
 
         	        for sysName, nSys in sysDict.items():

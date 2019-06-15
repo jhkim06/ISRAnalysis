@@ -6,15 +6,17 @@ void histTUnfold::SetsysMap(TString sysName, int nVariations){
 }
 
 
-void histTUnfold::CreateHistMap(int which_unfold, TString hname, TString postfix){
+void histTUnfold::CreateHistMap(int which_unfold, TString hname, TString postfix, bool isRec){
 
 
         if(which_unfold == ptOrMass::PT){
-                 histMaps.insert(std::pair<TString, TH1*>("pt_"+hname+postfix, ptBinningRec->CreateHistogram("hPtRec"+hname)));
+                 if(isRec) histMaps.insert(std::pair<TString, TH1*>("pt_"+hname+postfix, ptBinningRec->CreateHistogram("hPtRec"+hname)));
+		 else histMaps.insert(std::pair<TString, TH1*>("ptGen_"+hname+postfix, 	 ptBinningGen->CreateHistogram("hPtGen"+hname)));
         }
 
         if(which_unfold == ptOrMass::MASS){
-                 histMaps.insert(std::pair<TString, TH1*>("mass_"+hname+postfix, massBinningRec->CreateHistogram("hMassRec"+hname)));
+                 if(isRec) histMaps.insert(std::pair<TString, TH1*>("mass_"+hname+postfix, massBinningRec->CreateHistogram("hMassRec"+hname)));
+		 else histMaps.insert(std::pair<TString, TH1*>("massGen_"+hname+postfix, massBinningGen->CreateHistogram("hMassGen"+hname)));
         }
 }
 
@@ -29,14 +31,25 @@ void histTUnfold::CreateHist2DMap(int which_unfold, TString hname){
 	}
 }
 
-void histTUnfold::FillHistogram(ptOrMass which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco){
+void histTUnfold::FillHistogram(ptOrMass which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco, bool isRec){
 
 	if(which_unfold == ptOrMass::PT){
-		(histMaps.find(hname)->second)->Fill(ptBinningRec->GetGlobalBinNumber(recoPt, recoMass),  wreco);
+		if(isRec) (histMaps.find(hname)->second)->Fill(ptBinningRec->GetGlobalBinNumber(recoPt, recoMass),  wreco);
+		else (histMaps.find(hname)->second)->Fill(ptBinningGen->GetGlobalBinNumber(recoPt, recoMass),  wreco);
 	}
 
 	if(which_unfold == ptOrMass::MASS){
-		if(recoPt < 100.) (histMaps.find(hname)->second)->Fill(massBinningRec->GetGlobalBinNumber(recoMass),  wreco);
+		if(isRec) {
+		   if(recoPt < 100.) {
+			(histMaps.find(hname)->second)->Fill(massBinningRec->GetGlobalBinNumber(recoMass),  wreco);
+		   }
+		}
+                else {
+		   if(recoPt < 100.) {
+                        (histMaps.find(hname)->second)->Fill(massBinningGen->GetGlobalBinNumber(recoMass),  wreco);
+		   }
+                }
+			
 	}
 }
 
@@ -148,8 +161,8 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
 	  }
           if( channel.CompareTo("muon") == 0 ){ 
 		isdilep = IsMuMu;
-		lep1_ptCut = 20.;
-		lep2_ptCut = 10.;
+		lep1_ptCut = 25.;
+		lep2_ptCut = 15.;
 	  }
 
 	   // nominal dilepton event selection 
@@ -161,24 +174,9 @@ void histTUnfold::saveRecoHists(TFile *filein, TFile *fileout1, TString channel)
                  FillHistogram(ptOrMass::PT, "pt_nominal", ptRec->at(2), mRec->at(2), wgen*wreco);
                  FillHistogram(ptOrMass::MASS, "mass_nominal", ptRec->at(2), mRec->at(2), wgen*wreco);
 
-                 //for(int idrcut = 0; idrcut < 19; idrcut++){
-                 //   TString dr_;
-                 //   if(idrcut<9) {
-                 //     dr_.Form("%d", idrcut+1);
-                 //     FillHistogram(ptOrMass::PT,   "pt_FSRDR0p"+dr_,   ptRec->at(2), mRec->at(2), wgen*wreco);
-                 //     FillHistogram(ptOrMass::MASS, "mass_FSRDR0p"+dr_, ptRec->at(2), mRec->at(2), wgen*wreco);
-                 //   }
-                 //   else{
-                 //     dr_.Form("%d",(idrcut+1)%10);
-                 //     FillHistogram(ptOrMass::PT,   "pt_FSRDR1p"+dr_,   ptRec->at(2), mRec->at(2), wgen*wreco);
-                 //     FillHistogram(ptOrMass::MASS, "mass_FSRDR1p"+dr_, ptRec->at(2), mRec->at(2), wgen*wreco);
-                 //   }
-                 //}
-
                  // loop to create systematic response matrix
                  std::map<TString, int>::iterator it = sysMaps.begin();
                  while(it != sysMaps.end()){
-                      //if(it->first != "FSRDR" && it->first != "LepScale" && it->first != "LepRes"){ // TODO also skip lepton scale/resolution systematic 
                       if( it->first != "LepScale" && it->first != "LepRes"){ // TODO also skip lepton scale/resolution systematic 
 
                          for(int nSys = 0; nSys < it->second; nSys++){
@@ -451,21 +449,8 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
         	tree->SetBranchAddress("L1Prefire_Dn", &L1Prefire_Dn);
 	}
 
-        TFile* fpthist = new TFile("/home/jhkim/ISR2016/unfolding/systematic/hPtRecnominal.root");
-        TH1* hptcorr=(TH1*)fpthist->Get("data_");
-        hptcorr->SetDirectory(0);
-        TUnfoldBinning* binning_ptRec=(TUnfoldBinning*)fpthist->Get("Rec_Pt");
-
-        TFile* fmasshist = new TFile("/home/jhkim/ISR2016/unfolding/systematic/hMassRecnominal.root");
-        TH1* hmasscorr=(TH1*)fpthist->Get("data_");
-        hmasscorr->SetDirectory(0);
-        TUnfoldBinning* binning_massRec=(TUnfoldBinning*)fmasshist->Get("Rec_Mass");
-
-        // FIXME 
-        TFile* fZptWeight = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/etc/ZptWeight/aMCNLO/electron/ZptWeight_electron.root", "r");
-        //TFile* fZptWeight = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/etc/ZptWeight/MG/electron/ZptWeight_electron.root", "r");
-        TH1 *hZptWeight;
-        fZptWeight->GetObject("ZptWeight", hZptWeight);
+	TH2* hMCGenGenPt =   TUnfoldBinning::CreateHistogramOfMigrations(ptBinningGen,ptBinningGen,    "histMCGenGenPt");
+	TH2* hMCGenGenMass = TUnfoldBinning::CreateHistogramOfMigrations(massBinningGen,massBinningGen,"histMCGenGenMass");
 
         nentries=tree->GetEntries();
 
@@ -488,8 +473,8 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
           if( channel.CompareTo("muon") == 0 ){
                   isdilep = IsMuMu;
                   issignal = isdimuon;
-		  lep1_ptCut = 20.;
-		  lep2_ptCut = 10.;
+		  lep1_ptCut = 25.;
+		  lep2_ptCut = 15.;
           }
 
           if( std::isinf(bTagReweight) ){
@@ -534,24 +519,9 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                    	FillHistogram(ptOrMass::PT, "pt_nominal"+postfix,     ptRec->at(2), mRec->at(2), wgen*wreco);
                    	FillHistogram(ptOrMass::MASS, "mass_nominal"+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
 
-                   	//for(int idrcut = 0; idrcut < 19; idrcut++){
-                   	//   TString dr_;
-                   	//   if(idrcut<9) {
-                   	//     dr_.Form("%d", idrcut+1);
-                   	//     FillHistogram(ptOrMass::PT,   "pt_FSRDR0p"+dr_+postfix,   ptRec->at(2), mRec->at(2), wgen*wreco);
-                   	//     FillHistogram(ptOrMass::MASS, "mass_FSRDR0p"+dr_+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
-                   	//   }
-                   	//   else{
-                   	//     dr_.Form("%d",(idrcut+1)%10);
-                   	//     FillHistogram(ptOrMass::PT,   "pt_FSRDR1p"+dr_+postfix,   ptRec->at(2), mRec->at(2), wgen*wreco);
-                   	//     FillHistogram(ptOrMass::MASS, "mass_FSRDR1p"+dr_+postfix, ptRec->at(2), mRec->at(2), wgen*wreco);
-                   	//   }
-                   	//}
-
                    	// loop to create systematic response matrix
                    	std::map<TString, int>::iterator it = sysMaps.begin();
                    	while(it != sysMaps.end()){
-                   	     //if(it->first != "FSRDR" && it->first != "LepScale" && it->first != "LepRes"){ // 
                    	     if( it->first != "LepScale" && it->first != "LepRes"){ // 
 
                    	        for(int nSys = 0; nSys < it->second; nSys++){
@@ -658,6 +628,9 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 
                    FillMigration2DM( ptOrMass::PT, selected,   "pt_nominal",   diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
                    FillMigration2DM( ptOrMass::MASS, selected, "mass_nominal", diptrec, dimassrec, diptgen, dimassgen, weightRec*bTagReweight, weightGen);
+		   
+                   FillHistogram(ptOrMass::PT,   "ptGen_nominal",    diptgen, dimassgen, weightGen, false);
+                   FillHistogram(ptOrMass::MASS, "massGen_nominal",  diptgen, dimassgen, weightGen, false);
 
                    if(!isAlt){			
                    	bool selected_ScaleUp = (isdilep && ispassRec && isBveto && ptRec_momentumUp->at(0) 	  >   lep1_ptCut && ptRec_momentumUp->at(1) > lep2_ptCut);
@@ -722,19 +695,11 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                            FillMigration2DM( ptOrMass::PT,   selected, "pt_FSRDR_"+dr_,   diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
                            FillMigration2DM( ptOrMass::MASS, selected, "mass_FSRDR_"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
 
-                   	   //if(idrcut<9) {
-                   	   //  dr_.Form("%d", idrcut+1);
-                   	   //  FillMigration2DM( ptOrMass::PT, selected, "pt_FSRDR0p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                   	   //  FillMigration2DM( ptOrMass::MASS, selected, "mass_FSRDR0p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                   	   //}
-                   	   //else{
-                   	   //  dr_.Form("%d", (idrcut+1)%10);
-                   	   //  FillMigration2DM( ptOrMass::PT, selected, "pt_FSRDR1p"+dr_,  diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                   	   //  FillMigration2DM( ptOrMass::MASS, selected, "mass_FSRDR1p"+dr_, diptrec, dimassrec, temp_dipt, temp_dimass, weightRec*bTagReweight, weightGen);
-                   	   //}
-
+			   if(idrcut ==0){
+	 			hMCGenGenPt->  Fill(ptBinningGen->GetGlobalBinNumber(diptgen, dimassgen), ptBinningGen->GetGlobalBinNumber(temp_dipt, temp_dimass), weightGen);
+	 			hMCGenGenMass->Fill(massBinningGen->GetGlobalBinNumber(dimassgen),        massBinningGen->GetGlobalBinNumber(temp_dimass), weightGen);
+			   }
                    	}
-
 
 		   	// loop to create systematic response matrix
 		   	std::map<TString, int>::iterator it = sysMaps.begin();
@@ -774,16 +739,9 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
         GetMassBinningRec()->Write();
         GetPtBinningGen()->Write();
         GetMassBinningGen()->Write();
+	hMCGenGenPt->Write();
+	hMCGenGenMass->Write();
 
-        delete binning_ptRec;
-        delete binning_massRec;
-        delete hptcorr;
-        delete hmasscorr;
-        delete fpthist;
-        delete fmasshist;
-
-        delete hZptWeight;
-        delete fZptWeight;
         delete tree;
         //fileout->cd();
 

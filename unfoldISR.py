@@ -118,8 +118,8 @@ if args.getUnfoldResultsV2:
         unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets")
 
 
-	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1}
-	#sysDict = {"Alt": 1, "L1Prefire": 2}
+	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1, "Closure": 1}
+	#sysDict = {"Alt": 1, "PU": 2}
 
 	for sysName, nSys in sysDict.items():
 		for nthSys in range(0,nSys):
@@ -136,20 +136,24 @@ if args.getUnfoldResultsV2:
         			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Mass",   postfix, nthSys, False)
 
 			bias = 1.;
-			if sysName == "unfoldBias": bias = 0. 
-			
-			unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'], nthSys, True, bias)
-			unfoldClass.setInput("Mass", postfix, unfoldInputList['data'], nthSys, True, bias)
+			if sysName == "unfoldBias": bias = 0.95 
+		
+			if sysName != "Closure":	
+				unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'], nthSys, True, bias)
+				unfoldClass.setInput("Mass", postfix, unfoldInputList['data'], nthSys, True, bias)
 
-        		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
-        		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
-        		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'], "VV", nthSys, True)
-        		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
+        			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
+        			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
+        			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'], "VV", nthSys, True)
+        			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
 
-        		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
-        		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
-        		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'], "VV", nthSys, True)
-        		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
+        			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
+        			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
+        			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'], "VV", nthSys, True)
+        			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
+			if sysName == "Closure":
+				unfoldClass.setInput("Pt",   postfix, unfoldInputList['sig'], nthSys, True, bias)
+				unfoldClass.setInput("Mass", postfix, unfoldInputList['sig'], nthSys, True, bias)
 
 	# unfold up to pre FSR level 
 	unfoldClass.doISRUnfold()
@@ -160,40 +164,35 @@ if args.getUnfoldResultsV2:
 
         for sysName, nSys in sysDict.items():
 
-                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 0, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 1, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 2, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 3, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 4, sysName);
+			for massBin in range(0,5):
 
-                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", 0, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", 1, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", 2, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", 3, sysName);
-                        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", 4, sysName);
+                        	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName);
+                        	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName);
+                        	unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName);
+				unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
 
-                        unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 0, sysName);
-                        unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 1, sysName);
-                        unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 2, sysName);
-                        unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 3, sysName);
-                        unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", 4, sysName);
 
-			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , 0, sysName)
-			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , 1, sysName)
-			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , 2, sysName)
-			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , 3, sysName)
-			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , 4, sysName)
+	unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 0)
+	unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 1)
+	unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 2)
+	unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 3)
+	unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 4)
+
+	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 0)
+	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 1)
+	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 2)
+	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 3)
+	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 4)
+	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Mass", -1)
 
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_" + args.channel + ".pdf")
 
+	unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
+	unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
 
+	unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
+	unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
-	# calculate chi2 at unfoled distributions
-	unfoldClass.DoFit("Pt", 0)
-	unfoldClass.DoFit("Pt", 1)
-	unfoldClass.DoFit("Pt", 2)
-	unfoldClass.DoFit("Pt", 3)
-	unfoldClass.DoFit("Pt", 4)
 	del unfoldClass
 
 def makeRecoPlots():

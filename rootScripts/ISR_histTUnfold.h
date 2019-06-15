@@ -133,7 +133,7 @@ public:
 	inline TUnfoldBinning* GetMassBinningGen(){ return massBinningGen;}
 
 	// set histograms: get histogram names from python script and create histograms
-	void CreateHistMap(int which_unfold, TString hname, TString postfix = ""); // postfix for DY to tautau events
+	void CreateHistMap(int which_unfold, TString hname, TString postfix = "", bool isRec = true); // postfix for DY to tautau events
 	void CreateHist2DMap(int which_unfold, TString hname);
 	void SetsysMap(TString sysName, int nVariations);
 
@@ -144,7 +144,7 @@ public:
         void saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, TString channel, Double_t temp_kfactor);
 
   	void FillMigration2DM(ptOrMass which_unfold, bool selected, TString hname, Double_t recoPt, Double_t RecoMass, Double_t truthPt, Double_t truthMass, Double_t wreco, Double_t wgen, Double_t corr = 1.);
-  	void FillHistogram(ptOrMass which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco);
+  	void FillHistogram(ptOrMass which_unfold, TString hname, Double_t recoPt, Double_t recoMass, Double_t wreco, bool isRec = true);
 
   	histTUnfold(std::map<TString, TH1*> histMaps_, std::map<TString, TH2*> hist2DMaps_, Int_t isInc_, Int_t isAlt_):
     		histMaps(std::move(histMaps_)), hist2DMaps(std::move(hist2DMaps_)), isInc(std::move(isInc_)), isAlt(std::move(isAlt_)) {}

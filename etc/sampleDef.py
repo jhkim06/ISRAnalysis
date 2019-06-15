@@ -40,13 +40,15 @@ ISR2016Legacy = {
 }
 
 ISR2017Legacy = {
-    'DATA_electron'     : isrSample('DoubleEGamma',  myinputDir_2017Legacy + 'DoubleEG_All.root ', isMC = False, isSig = False),
-    'DATA_muon'     : isrSample('DoubleMuon',  myinputDir_2017Legacy + 'DoubleMuon_All.root', isMC = False, isSig = False),
-    'DY'       : isrSample('DYtoEE' ,       myinputDir_2017Legacy + 'DYJetsToLL_M-50.root', isMC = True, isSig = True, isInc = True),
-    'DY10to50' : isrSample('DYtoEE10to50' , myinputDir_2017Legacy + 'DYJetsToLL_M-10to50.root', isMC = True, isSig = True, isInc = True),
-    'TTbar'      : isrSample('TTbar' ,          myinputDir_2017Legacy + 'TT.root', isMC = True, isSig = False),
-    'VV'      : isrSample('VV' ,          myinputDir_2017Legacy + 'VV.root', isMC = True, isSig = False),
-    'Wjets'      : isrSample('Wjets' ,          myinputDir_2017Legacy + 'Wjets.root', isMC = True, isSig = False),
+    'DATA_electron'     : isrSample('DoubleEGamma',   myinputDir_2017Legacy + '/new/DoubleEG_All.root ', isMC = False, isSig = False),
+    'DATA_muon'         : isrSample('DoubleMuon',     myinputDir_2017Legacy + '/new/DoubleMuon_All.root', isMC = False, isSig = False),
+    'DY'                : isrSample('DYtoEE' ,        myinputDir_2017Legacy + '/new/DYJetsToLL_M-50_1.root', isMC = True, isSig = True, isInc = True),
+    'DY_2'                : isrSample('DYtoEE' ,        myinputDir_2017Legacy + '/new/DYJetsToLL_M-50_2.root', isMC = True, isSig = True, isInc = True),
+    'DY_3'                : isrSample('DYtoEE' ,        myinputDir_2017Legacy + '/new/DYJetsToLL_M-50_3.root', isMC = True, isSig = True, isInc = True),
+    'DY10to50'          : isrSample('DYtoEE10to50' ,  myinputDir_2017Legacy + '/new/DYJetsToLL_M-10to50.root', isMC = True, isSig = True, isInc = True),
+    'TTbar'             : isrSample('TTbar' ,         myinputDir_2017Legacy + '/new/TT.root', isMC = True, isSig = False),
+    'VV'                : isrSample('VV' ,            myinputDir_2017Legacy + '/new/VV.root', isMC = True, isSig = False),
+    'Wjets'             : isrSample('Wjets' ,         myinputDir_2017Legacy + '/new/Wjets.root', isMC = True, isSig = False),
 }
 
 
@@ -86,6 +88,8 @@ samplesDef_electron2017Legacy = {
 }
 
 samplesDef_electron2017Legacy['mcSig'].add_sample(ISR2017Legacy['DY10to50'])
+samplesDef_electron2017Legacy['mcSig'].add_sample(ISR2017Legacy['DY_2'])
+samplesDef_electron2017Legacy['mcSig'].add_sample(ISR2017Legacy['DY_3'])
 
 # muon channel
 samplesDef_muon2017Legacy = {
@@ -96,4 +100,5 @@ samplesDef_muon2017Legacy = {
     'mcBkg3'  : ISR2017Legacy['Wjets'].clone(),
 }
 
-samplesDef_muon2017Legacy['mcSig'].add_sample(ISR2017Legacy['DY10to50'])
+samplesDef_muon2017Legacy['mcSig'].add_sample(ISR2017Legacy['DY_2'])
+samplesDef_muon2017Legacy['mcSig'].add_sample(ISR2017Legacy['DY_3'])

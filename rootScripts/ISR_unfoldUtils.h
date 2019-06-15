@@ -17,6 +17,7 @@
 #include <TStyle.h>
 #include <TLegend.h>
 #include <TLine.h>
+#include <TSpline.h>
 #include <TGaxis.h>
 #include <TMathText.h>
 #include <TLatex.h>
@@ -63,6 +64,17 @@ private:
 
 	TCanvas* c1;
 
+	// 
+	Int_t nScan;
+        TSpline *rhoLogTau;
+        TGraph *lCurve;
+        Int_t iBest;
+
+	Int_t nScan_mass;
+        TSpline *rhoLogTau_mass;
+        TGraph *lCurve_mass;
+        Int_t iBest_mass;
+
 public:
 	ISRUnfold() {}
 	~ISRUnfold(){}
@@ -91,8 +103,13 @@ public:
 	// draw input histograms using GetInput	
 	void drawInputPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
 
+	// draw reco histograms
+	void drawNominalRecoPlots(TString outpdf, TString filepath, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
+
 	// draw nominal result with systematics 
 	void drawSysPlots(TString outpdf, int nthMassBin = 0, TString sysName = "");
+
+	void studyFSRDRPlots(TString outpdf, TString var, int nthMassBin);
 
 	void drawtext(TGraph* g);
 
@@ -101,9 +118,12 @@ public:
 
 	// need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
 	double DoFit(TString var = "Pt", int nthMassBin = 0); // chi2 fit for unfolded distribution
+	double Chi2Test(TH1 *data, TH1 *mc);
 
 	// draw ISR result
 	void drawISRresult(TString outpdf);
+	void drawLCurve(TString outpdf, TString var);
+	void drawRhoLog(TString outpdf, TString var);
 };
 
 #endif
