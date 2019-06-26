@@ -69,7 +69,9 @@ void histTUnfold::FillMigration2DM(ptOrMass which_unfold, bool selected, TString
 	}
 	else{
 		if( which_unfold == ptOrMass::PT) (hist2DMaps.find(hname)->second)->Fill(ptBinningGen->GetGlobalBinNumber(truthPt, truthMass), binZero, wgen);
-		if( which_unfold == ptOrMass::MASS) (hist2DMaps.find(hname)->second)->Fill(massBinningGen->GetGlobalBinNumber(truthMass), binZero, wgen);
+		if( which_unfold == ptOrMass::MASS){
+			if(truthPt < 100.) (hist2DMaps.find(hname)->second)->Fill(massBinningGen->GetGlobalBinNumber(truthMass), binZero, wgen);
+		}
 	}
 }
 
@@ -452,6 +454,21 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
 	TH2* hMCGenGenPt =   TUnfoldBinning::CreateHistogramOfMigrations(ptBinningGen,ptBinningGen,    "histMCGenGenPt");
 	TH2* hMCGenGenMass = TUnfoldBinning::CreateHistogramOfMigrations(massBinningGen,massBinningGen,"histMCGenGenMass");
 
+ 	const int nptbin_wide=9;
+ 	double ptbin_wide[nptbin_wide+1]={0., 4., 8., 12., 18., 28., 40., 55., 80., 100.};
+
+	TH1* hPt_m1 = new TH1D("hPt_m1","hPt_m1",nptbin_wide, ptbin_wide); 
+	TH1* hPt_m2 = new TH1D("hPt_m2","hPt_m2",nptbin_wide, ptbin_wide); 
+	TH1* hPt_m3 = new TH1D("hPt_m3","hPt_m3",nptbin_wide, ptbin_wide); 
+	TH1* hPt_m4 = new TH1D("hPt_m4","hPt_m4",nptbin_wide, ptbin_wide); 
+	TH1* hPt_m5 = new TH1D("hPt_m5","hPt_m5",nptbin_wide, ptbin_wide); 
+
+	const int nmassBins_wide_electron = 27;
+	const Double_t massBins_wide_electron[nmassBins_wide_electron+1] = {50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,126,133,141,150,160,171,185,200,218,240,268,300,350};
+
+	TH1* hMass = new TH1D("hMass","hMass", nmassBins_wide_electron, massBins_wide_electron); 
+
+
         nentries=tree->GetEntries();
 
         double lep1_ptCut, lep2_ptCut;
@@ -632,6 +649,18 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
                    FillHistogram(ptOrMass::PT,   "ptGen_nominal",    diptgen, dimassgen, weightGen, false);
                    FillHistogram(ptOrMass::MASS, "massGen_nominal",  diptgen, dimassgen, weightGen, false);
 
+		   if( 50. < dimassgen &&  dimassgen < 350. && diptgen < 100.){
+
+			if(50. < dimassgen &&  dimassgen < 65.)   hPt_m1->Fill(diptgen, weightGen);
+			if(65. < dimassgen &&  dimassgen < 80.)   hPt_m2->Fill(diptgen, weightGen);
+			if(80. < dimassgen &&  dimassgen < 100.)  hPt_m3->Fill(diptgen, weightGen);
+			if(100. < dimassgen &&  dimassgen < 200.) hPt_m4->Fill(diptgen, weightGen);
+			if(200. < dimassgen &&  dimassgen < 350.) hPt_m5->Fill(diptgen, weightGen);
+
+			hMass->Fill(dimassgen, weightGen);
+
+		  }
+
                    if(!isAlt){			
                    	bool selected_ScaleUp = (isdilep && ispassRec && isBveto && ptRec_momentumUp->at(0) 	  >   lep1_ptCut && ptRec_momentumUp->at(1) > lep2_ptCut);
                    	bool selected_ScaleDn = (isdilep && ispassRec && isBveto && ptRec_momentumDown->at(0)    >   lep1_ptCut && ptRec_momentumDown->at(1) > lep2_ptCut);
@@ -741,6 +770,13 @@ void histTUnfold::saveSigHists(TFile *filein, TFile *fileout1, TFile *fileout2, 
         GetMassBinningGen()->Write();
 	hMCGenGenPt->Write();
 	hMCGenGenMass->Write();
+
+	hPt_m1->Write();
+	hPt_m2->Write();
+	hPt_m3->Write();
+	hPt_m4->Write();
+	hPt_m5->Write();
+	hMass->Write();
 
         delete tree;
         //fileout->cd();

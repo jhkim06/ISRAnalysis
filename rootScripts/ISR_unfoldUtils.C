@@ -1162,6 +1162,8 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         TH1F *ratio;
         TH1F *ratio_sys_err;
 
+
+        TH1F *ratio_closure;
 	// get nominal unfoled result
 	if(var.CompareTo("Pt") == 0 ){
         	if(sysName.CompareTo("Closure")!=0)hunfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
@@ -1216,11 +1218,20 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 TH1 * hmcsys_temp = NULL;
        
                 if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Closure") != 0 ))   hdatasys_temp = sysPtUnfold[sysName].at(i)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+
                 if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Closure") == 0 )){
         		TFile* filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DYtoEE.root");
 
-        		TH1* hdatasys_temp_ = (TH1*)filein->Get("h" + var + "Gennominal");
-			hdatasys_temp = temp_binning->ExtractHistogram("hunfolded_pt_systemp",hdatasys_temp_, 0, kTRUE,"pt[UO];mass[UOC"+ibinMass+"]");
+        		//TH1* hdatasys_temp_ = (TH1*)filein->Get("h" + var + "Gennominal");
+			//hdatasys_temp = temp_binning->ExtractHistogram("hunfolded_pt_systemp",hdatasys_temp_, 0, kTRUE,"pt[UO];mass[UOC"+ibinMass+"]");
+
+        		TString ibinMass_;
+        		ibinMass_.Form("%d", nthMassBin+1);
+        		hdatasys_temp = (TH1*)filein->Get("h" + var + "_m"+ibinMass_); //hPt_m1
+	
+                        ratio_closure= ((TH1F*)hdatasys_temp->Clone("ratio_closure"));
+			
+        		ratio_closure->Divide(hpreFSR_mc);
 		}
 
 		if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Alt") == 0 || sysName.CompareTo("FSRDR") == 0 ) && i == 0){
@@ -1235,9 +1246,16 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 		if(var.CompareTo("Mass") == 0 && (sysName.CompareTo("Closure") == 0 )){
                         TFile* filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DYtoEE.root");
 
-                        TH1* hdatasys_temp_ = (TH1*)filein->Get("h" + var + "Gennominal");
-                        hdatasys_temp = temp_binning_mass->ExtractHistogram("hunfolded_mass_systemp",hdatasys_temp_, 0, kTRUE,"*[UO]");
+                        //TH1* hdatasys_temp_ = (TH1*)filein->Get("h" + var + "Gennominal");
+                        //hdatasys_temp = temp_binning_mass->ExtractHistogram("hunfolded_mass_systemp",hdatasys_temp_, 0, kTRUE,"*[UO]");
+             		//hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+
+                        hdatasys_temp = (TH1*)filein->Get("h" + var);
              		hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+
+                        ratio_closure= ((TH1F*)hdatasys_temp->Clone("ratio_closure"));
+        		ratio_closure->Divide(hpreFSR_mc);
+			
 
 		}
 
@@ -1353,6 +1371,11 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 	ratio_sys_err->Draw("E2same");
         ratio_sys_err->SetMarkerSize(0);
         ratio_sys_err->SetFillColorAlpha(kBlack,0.3);
+	}
+	else{
+		ratio_closure->Draw("histsamee");
+		ratio_closure->SetLineColor(kRed);
+
 	}
 
 	CMS_lumi( c1, 4, 0 );
