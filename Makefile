@@ -8,13 +8,13 @@ ROOTMAJORVERSION := $(word 1,$(subst ., ,$(ROOTVERSION)))
 ROOTCINT=$(ROOTSYS)/bin/rootcint
 
 # libraries generated in the current project
-LIBDIR=/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/lib/
+LIBDIR=$(ISR_UNFOLD_WD)/lib/
 
 # header from V17 TUnfold package
-HTUNFOLDV17=/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/TUnfold/
+HTUNFOLDV17=$(ISR_UNFOLD_WD)/TUnfold/
 
 # sources for this project
-SRC=/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScripts/
+SRC=$(ISR_UNFOLD_WD)/rootScripts/
 
 CXXFLAGS=-isystem $(shell $(ROOTCONFIG) --incdir) -I$(ROOTSYS)/htmldoc -I$(HTUNFOLDV17) -O2 -g -Wall -Wshadow -W -Woverloaded-virtual -fPIC $(ROOTCFLAGS)
 
