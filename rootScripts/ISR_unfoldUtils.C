@@ -1160,6 +1160,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 	TH1* hunfolded_sys_err;
         TH1* hpreFSR_mc;
         TH1F *ratio;
+        TH1F *ratio_MG_aMCNLO;
         TH1F *ratio_sys_err;
 
 
@@ -1235,8 +1236,10 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 		}
 
 		if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Alt") == 0 || sysName.CompareTo("FSRDR") == 0 ) && i == 0){
-	 		hmcsys_temp = sysPtUnfold[sysName].at(i)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
+	 		hmcsys_temp = sysPtUnfold[sysName].at(i)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); // get alternative DY MC 
 			hmcsys_temp->SetDirectory(0);
+                        ratio_MG_aMCNLO= ((TH1F*)hmcsys_temp->Clone("ratio_MG_aMCNLO"));
+                        ratio_MG_aMCNLO->Divide(hpreFSR_mc);
 		}
 
                 if(var.CompareTo("Mass") == 0 && (sysName.CompareTo("Closure") != 0 )){
@@ -1329,13 +1332,19 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         TString mean_nom;
         mean_nom.Form("%.5f", hunfolded_data->GetMean());
 
-        TLegend* leg_nom = new TLegend(0.45, 0.70, 0.75, 0.9,"","brNDC");
-        leg_nom->SetNColumns(2);
+        TLegend* leg_nom = new TLegend(0.45, 0.4, 0.75, 0.6,"","brNDC");
+        //leg_nom->SetNColumns(2);
         leg_nom->SetTextSize(0.055);
         leg_nom->SetFillStyle(0);
         leg_nom->SetBorderSize(0);
 
-        if(sysName.CompareTo("Closure")!=0)leg_nom->AddEntry(hunfolded_data, "Unfolded data (mean: " + mean_nom + ")", "pl");
+        if(sysName.CompareTo("Closure")!=0){
+            leg_nom->AddEntry(hunfolded_data, "Unfolded data (mean: " + mean_nom + ")", "pl");
+            leg_nom->AddEntry(hpreFSR_mc, "aMC@NLO", "l");
+	    //if(sysName.CompareTo("Alt") == 0){
+            //    leg_nom->AddEntry(hmcsys_temp, "MG (LO)", "l");
+            //}
+        }
 	else leg_nom->AddEntry(hunfolded_data, "Unfolded DY MC (mean: " + mean_nom + ")", "pl");
         leg_nom->Draw();
 
@@ -1367,16 +1376,35 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         ratio->GetXaxis()->SetTitleOffset(1.5);
         ratio->GetYaxis()->SetNdivisions(515);
 
+        TLegend* leg_ratios = new TLegend(0.45, 0.7, 0.75, 0.9,"","brNDC");
+        //leg_ratios->SetNColumns(2);
+        leg_ratios->SetTextSize(0.055);
+        leg_ratios->SetFillStyle(0);
+        leg_ratios->SetBorderSize(0);
+        leg_ratios->AddEntry(ratio, "unfolded data/ aMC@NLO" , "pl");
+
+        if(sysName.CompareTo("Alt") == 0){
+            ratio_MG_aMCNLO->Draw("histsamee");
+            ratio_MG_aMCNLO->SetLineStyle(2);
+            ratio_MG_aMCNLO->SetLineColor(kRed);
+            leg_ratios->AddEntry(ratio_MG_aMCNLO, "MG/ aMC@NLO", "l");
+        }
+
 	if(sysName.CompareTo("Closure")!=0){
-	ratio_sys_err->Draw("E2same");
-        ratio_sys_err->SetMarkerSize(0);
-        ratio_sys_err->SetFillColorAlpha(kBlack,0.3);
+	    ratio_sys_err->Draw("E2same");
+            ratio_sys_err->SetMarkerSize(0);
+            ratio_sys_err->SetFillColorAlpha(kBlack,0.3);
+            leg_ratios->AddEntry(ratio_sys_err, "systematic " + sysName , "F");
+
 	}
 	else{
 		ratio_closure->Draw("histsamee");
 		ratio_closure->SetLineColor(kRed);
 
 	}
+        leg_ratios->Draw();
+
+
 
 	CMS_lumi( c1, 4, 0 );
         c1->cd();
