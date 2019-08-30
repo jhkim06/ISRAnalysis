@@ -13,6 +13,7 @@ parser.add_argument('--createMatrixOnly'  , action='store_true'  , default = Fal
 parser.add_argument('--altResponse'  , action='store_true'  , default = False, help = 'create response matrix with alternative signal MC')
 parser.add_argument('--getUnfoldResults'  , action='store_true'  , help = 'Get unfolding resutls')
 parser.add_argument('--getUnfoldResultsV2'  , action='store_true'  , help = 'Get unfolding resutls ver. 2')
+parser.add_argument('--doSys'  , action='store_true'  , default = False, help = 'Calculate systematics')
 parser.add_argument('--closure'  , action='store_true'  , help = 'Clousre test with MC')
 parser.add_argument('--getCombinedResults'  , action='store_true'  , help = 'Combine 2016 and 2017')
 parser.add_argument('--getEMuCombinedResults'  , action='store_true'  , help = 'Combine electron and muon')
@@ -118,42 +119,43 @@ if args.getUnfoldResultsV2:
         unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets")
 
 
-	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1, "Closure": 1}
-	#sysDict = {"Alt": 1, "PU": 2}
+        if args.doSys == True:
+	    sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1, "Closure": 1}
+	    #sysDict = {"Alt": 1, "PU": 2}
 
-	for sysName, nSys in sysDict.items():
-		for nthSys in range(0,nSys):
+	    for sysName, nSys in sysDict.items():
+	    	for nthSys in range(0,nSys):
 
-			print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
+	    		print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
 
-			# systematic test
-			postfix = sysName
-        		if sysName != "Alt": 
-				unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, nthSys, False)
-        			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, nthSys, False)
-			if sysName == "Alt":
-				unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Pt",     postfix, nthSys, False)
-        			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Mass",   postfix, nthSys, False)
+	    		# systematic test
+	    		postfix = sysName
+            		if sysName != "Alt": 
+	    			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, nthSys, False)
+            			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, nthSys, False)
+	    		if sysName == "Alt":
+	    			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Pt",     postfix, nthSys, False)
+            			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Mass",   postfix, nthSys, False)
 
-			bias = 1.;
-			if sysName == "unfoldBias": bias = 0.95 
-		
-			if sysName != "Closure":	
-				unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'], nthSys, True, bias)
-				unfoldClass.setInput("Mass", postfix, unfoldInputList['data'], nthSys, True, bias)
+	    		bias = 1.;
+	    		if sysName == "unfoldBias": bias = 0.95 
+	    	
+	    		if sysName != "Closure":	
+	    			unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'], nthSys, True, bias)
+	    			unfoldClass.setInput("Mass", postfix, unfoldInputList['data'], nthSys, True, bias)
 
-        			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
-        			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
-        			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'], "VV", nthSys, True)
-        			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
+            			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
+            			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
+            			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'], "VV", nthSys, True)
+            			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
 
-        			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
-        			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
-        			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'], "VV", nthSys, True)
-        			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
-			if sysName == "Closure":
-				unfoldClass.setInput("Pt",   postfix, unfoldInputList['sig'], nthSys, True, bias)
-				unfoldClass.setInput("Mass", postfix, unfoldInputList['sig'], nthSys, True, bias)
+            			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
+            			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
+            			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'], "VV", nthSys, True)
+            			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
+	    		if sysName == "Closure":
+	    			unfoldClass.setInput("Pt",   postfix, unfoldInputList['sig'], nthSys, True, bias)
+	    			unfoldClass.setInput("Mass", postfix, unfoldInputList['sig'], nthSys, True, bias)
 
 	# unfold up to pre FSR level 
 	unfoldClass.doISRUnfold()
@@ -162,36 +164,36 @@ if args.getUnfoldResultsV2:
 	unfoldClass.setMeanPt()
 	unfoldClass.setMeanMass()
 
-        for sysName, nSys in sysDict.items():
+        #for sysName, nSys in sysDict.items():
 
-			for massBin in range(0,5):
+	#		for massBin in range(0,5):
 
-                        	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName);
-                        	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName);
-                        	unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName);
-				unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
+        #                	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName);
+        #                	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName);
+        #                	unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName);
+	#			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
 
 
-	unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 0)
-	unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 1)
-	unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 2)
-	unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 3)
-	unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 4)
+	#unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 0)
+	#unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 1)
+	#unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 2)
+	#unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 3)
+	#unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 4)
 
-	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 0)
-	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 1)
-	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 2)
-	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 3)
-	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 4)
-	unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Mass", -1)
+	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 0)
+	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 1)
+	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 2)
+	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 3)
+	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 4)
+	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Mass", -1)
+
+        #unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
+        #unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
+
+        #unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
+        #unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_" + args.channel + ".pdf")
-
-	unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
-	unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
-
-	unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
-	unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
 	del unfoldClass
 

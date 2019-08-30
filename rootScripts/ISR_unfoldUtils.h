@@ -95,7 +95,7 @@ public:
 	void initSysTUnfoldDensity();
 
 	// do unfold 
-	void doISRUnfold();
+	void doISRUnfold(bool doSys = false);
 
 	// draw nominal detector level, unfolded plot, and final result plot without systematic
 	void drawNominalPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
@@ -113,15 +113,15 @@ public:
 
 	void drawtext(TGraph* g);
 
-	void setMeanPt();
-	void setMeanMass();
+	void setMeanPt(bool doSys = false, bool altMC = false);
+	void setMeanMass(bool doSys = false, bool altMC = false);
 
 	// need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
 	double DoFit(TString var = "Pt", int nthMassBin = 0); // chi2 fit for unfolded distribution
 	double Chi2Test(TH1 *data, TH1 *mc);
 
 	// draw ISR result
-	void drawISRresult(TString outpdf);
+	void drawISRresult(TString outpdf, bool altMC = false);
 	void drawLCurve(TString outpdf, TString var);
 	void drawRhoLog(TString outpdf, TString var);
 };

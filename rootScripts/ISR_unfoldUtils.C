@@ -55,7 +55,14 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
 	TString matrixName = sysName + "_" + nth_;
 
         TH2* hmcGenRec = NULL;
-	if(sysName.CompareTo("Alt") == 0 || sysName.CompareTo("unfoldBias") == 0 || sysName.CompareTo("unfoldScan") == 0 || sysName.CompareTo("Closure") == 0) hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
+	if(sysName.CompareTo("Alt") == 0 || sysName.CompareTo("unfoldBias") == 0 || sysName.CompareTo("unfoldScan") == 0 || sysName.CompareTo("Closure") == 0){
+            if(sysName.CompareTo("Alt") == 0){
+                if(var.CompareTo("Pt") == 0) hmcGenRec = (TH2*)filein->Get("eventSel/ptll TUnfold matrix/hmc" + var + "GenRecnominal");
+                if(var.CompareTo("Mass") == 0) hmcGenRec = (TH2*)filein->Get("eventSel/mll TUnfold matrix/hmc" + var + "GenRecnominal");
+            }
+            else
+                hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
+        }
         else hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
 
         //TH2* hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
@@ -64,17 +71,37 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
 
         if( var.CompareTo("Pt") == 0 ){
 
-          if(!isfsr) binning_Rec = (TUnfoldBinning*)filein->Get("Rec_Pt");
-          else binning_Rec = (TUnfoldBinning*)filein->Get("Gen_Pt");
+          TString Rec_Pt = "Rec_Pt";
+          TString Gen_Pt = "Gen_Pt";
 
-          binning_Gen = (TUnfoldBinning*)filein->Get("Gen_Pt");
+          if (sysName.CompareTo("Alt") == 0){
+
+            Rec_Pt = "eventSel/ptll TUnfold matrix/" + Rec_Pt;
+            Gen_Pt = "eventSel/ptll TUnfold matrix/" + Gen_Pt;
+
+          }
+
+          if(!isfsr) binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
+          else binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
+
+          binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Pt);
         }
         if( var.CompareTo("Mass") == 0 ){
 
-          if(!isfsr) binning_Rec = (TUnfoldBinning*)filein->Get("Rec_Mass");
-          else binning_Rec = (TUnfoldBinning*)filein->Get("Gen_Mass");
+          TString Rec_Mass = "Rec_Mass";
+          TString Gen_Mass = "Gen_Mass";
 
-          binning_Gen = (TUnfoldBinning*)filein->Get("Gen_Mass");
+          if (sysName.CompareTo("Alt") == 0){
+
+            Rec_Mass = "eventSel/mll TUnfold matrix/" + Rec_Mass;
+            Gen_Mass = "eventSel/mll TUnfold matrix/" + Gen_Mass;
+
+          }
+
+          if(!isfsr) binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Mass);
+          else binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Mass);
+
+          binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Mass);
 
         }
 
@@ -239,7 +266,7 @@ void ISRUnfold::drawRhoLog(TString outpdf, TString var){
 
 }
 
-void ISRUnfold::doISRUnfold(){
+void ISRUnfold::doISRUnfold(bool doSys){
 
 	double tauMin=1.e-4;
 	double tauMax=1.e-3;
@@ -257,40 +284,43 @@ void ISRUnfold::doISRUnfold(){
 	nomPtUnfold->DoUnfold(0);
 	nomMassUnfold->DoUnfold(0);
 
-	std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtUnfold.begin();
 
-	while(it != sysPtUnfold.end()){
-		int nSys = it->second.size();
-		for(int i = 0; i < nSys; i++){
-			if((it->first).CompareTo("unfoldScan") == 0 || (it->first).CompareTo("unfoldBias") == 0){
-				//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
-  				iBest=it->second.at(i)->ScanTau(nScan,0.,0.,&rhoLogTau,
-  				                           TUnfoldDensity::kEScanTauRhoAvgSys,
-  				                           0,0,
-  				                           &lCurve);
-			}
-			else it->second.at(i)->DoUnfold(0);
+        if(doSys){
+	    std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtUnfold.begin();
 
-		}
-		it++;
-	}
+	    while(it != sysPtUnfold.end()){
+	    	int nSys = it->second.size();
+	    	for(int i = 0; i < nSys; i++){
+	    		if((it->first).CompareTo("unfoldScan") == 0 || (it->first).CompareTo("unfoldBias") == 0){
+	    			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
+  	    			iBest=it->second.at(i)->ScanTau(nScan,0.,0.,&rhoLogTau,
+  	    			                           TUnfoldDensity::kEScanTauRhoAvgSys,
+  	    			                           0,0,
+  	    			                           &lCurve);
+	    		}
+	    		else it->second.at(i)->DoUnfold(0);
 
-	it = sysMassUnfold.begin();
-        while(it != sysMassUnfold.end()){
-                int nSys = it->second.size();
-                for(int i = 0; i < nSys; i++){
-                        if((it->first).CompareTo("unfoldScan") == 0 || (it->first).CompareTo("unfoldBias") == 0){
-				//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
+	    	}
+	    	it++;
+	    }
 
-                                iBest_mass=it->second.at(i)->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
-                                                           TUnfoldDensity::kEScanTauRhoAvgSys,
-                                                           0,0,
-                                                           &lCurve_mass);
-			}
-			else it->second.at(i)->DoUnfold(0);
+	    it = sysMassUnfold.begin();
+            while(it != sysMassUnfold.end()){
+                    int nSys = it->second.size();
+                    for(int i = 0; i < nSys; i++){
+                            if((it->first).CompareTo("unfoldScan") == 0 || (it->first).CompareTo("unfoldBias") == 0){
+	    			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
 
-                }
-                it++;
+                                    iBest_mass=it->second.at(i)->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
+                                                               TUnfoldDensity::kEScanTauRhoAvgSys,
+                                                               0,0,
+                                                               &lCurve_mass);
+	    		}
+	    		else it->second.at(i)->DoUnfold(0);
+
+                    }
+                    it++;
+            }
         }
 
 }
@@ -404,9 +434,10 @@ double ISRUnfold::DoFit(TString var, int nthMassBin){
 
 }
 
-void ISRUnfold::setMeanMass(){
+void ISRUnfold::setMeanMass(bool doSys, bool altMC){
 
         //Double_t massBins[6] = {50., 65., 80., 100., 200., 350.};
+        int nMassBin = 5;
 
         const TUnfoldBinningV17* temp_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
 	const TVectorD* temp_tvecd = temp_binning->GetDistributionBinning(1);
@@ -415,12 +446,10 @@ void ISRUnfold::setMeanMass(){
 
         TH1* hunfolded_mass =  nomMassUnfold->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
         TH1 *histMCTruth_mass= nomMassUnfold->GetBias("histMCTruth_mass",0,0,"*[UO]",kTRUE);
-        TH1 *histMCTruth_massAlt= sysMassUnfold["Alt"].at(0)->GetBias("histMCTruth_massAlt",0,0,"*[UO]",kTRUE);
 
-        for(int ibin = 0; ibin < 5; ibin++){
+        for(int ibin = 0; ibin < nMassBin; ibin++){
                 hunfolded_mass->GetXaxis()->  SetRange(hunfolded_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
                 histMCTruth_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
-                histMCTruth_massAlt->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
 
                 meanMass_data.   push_back(hunfolded_mass->GetMean());
                 meanMassStatErr_data.push_back(hunfolded_mass->GetMeanError());
@@ -428,84 +457,94 @@ void ISRUnfold::setMeanMass(){
                 meanMass_mc.   push_back(histMCTruth_mass->GetMean());
                 meanMassErr_mc.push_back(histMCTruth_mass->GetMeanError());
 
-                meanMass_mcAlt.   push_back(histMCTruth_massAlt->GetMean());
-                meanMassErr_mcAlt.push_back(histMCTruth_massAlt->GetMeanError());
+                if(altMC){
+                    TH1 *histMCTruth_massAlt= sysMassUnfold["Alt"].at(0)->GetBias("histMCTruth_massAlt",0,0,"*[UO]",kTRUE);
+                    histMCTruth_massAlt->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+                    meanMass_mcAlt.   push_back(histMCTruth_massAlt->GetMean());
+                    meanMassErr_mcAlt.push_back(histMCTruth_massAlt->GetMeanError());
 
-	        std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysMassUnfold.begin();
-                std::map<TString, std::vector<Double_t>> temp_map; // temp map to save systematic results for a mass bin
+	            delete histMCTruth_massAlt;
+                }
 
-           	while(it != sysMassUnfold.end()){
-           	        int nSys = it->second.size();
-           	        TH1* hdatasys_temp;
-           	        for(int i = 0; i < nSys; i++){
-           	             hdatasys_temp = sysMassUnfold[it->first].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
-		             hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[ibin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
-           	             temp_map[it->first].push_back(hdatasys_temp->GetMean());
+                if(doSys){
+	            std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysMassUnfold.begin();
+                    std::map<TString, std::vector<Double_t>> temp_map; // temp map to save systematic results for a mass bin
 
-           	             delete hdatasys_temp;
-           	        }
-           	        it++;
-           	}
-           	meanMass_sysdata.push_back(temp_map);
-           	temp_map.clear();
+           	    while(it != sysMassUnfold.end()){
+           	            int nSys = it->second.size();
+           	            TH1* hdatasys_temp;
+           	            for(int i = 0; i < nSys; i++){
+           	                 hdatasys_temp = sysMassUnfold[it->first].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
+		                 hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[ibin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+           	                 temp_map[it->first].push_back(hdatasys_temp->GetMean());
+
+           	                 delete hdatasys_temp;
+           	            }
+           	            it++;
+           	    }
+           	    meanMass_sysdata.push_back(temp_map);
+           	    temp_map.clear();
+                }
 
         }
 
 	delete hunfolded_mass;
 	delete histMCTruth_mass;
-	delete histMCTruth_massAlt;
 
         // calculate systematic uncertaintiess
-        int size = meanMass_sysdata.size();
-        for(int i = 0; i < size; i++){
+        if(doSys){
+            for(int i = 0; i < nMassBin; i++){
 
-           std::map<TString, Double_t> temp_map_;
-           std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata.at(i).begin();
-           while(it != meanMass_sysdata.at(i).end()){
-                int size_ = it->second.size();
-                if((it->first).CompareTo("FSRDR") == 0 || (it->first).CompareTo("Closure") == 0){ it++; continue;}
+               std::map<TString, Double_t> temp_map_;
+               std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata.at(i).begin();
+               while(it != meanMass_sysdata.at(i).end()){
+                    int size_ = it->second.size();
+                    if((it->first).CompareTo("FSRDR") == 0 || (it->first).CompareTo("Closure") == 0){ it++; continue;}
 
-                TH1F *hpdfsys = NULL;
-                if((it->first).CompareTo("PDFerror") == 0) hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data.at(i)-0.2, meanMass_data.at(i)+0.2); // temp histogram to contain PDF variations
+                    TH1F *hpdfsys = NULL;
+                    if((it->first).CompareTo("PDFerror") == 0) hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data.at(i)-0.2, meanMass_data.at(i)+0.2); // temp histogram to contain PDF variations
 
-                Double_t err = -999.; // 
-                for(int j = 0; j < size_; j++){
-                        if( (i==5 || i==7) && (it->first).CompareTo("Scale") == 0) continue;
+                    Double_t err = -999.; // 
+                    for(int j = 0; j < size_; j++){
+                            if( (i==5 || i==7) && (it->first).CompareTo("Scale") == 0) continue;
 
-                        if((it->first).CompareTo("PDFerror") == 0){
-                                hpdfsys->Fill(it->second.at(j));
-                        }
+                            if((it->first).CompareTo("PDFerror") == 0){
+                                    hpdfsys->Fill(it->second.at(j));
+                            }
 
-                        Double_t temp_err =  fabs(meanMass_data.at(i) - it->second.at(j));
-                        if( temp_err > err){
-                               err = temp_err;
-                        }
+                            Double_t temp_err =  fabs(meanMass_data.at(i) - it->second.at(j));
+                            if( temp_err > err){
+                                   err = temp_err;
+                            }
 
-                        //cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl;
-                }
-                if((it->first).CompareTo("PDFerror") == 0){
-                        err = hpdfsys->GetRMS();
-                        delete hpdfsys;
-                }
+                            //cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl;
+                    }
+                    if((it->first).CompareTo("PDFerror") == 0){
+                            err = hpdfsys->GetRMS();
+                            delete hpdfsys;
+                    }
 
-                temp_map_[it->first] = err;
-                it++;
-           }
-           meanMassErr_sysdata.push_back(temp_map_);
-           temp_map_.clear();
-        }// loop for mass bins
+                    temp_map_[it->first] = err;
+                    it++;
+               }
+               meanMassErr_sysdata.push_back(temp_map_);
+               temp_map_.clear();
+            }// loop for mass bins
+        }
 
-        size = meanMassErr_sysdata.size();
-        for(int i = 0; i < size; i++){
-           std::map<TString, Double_t>::iterator it = meanMassErr_sysdata.at(i).begin();
+        for(int i = 0; i < nMassBin; i++){
            Double_t totalSys = 0.;
-           while(it != meanMassErr_sysdata.at(i).end()){
-                //cout << i << " th mass bin, mass" << it->first << " " << it->second << endl;
-                totalSys += pow(it->second, 2);
-                it++;
-           }
 
-           cout << i << " th mass bin, total mass systematic uncertainty: " << sqrt(totalSys) << " statistical error: " << meanMassStatErr_data.at(i) << endl;
+           if(doSys){
+           std::map<TString, Double_t>::iterator it = meanMassErr_sysdata.at(i).begin();
+            while(it != meanMassErr_sysdata.at(i).end()){
+                 //cout << i << " th mass bin, mass" << it->first << " " << it->second << endl;
+                 totalSys += pow(it->second, 2);
+                 it++;
+            }
+
+            cout << i << " th mass bin, total mass systematic uncertainty: " << sqrt(totalSys) << " statistical error: " << meanMassStatErr_data.at(i) << endl;
+           }
            meanMassSysErr_data.push_back(sqrt(totalSys));
 	   meanMassTotErr_data.push_back(sqrt(totalSys + pow(meanMassStatErr_data.at(i),2)));
         }
@@ -513,10 +552,11 @@ void ISRUnfold::setMeanMass(){
 
 
 // set mean pt from mass and DY mc
-void ISRUnfold::setMeanPt(){
+void ISRUnfold::setMeanPt(bool doSys, bool altMC){
 
         int nMassBin = 5;
 
+        // save mean pt for each systematic variation
         for(int i = 0; i < nMassBin; i++){
            TString ibinMass;
            ibinMass.Form("%d", i);
@@ -527,7 +567,6 @@ void ISRUnfold::setMeanPt(){
 
            hpt_temp_data = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
            hpt_temp_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-           hpt_temp_mcAlt   = sysPtUnfold["Alt"].at(0)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
            meanPt_data.   push_back(hpt_temp_data->GetMean());
            meanPtStatErr_data.push_back(hpt_temp_data->GetMeanError());
@@ -535,110 +574,117 @@ void ISRUnfold::setMeanPt(){
            meanPt_mc.   push_back(hpt_temp_mc->GetMean());
            meanPtErr_mc.push_back(hpt_temp_mc->GetMeanError());
 
-           meanPt_mcAlt.   push_back(hpt_temp_mcAlt->GetMean());
-           meanPtErr_mcAlt.push_back(hpt_temp_mcAlt->GetMeanError());
-
-           std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtUnfold.begin();
-	   std::map<TString, std::vector<Double_t>> temp_map; // temp map to save systematic results for a mass bin
-
-           while(it != sysPtUnfold.end()){
-                   int nSys = it->second.size();
-		   TH1* hdatasys_temp;
-                   for(int i = 0; i < nSys; i++){
-			hdatasys_temp = sysPtUnfold[it->first].at(i)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-			temp_map[it->first].push_back(hdatasys_temp->GetMean());
-	
-			delete hdatasys_temp;
-                   }
-                   it++;
+           if(altMC){
+            hpt_temp_mcAlt   = sysPtUnfold["Alt"].at(0)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            meanPt_mcAlt.   push_back(hpt_temp_mcAlt->GetMean());
+            meanPtErr_mcAlt.push_back(hpt_temp_mcAlt->GetMeanError());
            }
-	   meanPt_sysdata.push_back(temp_map);
-	   temp_map.clear();
 
-           delete hpt_temp_data;
-	   delete hpt_temp_mc;
-	   delete hpt_temp_mcAlt;
+           if(doSys){
+            std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtUnfold.begin();
+	    std::map<TString, std::vector<Double_t>> temp_map; // temp map to save systematic results for a mass bin
+                                                               // format: systematic name, mean pt
+            while(it != sysPtUnfold.end()){
+                    int nSys = it->second.size();
+	            TH1* hdatasys_temp;
+                    for(int i = 0; i < nSys; i++){
+	         	hdatasys_temp = sysPtUnfold[it->first].at(i)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+	         	temp_map[it->first].push_back(hdatasys_temp->GetMean());
+	
+	         	delete hdatasys_temp;
+                    }
+                    it++;
+            }
+	    meanPt_sysdata.push_back(temp_map);
+	    temp_map.clear();
+
+            delete hpt_temp_data;
+	    delete hpt_temp_mc;
+	    delete hpt_temp_mcAlt;
+           }
         }
 
-	// calculate systematic uncertainties
-	int size = meanPt_sysdata.size();
-	for(int i = 0; i < size; i++){
+	// calculate systematic uncertainty for each systematic variation
+	if(doSys){
+	    for(int i = 0; i < nMassBin; i++){
 
-           std::map<TString, Double_t> temp_map_;
-           std::map<TString, std::vector<Double_t>>::iterator it = meanPt_sysdata.at(i).begin();
-           while(it != meanPt_sysdata.at(i).end()){
-		int size_ = it->second.size(); // size of systematic variations
-		if((it->first).CompareTo("FSRDR") == 0 || (it->first).CompareTo("Closure") == 0){ it++; continue;}
-		
-		TH1F *hpdfsys = NULL;
-		if((it->first).CompareTo("PDFerror") == 0) hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanPt_data.at(i)-0.2, meanPt_data.at(i)+0.2); // temp histogram to contain PDF variations
+               std::map<TString, Double_t> temp_map_;
+               std::map<TString, std::vector<Double_t>>::iterator it = meanPt_sysdata.at(i).begin();
+               while(it != meanPt_sysdata.at(i).end()){
+	    	int size_ = it->second.size(); // size of systematic variations
+	    	if((it->first).CompareTo("FSRDR") == 0 || (it->first).CompareTo("Closure") == 0){ it++; continue;}
+	    	
+	    	TH1F *hpdfsys = NULL;
+	    	if((it->first).CompareTo("PDFerror") == 0) hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanPt_data.at(i)-0.2, meanPt_data.at(i)+0.2); // temp histogram to contain PDF variations
 
-		Double_t err = -999.; // 
-		for(int j = 0; j < size_; j++){
-			if( (i==5 || i==7) && (it->first).CompareTo("Scale") == 0) continue;
+	    	Double_t err = -999.; // 
+	    	for(int j = 0; j < size_; j++){
+	    		if( (i==5 || i==7) && (it->first).CompareTo("Scale") == 0) continue;
 
-			if((it->first).CompareTo("PDFerror") == 0){
-	 			hpdfsys->Fill(it->second.at(j));
-			}
+	    		if((it->first).CompareTo("PDFerror") == 0){
+	     			hpdfsys->Fill(it->second.at(j));
+	    		}
 
-                        Double_t temp_err =  fabs(meanPt_data.at(i) - it->second.at(j));
-                        if( temp_err > err){
-                               err = temp_err;
-                        }
-			//cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl; 
-		}// loop for systematic variations
-		if((it->first).CompareTo("PDFerror") == 0){
-			err = hpdfsys->GetRMS();
-			delete hpdfsys;
-		}
+                            Double_t temp_err =  fabs(meanPt_data.at(i) - it->second.at(j));
+                            if( temp_err > err){
+                                   err = temp_err;
+                            }
+	    		//cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl; 
+	    	}// loop for systematic variations
+	    	if((it->first).CompareTo("PDFerror") == 0){
+	    		err = hpdfsys->GetRMS();
+	    		delete hpdfsys;
+	    	}
 
-		temp_map_[it->first] = err;
-		it++;
-	   }// loop for systematic sources
-	   meanPtErr_sysdata.push_back(temp_map_);
-	   temp_map_.clear();
-	}// loop for mass binss
+	    	temp_map_[it->first] = err;
+	    	it++;
+	       }// loop for systematic sources
+	       meanPtErr_sysdata.push_back(temp_map_);
+	       temp_map_.clear();
+	    }// loop for mass binss
+        }
 
-	size = meanPtErr_sysdata.size(); // size of mass bins
-	for(int i = 0; i < size; i++){
-           std::map<TString, Double_t>::iterator it = meanPtErr_sysdata.at(i).begin();
+	for(int i = 0; i < nMassBin; i++){
 	   Double_t totalSys = 0.;
-           while(it != meanPtErr_sysdata.at(i).end()){
-		//cout << i << " th mass bin, pt" << it->first << " " << it->second << endl;
-	 	totalSys += pow(it->second, 2);	
-		it++;
-	   }
-	   
-           cout << i << " th mass bin, total pt systematic uncertainty: " << sqrt(totalSys) << " statistical error: " << meanPtStatErr_data.at(i) << endl;
-           it = meanPtErr_sysdata.at(i).begin();
-           while(it != meanPtErr_sysdata.at(i).end()){
-		cout << i << " th mass bin, pt" << it->first << " " << it->second/ meanPt_data.at(i) * 100.<< endl;
-	 	totalSys += pow(it->second, 2);	
-		it++;
-	   }
+           if(doSys){
+           std::map<TString, Double_t>::iterator it = meanPtErr_sysdata.at(i).begin();
+            while(it != meanPtErr_sysdata.at(i).end()){
+	         //cout << i << " th mass bin, pt" << it->first << " " << it->second << endl;
+	         totalSys += pow(it->second, 2);	
+	         it++;
+	    }
+	    
+            cout << i << " th mass bin, total pt systematic uncertainty: " << sqrt(totalSys) << " statistical error: " << meanPtStatErr_data.at(i) << endl;
+            it = meanPtErr_sysdata.at(i).begin();
+            while(it != meanPtErr_sysdata.at(i).end()){
+	         cout << i << " th mass bin, pt" << it->first << " " << it->second/ meanPt_data.at(i) * 100.<< endl;
+	         totalSys += pow(it->second, 2);	
+	         it++;
+	    }
+           }
 	   meanPtSysErr_data.push_back(sqrt(totalSys));
 	   meanPtTotErr_data.push_back(sqrt(totalSys + pow(meanPtStatErr_data.at(i),2)));
 	}// loop for mass bins
 }
 
-void ISRUnfold::drawISRresult(TString outpdf){
+void ISRUnfold::drawISRresult(TString outpdf, bool altMC){
 
         gROOT->SetBatch();
 
 	Double_t zero_err[5] = {0.};
 
 	// temporary map to show variations respect to dR to add FSR photons
-	std::map<int, std::vector<Double_t>> FSR_temp_pt;
-	std::map<int, std::vector<Double_t>> FSR_temp_mass;
+	//std::map<int, std::vector<Double_t>> FSR_temp_pt;
+	//std::map<int, std::vector<Double_t>> FSR_temp_mass;
 
-	for(int i = 0; i < 5; i++){
+	//for(int i = 0; i < 5; i++){
 
-		int size = meanPt_sysdata.at(i)["FSRDR"].size();
-		for(int j = 0; j < size; j++){
-			FSR_temp_pt[j].  push_back((meanPt_sysdata.at(i)["FSRDR"]).at(j));
-			FSR_temp_mass[j].push_back((meanMass_sysdata.at(i)["FSRDR"]).at(j));
-		}
-	}
+	//	int size = meanPt_sysdata.at(i)["FSRDR"].size();
+	//	for(int j = 0; j < size; j++){
+	//		FSR_temp_pt[j].  push_back((meanPt_sysdata.at(i)["FSRDR"]).at(j));
+	//		FSR_temp_mass[j].push_back((meanMass_sysdata.at(i)["FSRDR"]).at(j));
+	//	}
+	//}
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
@@ -687,14 +733,17 @@ void ISRUnfold::drawISRresult(TString outpdf){
         grMC->SetLineColor(kRed);
         grMC->Draw("lpe same");
 
-        TGraphErrors *grMCAlt = new TGraphErrors(5, &meanMass_mcAlt[0], &meanPt_mcAlt[0], &meanMassErr_mcAlt[0], &meanPtErr_mcAlt[0]);
-        grMCAlt->SetLineColor(kRed);
-        grMCAlt->SetMarkerColor(kRed);
-        grMCAlt->SetMarkerStyle(24);
-        grMCAlt->SetMarkerSize(1.);
-        grMCAlt->SetLineStyle(2);
-        grMCAlt->SetLineColor(kRed);
-        grMCAlt->Draw("lpe same");
+        TGraphErrors *grMCAlt;
+        if(altMC){
+            grMCAlt = new TGraphErrors(5, &meanMass_mcAlt[0], &meanPt_mcAlt[0], &meanMassErr_mcAlt[0], &meanPtErr_mcAlt[0]);
+            grMCAlt->SetLineColor(kRed);
+            grMCAlt->SetMarkerColor(kRed);
+            grMCAlt->SetMarkerStyle(24);
+            grMCAlt->SetMarkerSize(1.);
+            grMCAlt->SetLineStyle(2);
+            grMCAlt->SetLineColor(kRed);
+            grMCAlt->Draw("lpe same");
+        }
 
         grUnfolded->Draw("pe same");
 
@@ -704,7 +753,7 @@ void ISRUnfold::drawISRresult(TString outpdf){
         leg_->SetBorderSize(0);
         leg_->AddEntry(grUnfolded, "Unfolded electron data", "pe");
         leg_->AddEntry(grMC, "DY MC at pre FSR (aMC@NLO)", "pe");
-        leg_->AddEntry(grMCAlt, "DY MC at pre FSR (Madgraph)", "pe");
+        if(altMC) leg_->AddEntry(grMCAlt, "DY MC at pre FSR (Madgraph)", "pe");
         leg_->Draw();
 
         TF1 *f1 = new TF1("f1", "[0]+[1]*log(x)", 40., 350.);
