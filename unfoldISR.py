@@ -105,11 +105,11 @@ if args.getUnfoldResultsV2:
         unfoldClass = rt.ISRUnfold()
 
         # set response matrix
-        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Pt",     postfix, False, True)
-        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Mass",   postfix, False, True)
+        unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Pt",     postfix, True)
+        unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Mass",   postfix, True)
 
-        unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, False)
-        unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, False)
+        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, False)
+        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, False)
 
         # set unfolding input histogram
 	unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'])
@@ -128,8 +128,8 @@ if args.getUnfoldResultsV2:
 
 
         if args.doSys == True:
-	    #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1, "Closure": 1}
-	    sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "L1Prefire": 2, "Closure": 1,"PDFerror": 100}
+	    sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1, "Closure": 1}
+	    #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "L1Prefire": 2, "Closure": 1,"PDFerror": 100}
 
 	    for sysName, nSys in sysDict.items():
 	    	for nthSys in range(0,nSys):
@@ -213,11 +213,11 @@ if args.getUnfoldResultsV2:
 	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 4)
 	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Mass", -1)
 
-        #unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
-        #unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
+        unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
+        unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
 
-        #unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
-        #unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
+        unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
+        unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
 
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_" + args.channel + ".pdf", False)
