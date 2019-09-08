@@ -78,20 +78,22 @@ if args.createInputHists:
 
 
 if args.getUnfoldResultsV2:
-        # read text file
+        # read text file including input histograms for unfolding
         fOutTxtCheck = open( inputfhisttxtName,'r')
         unfoldInputList = {}
 
         for line in fOutTxtCheck:
                 modifiedLine = line.lstrip(' ').rstrip(' ').rstrip('\n')
-                if modifiedLine.split(' ')[1] == "data":
-                        unfoldInputList['data'] = modifiedLine.split(' ')[2]
-                if modifiedLine.split(' ')[1] == "sig":
-                        unfoldInputList['sig'] = modifiedLine.split(' ')[2]
-                if modifiedLine.split(' ')[1] == "sigAlt":
-                        unfoldInputList['sigAlt'] = modifiedLine.split(' ')[2]
-                if modifiedLine.split(' ')[1] == "bkg": # use the sample name as keyword for background
-                        unfoldInputList[modifiedLine.split(' ')[0]] = modifiedLine.split(' ')[2]
+                if modifiedLine.split()[1] == "data":
+                        unfoldInputList['data'] = modifiedLine.split()[2]
+                if modifiedLine.split()[1] == "sig":
+                        unfoldInputList['sig'] = modifiedLine.split()[2]
+                if modifiedLine.split()[1] == "sigAlt":
+                        unfoldInputList['sigAlt'] = modifiedLine.split()[2]
+                if modifiedLine.split()[1] == "matrix":
+                        unfoldInputList['matrix'] = modifiedLine.split()[2]
+                if modifiedLine.split()[1] == "bkg": # use the sample name as keyword for background
+                        unfoldInputList[modifiedLine.split()[0]] = modifiedLine.split()[2]
 
         print unfoldInputList
 
@@ -101,36 +103,43 @@ if args.getUnfoldResultsV2:
         postfix = args.postfix
 
         unfoldClass = rt.ISRUnfold()
+
+        # set response matrix
+        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Pt",     postfix, False, True)
+        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Mass",   postfix, False, True)
+
         unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, False)
         unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, False)
 
+        # set unfolding input histogram
 	unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'])
 	unfoldClass.setInput("Mass", postfix, unfoldInputList['data'])
 
-	# 
+	# set background histograms 
         unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
-        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'], "TTbar")
-        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'], "VV")
-        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'], "Wjets")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'],     "TTbar")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'],        "VV")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'],     "Wjets")
 
         unfoldClass.subBkgs("Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
-        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'], "TTbar")
-        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'], "VV")
-        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'],     "TTbar")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'],        "VV")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'],     "Wjets")
 
 
         if args.doSys == True:
-	    sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1, "Closure": 1}
-	    #sysDict = {"Alt": 1, "PU": 2}
+	    #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1, "Closure": 1}
+	    sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "L1Prefire": 2, "Closure": 1,"PDFerror": 100}
 
 	    for sysName, nSys in sysDict.items():
 	    	for nthSys in range(0,nSys):
 
 	    		print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
 
-	    		# systematic test
+	    		# set systematic response matrix
 	    		postfix = sysName
             		if sysName != "Alt": 
+                                # use systematic response matrix saved in the signal root file 
 	    			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, nthSys, False)
             			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, nthSys, False)
 	    		if sysName == "Alt":
@@ -141,37 +150,42 @@ if args.getUnfoldResultsV2:
 	    		if sysName == "unfoldBias": bias = 0.95 
 	    	
 	    		if sysName != "Closure":	
+                                # set systematic input histograms
 	    			unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'], nthSys, True, bias)
 	    			unfoldClass.setInput("Mass", postfix, unfoldInputList['data'], nthSys, True, bias)
 
+                                # set systematic background histograms
             			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
-            			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
-            			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'], "VV", nthSys, True)
-            			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
+            			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'],     "TTbar",     nthSys, True)
+            			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'],        "VV",        nthSys, True)
+            			unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'],     "Wjets",     nthSys, True)
 
             			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
-            			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'], "TTbar", nthSys, True)
-            			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'], "VV", nthSys, True)
-            			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'], "Wjets", nthSys, True)
+            			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'],     "TTbar",     nthSys, True)
+            			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'],        "VV",        nthSys, True)
+            			unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'],     "Wjets",     nthSys, True)
+
 	    		if sysName == "Closure":
+                                # for closure test, use signal histogram as unfolding input
 	    			unfoldClass.setInput("Pt",   postfix, unfoldInputList['sig'], nthSys, True, bias)
 	    			unfoldClass.setInput("Mass", postfix, unfoldInputList['sig'], nthSys, True, bias)
 
 	# unfold up to pre FSR level 
-	unfoldClass.doISRUnfold()
+	unfoldClass.doISRUnfold(args.doSys)
 
 	# set nominal value and also systematic values
-	unfoldClass.setMeanPt()
-	unfoldClass.setMeanMass()
+	unfoldClass.setMeanPt(args.doSys, False)
+	unfoldClass.setMeanMass(args.doSys, False)
 
-        #for sysName, nSys in sysDict.items():
+        # draw plots including systematic 
+        for sysName, nSys in sysDict.items():
 
-	#		for massBin in range(0,5):
+			for massBin in range(0,5):
 
-        #                	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName);
-        #                	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName);
-        #                	unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName);
-	#			unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
+                        	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys);
+                        	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys);
+                        	unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName);
+				unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
 
 
 	#unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 0)
@@ -193,7 +207,13 @@ if args.getUnfoldResultsV2:
         #unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
         #unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
-	unfoldClass.drawISRresult(outputDirectory + "ISRfit_" + args.channel + ".pdf")
+        for massBin in range(0,5):
+
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin);
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin);
+
+
+	unfoldClass.drawISRresult(outputDirectory + "ISRfit_" + args.channel + ".pdf", False)
 
 	del unfoldClass
 

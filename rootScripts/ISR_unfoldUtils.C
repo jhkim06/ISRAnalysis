@@ -3,27 +3,49 @@
 #include "tdrstyle.C"
 #include "CMS_lumi.C"
 
-void ISRUnfold::setNomTUnfoldDensity(TString filepath, TString var, TString matrixName, bool isfsr){
+void ISRUnfold::setNomTUnfoldDensity(TString filepath, TString var, TString matrixName, bool test){
 
 	TFile* filein = new TFile(filepath);
 
-        TH2* hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
+        // set response matrix
+        TH2* hmcGenRec;
+        
+        if(test){
+            if(var == "Pt")   hmcGenRec = (TH2*)filein->Get("eventSel/ptll TUnfold matrix/hmc" + var + "GenRecnominal");
+            if(var == "Mass") hmcGenRec = (TH2*)filein->Get("eventSel/mll TUnfold matrix/hmc" + var + "GenRecnominal");
+        }
+        else
+            hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
+
+        // set binning definition
         TUnfoldBinning* binning_Rec = NULL;
         TUnfoldBinning* binning_Gen = NULL;
 
         if( var.CompareTo("Pt") == 0 ){
 
-          if(!isfsr) binning_Rec = (TUnfoldBinning*)filein->Get("Rec_Pt");
-          else binning_Rec = (TUnfoldBinning*)filein->Get("Gen_Pt");
+          TString Rec_Pt = "Rec_Pt";
+          TString Gen_Pt = "Gen_Pt";
 
-          binning_Gen = (TUnfoldBinning*)filein->Get("Gen_Pt");
+          if(test){
+            Rec_Pt = "eventSel/ptll TUnfold matrix/" + Rec_Pt;
+            Gen_Pt = "eventSel/ptll TUnfold matrix/" + Gen_Pt;
+          }
+
+          binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
+          binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Pt);
         }
         if( var.CompareTo("Mass") == 0 ){
 
-          if(!isfsr) binning_Rec = (TUnfoldBinning*)filein->Get("Rec_Mass");
-          else binning_Rec = (TUnfoldBinning*)filein->Get("Gen_Mass");
+          TString Rec_Mass = "Rec_Mass";
+          TString Gen_Mass = "Gen_Mass";
 
-          binning_Gen = (TUnfoldBinning*)filein->Get("Gen_Mass");
+          if(test){
+            Rec_Mass = "eventSel/mll TUnfold matrix/" + Rec_Mass;
+            Gen_Mass = "eventSel/mll TUnfold matrix/" + Gen_Mass;
+          }
+
+          binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Mass);
+          binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Mass);
 
         }
 
@@ -56,11 +78,11 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
 
         TH2* hmcGenRec = NULL;
 	if(sysName.CompareTo("Alt") == 0 || sysName.CompareTo("unfoldBias") == 0 || sysName.CompareTo("unfoldScan") == 0 || sysName.CompareTo("Closure") == 0){
-            if(sysName.CompareTo("Alt") == 0){
-                if(var.CompareTo("Pt") == 0) hmcGenRec = (TH2*)filein->Get("eventSel/ptll TUnfold matrix/hmc" + var + "GenRecnominal");
-                if(var.CompareTo("Mass") == 0) hmcGenRec = (TH2*)filein->Get("eventSel/mll TUnfold matrix/hmc" + var + "GenRecnominal");
-            }
-            else
+            //if(sysName.CompareTo("Alt") == 0){
+            //    if(var.CompareTo("Pt") == 0) hmcGenRec = (TH2*)filein->Get("eventSel/ptll TUnfold matrix/hmc" + var + "GenRecnominal");
+            //    if(var.CompareTo("Mass") == 0) hmcGenRec = (TH2*)filein->Get("eventSel/mll TUnfold matrix/hmc" + var + "GenRecnominal");
+            //}
+            //else
                 hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
         }
         else hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
@@ -74,16 +96,14 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
           TString Rec_Pt = "Rec_Pt";
           TString Gen_Pt = "Gen_Pt";
 
-          if (sysName.CompareTo("Alt") == 0){
+          //if (sysName.CompareTo("Alt") == 0){
 
-            Rec_Pt = "eventSel/ptll TUnfold matrix/" + Rec_Pt;
-            Gen_Pt = "eventSel/ptll TUnfold matrix/" + Gen_Pt;
+          //  Rec_Pt = "eventSel/ptll TUnfold matrix/" + Rec_Pt;
+          //  Gen_Pt = "eventSel/ptll TUnfold matrix/" + Gen_Pt;
 
-          }
+          //}
 
-          if(!isfsr) binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
-          else binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
-
+          binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Pt);
         }
         if( var.CompareTo("Mass") == 0 ){
@@ -91,16 +111,14 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
           TString Rec_Mass = "Rec_Mass";
           TString Gen_Mass = "Gen_Mass";
 
-          if (sysName.CompareTo("Alt") == 0){
+          //if (sysName.CompareTo("Alt") == 0){
 
-            Rec_Mass = "eventSel/mll TUnfold matrix/" + Rec_Mass;
-            Gen_Mass = "eventSel/mll TUnfold matrix/" + Gen_Mass;
+          //  Rec_Mass = "eventSel/mll TUnfold matrix/" + Rec_Mass;
+          //  Gen_Mass = "eventSel/mll TUnfold matrix/" + Gen_Mass;
 
-          }
+          //}
 
-          if(!isfsr) binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Mass);
-          else binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Mass);
-
+          binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Mass);
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Mass);
 
         }
@@ -143,7 +161,6 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
 	else{
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
 		if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0 || postfix.CompareTo("unfoldScan") == 0 || postfix.CompareTo("Closure") == 0) hRec = (TH1*)filein->Get("h"+var+"Recnominal");
-        	//hRec = (TH1*)filein->Get("h"+var+"Recnominal");
         	if( var.CompareTo("Pt") == 0 )   sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias); // 
         	if( var.CompareTo("Mass") == 0 ) sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); // 
 	}
@@ -409,14 +426,14 @@ double ISRUnfold::DoFit(TString var, int nthMassBin){
         double chi2 = 0.;
         double ndf = 0.;
         for(int i=0;i<hpt_temp_data->GetNbinsX();i++) {
-           double di=hpt_temp_data->GetBinContent(i+1)-hpt_temp_mc->GetBinContent(i+1);
+           double di_=hpt_temp_data->GetBinContent(i+1)-hpt_temp_mc->GetBinContent(i+1);
            if(g_fcnMatrix) {
               for(int j=0;j<hpt_temp_data->GetNbinsX();j++) {
                  double dj=hpt_temp_data->GetBinContent(j+1)-hpt_temp_mc->GetBinContent(j+1);
-                 chi2+=di*dj*(*g_fcnMatrix)(i,j);
+                 chi2+=di_*dj*(*g_fcnMatrix)(i,j);
               }
            } else {
-              double pull=di/hpt_temp_data->GetBinError(i+1);
+              double pull=di_/hpt_temp_data->GetBinError(i+1);
               chi2+=pull*pull;
            }
            ndf+=1.0;
@@ -578,6 +595,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC){
             hpt_temp_mcAlt   = sysPtUnfold["Alt"].at(0)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
             meanPt_mcAlt.   push_back(hpt_temp_mcAlt->GetMean());
             meanPtErr_mcAlt.push_back(hpt_temp_mcAlt->GetMeanError());
+            delete hpt_temp_mcAlt;
            }
 
            if(doSys){
@@ -587,8 +605,8 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC){
             while(it != sysPtUnfold.end()){
                     int nSys = it->second.size();
 	            TH1* hdatasys_temp;
-                    for(int i = 0; i < nSys; i++){
-	         	hdatasys_temp = sysPtUnfold[it->first].at(i)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                    for(int isys = 0; isys < nSys; isys++){
+	         	hdatasys_temp = sysPtUnfold[it->first].at(isys)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 	         	temp_map[it->first].push_back(hdatasys_temp->GetMean());
 	
 	         	delete hdatasys_temp;
@@ -598,10 +616,12 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC){
 	    meanPt_sysdata.push_back(temp_map);
 	    temp_map.clear();
 
-            delete hpt_temp_data;
-	    delete hpt_temp_mc;
-	    delete hpt_temp_mcAlt;
+            //delete hpt_temp_data;
+	    //delete hpt_temp_mc;
+	    //delete hpt_temp_mcAlt;
            }
+            delete hpt_temp_data;
+            delete hpt_temp_mc;
         }
 
 	// calculate systematic uncertainty for each systematic variation
@@ -729,9 +749,9 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC){
         grMC->SetMarkerColor(kRed);
         grMC->SetMarkerStyle(20);
         grMC->SetMarkerSize(1.);
-        grMC->SetLineStyle(1);
+        grMC->SetLineStyle(9);
         grMC->SetLineColor(kRed);
-        grMC->Draw("lpe same");
+        grMC->Draw("pe same");
 
         TGraphErrors *grMCAlt;
         if(altMC){
@@ -745,7 +765,7 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC){
             grMCAlt->Draw("lpe same");
         }
 
-        grUnfolded->Draw("pe same");
+        //grUnfolded->Draw("pe same");
 
         TLegend* leg_ = new TLegend(0.22, 0.6, 0.55, 0.75,"","brNDC");
         leg_->SetTextSize(0.03);
@@ -1189,10 +1209,11 @@ void ISRUnfold::studyFSRDRPlots(TString outpdf, TString var, int nthMassBin){
 }
 
 
-void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TString sysName){
+void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TString sysName, bool systematic){
 
         const TUnfoldBinningV17* temp_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
         const TUnfoldBinningV17* temp_binning_mass = nomMassUnfold->GetOutputBinning("Gen_Mass");
+        // get mass bin definition from (pt, mass) bin definition
         const TVectorD* temp_tvecd = temp_binning->GetDistributionBinning(1);
         const Double_t* massBins = temp_tvecd->GetMatrixArray();
 
@@ -1212,20 +1233,25 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         TH1F *ratio_MG_aMCNLO;
         TH1F *ratio_sys_err;
 
-
         TH1F *ratio_closure;
 	// get nominal unfoled result
 	if(var.CompareTo("Pt") == 0 ){
-        	if(sysName.CompareTo("Closure")!=0)hunfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        	if(sysName.CompareTo("Closure")!=0)
+                    hunfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 		else hunfolded_data  = sysPtUnfold["Closure"].at(0)->GetOutput("hunfolded_pt_closure",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+
 		hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr")); 
+                // get gen histogram from response matrix
 		hpreFSR_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 	}
 	if(var.CompareTo("Mass") == 0 ){
-        	if(sysName.CompareTo("Closure")!=0) hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"*[UO]",kTRUE);
+        	if(sysName.CompareTo("Closure")!=0) 
+                    hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"*[UO]",kTRUE);
 		else hunfolded_data  = sysMassUnfold["Closure"].at(0)->GetOutput("hunfolded_mass_closure",0,0,"*[UO]",kTRUE);
+
 		hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 		hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr")); 
+                // get gen histogram from response matrix
 		hpreFSR_mc   = nomMassUnfold->GetBias("histMCTruth_mass_temp",0,0,"*[UO]",kTRUE);
 	}
 
@@ -1249,134 +1275,14 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         hunfolded_data->SetTitle("");
         hunfolded_data->Draw("p9histe");
         hpreFSR_mc->Draw("histsame");
+
         hunfolded_data->SetMarkerStyle(20);
         hunfolded_data->SetMarkerSize(.7);
         hunfolded_data->SetLineColor(kBlack);
-        hpreFSR_mc->SetLineColor(kRed);
         hunfolded_data->GetYaxis()->SetTitle("Events/bin");
         hunfolded_data->SetMinimum(10.);
 
-	TH1* hpt_sys_temp;
-	int sysSize = sysPtUnfold[sysName].size();
-        for(int i = 0; i < sysSize; i++){
-                if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
-
-                TString isys;
-                isys.Form("%d", i);
-
-                TH1 * hdatasys_temp;
-                TH1 * hmcsys_temp = NULL;
-       
-                if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Closure") != 0 ))   hdatasys_temp = sysPtUnfold[sysName].at(i)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-
-                if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Closure") == 0 )){
-        		TFile* filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DYtoEE.root");
-
-        		//TH1* hdatasys_temp_ = (TH1*)filein->Get("h" + var + "Gennominal");
-			//hdatasys_temp = temp_binning->ExtractHistogram("hunfolded_pt_systemp",hdatasys_temp_, 0, kTRUE,"pt[UO];mass[UOC"+ibinMass+"]");
-
-        		TString ibinMass_;
-        		ibinMass_.Form("%d", nthMassBin+1);
-        		hdatasys_temp = (TH1*)filein->Get("h" + var + "_m"+ibinMass_); //hPt_m1
-	
-                        ratio_closure= ((TH1F*)hdatasys_temp->Clone("ratio_closure"));
-			
-        		ratio_closure->Divide(hpreFSR_mc);
-		}
-
-		if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Alt") == 0 || sysName.CompareTo("FSRDR") == 0 ) && i == 0){
-	 		hmcsys_temp = sysPtUnfold[sysName].at(i)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); // get alternative DY MC 
-			hmcsys_temp->SetDirectory(0);
-                        ratio_MG_aMCNLO= ((TH1F*)hmcsys_temp->Clone("ratio_MG_aMCNLO"));
-                        ratio_MG_aMCNLO->Divide(hpreFSR_mc);
-		}
-
-                if(var.CompareTo("Mass") == 0 && (sysName.CompareTo("Closure") != 0 )){
-              		hdatasys_temp = sysMassUnfold[sysName].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
-             		hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                }
-		if(var.CompareTo("Mass") == 0 && (sysName.CompareTo("Closure") == 0 )){
-                        TFile* filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DYtoEE.root");
-
-                        //TH1* hdatasys_temp_ = (TH1*)filein->Get("h" + var + "Gennominal");
-                        //hdatasys_temp = temp_binning_mass->ExtractHistogram("hunfolded_mass_systemp",hdatasys_temp_, 0, kTRUE,"*[UO]");
-             		//hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-
-                        hdatasys_temp = (TH1*)filein->Get("h" + var);
-             		hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-
-                        ratio_closure= ((TH1F*)hdatasys_temp->Clone("ratio_closure"));
-        		ratio_closure->Divide(hpreFSR_mc);
-			
-
-		}
-
-
-                for(int ibin = 1; ibin<hunfolded_sys_err->GetNbinsX()+1;ibin++){
-                   Double_t err = -999.;
-                   Double_t ratio_err = -999.;
-
-                   TH1F * ratio_temp = ((TH1F*)hdatasys_temp->Clone("ratio"));
-
-                   if(hdatasys_temp->GetBinContent(ibin) < 0 ){ 
-                	cout << " negative bin exist: " << ibin << " value: " << hdatasys_temp->GetBinContent(ibin) << " prv bin value: " << hdatasys_temp->GetBinContent(ibin - 1) << " next bin value: " << hdatasys_temp->GetBinContent(ibin + 1) <<std::endl;
-		   }
-
-                   ratio_temp->Divide(hpreFSR_mc);
-                   // get "envelope"
-                   Double_t temp_err =  fabs(hunfolded_data->GetBinContent(ibin) - hdatasys_temp->GetBinContent(ibin));
-                   Double_t temp_sys_err = fabs(ratio->GetBinContent(ibin) - ratio_temp->GetBinContent(ibin));
-
-                   if( temp_err > err){
-                             err = temp_err;
-                   }
-                   if( temp_sys_err > ratio_err){
-                             ratio_err = temp_sys_err;
-                   }
-                   hunfolded_sys_err->SetBinError(ibin, err);
-                   ratio_sys_err->SetBinContent(ibin, 1.);
-		   if(ratio_err < 5.e-6) ratio_err = 1.e-6;
-                   ratio_sys_err->SetBinError(ibin, ratio_err);
-
-                   delete ratio_temp;
-              }// loop for bin contents
-
-                hpt_sys_temp = ((TH1F*)hdatasys_temp->Clone("pt_temp"));
-                hpt_sys_temp->Draw("histsame");
-                hpt_sys_temp->SetLineColor(kBlack);
-                hpt_sys_temp->SetLineStyle(2);
-
-		if( (sysName.CompareTo("Closure") == 0 ) ){
-
-        		TString mean_mc_;
-        		mean_mc_.Form("%.5f", hdatasys_temp->GetMean());
-
-        		TLegend* leg_mc_ = new TLegend(0.45, 0.30, 0.75, 0.5,"","brNDC");
-        		leg_mc_->SetNColumns(2);
-        		leg_mc_->SetTextSize(0.055);
-        		leg_mc_->SetFillStyle(0);
-        		leg_mc_->SetBorderSize(0);
-
-        		leg_mc_->AddEntry(hpt_sys_temp, "Truth MC (mean: " + mean_mc_ + ")", "pl");
-        		leg_mc_->Draw();
-		}
-
-		if(hmcsys_temp!=NULL){
-			cout << "draw " << sysName << " MC histogram " << " 1 bin content: " << hmcsys_temp->GetBinContent(1) << endl;
-			hmcsys_temp->Draw("histsame");
-			hmcsys_temp->SetLineColor(kBlue);
-		}
-
-
-              delete hdatasys_temp;
-	      //delete hmcsys_temp;
-          }
-
-	if(sysName.CompareTo("Closure")!=0){
-	hunfolded_sys_err->Draw("E2same");
-        hunfolded_sys_err->SetMarkerSize(0);
-        hunfolded_sys_err->SetFillColorAlpha(kBlack,0.3);
-	}
+        hpreFSR_mc->SetLineColor(kRed);
 
         TString mean_nom;
         mean_nom.Form("%.5f", hunfolded_data->GetMean());
@@ -1386,25 +1292,156 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         leg_nom->SetTextSize(0.055);
         leg_nom->SetFillStyle(0);
         leg_nom->SetBorderSize(0);
+        leg_nom->AddEntry(hunfolded_data, "Unfolded data (mean: " + mean_nom + ")", "pl");
 
         if(sysName.CompareTo("Closure")!=0){
-            leg_nom->AddEntry(hunfolded_data, "Unfolded data (mean: " + mean_nom + ")", "pl");
             leg_nom->AddEntry(hpreFSR_mc, "aMC@NLO", "l");
-	    //if(sysName.CompareTo("Alt") == 0){
-            //    leg_nom->AddEntry(hmcsys_temp, "MG (LO)", "l");
-            //}
         }
-	else leg_nom->AddEntry(hunfolded_data, "Unfolded DY MC (mean: " + mean_nom + ")", "pl");
-        leg_nom->Draw();
 
-	TLatex chi2_norm;
+        TLatex chi2_norm;
         TString chi2_;
 
-	// TODO add Mass option	
-	if(var.CompareTo("Pt") == 0 ){
-		chi2_.Form("%f",DoFit("Pt", nthMassBin));
- 		chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
-	}
+        // TODO add Mass option 
+        if(var.CompareTo("Pt") == 0 ){
+                chi2_.Form("%f",DoFit("Pt", nthMassBin));
+                chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////// systematics
+        if(systematic){
+            
+	    TH1* hdata_sys_temp;
+	    int sysSize = sysPtUnfold[sysName].size();
+            for(int i = 0; i < sysSize; i++){
+                
+                if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
+
+                TString isys;
+                isys.Form("%d", i);
+
+                TH1 * hdatasys_temp;
+                TH1 * hmcsys_temp = NULL;
+       
+                if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Closure") != 0 ))
+                    hdatasys_temp = sysPtUnfold[sysName].at(i)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+
+                if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Closure") == 0 )){
+            	    TFile* filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DYtoEE.root");
+
+            	    //TH1* hdatasys_temp_ = (TH1*)filein->Get("h" + var + "Gennominal");
+	    	    //hdatasys_temp = temp_binning->ExtractHistogram("hunfolded_pt_systemp",hdatasys_temp_, 0, kTRUE,"pt[UO];mass[UOC"+ibinMass+"]");
+
+            	    TString ibinMass_;
+            	    ibinMass_.Form("%d", nthMassBin+1);
+            	    hdatasys_temp = (TH1*)filein->Get("h" + var + "_m"+ibinMass_); //hPt_m1
+                    ratio_closure= ((TH1F*)hdatasys_temp->Clone("ratio_closure"));
+            	    ratio_closure->Divide(hpreFSR_mc);
+	    	}
+
+	    	if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Alt") == 0 || sysName.CompareTo("FSRDR") == 0 ) && i == 0){
+	     	    hmcsys_temp = sysPtUnfold[sysName].at(i)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); // get alternative DY MC 
+	    	    hmcsys_temp->SetDirectory(0);
+                    ratio_MG_aMCNLO= ((TH1F*)hmcsys_temp->Clone("ratio_MG_aMCNLO"));
+                    ratio_MG_aMCNLO->Divide(hpreFSR_mc);
+	    	}
+
+                if(var.CompareTo("Mass") == 0 && (sysName.CompareTo("Closure") != 0 )){
+                    hdatasys_temp = sysMassUnfold[sysName].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
+                    hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                }
+	    	if(var.CompareTo("Mass") == 0 && (sysName.CompareTo("Closure") == 0 )){
+                    TFile* filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DYtoEE.root");
+
+                        //TH1* hdatasys_temp_ = (TH1*)filein->Get("h" + var + "Gennominal");
+                        //hdatasys_temp = temp_binning_mass->ExtractHistogram("hunfolded_mass_systemp",hdatasys_temp_, 0, kTRUE,"*[UO]");
+               		//hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+
+                    hdatasys_temp = (TH1*)filein->Get("h" + var);
+                    hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+
+                    ratio_closure= ((TH1F*)hdatasys_temp->Clone("ratio_closure"));
+            	    ratio_closure->Divide(hpreFSR_mc);
+	    	}
+
+
+                // loop over each bin of unfolded histogram
+                for(int ibin = 1; ibin<hunfolded_sys_err->GetNbinsX()+1;ibin++){
+
+                    TH1F * ratio_temp = ((TH1F*)hdatasys_temp->Clone("ratio"));
+
+                    if(hdatasys_temp->GetBinContent(ibin) < 0 ){ 
+                        cout << " negative bin exist: " << ibin << " value: " << hdatasys_temp->GetBinContent(ibin) << " prv bin value: " << hdatasys_temp->GetBinContent(ibin - 1) << " next bin value: " << hdatasys_temp->GetBinContent(ibin + 1) <<std::endl;
+	    	    }
+
+                    ratio_temp->Divide(hpreFSR_mc);
+                    // get "envelope"
+                    // absolute difference between nominal unfolded histogram and systematic unfolded histogram
+                    Double_t temp_err =  fabs(hunfolded_data->GetBinContent(ibin) - hdatasys_temp->GetBinContent(ibin));
+                    Double_t temp_sys_err = fabs(ratio->GetBinContent(ibin) - ratio_temp->GetBinContent(ibin));
+
+                    if(i==0){
+                        hunfolded_sys_err->SetBinError(ibin, temp_err);
+                        ratio_sys_err->SetBinContent(ibin, 1.);
+	    	        if(temp_sys_err < 5.e-6) temp_sys_err = 1.e-6;
+                        ratio_sys_err->SetBinError(ibin, temp_sys_err);
+                    }
+                    else{
+                        // update error if current error is larger than the previous one
+                        if(temp_err > hunfolded_sys_err->GetBinError(ibin))
+                            hunfolded_sys_err->SetBinError(ibin, temp_err);
+                        if(temp_sys_err > ratio_sys_err->GetBinError(ibin))
+                            ratio_sys_err->SetBinError(ibin, temp_sys_err);
+                    }
+
+                   delete ratio_temp;
+                }// loop for bin contents
+
+                // draw every systematic historams
+                hdata_sys_temp = ((TH1F*)hdatasys_temp->Clone("pt_temp"));
+                hdata_sys_temp->Draw("histsame");
+                hdata_sys_temp->SetLineColor(kBlack);
+                hdata_sys_temp->SetLineStyle(2);
+
+	    	if( (sysName.CompareTo("Closure") == 0 ) ){
+                    
+            	    TString mean_mc_;
+            	    mean_mc_.Form("%.5f", hdatasys_temp->GetMean());
+
+            	    TLegend* leg_mc_ = new TLegend(0.45, 0.30, 0.75, 0.5,"","brNDC");
+            	    leg_mc_->SetNColumns(2);
+            	    leg_mc_->SetTextSize(0.055);
+            	    leg_mc_->SetFillStyle(0);
+            	    leg_mc_->SetBorderSize(0);
+
+            	    leg_mc_->AddEntry(hdata_sys_temp, "Truth MC (mean: " + mean_mc_ + ")", "pl");
+            	    leg_mc_->Draw();
+	    	}
+
+	    	if(hmcsys_temp!=NULL){
+	    		cout << "draw " << sysName << " MC histogram " << " 1 bin content: " << hmcsys_temp->GetBinContent(1) << endl;
+	    		hmcsys_temp->Draw("histsame");
+	    		hmcsys_temp->SetLineColor(kBlue);
+	    	}
+
+                delete hdatasys_temp;
+	        //delete hmcsys_temp;
+            }// loop over variation set in each systematic source
+
+            // draw systematic envelope for systematic source 
+	    if(sysName.CompareTo("Closure")!=0){
+	        hunfolded_sys_err->Draw("E2same");
+                hunfolded_sys_err->SetMarkerSize(0);
+                hunfolded_sys_err->SetFillColorAlpha(kBlack,0.3);
+	    }
+
+	    if(sysName.CompareTo("Closure")==0) 
+                leg_nom->AddEntry(hunfolded_data, "Unfolded DY MC (mean: " + mean_nom + ")", "pl"); // since for closure, use MC instead of Data
+
+	    delete hdata_sys_temp;
+        }
+        ////////////////////////////////////////////////////// systematic
+
+        leg_nom->Draw();
 
 	c1->cd();
 
@@ -1432,6 +1469,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         leg_ratios->SetBorderSize(0);
         leg_ratios->AddEntry(ratio, "unfolded data/ aMC@NLO" , "pl");
 
+        if(systematic){
         if(sysName.CompareTo("Alt") == 0){
             ratio_MG_aMCNLO->Draw("histsamee");
             ratio_MG_aMCNLO->SetLineStyle(2);
@@ -1449,8 +1487,9 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 	else{
 		ratio_closure->Draw("histsamee");
 		ratio_closure->SetLineColor(kRed);
-
 	}
+        }
+
         leg_ratios->Draw();
 
 
@@ -1462,7 +1501,6 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         delete hunfolded_data;
 	delete hunfolded_sys_err;
         delete hpreFSR_mc;
-	delete hpt_sys_temp;
         delete pad1;
         delete pad2;
         delete c1;

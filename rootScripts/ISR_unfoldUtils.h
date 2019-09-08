@@ -80,7 +80,7 @@ public:
 	~ISRUnfold(){}
 
 	// set nominal TUnfoldDensity 
-	void setNomTUnfoldDensity(TString filepath, TString var, TString matrixName, bool isfsr = false);
+	void setNomTUnfoldDensity(TString filepath, TString var, TString matrixName, bool test = false);
 
 	// set systematic TUnfoldDensity
 	void setSysTUnfoldDensity(TString filepath, TString var, TString sysName, int nth, bool isfsr = false);
@@ -98,7 +98,7 @@ public:
 	void doISRUnfold(bool doSys = false);
 
 	// draw nominal detector level, unfolded plot, and final result plot without systematic
-	void drawNominalPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
+	void drawNominalPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false);
 
 	// draw input histograms using GetInput	
 	void drawInputPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
