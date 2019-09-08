@@ -180,12 +180,12 @@ if args.getUnfoldResultsV2:
         # draw plots including systematic 
         for sysName, nSys in sysDict.items():
 
-			for massBin in range(0,5):
+	    for massBin in range(0,5):
 
-                        	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys);
-                        	unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys);
-                        	unfoldClass.drawInputPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName);
-				unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys);
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys);
+                unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName);
+		unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
 
 
 	#unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 0)

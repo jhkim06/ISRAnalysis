@@ -792,118 +792,115 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC){
 
 void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TString sysName){
 
-        gROOT->SetBatch();
+   gROOT->SetBatch();
 
-	setTDRStyle();
-	writeExtraText = true;
-	extraText  = "work in progress";
+   setTDRStyle();
+   writeExtraText = true;
+   extraText  = "work in progress";
 
-        TString ibinMass;
-        ibinMass.Form("%d", nthMassBin);
+   TString ibinMass;
+   ibinMass.Form("%d", nthMassBin);
 
-        TH1* hpt_temp_data;
-        TH1F *ratio;
+   TH1* hpt_temp_data;
+   TH1F *ratio;
+   
+   hpt_temp_data   = nomPtUnfold->GetInput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
-        hpt_temp_data   = nomPtUnfold->GetInput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+   c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
+   c1->cd();
+   gStyle->SetOptStat(0);
 
-        c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
-        c1->cd();
-        gStyle->SetOptStat(0);
+   TPad *pad1 = new TPad("pad1","pad1",0,0.4,1,1);
+   pad1->SetBottomMargin(0.01);
+   pad1->SetTopMargin(0.1);
+   pad1->SetTicks(1);
+   pad1->SetLogy();
+   pad1->Draw();
+   pad1->cd();
 
-        TPad *pad1 = new TPad("pad1","pad1",0,0.4,1,1);
-        pad1->SetBottomMargin(0.01);
-        pad1->SetTopMargin(0.1);
-        pad1->SetTicks(1);
-        pad1->SetLogy();
-        pad1->Draw();
-        pad1->cd();
+   hpt_temp_data->SetTitle("");
+   hpt_temp_data->Draw("p9histe");
+   hpt_temp_data->SetMarkerStyle(20);
+   hpt_temp_data->SetMarkerSize(.7);
+   hpt_temp_data->SetLineColor(kBlack);
+   hpt_temp_data->GetYaxis()->SetTitle("Events/bin");
 
-        hpt_temp_data->SetTitle("");
-        hpt_temp_data->Draw("p9histe");
-        hpt_temp_data->SetMarkerStyle(20);
-        hpt_temp_data->SetMarkerSize(.7);
-        hpt_temp_data->SetLineColor(kBlack);
-        hpt_temp_data->GetYaxis()->SetTitle("Events/bin");
+   TH1* hpt_sys_temp;
+   int sysSize = sysPtUnfold[sysName].size();
+   for(int i = 0; i < sysSize; i++){
+           if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
 
+           TString isys;
+           isys.Form("%d", i);
 
-	TH1* hpt_sys_temp;
-	int sysSize = sysPtUnfold[sysName].size();
-        for(int i = 0; i < sysSize; i++){
-                if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
+           TH1 * hsyspt_temp = sysPtUnfold[sysName].at(i)->GetInput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+           hpt_sys_temp = ((TH1F*)hsyspt_temp->Clone("pt_temp"));
+           hpt_sys_temp->Draw("histsame");
+           hpt_sys_temp->SetLineColor(kBlack);
+           hpt_sys_temp->SetLineStyle(2);
 
-                TString isys;
-                isys.Form("%d", i);
+           delete hsyspt_temp;
+   }
 
-                TH1 * hsyspt_temp = sysPtUnfold[sysName].at(i)->GetInput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-	        hpt_sys_temp = ((TH1F*)hsyspt_temp->Clone("pt_temp"));
-	        hpt_sys_temp->Draw("histsame");
-	        hpt_sys_temp->SetLineColor(kBlack);
-	        hpt_sys_temp->SetLineStyle(2);
+   TString mean_nom;
+   mean_nom.Form("%.5f", hpt_temp_data->GetMean());
 
-                delete hsyspt_temp;
-        }
+   TLegend* leg_nom = new TLegend(0.45, 0.70, 0.75, 0.9,"","brNDC");
+   leg_nom->SetNColumns(2);
+   leg_nom->SetTextSize(0.055);
+   leg_nom->SetFillStyle(0);
+   leg_nom->SetBorderSize(0);
 
-        TString mean_nom;
-        mean_nom.Form("%.5f", hpt_temp_data->GetMean());
+   leg_nom->AddEntry(hpt_temp_data, "Bkg subtracted data (mean: " + mean_nom + ")", "pl");
+   leg_nom->Draw();
+   c1->cd();
 
-        TLegend* leg_nom = new TLegend(0.45, 0.70, 0.75, 0.9,"","brNDC");
-        leg_nom->SetNColumns(2);
-        leg_nom->SetTextSize(0.055);
-        leg_nom->SetFillStyle(0);
-        leg_nom->SetBorderSize(0);
+   TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.4);
+   pad2->SetTopMargin(0.05);
+   pad2->SetBottomMargin(0.2);
+   pad2->SetTicks(1);
+   pad2->SetGridy(1);
+   pad2->Draw();
+   pad2->cd();
 
-        leg_nom->AddEntry(hpt_temp_data, "Bkg subtracted data (mean: " + mean_nom + ")", "pl");
-        leg_nom->Draw();
+   for(int i = 0; i < sysSize; i++){
+        if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
 
-	c1->cd();
+        TString isys;
+        isys.Form("%d", i); 
 
-        TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.4);
-        pad2->SetTopMargin(0.05);
-        pad2->SetBottomMargin(0.2);
-        pad2->SetTicks(1);
-        pad2->SetGridy(1);
-        pad2->Draw();
+        TH1 * hsyspt_temp = sysPtUnfold[sysName].at(i)->GetInput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        ratio = ((TH1F*)hsyspt_temp->Clone("pt_temp"));
+   	ratio->Divide(hpt_temp_data);
+        if(i==0 ){
+   	    ratio->Draw("hist");
+            ratio->GetYaxis()->SetTitle("Systematic/ Nominal input");
+   	    ratio->GetXaxis()->SetTitle("p_{T} at pre FSR(GeV)");
+   	    ratio->SetMinimum(0.9);
+   	    ratio->SetMaximum(1.1);
+   	    ratio->SetTitle("");
+   	    ratio->GetXaxis()->SetTitleOffset(1.5);
+   	    ratio->GetYaxis()->SetNdivisions(515);
+            ratio->SetLineColor(kBlack);
+            ratio->SetLineStyle(2);
+   	}
+        else{
+   	    ratio->Draw("histsame");
+            ratio->SetLineStyle(2);
+   	}
 
-        pad2->cd();
+        delete hsyspt_temp;
+   }   
 
-        for(int i = 0; i < sysSize; i++){
-                if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
+   CMS_lumi( c1, 4, 0 );
+   c1->cd();
+   c1->SaveAs(outpdf+"_input_"+ibinMass+".pdf");
 
-                TString isys;
-                isys.Form("%d", i); 
-
-                TH1 * hsyspt_temp = sysPtUnfold[sysName].at(i)->GetInput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                ratio = ((TH1F*)hsyspt_temp->Clone("pt_temp"));
-		ratio->Divide(hpt_temp_data);
-                if(i==0 ){
- 			ratio->Draw("hist");
-        		ratio->GetYaxis()->SetTitle("Systematic/ Nominal input");
-        		ratio->GetXaxis()->SetTitle("p_{T} at pre FSR(GeV)");
-        		ratio->SetMinimum(0.8);
-        		ratio->SetMaximum(1.2);
-        		ratio->SetTitle("");
-        		ratio->GetXaxis()->SetTitleOffset(1.5);
-        		ratio->GetYaxis()->SetNdivisions(515);
-                	ratio->SetLineColor(kBlack);
-                	ratio->SetLineStyle(2);
-		}
-                else{
-		      ratio->Draw("histsame");
-                      ratio->SetLineStyle(2);
-		}
-
-                delete hsyspt_temp;
-        }   
-
-	CMS_lumi( c1, 4, 0 );
-        c1->cd();
-        c1->SaveAs(outpdf+"_input_"+ibinMass+".pdf");
-
-        delete hpt_temp_data;
-	delete ratio;
-        delete pad1;
-        delete pad2;
-        delete c1;
+   delete hpt_temp_data;
+   delete ratio;
+   delete pad1;
+   delete pad2;
+   delete c1;
 }
 
 // https://root.cern.ch/root/html/tutorials/graphs/graphtext.C.html
@@ -954,7 +951,8 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName){
            aminPt=TMath::Min(aminPt, (meanPt_sysdata.at(nthMassBin)[sysName])[i]);
         }
 
-
+        // nominal point with total uncertainty
+        TGaxis::SetMaxDigits(4);   
         TGraphErrors *grUnfolded = new TGraphErrors(1, &meanMass_data[nthMassBin], &meanPt_data[nthMassBin], &meanMassTotErr_data[nthMassBin], &meanPtTotErr_data[nthMassBin]);
         grUnfolded->SetLineColor(kBlack);
         grUnfolded->SetMarkerColor(kBlack);
@@ -964,13 +962,14 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName){
         grUnfolded->Draw("ape");
         grUnfolded->GetYaxis()->SetRangeUser(aminPt*0.995,amaxPt*1.005);
         grUnfolded->GetXaxis()->SetLimits(aminMass*0.995,amaxMass*1.005);
+        grUnfolded->GetXaxis()->SetNdivisions(505, false);
         grUnfolded->GetYaxis()->SetTitle("Average p_{T} (GeV)");
         grUnfolded->GetXaxis()->SetTitle("Average Mass (GeV)");
 
 	// meanPtStatErr_data
         TGraphErrors *grStatErr = new TGraphErrors(1, &meanMass_data[nthMassBin], &meanPt_data[nthMassBin], &meanMassStatErr_data[nthMassBin], &meanPtStatErr_data[nthMassBin]);
-        grStatErr->SetFillColor(kBlue);;
-	grStatErr->SetFillColorAlpha(kBlue,0.3);
+        grStatErr->SetFillColor(kBlack);;
+	grStatErr->SetFillColorAlpha(kBlack,0.3);
         grStatErr->Draw("sameE2");
 
         TGraph *grSys = new TGraph(sysSize, &(meanMass_sysdata.at(nthMassBin)[sysName])[0], &(meanPt_sysdata.at(nthMassBin)[sysName])[0] );
@@ -982,18 +981,17 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName){
         grSys->Draw("pe same ");
 	drawtext(grSys);
 
-
         grUnfolded->Draw("pe same");
 
         TLegend* leg = new TLegend(0.6, 0.70, 0.85, 0.9,"","brNDC");
-        leg->SetTextSize(0.04);
+        leg->SetTextSize(0.02);
         leg->SetFillStyle(0);
         leg->SetBorderSize(0);
 
-        leg->AddEntry(grUnfolded, "Nominal point", "pl");
-        leg->AddEntry(grSys, "Systematic (" + sysName + ")" , "pl");
+        leg->AddEntry(grUnfolded, "Measurment with total uncertainty", "lep");
+        leg->AddEntry(grSys,      "Systematic source : " + sysName, "pl");
+        leg->AddEntry(grStatErr,  "Statistical uncertainty" , "f");
         leg->Draw();
-
 
         CMS_lumi( c1, 4, 11 );
         c1->SaveAs(outpdf+"_"+ibinMass+"_"+sysName+".pdf");
