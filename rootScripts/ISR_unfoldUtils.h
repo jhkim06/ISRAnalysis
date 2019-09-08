@@ -97,6 +97,8 @@ public:
 	// do unfold 
 	void doISRUnfold(bool doSys = false);
 
+        void drawClosurePlots(TString outpdf, TString var, int nthMassBin);
+
 	// draw nominal detector level, unfolded plot, and final result plot without systematic
 	void drawNominalPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false);
 

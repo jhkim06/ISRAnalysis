@@ -177,8 +177,20 @@ if args.getUnfoldResultsV2:
 	unfoldClass.setMeanPt(args.doSys, False)
 	unfoldClass.setMeanMass(args.doSys, False)
 
+        for massBin in range(0,5):
+            
+                unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin); 
+                unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin); 
+
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin);
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin);
+
+
+
         # draw plots including systematic 
         for sysName, nSys in sysDict.items():
+
+            if sysName == "Closure" : continue
 
 	    for massBin in range(0,5):
 
@@ -206,11 +218,6 @@ if args.getUnfoldResultsV2:
 
         #unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
         #unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
-
-        for massBin in range(0,5):
-
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin);
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin);
 
 
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_" + args.channel + ".pdf", False)

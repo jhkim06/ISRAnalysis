@@ -1206,6 +1206,120 @@ void ISRUnfold::studyFSRDRPlots(TString outpdf, TString var, int nthMassBin){
         delete c1;
 }
 
+void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin){
+
+    const TUnfoldBinningV17* temp_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
+    const TUnfoldBinningV17* temp_binning_mass = nomMassUnfold->GetOutputBinning("Gen_Mass");
+    // get mass bin definition from (pt, mass) bin definition
+    const TVectorD* temp_tvecd = temp_binning->GetDistributionBinning(1);
+    const Double_t* massBins = temp_tvecd->GetMatrixArray();
+
+    gROOT->SetBatch();
+
+    setTDRStyle();
+    writeExtraText = true;
+    extraText  = "work in progress";
+
+    TString ibinMass;
+    ibinMass.Form("%d", nthMassBin);
+
+    TH1* hunfolded_data;
+    TH1* hpreFSR_mc;
+    TH1F *ratio;
+
+    // get nominal unfoled result
+    if(var.CompareTo("Pt") == 0 ){
+        hunfolded_data  = sysPtUnfold["Closure"].at(0)->GetOutput("hunfolded_pt_closure",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        hpreFSR_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+    }
+    if(var.CompareTo("Mass") == 0 ){
+        hunfolded_data  = sysMassUnfold["Closure"].at(0)->GetOutput("hunfolded_mass_closure",0,0,"*[UO]",kTRUE);
+        hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+        hpreFSR_mc   = nomMassUnfold->GetBias("histMCTruth_mass_temp",0,0,"*[UO]",kTRUE);
+        hpreFSR_mc->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+    }
+
+    ratio= ((TH1F*)hunfolded_data->Clone("ratio"));
+    ratio->Divide(hpreFSR_mc);
+
+    c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
+    c1->cd();
+    gStyle->SetOptStat(0);
+
+    TPad *pad1 = new TPad("pad1","pad1",0,0.4,1,1);
+    pad1->SetBottomMargin(0.01);
+    pad1->SetTopMargin(0.1);
+    pad1->SetTicks(1);
+    pad1->SetLogy();
+    pad1->Draw();
+    pad1->cd();
+
+    hunfolded_data->SetTitle("");
+    hunfolded_data->Draw("p9histe");
+    hpreFSR_mc->Draw("histsame");
+
+    hunfolded_data->SetMarkerStyle(20);
+    hunfolded_data->SetMarkerSize(.7);
+    hunfolded_data->SetLineColor(kBlack);
+    hunfolded_data->GetYaxis()->SetTitle("Events/bin");
+    hunfolded_data->SetMinimum(10.);
+
+    hpreFSR_mc->SetLineColor(kRed);
+
+    TString mean_nom;
+    TString meanMC_nom;
+    mean_nom.Form("%.5f", hunfolded_data->GetMean());
+    meanMC_nom.Form("%.5f", hpreFSR_mc->GetMean());
+
+    TLegend* leg_nom = new TLegend(0.45, 0.4, 0.75, 0.6,"","brNDC");
+    //leg_nom->SetNColumns(2);
+    leg_nom->SetTextSize(0.055);
+    leg_nom->SetFillStyle(0);
+    leg_nom->SetBorderSize(0);
+    leg_nom->AddEntry(hunfolded_data, "Unfolded MC (mean: " + mean_nom + ")", "pl");
+    leg_nom->AddEntry(hpreFSR_mc, "Gen MC (mean: " + meanMC_nom + ")", "l");
+
+    TLatex chi2_norm;
+    TString chi2_;
+
+    // TODO add Mass option 
+    if(var.CompareTo("Pt") == 0 ){
+            chi2_.Form("%f",DoFit("Pt", nthMassBin));
+            chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
+    }
+    leg_nom->Draw();
+
+    c1->cd();
+
+    TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.4);
+    pad2->SetTopMargin(0.05);
+    pad2->SetBottomMargin(0.2);
+    pad2->SetTicks(1);
+    pad2->SetGridy(1);
+    pad2->Draw();
+
+    pad2->cd();
+    ratio->Draw("histe");
+    ratio->GetYaxis()->SetTitle("Unfold/ MC Gen");
+    ratio->GetXaxis()->SetTitle("p_{T} at pre FSR(GeV)");
+    ratio->SetMinimum(0.8);
+    ratio->SetMaximum(1.2);
+    ratio->SetTitle("");
+    ratio->GetXaxis()->SetTitleOffset(1.5);
+    ratio->GetYaxis()->SetNdivisions(515);
+
+    CMS_lumi( c1, 4, 0 );
+    c1->cd();
+    c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+".pdf");
+
+    delete hunfolded_data;
+    delete hpreFSR_mc;
+    delete pad1;
+    delete pad2;
+    delete c1;
+
+}
+
 
 void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TString sysName, bool systematic){
 
@@ -1231,21 +1345,15 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         TH1F *ratio_MG_aMCNLO;
         TH1F *ratio_sys_err;
 
-        TH1F *ratio_closure;
 	// get nominal unfoled result
 	if(var.CompareTo("Pt") == 0 ){
-        	if(sysName.CompareTo("Closure")!=0)
-                    hunfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-		else hunfolded_data  = sysPtUnfold["Closure"].at(0)->GetOutput("hunfolded_pt_closure",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-
+                hunfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 		hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr")); 
                 // get gen histogram from response matrix
 		hpreFSR_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 	}
 	if(var.CompareTo("Mass") == 0 ){
-        	if(sysName.CompareTo("Closure")!=0) 
-                    hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"*[UO]",kTRUE);
-		else hunfolded_data  = sysMassUnfold["Closure"].at(0)->GetOutput("hunfolded_mass_closure",0,0,"*[UO]",kTRUE);
+                hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"*[UO]",kTRUE);
 
 		hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 		hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr")); 
@@ -1292,9 +1400,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         leg_nom->SetBorderSize(0);
         leg_nom->AddEntry(hunfolded_data, "Unfolded data (mean: " + mean_nom + ")", "pl");
 
-        if(sysName.CompareTo("Closure")!=0){
-            leg_nom->AddEntry(hpreFSR_mc, "aMC@NLO", "l");
-        }
+        leg_nom->AddEntry(hpreFSR_mc, "aMC@NLO", "l");
 
         TLatex chi2_norm;
         TString chi2_;
@@ -1305,7 +1411,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
         }
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////// systematics
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////// systematics ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         if(systematic){
             
 	    TH1* hdata_sys_temp;
@@ -1320,22 +1426,10 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 TH1 * hdatasys_temp;
                 TH1 * hmcsys_temp = NULL;
        
-                if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Closure") != 0 ))
+                if(var.CompareTo("Pt") == 0)
                     hdatasys_temp = sysPtUnfold[sysName].at(i)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
-                if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Closure") == 0 )){
-            	    TFile* filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DYtoEE.root");
-
-            	    //TH1* hdatasys_temp_ = (TH1*)filein->Get("h" + var + "Gennominal");
-	    	    //hdatasys_temp = temp_binning->ExtractHistogram("hunfolded_pt_systemp",hdatasys_temp_, 0, kTRUE,"pt[UO];mass[UOC"+ibinMass+"]");
-
-            	    TString ibinMass_;
-            	    ibinMass_.Form("%d", nthMassBin+1);
-            	    hdatasys_temp = (TH1*)filein->Get("h" + var + "_m"+ibinMass_); //hPt_m1
-                    ratio_closure= ((TH1F*)hdatasys_temp->Clone("ratio_closure"));
-            	    ratio_closure->Divide(hpreFSR_mc);
-	    	}
-
+                // just to show histogram of alternative MC
 	    	if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Alt") == 0 || sysName.CompareTo("FSRDR") == 0 ) && i == 0){
 	     	    hmcsys_temp = sysPtUnfold[sysName].at(i)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); // get alternative DY MC 
 	    	    hmcsys_temp->SetDirectory(0);
@@ -1343,24 +1437,10 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                     ratio_MG_aMCNLO->Divide(hpreFSR_mc);
 	    	}
 
-                if(var.CompareTo("Mass") == 0 && (sysName.CompareTo("Closure") != 0 )){
+                if(var.CompareTo("Mass") == 0){
                     hdatasys_temp = sysMassUnfold[sysName].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
                     hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
                 }
-	    	if(var.CompareTo("Mass") == 0 && (sysName.CompareTo("Closure") == 0 )){
-                    TFile* filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DYtoEE.root");
-
-                        //TH1* hdatasys_temp_ = (TH1*)filein->Get("h" + var + "Gennominal");
-                        //hdatasys_temp = temp_binning_mass->ExtractHistogram("hunfolded_mass_systemp",hdatasys_temp_, 0, kTRUE,"*[UO]");
-               		//hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-
-                    hdatasys_temp = (TH1*)filein->Get("h" + var);
-                    hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-
-                    ratio_closure= ((TH1F*)hdatasys_temp->Clone("ratio_closure"));
-            	    ratio_closure->Divide(hpreFSR_mc);
-	    	}
-
 
                 // loop over each bin of unfolded histogram
                 for(int ibin = 1; ibin<hunfolded_sys_err->GetNbinsX()+1;ibin++){
@@ -1426,18 +1506,13 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
             }// loop over variation set in each systematic source
 
             // draw systematic envelope for systematic source 
-	    if(sysName.CompareTo("Closure")!=0){
-	        hunfolded_sys_err->Draw("E2same");
-                hunfolded_sys_err->SetMarkerSize(0);
-                hunfolded_sys_err->SetFillColorAlpha(kBlack,0.3);
-	    }
-
-	    if(sysName.CompareTo("Closure")==0) 
-                leg_nom->AddEntry(hunfolded_data, "Unfolded DY MC (mean: " + mean_nom + ")", "pl"); // since for closure, use MC instead of Data
+	    hunfolded_sys_err->Draw("E2same");
+            hunfolded_sys_err->SetMarkerSize(0);
+            hunfolded_sys_err->SetFillColorAlpha(kBlack,0.3);
 
 	    delete hdata_sys_temp;
         }
-        ////////////////////////////////////////////////////// systematic
+        ////////////////////////////////////////////////////// systematic ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         leg_nom->Draw();
 
@@ -1468,29 +1543,19 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         leg_ratios->AddEntry(ratio, "unfolded data/ aMC@NLO" , "pl");
 
         if(systematic){
-        if(sysName.CompareTo("Alt") == 0){
-            ratio_MG_aMCNLO->Draw("histsamee");
-            ratio_MG_aMCNLO->SetLineStyle(2);
-            ratio_MG_aMCNLO->SetLineColor(kRed);
-            leg_ratios->AddEntry(ratio_MG_aMCNLO, "MG/ aMC@NLO", "l");
-        }
-
-	if(sysName.CompareTo("Closure")!=0){
+            if(sysName.CompareTo("Alt") == 0){
+                ratio_MG_aMCNLO->Draw("histsamee");
+                ratio_MG_aMCNLO->SetLineStyle(2);
+                ratio_MG_aMCNLO->SetLineColor(kRed);
+                leg_ratios->AddEntry(ratio_MG_aMCNLO, "MG/ aMC@NLO", "l");
+            }
 	    ratio_sys_err->Draw("E2same");
             ratio_sys_err->SetMarkerSize(0);
             ratio_sys_err->SetFillColorAlpha(kBlack,0.3);
             leg_ratios->AddEntry(ratio_sys_err, "systematic " + sysName , "F");
-
-	}
-	else{
-		ratio_closure->Draw("histsamee");
-		ratio_closure->SetLineColor(kRed);
-	}
         }
 
         leg_ratios->Draw();
-
-
 
 	CMS_lumi( c1, 4, 0 );
         c1->cd();
