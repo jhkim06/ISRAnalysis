@@ -1230,13 +1230,13 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin){
     // get nominal unfoled result
     if(var.CompareTo("Pt") == 0 ){
         hunfolded_data  = sysPtUnfold["Closure"].at(0)->GetOutput("hunfolded_pt_closure",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-        hpreFSR_mc   =    nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        hpreFSR_mc   =    sysPtUnfold["Closure"].at(0)->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
     }
     if(var.CompareTo("Mass") == 0 ){
         hunfolded_data  = sysMassUnfold["Closure"].at(0)->GetOutput("hunfolded_mass_closure",0,0,"*[UO]",kTRUE);
         hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 
-        hpreFSR_mc   = nomMassUnfold->GetBias("histMCTruth_mass_temp",0,0,"*[UO]",kTRUE);
+        hpreFSR_mc   = sysMassUnfold["Closure"].at(0)->GetBias("histMCTruth_mass_temp",0,0,"*[UO]",kTRUE);
         hpreFSR_mc->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
     }
 
