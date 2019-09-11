@@ -105,11 +105,11 @@ if args.getUnfoldResultsV2:
         unfoldClass = rt.ISRUnfold()
 
         # set response matrix
-        unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Pt",     postfix, True)
-        unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Mass",   postfix, True)
+        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Pt",     postfix, True)
+        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Mass",   postfix, True)
 
-        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, False)
-        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, False)
+        unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, False)
+        unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, False)
 
         # set unfolding input histogram
 	unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'])
@@ -223,7 +223,7 @@ if args.getUnfoldResultsV2:
         #unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
 
-	unfoldClass.drawISRresult(outputDirectory + "ISRfit_" + args.channel + ".pdf", False)
+	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", args.channel, False)
 
 	del unfoldClass
 

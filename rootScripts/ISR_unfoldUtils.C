@@ -687,7 +687,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC){
 	}// loop for mass bins
 }
 
-void ISRUnfold::drawISRresult(TString outpdf, bool altMC){
+void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
 
         gROOT->SetBatch();
 
@@ -771,7 +771,7 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC){
         leg_->SetTextSize(0.03);
         //leg_->SetFillStyle(1);
         leg_->SetBorderSize(0);
-        leg_->AddEntry(grUnfolded, "Unfolded electron data", "pe");
+        leg_->AddEntry(grUnfolded, "Unfolded " + channel + " data", "pe");
         leg_->AddEntry(grMC, "DY MC at pre FSR (aMC@NLO)", "pe");
         if(altMC) leg_->AddEntry(grMCAlt, "DY MC at pre FSR (Madgraph)", "pe");
         leg_->Draw();
@@ -783,7 +783,7 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC){
         f1->Draw("same");
 
         CMS_lumi( c1, 4, 11 );
-        c1->SaveAs(outpdf);
+        c1->SaveAs(outpdf + channel + ".pdf");
 	delete grUnfolded;
 	delete grMC;
 	delete f1;
