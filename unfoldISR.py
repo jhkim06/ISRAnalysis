@@ -12,7 +12,6 @@ parser.add_argument('--createInputHists'  , action='store_true'  , help = 'creat
 parser.add_argument('--createMatrixOnly'  , action='store_true'  , default = False, help = 'create histograms only for signal sample')
 parser.add_argument('--altResponse'  , action='store_true'  , default = False, help = 'create response matrix with alternative signal MC')
 parser.add_argument('--getUnfoldResults'  , action='store_true'  , help = 'Get unfolding resutls')
-parser.add_argument('--getUnfoldResultsV2'  , action='store_true'  , help = 'Get unfolding resutls ver. 2')
 parser.add_argument('--doSys'  , action='store_true'  , default = False, help = 'Calculate systematics')
 parser.add_argument('--closure'  , action='store_true'  , help = 'Clousre test with MC')
 parser.add_argument('--getCombinedResults'  , action='store_true'  , help = 'Combine 2016 and 2017')
@@ -44,40 +43,7 @@ if args.channel == "muon":
 	if args.year == "2017":
 		selectedSample = isrSamples.samplesDef_muon2017Legacy 
 
-if args.createInputHists:
-	import etc.histDef as inputfHist
-	
-	inputfHistDic = {}
-	
-	for sampleType in selectedSample.keys():
-	    sample =  selectedSample[sampleType]
-	    if sample is None : continue
-	
- 	    if not args.createMatrixOnly:
-	    	 print 'creating histogram for sample '
-	    	 sample.dump()
-	   	 if not sample.isMC:
-	    		inputfHistDic.update(histUtil.makeRecoHists(sample, outputDirectory, args.channel)) # TODO systematic list to consider
-	
-	    	 if sample.isMC and not sample.isSig:
-	    		inputfHistDic.update(histUtil.makeRecoHists(sample, outputDirectory, args.channel)) # TODO systematic list to consider
-	
-	    if sample.isMC and sample.isSig:
-		if args.altResponse and not sample.isAlt: continue
-	    	print 'creating histogram for sample '
-	    	sample.dump()
-		inputfHistDic.update(histUtil.makeSigHists(sample, outputDirectory, args.channel))
-	
-	fOutTxt = open( inputfhisttxtName,'w')
-	
-	for fhist in inputfHistDic.keys():
-	        astr = inputfHistDic[fhist].name + ' ' + inputfHistDic[fhist].htype + ' ' + (inputfHistDic[fhist].path)[0]
-	        fOutTxt.write( astr + '\n' )
-	
-	fOutTxt.close()
-
-
-if args.getUnfoldResultsV2:
+if args.getUnfoldResults:
         # read text file including input histograms for unfolding
         fOutTxtCheck = open( inputfhisttxtName,'r')
         unfoldInputList = {}
