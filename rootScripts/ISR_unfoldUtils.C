@@ -163,7 +163,6 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
                 else
                     hRec = (TH1*)filein->Get("h"+var+"Recnominal");
 
-        	//hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix);
         	if( var == "Pt" )   nomPtUnfold->SetInput(hRec,   bias); // 
         	if( var == "Mass" ) nomMassUnfold->SetInput(hRec, bias); // 
 	}
@@ -189,10 +188,9 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
 	}
 	filein->Close();
 	delete filein;
-
 }
 
-void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth, bool isSys){
+void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth, bool isSys, bool test, TString hist_dir){
 
 	TFile* filein = new TFile(filepath);
         TString nth_;
@@ -200,21 +198,31 @@ void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString 
         TH1* hRec = NULL;
 
 	if(!isSys){
-        	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix);
+                if(test){
+                    if(var == "Pt"){
+                        hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_" + bkgName + "nominal");
+                    }
+                    if(var == "Mass"){
+                        hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_" + bkgName + "nominal");
+                    }
+                }
+                else
+                    hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+
         	if( var == "Pt" )   nomPtUnfold->  SubtractBackground(hRec, bkgName);
         	if( var == "Mass" ) nomMassUnfold->SubtractBackground(hRec, bkgName);
 	}
 	else{	
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
-                if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0 || postfix.CompareTo("unfoldScan") == 0) hRec = (TH1*)filein->Get("h"+var+"Recnominal");
-        	//hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+                if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0 || postfix.CompareTo("unfoldScan") == 0)
+                    hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+
         	if( var == "Pt" )   sysPtUnfold[postfix].at(nth)  ->SubtractBackground(hRec, bkgName);
         	if( var == "Mass" ) sysMassUnfold[postfix].at(nth)->SubtractBackground(hRec, bkgName);
 	}
 	
 	filein->Close();
 	delete filein;
-
 }
 
 void ISRUnfold::drawLCurve(TString outpdf, TString var){

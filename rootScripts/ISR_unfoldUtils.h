@@ -89,7 +89,7 @@ public:
 	void setInput(TString var, TString postfix, TString filepath, int nth = 0, bool isSys = false, double bias = 1., bool test = false, TString hist_dir = "full_phase");
 
 	// set background histograms
-	void subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth = 0, bool isSys = false);
+	void subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth = 0, bool isSys = false, bool test = false, TString hist_dir = "full_phase");
 
 	// set input data and background histograms for systematic TUnfoldDensity
 	void initSysTUnfoldDensity();
