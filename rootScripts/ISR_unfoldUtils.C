@@ -21,7 +21,7 @@ void ISRUnfold::setNomTUnfoldDensity(TString filepath, TString var, TString matr
         TUnfoldBinning* binning_Rec = NULL;
         TUnfoldBinning* binning_Gen = NULL;
 
-        if( var.CompareTo("Pt") == 0 ){
+        if( var == "Pt" ){
 
           TString Rec_Pt = "Rec_Pt";
           TString Gen_Pt = "Gen_Pt";
@@ -34,7 +34,7 @@ void ISRUnfold::setNomTUnfoldDensity(TString filepath, TString var, TString matr
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Pt);
         }
-        if( var.CompareTo("Mass") == 0 ){
+        if( var == "Mass" ){
 
           TString Rec_Mass = "Rec_Mass";
           TString Gen_Mass = "Gen_Mass";
@@ -49,7 +49,7 @@ void ISRUnfold::setNomTUnfoldDensity(TString filepath, TString var, TString matr
 
         }
 
-	if( var.CompareTo("Pt") == 0 ){ 
+	if( var == "Pt" ){ 
         	nomPtUnfold = new TUnfoldDensityV17(hmcGenRec,
         	                               TUnfold::kHistMapOutputHoriz,
         	                               TUnfold::kRegModeNone, // fixed to use no regularisation temporary
@@ -58,7 +58,7 @@ void ISRUnfold::setNomTUnfoldDensity(TString filepath, TString var, TString matr
         	                               binning_Gen,binning_Rec);
 	}
 
-        if( var.CompareTo("Mass") == 0 ){
+        if( var == "Mass" ){
                 nomMassUnfold = new TUnfoldDensityV17(hmcGenRec,
                                                TUnfold::kHistMapOutputHoriz,
                                                TUnfold::kRegModeNone, // fixed to use no regularisation temporary
@@ -79,8 +79,8 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
         TH2* hmcGenRec = NULL;
 	if(sysName.CompareTo("Alt") == 0 || sysName.CompareTo("unfoldBias") == 0 || sysName.CompareTo("unfoldScan") == 0 || sysName.CompareTo("Closure") == 0){
             //if(sysName.CompareTo("Alt") == 0){
-            //    if(var.CompareTo("Pt") == 0) hmcGenRec = (TH2*)filein->Get("eventSel/ptll TUnfold matrix/hmc" + var + "GenRecnominal");
-            //    if(var.CompareTo("Mass") == 0) hmcGenRec = (TH2*)filein->Get("eventSel/mll TUnfold matrix/hmc" + var + "GenRecnominal");
+            //    if(var == "Pt") hmcGenRec = (TH2*)filein->Get("eventSel/ptll TUnfold matrix/hmc" + var + "GenRecnominal");
+            //    if(var == "Mass") hmcGenRec = (TH2*)filein->Get("eventSel/mll TUnfold matrix/hmc" + var + "GenRecnominal");
             //}
             //else
                 hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
@@ -91,7 +91,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
         TUnfoldBinning* binning_Rec = NULL;
         TUnfoldBinning* binning_Gen = NULL;
 
-        if( var.CompareTo("Pt") == 0 ){
+        if( var == "Pt" ){
 
           TString Rec_Pt = "Rec_Pt";
           TString Gen_Pt = "Gen_Pt";
@@ -106,7 +106,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Pt);
         }
-        if( var.CompareTo("Mass") == 0 ){
+        if( var == "Mass" ){
 
           TString Rec_Mass = "Rec_Mass";
           TString Gen_Mass = "Gen_Mass";
@@ -126,7 +126,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
 	TUnfold::ERegMode mode=TUnfold::kRegModeNone;
 	if( sysName.CompareTo("unfoldScan") == 0 || sysName.CompareTo("unfoldBias") == 0) mode = TUnfold::kRegModeCurvature;
 
-        if( var.CompareTo("Pt") == 0 ){
+        if( var == "Pt" ){
                 sysPtUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
                                                TUnfold::kHistMapOutputHoriz,
                                                mode, // fixed to use no regularisation temporary
@@ -135,7 +135,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysN
                                                binning_Gen,binning_Rec));
         }
 
-        if( var.CompareTo("Mass") == 0 ){
+        if( var == "Mass" ){
                 sysMassUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
                                                TUnfold::kHistMapOutputHoriz,
                                                mode, // fixed to use no regularisation temporary
@@ -155,14 +155,14 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
 
 	if(!isSys){
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix);
-        	if( var.CompareTo("Pt") == 0 )   nomPtUnfold->SetInput(hRec,   bias); // 
-        	if( var.CompareTo("Mass") == 0 ) nomMassUnfold->SetInput(hRec, bias); // 
+        	if( var == "Pt" )   nomPtUnfold->SetInput(hRec,   bias); // 
+        	if( var == "Mass" ) nomMassUnfold->SetInput(hRec, bias); // 
 	}
 	else{
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
 		if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0 || postfix.CompareTo("unfoldScan") == 0 || postfix.CompareTo("Closure") == 0) hRec = (TH1*)filein->Get("h"+var+"Recnominal");
-        	if( var.CompareTo("Pt") == 0 )   sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias); // 
-        	if( var.CompareTo("Mass") == 0 ) sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); // 
+        	if( var == "Pt" )   sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias); // 
+        	if( var == "Mass" ) sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); // 
 	}
 	filein->Close();
 	delete filein;
@@ -178,15 +178,15 @@ void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString 
 
 	if(!isSys){
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix);
-        	if( var.CompareTo("Pt") == 0 )   nomPtUnfold->  SubtractBackground(hRec, bkgName);
-        	if( var.CompareTo("Mass") == 0 ) nomMassUnfold->SubtractBackground(hRec, bkgName);
+        	if( var == "Pt" )   nomPtUnfold->  SubtractBackground(hRec, bkgName);
+        	if( var == "Mass" ) nomMassUnfold->SubtractBackground(hRec, bkgName);
 	}
 	else{	
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
                 if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0 || postfix.CompareTo("unfoldScan") == 0) hRec = (TH1*)filein->Get("h"+var+"Recnominal");
         	//hRec = (TH1*)filein->Get("h"+var+"Recnominal");
-        	if( var.CompareTo("Pt") == 0 )   sysPtUnfold[postfix].at(nth)  ->SubtractBackground(hRec, bkgName);
-        	if( var.CompareTo("Mass") == 0 ) sysMassUnfold[postfix].at(nth)->SubtractBackground(hRec, bkgName);
+        	if( var == "Pt" )   sysPtUnfold[postfix].at(nth)  ->SubtractBackground(hRec, bkgName);
+        	if( var == "Mass" ) sysMassUnfold[postfix].at(nth)->SubtractBackground(hRec, bkgName);
 	}
 	
 	filein->Close();
@@ -200,12 +200,12 @@ void ISRUnfold::drawLCurve(TString outpdf, TString var){
 
 	TGraph *lCurve_temp;
 	Int_t iBest_temp = 0;
-	if( var.CompareTo("Pt") == 0){
+	if( var == "Pt"){
 		lCurve_temp = lCurve;
 		iBest_temp = iBest;
 	}
 
-	else if( var.CompareTo("Mass") == 0){
+	else if( var == "Mass"){
                 lCurve_temp = lCurve_mass;
                 iBest_temp = iBest_mass;
         }
@@ -240,13 +240,13 @@ void ISRUnfold::drawRhoLog(TString outpdf, TString var){
 	TSpline *rhoLogTau_temp;
         Int_t iBest_temp = 0;
 	Int_t nScan_temp = 0;
-        if( var.CompareTo("Pt") == 0){
+        if( var == "Pt"){
                 rhoLogTau_temp = rhoLogTau;
                 iBest_temp = iBest;
 		nScan_temp = nScan;
         }
 
-        else if( var.CompareTo("Mass") == 0){
+        else if( var == "Mass"){
                 rhoLogTau_temp = rhoLogTau_mass;
                 iBest_temp = iBest_mass;
 		nScan_temp = nScan_mass;
@@ -1062,7 +1062,7 @@ void ISRUnfold::drawNominalRecoPlots(TString outpdf, TString filepath, TString v
         TString chi2_;
 
         // TODO add Mass option 
-        if(var.CompareTo("Pt") == 0 ){
+        if(var == "Pt" ){
                 chi2_.Form("%f", Chi2Test(hpt_temp_data, hdysigNoUO));
                 chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
         }
@@ -1120,11 +1120,11 @@ void ISRUnfold::studyFSRDRPlots(TString outpdf, TString var, int nthMassBin){
         TH1F *ratio;
 
         // get nominal unfoled result
-        if(var.CompareTo("Pt") == 0 ){
+        if(var == "Pt" ){
                 hunfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
                 hpreFSR_dressed0p1   =    sysPtUnfold["FSRDR"].at(0)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
         }
-        if(var.CompareTo("Mass") == 0 ){
+        if(var == "Mass" ){
                 hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"*[UO]",kTRUE);
                 hpreFSR_dressed0p1   =    sysMassUnfold["FSRDR"].at(0)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
         }
@@ -1180,10 +1180,10 @@ void ISRUnfold::studyFSRDRPlots(TString outpdf, TString var, int nthMassBin){
         for(int i = 1; i < sysSize; i++){
 
 		TH1* htemp;
-        	if(var.CompareTo("Pt") == 0 ){
+        	if(var == "Pt" ){
         	        htemp   =    sysPtUnfold["FSRDR"].at(i)->GetBias("histMCTruth_pt_tempAlt_",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
         	}
-        	if(var.CompareTo("Mass") == 0 ){
+        	if(var == "Mass" ){
         	        htemp   =    sysMassUnfold["FSRDR"].at(i)->GetOutput("hunfolded_mass_systemp_",0,0,"*[UO]",kTRUE);
         	}
 		hratio_dr_temp = ((TH1F*)htemp->Clone("htemp"));
@@ -1228,11 +1228,11 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin){
     TH1F *ratio;
 
     // get nominal unfoled result
-    if(var.CompareTo("Pt") == 0 ){
+    if(var == "Pt" ){
         hunfolded_data  = sysPtUnfold["Closure"].at(0)->GetOutput("hunfolded_pt_closure",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
         hpreFSR_mc   =    sysPtUnfold["Closure"].at(0)->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
     }
-    if(var.CompareTo("Mass") == 0 ){
+    if(var == "Mass" ){
         hunfolded_data  = sysMassUnfold["Closure"].at(0)->GetOutput("hunfolded_mass_closure",0,0,"*[UO]",kTRUE);
         hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 
@@ -1284,7 +1284,7 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin){
     TString chi2_;
 
     // TODO add Mass option 
-    if(var.CompareTo("Pt") == 0 ){
+    if(var == "Pt" ){
             chi2_.Form("%f",DoFit("Pt", nthMassBin));
             chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
     }
@@ -1347,13 +1347,13 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         TH1F *ratio_sys_err;
 
 	// get nominal unfoled result
-	if(var.CompareTo("Pt") == 0 ){
+	if(var == "Pt" ){
                 hunfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 		hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr")); 
                 // get gen histogram from response matrix
 		hpreFSR_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 	}
-	if(var.CompareTo("Mass") == 0 ){
+	if(var == "Mass" ){
                 hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"*[UO]",kTRUE);
 
 		hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
@@ -1407,7 +1407,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         TString chi2_;
 
         // TODO add Mass option 
-        if(var.CompareTo("Pt") == 0 ){
+        if(var == "Pt" ){
                 chi2_.Form("%f",DoFit("Pt", nthMassBin));
                 chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
         }
@@ -1427,18 +1427,18 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 TH1 * hdatasys_temp;
                 TH1 * hmcsys_temp = NULL;
        
-                if(var.CompareTo("Pt") == 0)
+                if(var == "Pt")
                     hdatasys_temp = sysPtUnfold[sysName].at(i)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
                 // just to show histogram of alternative MC
-	    	if(var.CompareTo("Pt") == 0 && (sysName.CompareTo("Alt") == 0 || sysName.CompareTo("FSRDR") == 0 ) && i == 0){
+	    	if(var == "Pt" && (sysName.CompareTo("Alt") == 0 || sysName.CompareTo("FSRDR") == 0 ) && i == 0){
 	     	    hmcsys_temp = sysPtUnfold[sysName].at(i)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); // get alternative DY MC 
 	    	    hmcsys_temp->SetDirectory(0);
                     ratio_MG_aMCNLO= ((TH1F*)hmcsys_temp->Clone("ratio_MG_aMCNLO"));
                     ratio_MG_aMCNLO->Divide(hpreFSR_mc);
 	    	}
 
-                if(var.CompareTo("Mass") == 0){
+                if(var == "Mass"){
                     hdatasys_temp = sysMassUnfold[sysName].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
                     hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
                 }
