@@ -209,8 +209,6 @@ void ISRUnfold::drawLCurve(TString outpdf, TString var){
                 lCurve_temp = lCurve_mass;
                 iBest_temp = iBest_mass;
         }
-	
-	
 
 	Double_t x[1],y[1];
 	lCurve_temp->GetPoint(iBest_temp,x[0],y[0]);
@@ -453,13 +451,11 @@ double ISRUnfold::DoFit(TString var, int nthMassBin){
 
 void ISRUnfold::setMeanMass(bool doSys, bool altMC){
 
-        //Double_t massBins[6] = {50., 65., 80., 100., 200., 350.};
         int nMassBin = 5;
 
         const TUnfoldBinningV17* temp_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
 	const TVectorD* temp_tvecd = temp_binning->GetDistributionBinning(1);
 	const Double_t* massBins = temp_tvecd->GetMatrixArray();
-
 
         TH1* hunfolded_mass =  nomMassUnfold->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
         TH1 *histMCTruth_mass= nomMassUnfold->GetBias("histMCTruth_mass",0,0,"*[UO]",kTRUE);
