@@ -3,7 +3,7 @@
 #include "tdrstyle.C"
 #include "CMS_lumi.C"
 
-void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString matrixName, bool test){
+void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, bool test, TString phase_name, TString fsr_correction_name){
 
 	TFile* filein = new TFile(filepath);
 
@@ -11,11 +11,11 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString matr
         TH2* hmcGenRec;
         
         if(test){
-            if(var == "Pt")   hmcGenRec = (TH2*)filein->Get("eventSel/ptll TUnfold matrix/hmc" + var + "GenRecnominal");
-            if(var == "Mass") hmcGenRec = (TH2*)filein->Get("eventSel/mll TUnfold matrix/hmc" + var + "GenRecnominal");
+            if(var == "Pt")   hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
+            if(var == "Mass") hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
         }
         else
-            hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
+            hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
 
         // set binning definition
         TUnfoldBinning* binning_Rec = NULL;
@@ -27,8 +27,8 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString matr
           TString Gen_Pt = "Gen_Pt";
 
           if(test){
-            Rec_Pt = "eventSel/ptll TUnfold matrix/" + Rec_Pt;
-            Gen_Pt = "eventSel/ptll TUnfold matrix/" + Gen_Pt;
+            Rec_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Pt;
+            Gen_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Pt;
           }
 
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
@@ -40,8 +40,8 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString matr
           TString Gen_Mass = "Gen_Mass";
 
           if(test){
-            Rec_Mass = "eventSel/mll TUnfold matrix/" + Rec_Mass;
-            Gen_Mass = "eventSel/mll TUnfold matrix/" + Gen_Mass;
+            Rec_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Mass;
+            Gen_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Mass;
           }
 
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Mass);
@@ -68,7 +68,7 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString matr
         }
 }
 
-void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth){
+void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, bool test){
 
         TFile* filein = new TFile(filepath);
 	TString nth_;
@@ -78,16 +78,17 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
 
         TH2* hmcGenRec = NULL;
 	if(sysName.CompareTo("Alt") == 0 || sysName.CompareTo("unfoldBias") == 0 || sysName.CompareTo("unfoldScan") == 0 || sysName.CompareTo("Closure") == 0){
-            //if(sysName.CompareTo("Alt") == 0){
-            //    if(var == "Pt") hmcGenRec = (TH2*)filein->Get("eventSel/ptll TUnfold matrix/hmc" + var + "GenRecnominal");
-            //    if(var == "Mass") hmcGenRec = (TH2*)filein->Get("eventSel/mll TUnfold matrix/hmc" + var + "GenRecnominal");
-            //}
-            //else
+
+            if(test){
+                if(var == "Pt")   hmcGenRec = (TH2*)filein->Get("full_phase/ptll_rec_gen_dressed_dR10_response_matrix/hmc" + var + "GenRecnominal");
+                if(var == "Mass") hmcGenRec = (TH2*)filein->Get("full_phase/mll_rec_gen_dressed_dR10_response_matrix/hmc" + var + "GenRecnominal");
+            }
+            else
                 hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
+
         }
         else hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
 
-        //TH2* hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
         TUnfoldBinning* binning_Rec = NULL;
         TUnfoldBinning* binning_Gen = NULL;
 
@@ -96,12 +97,10 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
           TString Rec_Pt = "Rec_Pt";
           TString Gen_Pt = "Gen_Pt";
 
-          //if (sysName.CompareTo("Alt") == 0){
-
-          //  Rec_Pt = "eventSel/ptll TUnfold matrix/" + Rec_Pt;
-          //  Gen_Pt = "eventSel/ptll TUnfold matrix/" + Gen_Pt;
-
-          //}
+          if(test){
+            Rec_Pt = "full_phase/ptll_rec_gen_dressed_dRp1_response_matrix/" + Rec_Pt;
+            Gen_Pt = "full_phase/ptll_rec_gen_dressed_dRp1_response_matrix/" + Gen_Pt;
+          }
 
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Pt);
@@ -111,12 +110,10 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
           TString Rec_Mass = "Rec_Mass";
           TString Gen_Mass = "Gen_Mass";
 
-          //if (sysName.CompareTo("Alt") == 0){
-
-          //  Rec_Mass = "eventSel/mll TUnfold matrix/" + Rec_Mass;
-          //  Gen_Mass = "eventSel/mll TUnfold matrix/" + Gen_Mass;
-
-          //}
+          if(test){
+            Rec_Mass = "full_phase/mll_rec_gen_dressed_dRp1_response_matrix/" + Rec_Mass;
+            Gen_Mass = "full_phase/mll_rec_gen_dressed_dRp1_response_matrix/" + Gen_Mass;
+          }
 
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Mass);
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Mass);
@@ -145,7 +142,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         }
 }
 
-void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth, bool isSys, double bias){
+void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth, bool isSys, double bias, bool test, TString hist_dir){
 	// No effects on the unfolded results respect to bias factor 
 
 	TFile* filein = new TFile(filepath);
@@ -154,13 +151,39 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
         TH1* hRec;
 
 	if(!isSys){
-        	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix);
+
+                if(test){
+                    if(var == "Pt"){
+                        hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
+                    }
+                    if(var == "Mass"){
+                        hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
+                    }
+                }
+                else
+                    hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+
+        	//hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix);
         	if( var == "Pt" )   nomPtUnfold->SetInput(hRec,   bias); // 
         	if( var == "Mass" ) nomMassUnfold->SetInput(hRec, bias); // 
 	}
 	else{
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
-		if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0 || postfix.CompareTo("unfoldScan") == 0 || postfix.CompareTo("Closure") == 0) hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+		if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0 || postfix.CompareTo("unfoldScan") == 0 || postfix.CompareTo("Closure") == 0){
+
+                    if(test){
+                        if(var == "Pt"){   
+                            hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJetsnominal");
+                            hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50nominal"));
+                        }
+                        if(var == "Mass"){
+                            hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJetsnominal");
+                            hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50nominal"));
+                        }
+                    }
+                    else
+                        hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+                }
         	if( var == "Pt" )   sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias); // 
         	if( var == "Mass" ) sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); // 
 	}

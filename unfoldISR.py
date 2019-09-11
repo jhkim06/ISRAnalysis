@@ -52,6 +52,9 @@ if args.getUnfoldResults:
                 if modifiedLine.split()[1] == "matrix":
                         unfoldInputList['matrix'] = modifiedLine.split()[2]
 
+                if modifiedLine.split()[1] == "hist":
+                        unfoldInputList['hist'] = modifiedLine.split()[2]
+
                 if modifiedLine.split()[1] == "bkg": # use the sample name as keyword for background
                         unfoldInputList[modifiedLine.split()[0]] = modifiedLine.split()[2]
 
@@ -66,15 +69,18 @@ if args.getUnfoldResults:
         unfoldClass = rt.ISRUnfold()
 
         # set response matrix
-        #unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], postfix, True)
-        #unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], postfix, True)
+        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], True, "full_phase", "dressed_dR10")
+        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], True, "full_phase", "dressed_dR10")
 
-        unfoldClass.setNomTUnfoldDensity("Pt",   unfoldInputList['sig'],  postfix, False)
-        unfoldClass.setNomTUnfoldDensity("Mass", unfoldInputList['sig'],  postfix, False)
+        #unfoldClass.setNomTUnfoldDensity("Pt",   unfoldInputList['sig'], False)
+        #unfoldClass.setNomTUnfoldDensity("Mass", unfoldInputList['sig'], False)
 
         # set unfolding input histogram
-	unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'])
-	unfoldClass.setInput("Mass", postfix, unfoldInputList['data'])
+	unfoldClass.setInput("Pt",   postfix, unfoldInputList['hist'], 0, False, 1., True, "detector_level")
+	unfoldClass.setInput("Mass", postfix, unfoldInputList['hist'], 0, False, 1., True, "detector_level_dipt100_cut")
+
+	#unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'])
+	#unfoldClass.setInput("Mass", postfix, unfoldInputList['data'])
 
 	# set background histograms 
         unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau")
@@ -88,13 +94,17 @@ if args.getUnfoldResults:
         unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'],     "Wjets")
 
         # for closure test
-        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['sig'],  "Closure", 0) # TODO check if this response matrix used for closure test
-        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['sig'],  "Closure", 0)
+        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", 0, True) # TODO check if this response matrix used for closure test
+        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", 0, True)
 
-        unfoldClass.setInput("Pt",   "Closure", unfoldInputList['sig'], 0, True, 1.)
-        unfoldClass.setInput("Mass", "Closure", unfoldInputList['sig'], 0, True, 1.)
+        #unfoldClass.setInput("Pt",   "Closure", unfoldInputList['sig'], 0, True, 1., True)
+        #unfoldClass.setInput("Mass", "Closure", unfoldInputList['sig'], 0, True, 1., True)
+
+        unfoldClass.setInput("Pt",   "Closure", unfoldInputList['matrix'], 0, True, 1., True)
+        unfoldClass.setInput("Mass", "Closure", unfoldInputList['matrix'], 0, True, 1., True)
 
 
+        # set systematic response matrix and input histograms
         if args.doSys == True:
 	    sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1}
 	    #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "L1Prefire": 2, "Closure": 1,"PDFerror": 100}
