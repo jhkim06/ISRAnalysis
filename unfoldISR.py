@@ -88,8 +88,8 @@ if args.getUnfoldResults:
         unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'],     "Wjets")
 
         # for closure test
-        unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Pt",   "Closure", 0) # TODO check if this response matrix used for closure test
-        unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Mass", "Closure", 0)
+        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['sig'],  "Closure", 0) # TODO check if this response matrix used for closure test
+        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['sig'],  "Closure", 0)
 
         unfoldClass.setInput("Pt",   "Closure", unfoldInputList['sig'], 0, True, 1.)
         unfoldClass.setInput("Mass", "Closure", unfoldInputList['sig'], 0, True, 1.)
@@ -108,11 +108,11 @@ if args.getUnfoldResults:
 	    		postfix = sysName
             		if sysName != "Alt": 
                                 # use systematic response matrix saved in the signal root file 
-	    			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, nthSys)
-            			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, nthSys)
+	    			unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['sig'],    postfix, nthSys)
+            			unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['sig'],    postfix, nthSys)
 	    		if sysName == "Alt":
-	    			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Pt",     postfix, nthSys)
-            			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Mass",   postfix, nthSys)
+	    			unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['sigAlt'], postfix, nthSys)
+            			unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['sigAlt'], postfix, nthSys)
 
 	    		bias = 1.;
 	    		if sysName == "unfoldBias": bias = 0.95 

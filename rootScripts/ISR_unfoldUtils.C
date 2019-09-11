@@ -68,7 +68,7 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString matr
         }
 }
 
-void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysName, int nth){
+void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth){
 
         TFile* filein = new TFile(filepath);
 	TString nth_;
