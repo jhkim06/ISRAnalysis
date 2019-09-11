@@ -9,7 +9,6 @@ parser.add_argument('--channel' , dest = 'channel', default = 'electron', help =
 parser.add_argument('--year' , dest = 'year', default = '2016', help = 'select year')
 parser.add_argument('--postfix' , dest = 'postfix', default = 'nominal', help = 'select histogram name')
 parser.add_argument('--createInputHists'  , action='store_true'  , help = 'create input histograms')
-parser.add_argument('--createMatrixOnly'  , action='store_true'  , default = False, help = 'create histograms only for signal sample')
 parser.add_argument('--altResponse'  , action='store_true'  , default = False, help = 'create response matrix with alternative signal MC')
 parser.add_argument('--getUnfoldResults'  , action='store_true'  , help = 'Get unfolding resutls')
 parser.add_argument('--doSys'  , action='store_true'  , default = False, help = 'Calculate systematics')
@@ -24,24 +23,15 @@ args = parser.parse_args()
 import etc.sampleDef as isrSamples
 import pyScripts.unfoldInputUtil as histUtil
 
+# set output directory
 outputDirectory = 'output/'+args.year+'/' + args.channel + "/"  
 inputfhisttxtName = outputDirectory + "fhist.txt"
+
+# make output directory
 if not os.path.exists( outputDirectory ):
 	os.makedirs( outputDirectory )
 
 print "channel to run: " + args.channel
-
-selectedSample = {} 
-if args.channel == "electron":
-	if args.year == "2016":
-		selectedSample = isrSamples.samplesDef_electron2016Legacy
-	if args.year == "2017":
-		selectedSample = isrSamples.samplesDef_electron2017Legacy
-if args.channel == "muon":
-	if args.year == "2016":
-		selectedSample = isrSamples.samplesDef_muon2016Legacy 
-	if args.year == "2017":
-		selectedSample = isrSamples.samplesDef_muon2017Legacy 
 
 if args.getUnfoldResults:
         # read text file including input histograms for unfolding
@@ -52,12 +42,16 @@ if args.getUnfoldResults:
                 modifiedLine = line.lstrip(' ').rstrip(' ').rstrip('\n')
                 if modifiedLine.split()[1] == "data":
                         unfoldInputList['data'] = modifiedLine.split()[2]
+
                 if modifiedLine.split()[1] == "sig":
                         unfoldInputList['sig'] = modifiedLine.split()[2]
+
                 if modifiedLine.split()[1] == "sigAlt":
                         unfoldInputList['sigAlt'] = modifiedLine.split()[2]
+
                 if modifiedLine.split()[1] == "matrix":
                         unfoldInputList['matrix'] = modifiedLine.split()[2]
+
                 if modifiedLine.split()[1] == "bkg": # use the sample name as keyword for background
                         unfoldInputList[modifiedLine.split()[0]] = modifiedLine.split()[2]
 
@@ -68,14 +62,15 @@ if args.getUnfoldResults:
 
         postfix = args.postfix
 
+        # create unfold class
         unfoldClass = rt.ISRUnfold()
 
         # set response matrix
-        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Pt",     postfix, True)
-        #unfoldClass.setNomTUnfoldDensity(unfoldInputList['matrix'], "Mass",   postfix, True)
+        #unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], postfix, True)
+        #unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], postfix, True)
 
-        unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, False)
-        unfoldClass.setNomTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, False)
+        unfoldClass.setNomTUnfoldDensity("Pt",   unfoldInputList['sig'],  postfix, False)
+        unfoldClass.setNomTUnfoldDensity("Mass", unfoldInputList['sig'],  postfix, False)
 
         # set unfolding input histogram
 	unfoldClass.setInput("Pt",   postfix, unfoldInputList['data'])
@@ -93,8 +88,8 @@ if args.getUnfoldResults:
         unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'],     "Wjets")
 
         # for closure test
-        unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Pt",   "Closure", 0, False) # TODO check if this response matrix used for closure test
-        unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Mass", "Closure", 0, False)
+        unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Pt",   "Closure", 0) # TODO check if this response matrix used for closure test
+        unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Mass", "Closure", 0)
 
         unfoldClass.setInput("Pt",   "Closure", unfoldInputList['sig'], 0, True, 1.)
         unfoldClass.setInput("Mass", "Closure", unfoldInputList['sig'], 0, True, 1.)
@@ -113,11 +108,11 @@ if args.getUnfoldResults:
 	    		postfix = sysName
             		if sysName != "Alt": 
                                 # use systematic response matrix saved in the signal root file 
-	    			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, nthSys, False)
-            			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, nthSys, False)
+	    			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Pt",     postfix, nthSys)
+            			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sig'], "Mass",   postfix, nthSys)
 	    		if sysName == "Alt":
-	    			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Pt",     postfix, nthSys, False)
-            			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Mass",   postfix, nthSys, False)
+	    			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Pt",     postfix, nthSys)
+            			unfoldClass.setSysTUnfoldDensity(unfoldInputList['sigAlt'], "Mass",   postfix, nthSys)
 
 	    		bias = 1.;
 	    		if sysName == "unfoldBias": bias = 0.95 

@@ -80,10 +80,10 @@ public:
 	~ISRUnfold(){}
 
 	// set nominal TUnfoldDensity 
-	void setNomTUnfoldDensity(TString filepath, TString var, TString matrixName, bool test = false);
+	void setNomTUnfoldDensity(TString var, TString filepath, TString matrixName, bool test = false);
 
 	// set systematic TUnfoldDensity
-	void setSysTUnfoldDensity(TString filepath, TString var, TString sysName, int nth, bool isfsr = false);
+	void setSysTUnfoldDensity(TString filepath, TString var, TString sysName, int nth);
 
 	// set input histogram
 	void setInput(TString var, TString postfix, TString filepath, int nth = 0, bool isSys = false, double bias = 1.);

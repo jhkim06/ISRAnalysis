@@ -3,7 +3,7 @@
 #include "tdrstyle.C"
 #include "CMS_lumi.C"
 
-void ISRUnfold::setNomTUnfoldDensity(TString filepath, TString var, TString matrixName, bool test){
+void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString matrixName, bool test){
 
 	TFile* filein = new TFile(filepath);
 
@@ -68,7 +68,7 @@ void ISRUnfold::setNomTUnfoldDensity(TString filepath, TString var, TString matr
         }
 }
 
-void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysName, int nth, bool isfsr){
+void ISRUnfold::setSysTUnfoldDensity(TString filepath, TString var, TString sysName, int nth){
 
         TFile* filein = new TFile(filepath);
 	TString nth_;
