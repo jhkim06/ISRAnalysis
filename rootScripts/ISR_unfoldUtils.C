@@ -142,7 +142,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         }
 }
 
-void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth, bool isSys, double bias, bool test, TString hist_dir){
+void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString filepath, int nth, bool isSys, double bias, bool test, TString hist_dir){
 	// No effects on the unfolded results respect to bias factor 
 
 	TFile* filein = new TFile(filepath);
@@ -154,10 +154,12 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
 
                 if(test){
                     if(var == "Pt"){
-                        hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
+                        if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
+                        if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
                     }
                     if(var == "Mass"){
-                        hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
+                        if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
+                        if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
                     }
                 }
                 else

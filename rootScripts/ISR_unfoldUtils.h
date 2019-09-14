@@ -86,7 +86,7 @@ public:
 	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, bool test = false);
 
 	// set input histogram
-	void setInput(TString var, TString postfix, TString filepath, int nth = 0, bool isSys = false, double bias = 1., bool test = false, TString hist_dir = "full_phase");
+	void setInput(TString channel, TString var, TString postfix, TString filepath, int nth = 0, bool isSys = false, double bias = 1., bool test = false, TString hist_dir = "full_phase");
 
 	// set background histograms
 	void subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth = 0, bool isSys = false, bool test = false, TString hist_dir = "full_phase");
