@@ -720,6 +720,9 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
 
         gROOT->SetBatch();
 
+        int marker_ = 20;
+        if(channel=="muon") marker_ = 22;
+
 	Double_t zero_err[5] = {0.};
 
 	// temporary map to show variations respect to dR to add FSR photons
@@ -752,7 +755,7 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
         TGraphErrors *grUnfolded = new TGraphErrors(5, &meanMass_data[0], &meanPt_data[0], &meanMassTotErr_data[0], &meanPtTotErr_data[0]);
         grUnfolded->SetLineColor(kBlack);
         grUnfolded->SetMarkerColor(kBlack);
-        grUnfolded->SetMarkerStyle(20);
+        grUnfolded->SetMarkerStyle(marker_);
         grUnfolded->SetMarkerSize(1.);
         grUnfolded->SetLineStyle(1);
         grUnfolded->Draw("ape");
@@ -776,7 +779,7 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
         TGraphErrors *grMC = new TGraphErrors(5, &meanMass_mc[0], &meanPt_mc[0], &meanMassErr_mc[0], &meanPtErr_mc[0]);
         grMC->SetLineColor(kRed);
         grMC->SetMarkerColor(kRed);
-        grMC->SetMarkerStyle(20);
+        grMC->SetMarkerStyle(marker_);
         grMC->SetMarkerSize(1.);
         grMC->SetLineStyle(9);
         grMC->SetLineColor(kRed);
@@ -787,7 +790,7 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
             grMCAlt = new TGraphErrors(5, &meanMass_mcAlt[0], &meanPt_mcAlt[0], &meanMassErr_mcAlt[0], &meanPtErr_mcAlt[0]);
             grMCAlt->SetLineColor(kRed);
             grMCAlt->SetMarkerColor(kRed);
-            grMCAlt->SetMarkerStyle(24);
+            grMCAlt->SetMarkerStyle(marker_);
             grMCAlt->SetMarkerSize(1.);
             grMCAlt->SetLineStyle(2);
             grMCAlt->SetLineColor(kRed);
@@ -796,8 +799,8 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
 
         //grUnfolded->Draw("pe same");
 
-        TLegend* leg_ = new TLegend(0.22, 0.6, 0.55, 0.75,"","brNDC");
-        leg_->SetTextSize(0.03);
+        TLegend* leg_ = new TLegend(0.2, 0.65, 0.5, 0.8,"","brNDC");
+        leg_->SetTextSize(0.025);
         //leg_->SetFillStyle(1);
         leg_->SetBorderSize(0);
         leg_->AddEntry(grUnfolded, "Unfolded " + channel + " data", "pe");

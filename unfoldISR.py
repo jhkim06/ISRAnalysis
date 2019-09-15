@@ -69,8 +69,8 @@ if args.getUnfoldResults:
         unfoldClass = rt.ISRUnfold()
 
         # set response matrix
-        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], True, "fiducial_phase_post_FSR", "dressed_dR10")
-        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], True, "fiducial_phase_post_FSR", "dressed_dR10")
+        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], True, "full_phase", "dressed_dR10")
+        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], True, "full_phase", "dressed_dR10")
 
         # set unfolding input histogram
 	unfoldClass.setInput(args.channel, "Pt",   postfix, unfoldInputList['hist'], 0, False, 1., True, "detector_level")
@@ -151,11 +151,11 @@ if args.getUnfoldResults:
 
         for massBin in range(0,5):
             
-                unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin); 
-                unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin); 
+                unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin) 
+                unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin)
 
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin);
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin);
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin)
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin)
 
 
 
@@ -167,9 +167,9 @@ if args.getUnfoldResults:
 
 	        for massBin in range(0,5):
 
-                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys);
-                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys);
-                    unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName);
+                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys)
+                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys)
+                    unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
 	    	    unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
 
 
