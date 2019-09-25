@@ -69,44 +69,39 @@ if args.getUnfoldResults:
         unfoldClass = rt.ISRUnfold()
 
         # set response matrix
-        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], True, "fiducial_phase_post_FSR", "post_fsr")
-        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], True, "fiducial_phase_post_FSR", "post_fsr")
-
-        # set unfolding input histogram
-	unfoldClass.setInput(args.channel, "Pt",   postfix, unfoldInputList['hist'], 0, False, 1., True, "detector_level")
-	unfoldClass.setInput(args.channel, "Mass", postfix, unfoldInputList['hist'], 0, False, 1., True, "detector_level_dipt100_cut")
-
-        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "DYJetsToTauTau", 0, False, True, "detector_level")
-        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "DYJets10to50ToTauTau", 0, False, True, "detector_level")
-        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "TTLL_powheg", 0, False, True, "detector_level")
-        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "WW_pythia", 0, False, True, "detector_level")
-        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "WZ_pythia", 0, False, True, "detector_level")
-        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "ZZ_pythia", 0, False, True, "detector_level")
-        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "WJets_MG", 0, False, True, "detector_level")
-
-        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "DYJetsToTauTau", 0, False, True, "detector_level_dipt100_cut")
-        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "DYJets10to50ToTauTau", 0, False, True, "detector_level_dipt100_cut")
-        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "TTLL_powheg", 0, False, True, "detector_level_dipt100_cut")
-        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "WW_pythia", 0, False, True, "detector_level_dipt100_cut")
-        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "WZ_pythia", 0, False, True, "detector_level_dipt100_cut")
-        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "ZZ_pythia", 0, False, True, "detector_level_dipt100_cut")
-        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "WJets_MG", 0, False, True, "detector_level_dipt100_cut")
+        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], "fiducial_phase_post_FSR", "post_fsr")
+        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], "fiducial_phase_post_FSR", "post_fsr")
 
         # for closure test
-        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", 0, True, "fiducial_phase_post_FSR", "post_fsr")
-        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", 0, True, "fiducial_phase_post_FSR", "post_fsr")
+        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", 0, "fiducial_phase_post_FSR", "post_fsr")
+        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", 0, "fiducial_phase_post_FSR", "post_fsr")
 
-        #unfoldClass.setInput("Pt",   "Closure", unfoldInputList['sig'], 0, True, 1., True)
-        #unfoldClass.setInput("Mass", "Closure", unfoldInputList['sig'], 0, True, 1., True)
+        unfoldClass.setInput(args.channel, "Pt",   "Closure", unfoldInputList['matrix'], 0, True, 1., "fiducial_phase_post_FSR")
+        unfoldClass.setInput(args.channel, "Mass", "Closure", unfoldInputList['matrix'], 0, True, 1., "fiducial_phase_post_FSR")
 
-        unfoldClass.setInput(args.channel, "Pt",   "Closure", unfoldInputList['matrix'], 0, True, 1., True, "fiducial_phase_post_FSR")
-        unfoldClass.setInput(args.channel, "Mass", "Closure", unfoldInputList['matrix'], 0, True, 1., True, "fiducial_phase_post_FSR")
+        # set unfolding input histogram
+	unfoldClass.setInput(args.channel, "Pt",   postfix, unfoldInputList['hist'], 0, False, 1., "detector_level")
+	unfoldClass.setInput(args.channel, "Mass", postfix, unfoldInputList['hist'], 0, False, 1., "detector_level_dipt100_cut")
 
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "DYJetsToTauTau",       0, False, "detector_level")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "DYJets10to50ToTauTau", 0, False, "detector_level")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "TTLL_powheg",          0, False, "detector_level")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "WW_pythia",            0, False, "detector_level")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "WZ_pythia",            0, False, "detector_level")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "ZZ_pythia",            0, False, "detector_level")
+        unfoldClass.subBkgs("Pt", postfix, unfoldInputList['hist'], "WJets_MG",             0, False, "detector_level")
+
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "DYJetsToTauTau",       0, False, "detector_level_dipt100_cut")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "DYJets10to50ToTauTau", 0, False, "detector_level_dipt100_cut")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "TTLL_powheg",          0, False, "detector_level_dipt100_cut")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "WW_pythia",            0, False, "detector_level_dipt100_cut")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "WZ_pythia",            0, False, "detector_level_dipt100_cut")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "ZZ_pythia",            0, False, "detector_level_dipt100_cut")
+        unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "WJets_MG",             0, False, "detector_level_dipt100_cut")
 
         # set systematic response matrix and input histograms
         if args.doSys == True:
 	    sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1}
-	    #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "L1Prefire": 2, "Closure": 1,"PDFerror": 100}
 
 	    for sysName, nSys in sysDict.items():
 	    	for nthSys in range(0,nSys):
@@ -141,8 +136,7 @@ if args.getUnfoldResults:
             		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'],        "VV",        nthSys, True)
             		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'],     "Wjets",     nthSys, True)
 
-
-	# unfold up to pre FSR level 
+	# unfold 
 	unfoldClass.doISRUnfold(True)
 
 	# set nominal value and also systematic values

@@ -3,19 +3,15 @@
 #include "tdrstyle.C"
 #include "CMS_lumi.C"
 
-void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, bool test, TString phase_name, TString fsr_correction_name){
+void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString phase_name, TString fsr_correction_name){
 
 	TFile* filein = new TFile(filepath);
 
         // set response matrix
         TH2* hmcGenRec;
         
-        if(test){
-            if(var == "Pt")   hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
-            if(var == "Mass") hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
-        }
-        else
-            hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
+        if(var == "Pt")   hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
+        if(var == "Mass") hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
 
         // set binning definition
         TUnfoldBinning* binning_Rec = NULL;
@@ -26,10 +22,8 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, bool test, T
           TString Rec_Pt = "Rec_Pt";
           TString Gen_Pt = "Gen_Pt";
 
-          if(test){
-            Rec_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Pt;
-            Gen_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Pt;
-          }
+          Rec_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Pt;
+          Gen_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Pt;
 
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Pt);
@@ -39,10 +33,8 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, bool test, T
           TString Rec_Mass = "Rec_Mass";
           TString Gen_Mass = "Gen_Mass";
 
-          if(test){
-            Rec_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Mass;
-            Gen_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Mass;
-          }
+          Rec_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Mass;
+          Gen_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Mass;
 
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Mass);
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Mass);
@@ -68,7 +60,7 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, bool test, T
         }
 }
 
-void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, bool test, TString phase_name, TString fsr_correction_name){
+void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, TString phase_name, TString fsr_correction_name){
 
         TFile* filein = new TFile(filepath);
 	TString nth_;
@@ -79,12 +71,8 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         TH2* hmcGenRec = NULL;
 	if(sysName.CompareTo("Alt") == 0 || sysName.CompareTo("unfoldBias") == 0 || sysName.CompareTo("unfoldScan") == 0 || sysName.CompareTo("Closure") == 0){
 
-            if(test){
-                if(var == "Pt")   hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
-                if(var == "Mass") hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
-            }
-            else
-                hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
+        if(var == "Pt")   hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
+        if(var == "Mass") hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
 
         }
         else hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
@@ -97,10 +85,8 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
           TString Rec_Pt = "Rec_Pt";
           TString Gen_Pt = "Gen_Pt";
 
-          if(test){
-            Rec_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Pt;
-            Gen_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Pt;
-          }
+          Rec_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Pt;
+          Gen_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Pt;
 
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Pt);
@@ -110,10 +96,8 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
           TString Rec_Mass = "Rec_Mass";
           TString Gen_Mass = "Gen_Mass";
 
-          if(test){
-            Rec_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Mass;
-            Gen_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Mass;
-          }
+          Rec_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Mass;
+          Gen_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Mass;
 
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Mass);
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Mass);
@@ -142,7 +126,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         }
 }
 
-void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString filepath, int nth, bool isSys, double bias, bool test, TString hist_dir){
+void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString filepath, int nth, bool isSys, double bias, TString hist_dir){
 	// No effects on the unfolded results respect to bias factor 
 
 	TFile* filein = new TFile(filepath);
@@ -152,18 +136,14 @@ void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString 
 
 	if(!isSys){
 
-                if(test){
-                    if(var == "Pt"){
-                        if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
-                        if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
-                    }
-                    if(var == "Mass"){
-                        if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
-                        if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
-                    }
+                if(var == "Pt"){
+                    if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
+                    if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
                 }
-                else
-                    hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+                if(var == "Mass"){
+                    if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
+                    if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
+                }
 
         	if( var == "Pt" )   nomPtUnfold->SetInput(hRec,   bias); // 
         	if( var == "Mass" ) nomMassUnfold->SetInput(hRec, bias); // 
@@ -172,18 +152,14 @@ void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString 
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
 		if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0 || postfix.CompareTo("unfoldScan") == 0 || postfix.CompareTo("Closure") == 0){
 
-                    if(test){
-                        if(var == "Pt"){   
-                            hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJetsnominal");
-                            hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50nominal"));
-                        }
-                        if(var == "Mass"){
-                            hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJetsnominal");
-                            hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50nominal"));
-                        }
-                    }
-                    else
-                        hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+                  if(var == "Pt"){   
+                      hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJetsnominal");
+                      hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50nominal"));
+                  }
+                  if(var == "Mass"){
+                      hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJetsnominal");
+                      hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50nominal"));
+                  }
                 }
         	if( var == "Pt" )   sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias); // 
         	if( var == "Mass" ) sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); // 
@@ -192,7 +168,7 @@ void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString 
 	delete filein;
 }
 
-void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth, bool isSys, bool test, TString hist_dir){
+void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth, bool isSys, TString hist_dir){
 
 	TFile* filein = new TFile(filepath);
         TString nth_;
@@ -200,16 +176,12 @@ void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString 
         TH1* hRec = NULL;
 
 	if(!isSys){
-                if(test){
-                    if(var == "Pt"){
-                        hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_" + bkgName + "nominal");
-                    }
-                    if(var == "Mass"){
-                        hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_" + bkgName + "nominal");
-                    }
+                if(var == "Pt"){
+                    hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_" + bkgName + "nominal");
                 }
-                else
-                    hRec = (TH1*)filein->Get("h"+var+"Recnominal");
+                if(var == "Mass"){
+                    hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_" + bkgName + "nominal");
+                }
 
         	if( var == "Pt" )   nomPtUnfold->  SubtractBackground(hRec, bkgName);
         	if( var == "Mass" ) nomMassUnfold->SubtractBackground(hRec, bkgName);
@@ -721,7 +693,7 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
         gROOT->SetBatch();
 
         int marker_ = 20;
-        if(channel=="muon") marker_ = 22;
+        if(channel=="muon") marker_ = 21;
 
 	Double_t zero_err[5] = {0.};
 
@@ -760,7 +732,7 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
         grUnfolded->SetLineStyle(1);
         grUnfolded->Draw("ape");
         grUnfolded->GetYaxis()->SetRangeUser(10.,30.);
-        grUnfolded->GetXaxis()->SetLimits(30.,500.);
+        grUnfolded->GetXaxis()->SetLimits(30.,400.);
         grUnfolded->GetYaxis()->SetTitle("Average p_{T} (GeV)");
         grUnfolded->GetXaxis()->SetTitle("Average Mass (GeV)");
 
@@ -799,7 +771,7 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
 
         //grUnfolded->Draw("pe same");
 
-        TLegend* leg_ = new TLegend(0.2, 0.65, 0.5, 0.8,"","brNDC");
+        TLegend* leg_ = new TLegend(0.65, 0.25, 0.8, 0.4,"","brNDC");
         leg_->SetTextSize(0.025);
         //leg_->SetFillStyle(1);
         leg_->SetBorderSize(0);

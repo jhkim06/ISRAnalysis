@@ -80,16 +80,16 @@ public:
 	~ISRUnfold(){}
 
 	// set nominal TUnfoldDensity 
-	void setNomTUnfoldDensity(TString var, TString filepath, bool test = false, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
+	void setNomTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
 	// set systematic TUnfoldDensity
-	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, bool test = false, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
+	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
 	// set input histogram
-	void setInput(TString channel, TString var, TString postfix, TString filepath, int nth = 0, bool isSys = false, double bias = 1., bool test = false, TString hist_dir = "full_phase");
+	void setInput(TString channel, TString var, TString postfix, TString filepath, int nth = 0, bool isSys = false, double bias = 1., TString hist_dir = "full_phase");
 
 	// set background histograms
-	void subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth = 0, bool isSys = false, bool test = false, TString hist_dir = "full_phase");
+	void subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth = 0, bool isSys = false, TString hist_dir = "full_phase");
 
 	// set input data and background histograms for systematic TUnfoldDensity
 	void initSysTUnfoldDensity();
