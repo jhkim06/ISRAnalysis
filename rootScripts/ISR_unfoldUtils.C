@@ -69,10 +69,10 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
 	TString matrixName = sysName + "_" + nth_;
 
         TH2* hmcGenRec = NULL;
-	if(sysName.CompareTo("Alt") == 0 || sysName.CompareTo("unfoldBias") == 0 || sysName.CompareTo("unfoldScan") == 0 || sysName.CompareTo("Closure") == 0){
+	if(sysName=="Alt" || sysName=="unfoldBias" || sysName=="unfoldScan" || sysName=="Closure" || sysName=="detector_temp"){
 
-        if(var == "Pt")   hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
-        if(var == "Mass") hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
+            if(var == "Pt")   hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
+            if(var == "Mass") hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
 
         }
         else hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
@@ -128,41 +128,50 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
 
 void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString filepath, int nth, bool isSys, double bias, TString hist_dir){
 	// No effects on the unfolded results respect to bias factor 
-
+        
 	TFile* filein = new TFile(filepath);
         TString nth_;
         nth_.Form("%d", nth);
         TH1* hRec;
 
 	if(!isSys){
-
-                if(var == "Pt"){
-                    if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
-                    if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
-                }
-                if(var == "Mass"){
-                    if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
-                    if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
-                }
-
-        	if( var == "Pt" )   nomPtUnfold->SetInput(hRec,   bias); // 
-        	if( var == "Mass" ) nomMassUnfold->SetInput(hRec, bias); // 
+          if(var == "Pt"){
+              if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
+              if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
+              nomPtUnfold->SetInput(hRec,   bias);
+          }
+          if(var == "Mass"){
+              if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
+              if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
+              nomMassUnfold->SetInput(hRec, bias);
+          }
 	}
 	else{
-        	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
-		if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0 || postfix.CompareTo("unfoldScan") == 0 || postfix.CompareTo("Closure") == 0){
-
+        	//hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
+		if(postfix=="Alt" || postfix=="unfoldBias" || postfix=="unfoldScan" || postfix=="Closure"){
                   if(var == "Pt"){   
                       hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJetsnominal");
                       hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50nominal"));
+                      sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
                   }
                   if(var == "Mass"){
                       hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJetsnominal");
                       hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50nominal"));
+                      sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias);
                   }
                 }
-        	if( var == "Pt" )   sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias); // 
-        	if( var == "Mass" ) sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); // 
+                else{
+                    if(var == "Pt"){
+                        if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
+                        if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
+                        sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
+                    }
+                    if(var == "Mass"){
+                        if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
+                        if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
+                        sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); 
+                    }
+                }
 	}
 	filein->Close();
 	delete filein;
@@ -188,9 +197,14 @@ void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString 
 	}
 	else{	
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
-                if(postfix.CompareTo("Alt") == 0 || postfix.CompareTo("unfoldBias") == 0 || postfix.CompareTo("unfoldScan") == 0)
-                    hRec = (TH1*)filein->Get("h"+var+"Recnominal");
-
+                if(postfix=="Alt" || postfix=="unfoldBias" || postfix=="unfoldScan" || postfix=="detector_temp"){
+                    if(var == "Pt"){
+                        hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_" + bkgName + "nominal");
+                    }
+                    if(var == "Mass"){
+                        hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_" + bkgName + "nominal");
+                    }
+                }
         	if( var == "Pt" )   sysPtUnfold[postfix].at(nth)  ->SubtractBackground(hRec, bkgName);
         	if( var == "Mass" ) sysMassUnfold[postfix].at(nth)->SubtractBackground(hRec, bkgName);
 	}
@@ -454,7 +468,7 @@ double ISRUnfold::DoFit(TString var, int nthMassBin){
 
 }
 
-void ISRUnfold::setMeanMass(bool doSys, bool altMC){
+void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
 
         int nMassBin = 5;
 
@@ -482,6 +496,15 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC){
                     meanMassErr_mcAlt.push_back(histMCTruth_massAlt->GetMeanError());
 
 	            delete histMCTruth_massAlt;
+                }
+
+                if(detector_unfold){
+                    TH1 *histMCTruth_massAlt= sysMassUnfold["detector_temp"].at(0)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
+                    histMCTruth_massAlt->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+                    meanMass_data_detector.   push_back(histMCTruth_massAlt->GetMean());
+                    meanMassStatErr_data_detector.push_back(histMCTruth_massAlt->GetMeanError());
+
+                    delete histMCTruth_massAlt;
                 }
 
                 if(doSys){
@@ -570,7 +593,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC){
 
 
 // set mean pt from mass and DY mc
-void ISRUnfold::setMeanPt(bool doSys, bool altMC){
+void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
 
         int nMassBin = 5;
 
@@ -596,6 +619,13 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC){
             hpt_temp_mcAlt   = sysPtUnfold["Alt"].at(0)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
             meanPt_mcAlt.   push_back(hpt_temp_mcAlt->GetMean());
             meanPtErr_mcAlt.push_back(hpt_temp_mcAlt->GetMeanError());
+            delete hpt_temp_mcAlt;
+           }
+
+           if(detector_unfold){
+            hpt_temp_mcAlt   = sysPtUnfold["detector_temp"].at(0)->GetOutput("hunfolded_pt_temp_",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            meanPt_data_detector.   push_back(hpt_temp_mcAlt->GetMean());
+            meanPtStatErr_data_detector.push_back(hpt_temp_mcAlt->GetMeanError());
             delete hpt_temp_mcAlt;
            }
 
@@ -756,6 +786,15 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
         grMC->SetLineStyle(9);
         grMC->SetLineColor(kRed);
         grMC->Draw("pe same");
+
+        TGraphErrors *grUnfolded_detector = new TGraphErrors(5, &meanMass_data_detector[0], &meanPt_data_detector[0], &meanMassStatErr_data_detector[0], &meanPtStatErr_data_detector[0]);
+        grUnfolded_detector->SetLineColor(kBlack);
+        grUnfolded_detector->SetMarkerColor(kBlack);
+        grUnfolded_detector->SetMarkerStyle(marker_+4);
+        grUnfolded_detector->SetMarkerSize(1.);
+        grUnfolded_detector->SetLineStyle(9);
+        grUnfolded_detector->SetLineColor(kRed);
+        grUnfolded_detector->Draw("pe same");
 
         TGraphErrors *grMCAlt;
         if(altMC){

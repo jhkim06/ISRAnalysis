@@ -47,6 +47,9 @@ private:
 	vector<Double_t> meanMass_data, meanMassStatErr_data, meanMassSysErr_data, meanMassTotErr_data;
 	vector<Double_t> meanPt_data,   meanPtStatErr_data,   meanPtSysErr_data, meanPtTotErr_data;
 
+	vector<Double_t> meanMass_data_detector, meanMassStatErr_data_detector, meanMassSysErr_data_detector, meanMassTotErr_data_detector;
+	vector<Double_t> meanPt_data_detector,   meanPtStatErr_data_detector,   meanPtSysErr_data_detector, meanPtTotErr_data_detector;
+
 	// nominal mean mass and pt for MC at pre FSR
 	vector<Double_t> meanMass_mc, meanMassErr_mc;
 	vector<Double_t> meanPt_mc,   meanPtErr_mc;
@@ -115,8 +118,8 @@ public:
 
 	void drawtext(TGraph* g);
 
-	void setMeanPt(bool doSys = false, bool altMC = false);
-	void setMeanMass(bool doSys = false, bool altMC = false);
+	void setMeanPt(bool doSys = false, bool altMC = false, bool detector_unfold = false);
+	void setMeanMass(bool doSys = false, bool altMC = false, bool detector_unfold = false);
 
 	// need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
 	double DoFit(TString var = "Pt", int nthMassBin = 0); // chi2 fit for unfolded distribution
