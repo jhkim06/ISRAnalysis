@@ -69,8 +69,8 @@ if args.getUnfoldResults:
         unfoldClass = rt.ISRUnfold()
 
         # set response matrix
-        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], True, "full_phase", "dressed_dR10")
-        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], True, "full_phase", "dressed_dR10")
+        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], True, "fiducial_phase_post_FSR", "post_fsr")
+        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], True, "fiducial_phase_post_FSR", "post_fsr")
 
         # set unfolding input histogram
 	unfoldClass.setInput(args.channel, "Pt",   postfix, unfoldInputList['hist'], 0, False, 1., True, "detector_level")
@@ -93,14 +93,14 @@ if args.getUnfoldResults:
         unfoldClass.subBkgs("Mass", postfix, unfoldInputList['hist'], "WJets_MG", 0, False, True, "detector_level_dipt100_cut")
 
         # for closure test
-        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", 0, True) # TODO check if this response matrix used for closure test
-        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", 0, True)
+        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", 0, True, "fiducial_phase_post_FSR", "post_fsr")
+        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", 0, True, "fiducial_phase_post_FSR", "post_fsr")
 
         #unfoldClass.setInput("Pt",   "Closure", unfoldInputList['sig'], 0, True, 1., True)
         #unfoldClass.setInput("Mass", "Closure", unfoldInputList['sig'], 0, True, 1., True)
 
-        unfoldClass.setInput(args.channel, "Pt",   "Closure", unfoldInputList['matrix'], 0, True, 1., True)
-        unfoldClass.setInput(args.channel, "Mass", "Closure", unfoldInputList['matrix'], 0, True, 1., True)
+        unfoldClass.setInput(args.channel, "Pt",   "Closure", unfoldInputList['matrix'], 0, True, 1., True, "fiducial_phase_post_FSR")
+        unfoldClass.setInput(args.channel, "Mass", "Closure", unfoldInputList['matrix'], 0, True, 1., True, "fiducial_phase_post_FSR")
 
 
         # set systematic response matrix and input histograms

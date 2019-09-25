@@ -68,7 +68,7 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, bool test, T
         }
 }
 
-void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, bool test){
+void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, bool test, TString phase_name, TString fsr_correction_name){
 
         TFile* filein = new TFile(filepath);
 	TString nth_;
@@ -80,8 +80,8 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
 	if(sysName.CompareTo("Alt") == 0 || sysName.CompareTo("unfoldBias") == 0 || sysName.CompareTo("unfoldScan") == 0 || sysName.CompareTo("Closure") == 0){
 
             if(test){
-                if(var == "Pt")   hmcGenRec = (TH2*)filein->Get("full_phase/ptll_rec_gen_dressed_dR10_response_matrix/hmc" + var + "GenRecnominal");
-                if(var == "Mass") hmcGenRec = (TH2*)filein->Get("full_phase/mll_rec_gen_dressed_dR10_response_matrix/hmc" + var + "GenRecnominal");
+                if(var == "Pt")   hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
+                if(var == "Mass") hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
             }
             else
                 hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRecnominal");
@@ -98,8 +98,8 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
           TString Gen_Pt = "Gen_Pt";
 
           if(test){
-            Rec_Pt = "full_phase/ptll_rec_gen_dressed_dRp1_response_matrix/" + Rec_Pt;
-            Gen_Pt = "full_phase/ptll_rec_gen_dressed_dRp1_response_matrix/" + Gen_Pt;
+            Rec_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Pt;
+            Gen_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Pt;
           }
 
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Pt);
@@ -111,8 +111,8 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
           TString Gen_Mass = "Gen_Mass";
 
           if(test){
-            Rec_Mass = "full_phase/mll_rec_gen_dressed_dRp1_response_matrix/" + Rec_Mass;
-            Gen_Mass = "full_phase/mll_rec_gen_dressed_dRp1_response_matrix/" + Gen_Mass;
+            Rec_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Rec_Mass;
+            Gen_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Mass;
           }
 
           binning_Rec = (TUnfoldBinning*)filein->Get(Rec_Mass);
@@ -815,7 +815,7 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
         f1->Draw("same");
 
         CMS_lumi( c1, 4, 11 );
-        c1->SaveAs(outpdf + channel + ".pdf");
+        c1->SaveAs(outpdf + channel + ".png");
 	delete grUnfolded;
 	delete grMC;
 	delete f1;

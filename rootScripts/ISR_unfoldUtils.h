@@ -83,7 +83,7 @@ public:
 	void setNomTUnfoldDensity(TString var, TString filepath, bool test = false, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
 	// set systematic TUnfoldDensity
-	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, bool test = false);
+	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, bool test = false, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
 	// set input histogram
 	void setInput(TString channel, TString var, TString postfix, TString filepath, int nth = 0, bool isSys = false, double bias = 1., bool test = false, TString hist_dir = "full_phase");
