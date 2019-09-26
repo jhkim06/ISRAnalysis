@@ -134,6 +134,7 @@ void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString 
         nth_.Form("%d", nth);
         TH1* hRec;
 
+        // nominal histograms
 	if(!isSys){
           if(var == "Pt"){
               if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
@@ -146,32 +147,34 @@ void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString 
               nomMassUnfold->SetInput(hRec, bias);
           }
 	}
+        // systematic histograms
 	else{
-        	//hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
-		if(postfix=="Alt" || postfix=="unfoldBias" || postfix=="unfoldScan" || postfix=="Closure"){
-                  if(var == "Pt"){   
-                      hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJetsnominal");
-                      hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50nominal"));
-                      sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
-                  }
-                  if(var == "Mass"){
-                      hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJetsnominal");
-                      hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50nominal"));
-                      sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias);
-                  }
+            
+            // use DY MC histograms as unfolding input       
+	    if(postfix=="Alt" || postfix=="unfoldBias" || postfix=="unfoldScan" || postfix=="Closure"){
+                if(var == "Pt"){   
+                    hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJetsnominal");
+                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50nominal"));
+                    sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
                 }
-                else{
-                    if(var == "Pt"){
-                        if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
-                        if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
-                        sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
-                    }
-                    if(var == "Mass"){
-                        if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
-                        if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
-                        sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); 
-                    }
+                if(var == "Mass"){
+                    hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJetsnominal");
+                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50nominal"));
+                    sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias);
                 }
+            }
+            else{
+                if(var == "Pt"){
+                    if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
+                    if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
+                    sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
+                }
+                if(var == "Mass"){
+                    if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
+                    if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
+                    sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); 
+                }
+            }
 	}
 	filein->Close();
 	delete filein;
@@ -184,6 +187,7 @@ void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString 
         nth_.Form("%d", nth);
         TH1* hRec = NULL;
 
+        // nominal histograms
 	if(!isSys){
                 if(var == "Pt"){
                     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_" + bkgName + "nominal");
@@ -195,6 +199,7 @@ void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString 
         	if( var == "Pt" )   nomPtUnfold->  SubtractBackground(hRec, bkgName);
         	if( var == "Mass" ) nomMassUnfold->SubtractBackground(hRec, bkgName);
 	}
+        // systematic histograms
 	else{	
         	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
                 if(postfix=="Alt" || postfix=="unfoldBias" || postfix=="unfoldScan" || postfix=="detector_temp"){
