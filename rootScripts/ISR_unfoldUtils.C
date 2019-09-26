@@ -151,6 +151,62 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         }
 }
 
+void ISRUnfold::drawISRMatrixInfo(){
+
+    c1 = new TCanvas("c1","c1", 50, 50, 1500, 700);
+    gStyle->SetOptFit(0);
+    gStyle->SetPalette(55);
+    c1->Divide(2,1);
+    c1->cd(1);
+
+    c1->cd(1)->SetBottomMargin(0.2);
+    c1->cd(1)->SetRightMargin(0.2);
+    c1->cd(1)->SetTopMargin(0.08);
+    c1->cd(1)->SetTicks(1);
+    c1->cd(1)->SetLogz();
+
+    TH2 *histProb_pt = nomPtUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
+    TH1 *histEfficiency_pt=histProb_pt->ProjectionX("histEfficiency_pt");
+
+    //TH2 *histProb_pt = sysPtUnfold["detector_temp"].at(0)->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
+    //TH1 *histEfficiency_pt=histProb_pt->ProjectionX("histEfficiency_pt");
+    histProb_pt->Draw("COLZ");
+    histProb_pt->SetTitle("migration probabilities;p_{T} mass bin index (gen) ;p_{T} mass bin index (rec)");
+
+    TLine grid_;
+    //grid_.SetLineColor(kGray+2);
+    grid_.SetLineColorAlpha(kGray+2, 0.35);;
+    grid_.SetLineStyle(kSolid);
+    for( int ii=0; ii<histProb_pt->GetXaxis()->GetNbins(); ii++ )
+    {
+            Int_t i_bin = ii+1;
+            Double_t binEdge = histProb_pt->GetXaxis()->GetBinUpEdge(i_bin);
+            grid_.DrawLine(binEdge, histProb_pt->GetYaxis()->GetBinUpEdge(0), binEdge, histProb_pt->GetYaxis()->GetBinUpEdge(histProb_pt->GetYaxis()->GetNbins()) );
+    }
+
+    for( int ii=0; ii<histProb_pt->GetYaxis()->GetNbins(); ii++ )
+    {
+            Int_t i_bin = ii+1;
+            Double_t binEdge = histProb_pt->GetYaxis()->GetBinUpEdge(i_bin);
+            grid_.DrawLine(histProb_pt->GetXaxis()->GetBinUpEdge(0), binEdge, histProb_pt->GetXaxis()->GetBinUpEdge(histProb_pt->GetXaxis()->GetNbins()),binEdge );
+    }
+
+    c1->cd(2);
+    c1->cd(2)->SetBottomMargin(0.2);
+    c1->cd(2)->SetRightMargin(0.2);
+    c1->cd(2)->SetTopMargin(0.08);
+    c1->cd(2)->SetTicks(1);
+    c1->cd(2)->SetGridy();
+
+    histEfficiency_pt->SetTitle("efficiency;p_{T} mass bin (gen) ;#epsilon");
+    histEfficiency_pt->GetYaxis()->SetTitleOffset(1.5);
+    histEfficiency_pt->Draw();
+
+    c1->SaveAs("matrix.png");
+    delete histProb_pt;
+    delete c1;
+}
+
 void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString filepath, int nth, bool isSys, double bias, TString hist_dir){
 	// No effects on the unfolded results respect to bias factor 
         
@@ -1405,10 +1461,11 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin){
 
 }
 
-
 void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TString sysName, bool systematic){
 
         const TUnfoldBinningV17* temp_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
+        const TUnfoldBinningV17* temp_binning_rec = nomPtUnfold->GetInputBinning("Rec_Pt");
+        const TUnfoldBinningV17* temp_binning_rec_mass = nomMassUnfold->GetInputBinning("Rec_Mass");
         // get mass bin definition from (pt, mass) bin definition
         const TVectorD* temp_tvecd = temp_binning->GetDistributionBinning(1);
         const Double_t* massBins = temp_tvecd->GetMatrixArray();
@@ -1423,31 +1480,62 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         ibinMass.Form("%d", nthMassBin);
 
         TH1* hunfolded_data = NULL;
+        TH1* h_data_detector = NULL;
+        TH1* h_mc_detector = NULL;
 	TH1* hunfolded_sys_err = NULL;
         TH1* hpreFSR_mc = NULL;
         TH1F *ratio = NULL;
+        TH1F *ratio_detector = NULL;
         TH1F *ratio_MG_aMCNLO = NULL;
         TH1F *ratio_sys_err = NULL;
 
+        TFile* filein = new TFile(hist_file_path);
+        TH1* hdysig_pt = NULL; // get DY 
+        if(channel_name == "electron"){
+            hdysig_pt = (TH1*)filein->Get("detector_level/hist_ptll/histo_DYJetsToEEnominal"); // get DY 
+            hdysig_pt->Add((TH1*)filein->Get("detector_level/hist_ptll/histo_DYJets10to50ToEEnominal"));
+        }
+        if(channel_name == "muon"){
+            hdysig_pt = (TH1*)filein->Get("detector_level/hist_ptll/histo_DYJetsToMuMunominal"); // get DY 
+            hdysig_pt->Add((TH1*)filein->Get("detector_level/hist_ptll/histo_DYJets10to50ToMuMunominal"));
+        }
+
+        TH1* hdysig_mass = NULL;
+        if(channel_name == "electron"){ 
+            hdysig_mass = (TH1*)filein->Get("detector_level_dipt100_cut/hist_mll/histo_DYJetsToEEnominal");
+            hdysig_mass->Add((TH1*)filein->Get("detector_level_dipt100_cut/hist_mll/histo_DYJets10to50ToEEnominal"));
+        }
+        if(channel_name == "muon"){
+            hdysig_mass = (TH1*)filein->Get("detector_level_dipt100_cut/hist_mll/histo_DYJetsToMuMunominal");
+            hdysig_mass->Add((TH1*)filein->Get("detector_level_dipt100_cut/hist_mll/histo_DYJets10to50ToMuMunominal"));
+        }
+
 	// get nominal unfoled result
 	if(var == "Pt" ){
-                hunfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-		hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr")); 
-                // get gen histogram from response matrix
-		hpreFSR_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            hunfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            h_data_detector  = nomPtUnfold->GetInput("hdata_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+	    hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr")); 
+            // get gen histogram from response matrix
+	    hpreFSR_mc = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            h_mc_detector = temp_binning_rec->ExtractHistogram("hdysig", hdysig_pt, 0, kTRUE, "pt[UO];mass[UOC"+ibinMass+"]");
 	}
 	if(var == "Mass" ){
                 hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"*[UO]",kTRUE);
+                h_data_detector = nomMassUnfold->GetInput("hdata_mass_temp",0,0,"*[UO]",kTRUE);
 
 		hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+		h_data_detector->GetXaxis()->SetRange(h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 		hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr")); 
                 // get gen histogram from response matrix
 		hpreFSR_mc   = nomMassUnfold->GetBias("histMCTruth_mass_temp",0,0,"*[UO]",kTRUE);
+                h_mc_detector = temp_binning_rec_mass->ExtractHistogram("hdysig_mass", hdysig_mass, 0, kTRUE, "*[UO]");
 	}
 
-        ratio= ((TH1F*)hunfolded_data->Clone("ratio"));
+        ratio = ((TH1F*)hunfolded_data->Clone("ratio"));
+        ratio_detector = ((TH1F*)h_data_detector->Clone("ratio_detector"));
         ratio_sys_err= ((TH1F*)hunfolded_data->Clone("ratio_sys"));
         ratio->Divide(hpreFSR_mc);
+        ratio_detector->Divide(h_mc_detector);
         ratio_sys_err->Divide(hpreFSR_mc);
 
         c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
@@ -1464,22 +1552,27 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 
         hunfolded_data->SetTitle("");
         hunfolded_data->Draw("p9histe");
+        h_data_detector->Draw("p9histesame");
         hpreFSR_mc->Draw("histsame");
+        h_mc_detector->Draw("histsame");
 
         hunfolded_data->SetMarkerStyle(20);
         hunfolded_data->SetMarkerSize(.7);
         hunfolded_data->SetLineColor(kBlack);
+        h_data_detector->SetMarkerColor(kGray);
+        h_data_detector->SetLineColor(kGray);
         hunfolded_data->GetYaxis()->SetTitle("Events/bin");
         hunfolded_data->SetMinimum(10.);
 
         hpreFSR_mc->SetLineColor(kRed);
+        h_mc_detector->SetLineColor(kMagenta);
 
         TString mean_nom;
         mean_nom.Form("%.5f", hunfolded_data->GetMean());
 
-        TLegend* leg_nom = new TLegend(0.45, 0.4, 0.75, 0.6,"","brNDC");
+        TLegend* leg_nom = new TLegend(0.6, 0.1, 0.9, 0.25,"","brNDC");
         //leg_nom->SetNColumns(2);
-        leg_nom->SetTextSize(0.055);
+        leg_nom->SetTextSize(0.035);
         leg_nom->SetFillStyle(0);
         leg_nom->SetBorderSize(0);
         leg_nom->AddEntry(hunfolded_data, "Unfolded data (mean: " + mean_nom + ")", "pl");
@@ -1490,10 +1583,10 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         TString chi2_;
 
         // TODO add Mass option 
-        if(var == "Pt" ){
-                chi2_.Form("%f",DoFit("Pt", nthMassBin));
-                chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
-        }
+        //if(var == "Pt" ){
+        //        chi2_.Form("%f",DoFit("Pt", nthMassBin));
+        //        chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
+        //}
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////// systematics ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         if(systematic){
@@ -1611,13 +1704,23 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 
         pad2->cd();
         ratio->Draw("histe");
+        ratio_detector->Draw("histesame");
+        ratio_detector->SetMarkerColor(kGray);
+        ratio_detector->SetLineColor(kGray);
         ratio->GetYaxis()->SetTitle("Data/ MC");
-        ratio->GetXaxis()->SetTitle("p_{T} at pre FSR(GeV)");
-        ratio->SetMinimum(0.8);
-        ratio->SetMaximum(1.2);
+        if(var=="Pt") ratio->GetXaxis()->SetTitle("p_{T} (GeV)");
+        if(var=="Mass") ratio->GetXaxis()->SetTitle("mass (GeV)");
+        ratio->SetMinimum(0.5);
+        ratio->SetMaximum(1.5);
         ratio->SetTitle("");
-        ratio->GetXaxis()->SetTitleOffset(1.5);
-        ratio->GetYaxis()->SetNdivisions(515);
+        //ratio->GetXaxis()->SetTitleOffset(1.5);
+        ratio->GetYaxis()->SetNdivisions(505);
+
+        TLine *l_;
+        l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
+        l_->Draw("same");
+        l_->SetLineStyle(1);
+        l_->SetLineColor(kRed);
 
         TLegend* leg_ratios = new TLegend(0.45, 0.7, 0.75, 0.9,"","brNDC");
         //leg_ratios->SetNColumns(2);

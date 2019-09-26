@@ -85,7 +85,7 @@ if args.getUnfoldResults:
         postfix = args.postfix
 
         # create unfold class
-        unfoldClass = rt.ISRUnfold()
+        unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'])
 
         # set response matrix
         unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], "fiducial_phase_pre_FSR_dR10", "dressed_dR10")
@@ -200,6 +200,7 @@ if args.getUnfoldResults:
 
 
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", args.channel, False)
+        unfoldClass.drawISRMatrixInfo()
 
 	del unfoldClass
 

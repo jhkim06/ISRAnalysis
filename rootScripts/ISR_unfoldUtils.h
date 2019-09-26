@@ -78,8 +78,13 @@ private:
         TGraph *lCurve_mass;
         Int_t iBest_mass;
 
+        TString hist_file_path;
+        TString channel_name;
 public:
-	ISRUnfold() {}
+	ISRUnfold(TString channel, TString filepath){
+            channel_name = channel;
+            hist_file_path = filepath;
+        }
 	~ISRUnfold(){}
 
 	// set nominal TUnfoldDensity 
@@ -96,6 +101,9 @@ public:
 
 	// set input data and background histograms for systematic TUnfoldDensity
 	void initSysTUnfoldDensity();
+
+        // draw migration probability and efficiency plot
+        void drawISRMatrixInfo();
 
 	// do unfold 
 	void doISRUnfold(bool doSys = false);
