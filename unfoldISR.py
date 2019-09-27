@@ -88,15 +88,18 @@ if args.getUnfoldResults:
         unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'])
 
         # set response matrix
-        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], "fiducial_phase_pre_FSR_dR10", "dressed_dR10")
-        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], "fiducial_phase_pre_FSR_dR10", "dressed_dR10")
+        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], "full_phase", "dressed_dR10")
+        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], "full_phase", "dressed_dR10")
 
         # for closure test
-        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", 0, "fiducial_phase_pre_FSR_dR10", "dressed_dR10")
-        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", 0, "fiducial_phase_pre_FSR_dR10", "dressed_dR10")
+        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", 0, "full_phase", "dressed_dR10")
+        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", 0, "full_phase", "dressed_dR10")
 
-        unfoldClass.setInput(args.channel, "Pt",   "Closure", unfoldInputList['matrix'], 0, True, 1., "fiducial_phase_pre_FSR_dR10")
-        unfoldClass.setInput(args.channel, "Mass", "Closure", unfoldInputList['matrix'], 0, True, 1., "fiducial_phase_pre_FSR_dR10")
+        #unfoldClass.setInput(args.channel, "Pt",   "Closure", unfoldInputList['matrix'], 0, True, 1., "full_phase")
+        #unfoldClass.setInput(args.channel, "Mass", "Closure", unfoldInputList['matrix'], 0, True, 1., "full_phase")
+
+        unfoldClass.setInput(args.channel, "Pt",   "Closure", unfoldInputList['hist'], 0, True, 1., "detector_level")
+        unfoldClass.setInput(args.channel, "Mass", "Closure", unfoldInputList['hist'], 0, True, 1., "detector_level_dipt100_cut")
 
         # set unfolding input histogram
 	unfoldClass.setInput(args.channel, "Pt",   postfix, unfoldInputList['hist'], 0, False, 1., "detector_level")
@@ -113,40 +116,33 @@ if args.getUnfoldResults:
         # set systematic response matrix and input histograms
         if args.doSys == True:
 	    #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1}
-	    sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "L1Prefire": 2, "unfoldBias": 1, "unfoldScan": 1}
+	    #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "L1Prefire": 2, "unfoldBias": 1, "unfoldScan": 1}
+	    sysDict = {"unfoldBias": 1, "unfoldScan": 1}
 
 	    for sysName, nSys in sysDict.items():
 	    	for nthSys in range(0,nSys):
-
-	    		print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
-
-	    		# set systematic response matrix
-	    		postfix = sysName
-            		if sysName != "Alt": 
-                                # use systematic response matrix saved in the signal root file 
-	    			unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['sig'],    postfix, nthSys)
-            			unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['sig'],    postfix, nthSys)
-	    		if sysName == "Alt":
-	    			unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['sigAlt'], postfix, nthSys)
-            			unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['sigAlt'], postfix, nthSys)
-
-	    		bias = 1.;
-	    		if sysName == "unfoldBias": bias = 0.95 
-	    	
-                        # set systematic input histograms
-	    		unfoldClass.setInput(args.channel, "Pt",   postfix, unfoldInputList['hist'], nthSys, True, bias, "detector_level")
-	    		unfoldClass.setInput(args.channel, "Mass", postfix, unfoldInputList['hist'], nthSys, True, bias, "detector_level_dipt100_cut")
-
-                        # set systematic background histograms
-            		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
-            		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['TTbar'],     "TTbar",     nthSys, True)
-            		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['VV'],        "VV",        nthSys, True)
-            		unfoldClass.subBkgs("Pt", postfix, unfoldInputList['Wjets'],     "Wjets",     nthSys, True)
-
-            		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['DYtoEEtau'], "DYtoEEtau", nthSys, True)
-            		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['TTbar'],     "TTbar",     nthSys, True)
-            		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['VV'],        "VV",        nthSys, True)
-            		unfoldClass.subBkgs("Mass", postfix, unfoldInputList['Wjets'],     "Wjets",     nthSys, True)
+                    
+                    print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
+                    
+                    # set systematic response matrix
+                    postfix = sysName
+                    if sysName != "Alt": 
+                        # use systematic response matrix saved in the signal root file 
+                    	unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  postfix, nthSys, "full_phase", "dressed_dR10")
+                    	unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  postfix, nthSys, "full_phase", "dressed_dR10")
+                    if sysName == "Alt":
+                    	unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['sigAlt'], postfix, nthSys)
+                    	unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['sigAlt'], postfix, nthSys)
+                    
+                    bias = 1.;
+                    if sysName == "unfoldBias": bias = 0.95 
+                    
+                    # set systematic input histograms
+                    unfoldClass.setInput(args.channel, "Pt",   postfix, unfoldInputList['hist'], nthSys, True, bias, "detector_level")
+                    unfoldClass.setInput(args.channel, "Mass", postfix, unfoldInputList['hist'], nthSys, True, bias, "detector_level_dipt100_cut")
+                    
+                    # set systematic background histograms
+                    setUnfoldBkgs(unfoldClass, args.channel, unfoldInputList['hist'], postfix, True, nthSys)
 
 	# unfold 
 	unfoldClass.doISRUnfold(True)
@@ -192,15 +188,15 @@ if args.getUnfoldResults:
 	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 4)
 	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Mass", -1)
 
-        #unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
-        #unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
+        unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
+        unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
 
-        #unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
-        #unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
+        unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
+        unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
 
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", args.channel, False)
-        unfoldClass.drawISRMatrixInfo()
+        unfoldClass.drawISRMatrixInfo(outputDirectory)
 
 	del unfoldClass
 

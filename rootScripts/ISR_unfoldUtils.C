@@ -151,7 +151,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         }
 }
 
-void ISRUnfold::drawISRMatrixInfo(){
+void ISRUnfold::drawISRMatrixInfo(TString outpdf){
 
     c1 = new TCanvas("c1","c1", 50, 50, 1500, 700);
     gStyle->SetOptFit(0);
@@ -202,7 +202,7 @@ void ISRUnfold::drawISRMatrixInfo(){
     histEfficiency_pt->GetYaxis()->SetTitleOffset(1.5);
     histEfficiency_pt->Draw();
 
-    c1->SaveAs("matrix.png");
+    c1->SaveAs(outpdf + "/matrix.pdf");
     delete histProb_pt;
     delete c1;
 }
@@ -235,15 +235,20 @@ void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString 
         // systematic histograms
 	else{
             // use DY MC histograms as unfolding input       
-	    if(postfix=="Alt" || postfix=="unfoldBias" || postfix=="unfoldScan" || postfix=="Closure"){
+	    if(postfix=="Closure"){
+
+                TString temp_channel_name = "ToEE";
+                if(channel == "muon") temp_channel_name = "ToMuMu";
+
                 if(var == "Pt"){   
-                    hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJetsnominal");
-                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50nominal"));
+                    hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets"+temp_channel_name+"nominal");
+                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50"+temp_channel_name+"nominal"));
                     sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
                 }
+                // TODO add pt < 100 cut
                 else if(var == "Mass"){
-                    hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJetsnominal");
-                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50nominal"));
+                    hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets"+temp_channel_name+"nominal");
+                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50"+temp_channel_name+"nominal"));
                     sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias);
                 }
                 else{
@@ -638,7 +643,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata.at(i).begin();
                while(it != meanMass_sysdata.at(i).end()){
                     int size_ = it->second.size();
-                    if((it->first).CompareTo("FSRDR") == 0 || (it->first).CompareTo("Closure") == 0){ it++; continue;}
+                    if((it->first).CompareTo("FSRDR") == 0 || (it->first).CompareTo("Closure") == 0 || it->first =="detector_temp"){ it++; continue;}
 
                     TH1F *hpdfsys = NULL;
                     if((it->first).CompareTo("PDFerror") == 0) hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data.at(i)-0.2, meanMass_data.at(i)+0.2); // temp histogram to contain PDF variations
@@ -761,7 +766,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
                std::map<TString, std::vector<Double_t>>::iterator it = meanPt_sysdata.at(i).begin();
                while(it != meanPt_sysdata.at(i).end()){
 	    	int size_ = it->second.size(); // size of systematic variations
-	    	if((it->first).CompareTo("FSRDR") == 0 || (it->first).CompareTo("Closure") == 0){ it++; continue;}
+	    	if((it->first).CompareTo("FSRDR") == 0 || (it->first).CompareTo("Closure") == 0 || it->first =="detector_temp"){ it++; continue;}
 	    	
 	    	TH1F *hpdfsys = NULL;
 	    	if((it->first).CompareTo("PDFerror") == 0) hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanPt_data.at(i)-0.2, meanPt_data.at(i)+0.2); // temp histogram to contain PDF variations
@@ -806,7 +811,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
             cout << i << " th mass bin, total pt systematic uncertainty: " << sqrt(totalSys) << " statistical error: " << meanPtStatErr_data.at(i) << endl;
             it = meanPtErr_sysdata.at(i).begin();
             while(it != meanPtErr_sysdata.at(i).end()){
-	         cout << i << " th mass bin, pt" << it->first << " " << it->second/ meanPt_data.at(i) * 100.<< endl;
+	         //cout << i << " th mass bin, pt" << it->first << " " << it->second/ meanPt_data.at(i) * 100.<< endl;
 	         totalSys += pow(it->second, 2);	
 	         it++;
 	    }
@@ -924,7 +929,7 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
         f1->Draw("same");
 
         CMS_lumi( c1, 4, 11 );
-        c1->SaveAs(outpdf + channel + ".png");
+        c1->SaveAs(outpdf + channel + ".pdf");
 	delete grUnfolded;
 	delete grMC;
 	delete f1;
@@ -1718,6 +1723,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 
         TLine *l_;
         l_ = new TLine(ratio->GetXaxis()->GetXmin(),1,ratio->GetXaxis()->GetXmax(),1);
+        if(var=="Mass") l_ = new TLine(massBins[nthMassBin],1,massBins[nthMassBin+1],1);
         l_->Draw("same");
         l_->SetLineStyle(1);
         l_->SetLineColor(kRed);

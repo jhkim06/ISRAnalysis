@@ -103,7 +103,7 @@ public:
 	void initSysTUnfoldDensity();
 
         // draw migration probability and efficiency plot
-        void drawISRMatrixInfo();
+        void drawISRMatrixInfo(TString outpdf);
 
 	// do unfold 
 	void doISRUnfold(bool doSys = false);
