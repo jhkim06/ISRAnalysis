@@ -88,15 +88,15 @@ if args.getUnfoldResults:
         unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'])
 
         # set response matrix
-        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], "full_phase", "dressed_dR10")
-        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], "full_phase", "dressed_dR10")
+        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], "fiducial_phase_post_FSR", "post_fsr")
+        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], "fiducial_phase_post_FSR", "post_fsr")
 
         # for closure test
-        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", 0, "full_phase", "dressed_dR10")
-        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", 0, "full_phase", "dressed_dR10")
+        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", 0, "fiducial_phase_post_FSR", "post_fsr")
+        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", 0, "fiducial_phase_post_FSR", "post_fsr")
 
-        #unfoldClass.setInput(args.channel, "Pt",   "Closure", unfoldInputList['matrix'], 0, True, 1., "full_phase")
-        #unfoldClass.setInput(args.channel, "Mass", "Closure", unfoldInputList['matrix'], 0, True, 1., "full_phase")
+        #unfoldClass.setInput(args.channel, "Pt",   "Closure", unfoldInputList['matrix'], 0, True, 1., "fiducial_phase_post_FSR")
+        #unfoldClass.setInput(args.channel, "Mass", "Closure", unfoldInputList['matrix'], 0, True, 1., "fiducial_phase_post_FSR")
 
         unfoldClass.setInput(args.channel, "Pt",   "Closure", unfoldInputList['hist'], 0, True, 1., "detector_level")
         unfoldClass.setInput(args.channel, "Mass", "Closure", unfoldInputList['hist'], 0, True, 1., "detector_level_dipt100_cut")
@@ -128,8 +128,8 @@ if args.getUnfoldResults:
                     postfix = sysName
                     if sysName != "Alt": 
                         # use systematic response matrix saved in the signal root file 
-                    	unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  postfix, nthSys, "full_phase", "dressed_dR10")
-                    	unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  postfix, nthSys, "full_phase", "dressed_dR10")
+                    	unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  postfix, nthSys, "fiducial_phase_post_FSR", "post_fsr")
+                    	unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  postfix, nthSys, "fiducial_phase_post_FSR", "post_fsr")
                     if sysName == "Alt":
                     	unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['sigAlt'], postfix, nthSys)
                     	unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['sigAlt'], postfix, nthSys)

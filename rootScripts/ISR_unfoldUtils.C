@@ -126,7 +126,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         }
 
 	TUnfold::ERegMode mode=TUnfold::kRegModeNone;
-	if( sysName.CompareTo("unfoldScan") == 0 || sysName.CompareTo("unfoldBias") == 0) mode = TUnfold::kRegModeCurvature;
+	if( sysName =="unfoldScan" || sysName=="unfoldBias") mode = TUnfold::kRegModeCurvature;
 
         if( var == "Pt" ){
                 sysPtUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
@@ -428,7 +428,7 @@ void ISRUnfold::doISRUnfold(bool doSys){
 	    while(it != sysPtUnfold.end()){
 	    	int nSys = it->second.size();
 	    	for(int i = 0; i < nSys; i++){
-	    		if((it->first).CompareTo("unfoldScan") == 0 || (it->first).CompareTo("unfoldBias") == 0){
+	    		if((it->first)=="unfoldScan" || (it->first)=="unfoldBias" ){
 	    			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
   	    			iBest=it->second.at(i)->ScanTau(nScan,0.,0.,&rhoLogTau,
   	    			                           TUnfoldDensity::kEScanTauRhoAvgSys,
@@ -445,7 +445,7 @@ void ISRUnfold::doISRUnfold(bool doSys){
             while(it != sysMassUnfold.end()){
                     int nSys = it->second.size();
                     for(int i = 0; i < nSys; i++){
-                            if((it->first).CompareTo("unfoldScan") == 0 || (it->first).CompareTo("unfoldBias") == 0){
+                            if((it->first)=="unfoldScan" || (it->first)=="unfoldBias"){
 	    			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
 
                                     iBest_mass=it->second.at(i)->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
@@ -643,16 +643,16 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata.at(i).begin();
                while(it != meanMass_sysdata.at(i).end()){
                     int size_ = it->second.size();
-                    if((it->first).CompareTo("FSRDR") == 0 || (it->first).CompareTo("Closure") == 0 || it->first =="detector_temp"){ it++; continue;}
+                    if((it->first)=="FSRDR" || (it->first)=="Closure" || it->first =="detector_temp"){ it++; continue;}
 
                     TH1F *hpdfsys = NULL;
-                    if((it->first).CompareTo("PDFerror") == 0) hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data.at(i)-0.2, meanMass_data.at(i)+0.2); // temp histogram to contain PDF variations
+                    if((it->first)=="PDFerror") hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data.at(i)-0.2, meanMass_data.at(i)+0.2); // temp histogram to contain PDF variations
 
                     Double_t err = -999.; // 
                     for(int j = 0; j < size_; j++){
-                            if( (i==5 || i==7) && (it->first).CompareTo("Scale") == 0) continue;
+                            if( (i==5 || i==7) && (it->first)=="Scale") continue;
 
-                            if((it->first).CompareTo("PDFerror") == 0){
+                            if((it->first)=="PDFerror"){
                                     hpdfsys->Fill(it->second.at(j));
                             }
 
@@ -663,7 +663,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
 
                             //cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl;
                     }
-                    if((it->first).CompareTo("PDFerror") == 0){
+                    if((it->first)=="PDFerror"){
                             err = hpdfsys->GetRMS();
                             delete hpdfsys;
                     }
@@ -766,16 +766,16 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
                std::map<TString, std::vector<Double_t>>::iterator it = meanPt_sysdata.at(i).begin();
                while(it != meanPt_sysdata.at(i).end()){
 	    	int size_ = it->second.size(); // size of systematic variations
-	    	if((it->first).CompareTo("FSRDR") == 0 || (it->first).CompareTo("Closure") == 0 || it->first =="detector_temp"){ it++; continue;}
+	    	if((it->first)=="FSRDR" || (it->first)=="Closure" || it->first =="detector_temp"){ it++; continue;}
 	    	
 	    	TH1F *hpdfsys = NULL;
-	    	if((it->first).CompareTo("PDFerror") == 0) hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanPt_data.at(i)-0.2, meanPt_data.at(i)+0.2); // temp histogram to contain PDF variations
+	    	if((it->first)=="PDFerror") hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanPt_data.at(i)-0.2, meanPt_data.at(i)+0.2); // temp histogram to contain PDF variations
 
 	    	Double_t err = -999.; // 
 	    	for(int j = 0; j < size_; j++){
-	    		if( (i==5 || i==7) && (it->first).CompareTo("Scale") == 0) continue;
+	    		if( (i==5 || i==7) && (it->first)=="Scale") continue;
 
-	    		if((it->first).CompareTo("PDFerror") == 0){
+	    		if((it->first)=="PDFerror"){
 	     			hpdfsys->Fill(it->second.at(j));
 	    		}
 
@@ -785,7 +785,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
                             }
 	    		//cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl; 
 	    	}// loop for systematic variations
-	    	if((it->first).CompareTo("PDFerror") == 0){
+	    	if((it->first)=="PDFerror"){
 	    		err = hpdfsys->GetRMS();
 	    		delete hpdfsys;
 	    	}
@@ -974,7 +974,7 @@ void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TStr
    TH1* hpt_sys_temp;
    int sysSize = sysPtUnfold[sysName].size();
    for(int i = 0; i < sysSize; i++){
-           if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
+           if((i==5 || i==7) && sysName=="Scale") continue;
 
            TString isys;
            isys.Form("%d", i);
@@ -1010,7 +1010,7 @@ void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TStr
    pad2->cd();
 
    for(int i = 0; i < sysSize; i++){
-        if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
+        if((i==5 || i==7) && sysName=="Scale") continue;
 
         TString isys;
         isys.Form("%d", i); 
@@ -1494,6 +1494,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         TH1F *ratio_MG_aMCNLO = NULL;
         TH1F *ratio_sys_err = NULL;
 
+        // get DY MC histograms at detector
         TFile* filein = new TFile(hist_file_path);
         TH1* hdysig_pt = NULL; // get DY 
         if(channel_name == "electron"){
@@ -1564,8 +1565,9 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         hunfolded_data->SetMarkerStyle(20);
         hunfolded_data->SetMarkerSize(.7);
         hunfolded_data->SetLineColor(kBlack);
-        h_data_detector->SetMarkerColor(kGray);
-        h_data_detector->SetLineColor(kGray);
+        h_data_detector->SetMarkerColor(kGray+2);
+        h_data_detector->SetLineColor(kGray+2);
+        h_data_detector->SetMarkerSize(.7);
         hunfolded_data->GetYaxis()->SetTitle("Events/bin");
         hunfolded_data->SetMinimum(10.);
 
@@ -1580,9 +1582,9 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         leg_nom->SetTextSize(0.035);
         leg_nom->SetFillStyle(0);
         leg_nom->SetBorderSize(0);
-        leg_nom->AddEntry(hunfolded_data, "Unfolded data (mean: " + mean_nom + ")", "pl");
-
+        leg_nom->AddEntry(hunfolded_data, "#splitline{Unfolded data}{(mean: " + mean_nom + ")}", "pl");
         leg_nom->AddEntry(hpreFSR_mc, "aMC@NLO", "l");
+        leg_nom->Draw();
 
         TLatex chi2_norm;
         TString chi2_;
@@ -1600,7 +1602,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 	    int sysSize = sysPtUnfold[sysName].size();
             for(int i = 0; i < sysSize; i++){
                 
-                if((i==5 || i==7) && sysName.CompareTo("Scale") == 0) continue;
+                if((i==5 || i==7) && sysName=="Scale") continue;
 
                 TString isys;
                 isys.Form("%d", i);
@@ -1612,9 +1614,8 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                     hdatasys_temp = sysPtUnfold[sysName].at(i)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
                 // just to show histogram of alternative MC
-	    	if(var == "Pt" && (sysName.CompareTo("Alt") == 0 || sysName.CompareTo("FSRDR") == 0 ) && i == 0){
+	    	if(var == "Pt" && (sysName=="Alt" || sysName=="FSRDR") && i == 0){
 	     	    hmcsys_temp = sysPtUnfold[sysName].at(i)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); // get alternative DY MC 
-	    	    hmcsys_temp->SetDirectory(0);
                     ratio_MG_aMCNLO= ((TH1F*)hmcsys_temp->Clone("ratio_MG_aMCNLO"));
                     ratio_MG_aMCNLO->Divide(hpreFSR_mc);
 	    	}
@@ -1662,7 +1663,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 hdata_sys_temp->SetLineColor(kBlack);
                 hdata_sys_temp->SetLineStyle(2);
 
-	    	if( (sysName.CompareTo("Closure") == 0 ) ){
+	    	if( sysName=="Closure"  ){
                     
             	    TString mean_mc_;
             	    mean_mc_.Form("%.5f", hdatasys_temp->GetMean());
@@ -1683,8 +1684,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 	    		hmcsys_temp->SetLineColor(kBlue);
 	    	}
 
-                delete hdatasys_temp;
-	        //delete hmcsys_temp;
+	        delete hmcsys_temp;
             }// loop over variation set in each systematic source
 
             // draw systematic envelope for systematic source 
@@ -1692,11 +1692,10 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
             hunfolded_sys_err->SetMarkerSize(0);
             hunfolded_sys_err->SetFillColorAlpha(kBlack,0.3);
 
-	    delete hdata_sys_temp;
+	    //delete hdata_sys_temp;
         }
         ////////////////////////////////////////////////////// systematic ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        leg_nom->Draw();
 
 	c1->cd();
 
@@ -1710,8 +1709,8 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         pad2->cd();
         ratio->Draw("histe");
         ratio_detector->Draw("histesame");
-        ratio_detector->SetMarkerColor(kGray);
-        ratio_detector->SetLineColor(kGray);
+        ratio_detector->SetMarkerColor(kGray+2);
+        ratio_detector->SetLineColor(kGray+2);
         ratio->GetYaxis()->SetTitle("Data/ MC");
         if(var=="Pt") ratio->GetXaxis()->SetTitle("p_{T} (GeV)");
         if(var=="Mass") ratio->GetXaxis()->SetTitle("mass (GeV)");
@@ -1736,7 +1735,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         leg_ratios->AddEntry(ratio, "unfolded data/ aMC@NLO" , "pl");
 
         if(systematic){
-            if(sysName.CompareTo("Alt") == 0){
+            if(sysName=="Alt"){
                 ratio_MG_aMCNLO->Draw("histsamee");
                 ratio_MG_aMCNLO->SetLineStyle(2);
                 ratio_MG_aMCNLO->SetLineColor(kRed);
