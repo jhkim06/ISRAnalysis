@@ -245,7 +245,6 @@ void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString 
                     hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50"+temp_channel_name+"nominal"));
                     sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
                 }
-                // TODO add pt < 100 cut
                 else if(var == "Mass"){
                     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets"+temp_channel_name+"nominal");
                     hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50"+temp_channel_name+"nominal"));
@@ -579,8 +578,8 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
 	const TVectorD* temp_tvecd = temp_binning->GetDistributionBinning(1);
 	const Double_t* massBins = temp_tvecd->GetMatrixArray();
 
-        TH1* hunfolded_mass =  nomMassUnfold->GetOutput("hunfolded_mass",0,0,"*[UO]",kTRUE);
-        TH1 *histMCTruth_mass= nomMassUnfold->GetBias("histMCTruth_mass",0,0,"*[UO]",kTRUE);
+        TH1* hunfolded_mass =  nomMassUnfold->GetOutput("hunfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+        TH1 *histMCTruth_mass= nomMassUnfold->GetBias("histMCTruth_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
 
         for(int ibin = 0; ibin < nMassBin; ibin++){
                 hunfolded_mass->GetXaxis()->  SetRange(hunfolded_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
@@ -593,7 +592,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                 meanMassErr_mc.push_back(histMCTruth_mass->GetMeanError());
 
                 if(altMC){
-                    TH1 *histMCTruth_massAlt= sysMassUnfold["Alt"].at(0)->GetBias("histMCTruth_massAlt",0,0,"*[UO]",kTRUE);
+                    TH1 *histMCTruth_massAlt= sysMassUnfold["Alt"].at(0)->GetBias("histMCTruth_massAlt",0,0,"mass[UO];pt[UOC0]",kTRUE);
                     histMCTruth_massAlt->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
                     meanMass_mcAlt.   push_back(histMCTruth_massAlt->GetMean());
                     meanMassErr_mcAlt.push_back(histMCTruth_massAlt->GetMeanError());
@@ -602,7 +601,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                 }
 
                 if(detector_unfold){
-                    TH1 *histMCTruth_massAlt= sysMassUnfold["detector_temp"].at(0)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
+                    TH1 *histMCTruth_massAlt= sysMassUnfold["detector_temp"].at(0)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
                     histMCTruth_massAlt->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
                     meanMass_data_detector.   push_back(histMCTruth_massAlt->GetMean());
                     meanMassStatErr_data_detector.push_back(histMCTruth_massAlt->GetMeanError());
@@ -618,7 +617,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
            	            int nSys = it->second.size();
            	            TH1* hdatasys_temp;
            	            for(int i = 0; i < nSys; i++){
-           	                 hdatasys_temp = sysMassUnfold[it->first].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
+           	                 hdatasys_temp = sysMassUnfold[it->first].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
 		                 hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[ibin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
            	                 temp_map[it->first].push_back(hdatasys_temp->GetMean());
 
@@ -1378,10 +1377,10 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin){
         hpreFSR_mc   =    sysPtUnfold["Closure"].at(0)->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
     }
     if(var == "Mass" ){
-        hunfolded_data  = sysMassUnfold["Closure"].at(0)->GetOutput("hunfolded_mass_closure",0,0,"*[UO]",kTRUE);
+        hunfolded_data  = sysMassUnfold["Closure"].at(0)->GetOutput("hunfolded_mass_closure",0,0,"mass[UO];pt[UOC0]",kTRUE);
         hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 
-        hpreFSR_mc   = sysMassUnfold["Closure"].at(0)->GetBias("histMCTruth_mass_temp",0,0,"*[UO]",kTRUE);
+        hpreFSR_mc   = sysMassUnfold["Closure"].at(0)->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
         hpreFSR_mc->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
     }
 
@@ -1508,12 +1507,12 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 
         TH1* hdysig_mass = NULL;
         if(channel_name == "electron"){ 
-            hdysig_mass = (TH1*)filein->Get("detector_level_dipt100_cut/hist_mll/histo_DYJetsToEEnominal");
-            hdysig_mass->Add((TH1*)filein->Get("detector_level_dipt100_cut/hist_mll/histo_DYJets10to50ToEEnominal"));
+            hdysig_mass = (TH1*)filein->Get("detector_level/hist_mll/histo_DYJetsToEEnominal");
+            hdysig_mass->Add((TH1*)filein->Get("detector_level/hist_mll/histo_DYJets10to50ToEEnominal"));
         }
         if(channel_name == "muon"){
-            hdysig_mass = (TH1*)filein->Get("detector_level_dipt100_cut/hist_mll/histo_DYJetsToMuMunominal");
-            hdysig_mass->Add((TH1*)filein->Get("detector_level_dipt100_cut/hist_mll/histo_DYJets10to50ToMuMunominal"));
+            hdysig_mass = (TH1*)filein->Get("detector_level/hist_mll/histo_DYJetsToMuMunominal");
+            hdysig_mass->Add((TH1*)filein->Get("detector_level/hist_mll/histo_DYJets10to50ToMuMunominal"));
         }
 
 	// get nominal unfoled result
@@ -1526,15 +1525,15 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
             h_mc_detector = temp_binning_rec->ExtractHistogram("hdysig", hdysig_pt, 0, kTRUE, "pt[UO];mass[UOC"+ibinMass+"]");
 	}
 	if(var == "Mass" ){
-                hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"*[UO]",kTRUE);
-                h_data_detector = nomMassUnfold->GetInput("hdata_mass_temp",0,0,"*[UO]",kTRUE);
+                hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                h_data_detector = nomMassUnfold->GetInput("hdata_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
 
 		hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 		h_data_detector->GetXaxis()->SetRange(h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 		hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr")); 
                 // get gen histogram from response matrix
-		hpreFSR_mc   = nomMassUnfold->GetBias("histMCTruth_mass_temp",0,0,"*[UO]",kTRUE);
-                h_mc_detector = temp_binning_rec_mass->ExtractHistogram("hdysig_mass", hdysig_mass, 0, kTRUE, "*[UO]");
+		hpreFSR_mc   = nomMassUnfold->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                h_mc_detector = temp_binning_rec_mass->ExtractHistogram("hdysig_mass", hdysig_mass, 0, kTRUE, "mass[UO];pt[UOC0]");
 	}
 
         ratio = ((TH1F*)hunfolded_data->Clone("ratio"));
@@ -1621,7 +1620,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 	    	}
 
                 if(var == "Mass"){
-                    hdatasys_temp = sysMassUnfold[sysName].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
+                    hdatasys_temp = sysMassUnfold[sysName].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
                     hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
                 }
 
