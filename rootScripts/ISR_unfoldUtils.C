@@ -237,17 +237,14 @@ void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString 
             // use DY MC histograms as unfolding input       
 	    if(postfix=="Closure"){
 
-                TString temp_channel_name = "ToEE";
-                if(channel == "muon") temp_channel_name = "ToMuMu";
-
-                if(var == "Pt"){   
-                    hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets"+temp_channel_name+"nominal");
-                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50"+temp_channel_name+"nominal"));
+                if(var == "Pt"){
+                    hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJetsnominal");
+                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50nominal"));
                     sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
                 }
                 else if(var == "Mass"){
-                    hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets"+temp_channel_name+"nominal");
-                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50"+temp_channel_name+"nominal"));
+                    hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJetsnominal");
+                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50nominal"));
                     sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias);
                 }
                 else{
@@ -820,7 +817,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
 	}// loop for mass bins
 }
 
-void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
+void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC, bool doFit){
 
         gROOT->SetBatch();
 
@@ -921,11 +918,14 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC){
         if(altMC) leg_->AddEntry(grMCAlt, "DY MC at pre FSR (Madgraph)", "pe");
         leg_->Draw();
 
-        TF1 *f1 = new TF1("f1", "[0]+[1]*log(x)", 40., 350.);
-        f1->GetXaxis()->SetRangeUser(40., 350.);
-        f1->SetLineColor(kBlack);
-        grUnfolded->Fit(f1, "R0"); // R: fitting sub range
-        f1->Draw("same");
+        TF1 *f1 = NULL;
+        if(doFit){
+            f1 = new TF1("f1", "[0]+[1]*log(x)", 40., 350.);
+            f1->GetXaxis()->SetRangeUser(40., 350.);
+            f1->SetLineColor(kBlack);
+            grUnfolded->Fit(f1, "R0"); // R: fitting sub range
+            f1->Draw("same");
+        }
 
         CMS_lumi( c1, 4, 11 );
         c1->SaveAs(outpdf + channel + ".pdf");

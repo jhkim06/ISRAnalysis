@@ -134,7 +134,7 @@ public:
 	double Chi2Test(TH1 *data, TH1 *mc);
 
 	// draw ISR result
-	void drawISRresult(TString outpdf, TString channel, bool altMC = false);
+	void drawISRresult(TString outpdf, TString channel, bool altMC = false, bool doFit = false);
 	void drawLCurve(TString outpdf, TString var);
 	void drawRhoLog(TString outpdf, TString var);
 };
