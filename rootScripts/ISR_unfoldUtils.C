@@ -73,6 +73,69 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString phas
         }
 }
 
+void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString phase_name, TString fsr_correction_name){
+
+        TFile* filein = new TFile(filepath);
+
+        // set response matrix
+        TH2* hmcGenGen;
+
+        if(var == "Pt")
+            hmcGenGen = (TH2*)filein->Get(phase_name + "/ptll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
+        else if(var == "Mass")
+            hmcGenGen = (TH2*)filein->Get(phase_name + "/mll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
+        else{
+            cout << "ISRUnfold::setNomTUnfoldDensity, only Pt and Mass available for var" << endl;
+            exit (EXIT_FAILURE);
+        }
+
+        // set binning definition
+        TUnfoldBinning* binning_Gen = NULL;
+
+        if( var == "Pt" ){
+
+          TString Gen_Pt = "Gen_Pt";
+
+          Gen_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Pt;
+
+          binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Pt);
+        }
+        else if( var == "Mass" ){
+
+          TString Gen_Mass = "Gen_Mass";
+
+          Gen_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Mass;
+
+          binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Mass);
+
+        }
+        else{
+            cout << "ISRUnfold::setNomTUnfoldDensity, only Pt and Mass available for var" << endl;
+            exit (EXIT_FAILURE);
+        }
+
+        if( var == "Pt" ){
+                nomPtUnfold = new TUnfoldDensityV17(hmcGenGen,
+                                               TUnfold::kHistMapOutputHoriz,
+                                               TUnfold::kRegModeNone, // fixed to use no regularisation temporary
+                                               TUnfold::kEConstraintArea,
+                                               TUnfoldDensityV17::kDensityModeBinWidth,
+                                               binning_Gen,binning_Gen);
+        }
+        else if( var == "Mass" ){
+                nomMassUnfold = new TUnfoldDensityV17(hmcGenGen,
+                                               TUnfold::kHistMapOutputHoriz,
+                                               TUnfold::kRegModeNone, // fixed to use no regularisation temporary
+                                               TUnfold::kEConstraintArea,
+                                               TUnfoldDensityV17::kDensityModeBinWidth,
+                                               binning_Gen,binning_Gen);
+        }
+        else{
+            cout << "ISRUnfold::setNomTUnfoldDensity, only Pt and Mass available for var" << endl;
+            exit (EXIT_FAILURE);
+        }
+}
+
 void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, TString phase_name, TString fsr_correction_name){
 
         TFile* filein = new TFile(filepath);

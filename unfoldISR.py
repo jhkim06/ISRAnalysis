@@ -29,10 +29,10 @@ parser.add_argument('--year' , dest = 'year', default = '2016', help = 'select y
 parser.add_argument('--phase_space' , dest = 'phase_space', default = 'fiducial_phase_pre_FSR_dRp1', help = 'select unfolded phase space')
 parser.add_argument('--FSR_dR' , dest = 'FSR_dR', default = 'dressed_dRp1', help = 'select size of dR for dressed lepton')
 parser.add_argument('--createInputHists'  , action='store_true'  , help = 'create input histograms')
-parser.add_argument('--altResponse'  , action='store_true'  , default = False, help = 'create response matrix with alternative signal MC')
 parser.add_argument('--getUnfoldResults'  , action='store_true'  , help = 'Get unfolding resutls')
 parser.add_argument('--doSys'  , action='store_true'  , default = False, help = 'Calculate systematics')
-parser.add_argument('--closure'  , action='store_true'  , help = 'Clousre test with MC')
+
+# TODO options
 parser.add_argument('--getCombinedResults'  , action='store_true'  , help = 'Combine 2016 and 2017')
 parser.add_argument('--getEMuCombinedResults'  , action='store_true'  , help = 'Combine electron and muon')
 parser.add_argument('--doSeperateUnfold'  , action='store_true'  , default = False, help = 'Seperate unfolding steps')
@@ -62,6 +62,9 @@ if args.getUnfoldResults:
                 modifiedLine = line.lstrip(' ').rstrip(' ').rstrip('\n')
                 if modifiedLine.split()[1] == "matrix":
                         unfoldInputList['matrix'] = modifiedLine.split()[2]
+
+                if modifiedLine.split()[1] == "fsr_matrix":
+                        unfoldInputList['fsr_matrix'] = modifiedLine.split()[2]
 
                 if modifiedLine.split()[1] == "hist":
                         unfoldInputList['hist'] = modifiedLine.split()[2]
@@ -128,16 +131,17 @@ if args.getUnfoldResults:
                     setUnfoldBkgs(unfoldClass, args.channel, unfoldInputList['hist'], sysName, True, nthSys)
 
 	# unfold 
-	unfoldClass.doISRUnfold(True)
+	unfoldClass.doISRUnfold(args.doSys)
 
 	# set nominal value and also systematic values
-	unfoldClass.setMeanPt(args.doSys, False, True)
-	unfoldClass.setMeanMass(args.doSys, False, True)
+	unfoldClass.setMeanPt(args.doSys, False, args.doSys)
+	unfoldClass.setMeanMass(args.doSys, False, args.doSys)
 
         for massBin in range(0,5):
             
-                unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin) 
-                unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin)
+                if args.doSys:
+                    unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin) 
+                    unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin)
 
                 unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin)
                 unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin)
@@ -171,15 +175,16 @@ if args.getUnfoldResults:
 	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 4)
 	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Mass", -1)
 
-        unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
-        unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
+        #unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
+        #unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
 
-        unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
-        unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
-
+        #unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
+        #unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", args.channel, False)
         unfoldClass.drawISRMatrixInfo(outputDirectory)
+
+        unfoldFSRClass = rt.ISRUnfold(args.channel, unfoldInputList['fsr_matrix'])
 
 	del unfoldClass
 

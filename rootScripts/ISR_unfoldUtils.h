@@ -40,6 +40,9 @@ private:
 	TUnfoldDensityV17* nomPtUnfold;
 	TUnfoldDensityV17* nomMassUnfold;
 
+	TUnfoldDensityV17* nomPtFSRUnfold;
+	TUnfoldDensityV17* nomMassFSRUnfold;
+
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtUnfold;
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassUnfold;
 
@@ -89,6 +92,9 @@ public:
 
 	// set nominal TUnfoldDensity 
 	void setNomTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
+
+	// set nominal TUnfoldDensity 
+	void setNomFSRTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
 	// set systematic TUnfoldDensity
 	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
