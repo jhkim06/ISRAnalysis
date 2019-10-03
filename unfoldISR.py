@@ -133,35 +133,6 @@ if args.getUnfoldResults:
 	# unfold 
 	unfoldClass.doISRUnfold(args.doSys)
 
-	# set nominal value and also systematic values
-	unfoldClass.setMeanPt(args.doSys, False, args.doSys)
-	unfoldClass.setMeanMass(args.doSys, False, args.doSys)
-
-        for massBin in range(0,5):
-            
-                if args.doSys:
-                    unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin) 
-                    unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin)
-
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin)
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin)
-
-
-
-        # draw plots including systematic 
-        if args.doSys == True:
-            for sysName, nSys in sysDict.items():
-
-                if sysName == "Closure" : continue
-
-	        for massBin in range(0,5):
-
-                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys)
-                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys)
-                    unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
-	    	    unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
-
-
 	#unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 0)
 	#unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 1)
 	#unfoldClass.drawNominalRecoPlots(outputDirectory + "RecoPt_" + args.channel + ".pdf", unfoldInputList['sig'], "Pt", 2)
@@ -181,13 +152,42 @@ if args.getUnfoldResults:
         unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
         unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
-	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", args.channel, False)
-        unfoldClass.drawISRMatrixInfo(outputDirectory)
-
         unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr")
         unfoldClass.setNomFSRTUnfoldDensity("Mass",  unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr")
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], "full_phase")
         unfoldClass.doISRQEDFSRUnfold()
+
+        # set nominal value and also systematic values
+        unfoldClass.setMeanPt(args.doSys, False, args.doSys)
+        unfoldClass.setMeanMass(args.doSys, False, args.doSys)
+
+        for massBin in range(0,5):
+
+                if args.doSys:
+                    unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin)
+                    unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin)
+
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin)
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin)
+
+
+
+        # draw plots including systematic 
+        if args.doSys == True:
+            for sysName, nSys in sysDict.items():
+
+                if sysName == "Closure" : continue
+
+                for massBin in range(0,5):
+
+                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys)
+                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys)
+                    unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
+                    unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
+
+
+	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", args.channel, False, True)
+        unfoldClass.drawISRMatrixInfo(outputDirectory)
 
         for massBin in range(0,5):
 

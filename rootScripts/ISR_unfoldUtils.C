@@ -667,12 +667,21 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
         TH1* hunfolded_mass =  nomMassUnfold->GetOutput("hunfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
         TH1 *histMCTruth_mass= nomMassUnfold->GetBias("histMCTruth_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
 
+        TH1* h_fsr_unfolded_mass =  nomMassFSRUnfold->GetOutput("h_fsr_unfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+        TH1 *histMCTruth_pre_fsr_mass= nomMassFSRUnfold->GetBias("histMCTruth_pre_fsr_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+
         for(int ibin = 0; ibin < nMassBin; ibin++){
                 hunfolded_mass->GetXaxis()->  SetRange(hunfolded_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
                 histMCTruth_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
 
+                h_fsr_unfolded_mass->GetXaxis()->  SetRange(hunfolded_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+                histMCTruth_pre_fsr_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+
                 meanMass_data.   push_back(hunfolded_mass->GetMean());
                 meanMassStatErr_data.push_back(hunfolded_mass->GetMeanError());
+
+                meanMass_data_pre_fsr.   push_back(h_fsr_unfolded_mass->GetMean());
+                meanMassStatErr_data_pre_fsr.push_back(h_fsr_unfolded_mass->GetMeanError());
 
                 meanMass_mc.   push_back(histMCTruth_mass->GetMean());
                 meanMassErr_mc.push_back(histMCTruth_mass->GetMeanError());
@@ -797,8 +806,14 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
            hpt_temp_data = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
            hpt_temp_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
+           TH1* h_pre_fsr_pt_temp_data = nomPtFSRUnfold->GetOutput("h_fsr_unfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+           TH1* h_pre_fsr_pt_temp_mc   = nomPtFSRUnfold->GetBias("histMCTruth_pt_fsr_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+
            meanPt_data.   push_back(hpt_temp_data->GetMean());
            meanPtStatErr_data.push_back(hpt_temp_data->GetMeanError());
+
+           meanPt_data_pre_fsr.   push_back(h_pre_fsr_pt_temp_data->GetMean());
+           meanPtStatErr_data_pre_fsr.push_back(h_pre_fsr_pt_temp_data->GetMeanError());
 
            meanPt_mc.   push_back(hpt_temp_mc->GetMean());
            meanPtErr_mc.push_back(hpt_temp_mc->GetMeanError());
@@ -913,21 +928,6 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC, bool 
         int marker_ = 20;
         if(channel=="muon") marker_ = 21;
 
-	Double_t zero_err[5] = {0.};
-
-	// temporary map to show variations respect to dR to add FSR photons
-	//std::map<int, std::vector<Double_t>> FSR_temp_pt;
-	//std::map<int, std::vector<Double_t>> FSR_temp_mass;
-
-	//for(int i = 0; i < 5; i++){
-
-	//	int size = meanPt_sysdata.at(i)["FSRDR"].size();
-	//	for(int j = 0; j < size; j++){
-	//		FSR_temp_pt[j].  push_back((meanPt_sysdata.at(i)["FSRDR"]).at(j));
-	//		FSR_temp_mass[j].push_back((meanMass_sysdata.at(i)["FSRDR"]).at(j));
-	//	}
-	//}
-
         setTDRStyle();
         writeExtraText = true;       // if extra text
         extraText  = "work in progress";
@@ -950,21 +950,9 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC, bool 
         grUnfolded->SetLineStyle(1);
         grUnfolded->Draw("ape");
         grUnfolded->GetYaxis()->SetRangeUser(10.,30.);
-        grUnfolded->GetXaxis()->SetLimits(30.,400.);
+        grUnfolded->GetXaxis()->SetLimits(30.,500.);
         grUnfolded->GetYaxis()->SetTitle("Average p_{T} (GeV)");
         grUnfolded->GetXaxis()->SetTitle("Average Mass (GeV)");
-
-        //TGraphErrors *grFSRtest;
-        //int map_size = FSR_temp_mass.size();
-        //for(int i = 0; i < map_size; i++){
-        //        grFSRtest = new TGraphErrors(5, &(FSR_temp_mass[i])[0], &(FSR_temp_pt[i])[0], zero_err, zero_err);
-        //        grFSRtest->SetLineColor(kBlue);
-        //        grFSRtest->SetMarkerColor(kBlue);
-        //        grFSRtest->SetMarkerStyle(24);
-        //        grFSRtest->SetMarkerSize(0.5);
-        //        grFSRtest->SetLineStyle(1);
-        //        grFSRtest->Draw("ple same");
-        //}
 
         TGraphErrors *grMC = new TGraphErrors(5, &meanMass_mc[0], &meanPt_mc[0], &meanMassErr_mc[0], &meanPtErr_mc[0]);
         grMC->SetLineColor(kRed);
@@ -975,14 +963,14 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC, bool 
         grMC->SetLineColor(kRed);
         grMC->Draw("pe same");
 
-        TGraphErrors *grUnfolded_detector = new TGraphErrors(5, &meanMass_data_detector[0], &meanPt_data_detector[0], &meanMassStatErr_data_detector[0], &meanPtStatErr_data_detector[0]);
-        grUnfolded_detector->SetLineColor(kBlack);
-        grUnfolded_detector->SetMarkerColor(kBlack);
-        grUnfolded_detector->SetMarkerStyle(marker_+4);
-        grUnfolded_detector->SetMarkerSize(1.);
-        grUnfolded_detector->SetLineStyle(9);
-        grUnfolded_detector->SetLineColor(kRed);
-        grUnfolded_detector->Draw("pe same");
+        TGraphErrors *grUnfolded_pre_fsr = new TGraphErrors(5, &meanMass_data_pre_fsr[0], &meanPt_data_pre_fsr[0], &meanMassStatErr_data_pre_fsr[0], &meanPtStatErr_data_pre_fsr[0]);
+        grUnfolded_pre_fsr->SetLineColor(kBlack);
+        grUnfolded_pre_fsr->SetMarkerColor(kBlack);
+        grUnfolded_pre_fsr->SetMarkerStyle(marker_+4);
+        grUnfolded_pre_fsr->SetMarkerSize(1.);
+        grUnfolded_pre_fsr->SetLineStyle(9);
+        grUnfolded_pre_fsr->SetLineColor(kBlack);
+        grUnfolded_pre_fsr->Draw("pe same");
 
         TGraphErrors *grMCAlt;
         if(altMC){
@@ -1012,7 +1000,8 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC, bool 
             f1 = new TF1("f1", "[0]+[1]*log(x)", 40., 350.);
             f1->GetXaxis()->SetRangeUser(40., 350.);
             f1->SetLineColor(kBlack);
-            grUnfolded->Fit(f1, "R0"); // R: fitting sub range
+            //grUnfolded->Fit(f1, "R0"); // R: fitting sub range
+            grUnfolded_pre_fsr->Fit(f1, "R0"); // R: fitting sub range
             f1->Draw("same");
         }
 

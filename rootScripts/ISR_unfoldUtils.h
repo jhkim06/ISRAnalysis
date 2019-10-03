@@ -50,12 +50,18 @@ private:
 	vector<Double_t> meanMass_data, meanMassStatErr_data, meanMassSysErr_data, meanMassTotErr_data;
 	vector<Double_t> meanPt_data,   meanPtStatErr_data,   meanPtSysErr_data, meanPtTotErr_data;
 
+	vector<Double_t> meanMass_data_pre_fsr, meanMassStatErr_data_pre_fsr, meanMassSysErr_data_pre_fsr, meanMassTotErr_data_pre_fsr;
+	vector<Double_t> meanPt_data_pre_fsr,   meanPtStatErr_data_pre_fsr,   meanPtSysErr_data_pre_fsr, meanPtTotErr_data_pre_fsr;
+
 	vector<Double_t> meanMass_data_detector, meanMassStatErr_data_detector, meanMassSysErr_data_detector, meanMassTotErr_data_detector;
 	vector<Double_t> meanPt_data_detector,   meanPtStatErr_data_detector,   meanPtSysErr_data_detector, meanPtTotErr_data_detector;
 
 	// nominal mean mass and pt for MC at pre FSR
 	vector<Double_t> meanMass_mc, meanMassErr_mc;
 	vector<Double_t> meanPt_mc,   meanPtErr_mc;
+
+	vector<Double_t> meanMass_mc_pre_fsr, meanMassErr_mc_pre_fsr;
+	vector<Double_t> meanPt_mc_pre_fsr,   meanPtErr_mc_pre_fsr;
 
 	vector<Double_t> meanMass_mcAlt, meanMassErr_mcAlt;
 	vector<Double_t> meanPt_mcAlt,   meanPtErr_mcAlt;
