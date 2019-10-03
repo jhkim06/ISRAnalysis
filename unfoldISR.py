@@ -175,16 +175,24 @@ if args.getUnfoldResults:
 	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Pt", 4)
 	#unfoldClass.studyFSRDRPlots(outputDirectory + "FSRPt_" + args.channel, "Mass", -1)
 
-        #unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
-        #unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
+        unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
+        unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
 
-        #unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
-        #unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
+        unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
+        unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", args.channel, False)
         unfoldClass.drawISRMatrixInfo(outputDirectory)
 
-        unfoldFSRClass = rt.ISRUnfold(args.channel, unfoldInputList['fsr_matrix'])
+        unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr")
+        unfoldClass.setNomFSRTUnfoldDensity("Mass",  unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr")
+        unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], "full_phase")
+        unfoldClass.doISRQEDFSRUnfold()
+
+        for massBin in range(0,5):
+
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin, "", False, True)
+                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin, "", False, True)
 
 	del unfoldClass
 

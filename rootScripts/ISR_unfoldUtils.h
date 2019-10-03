@@ -100,6 +100,7 @@ public:
 	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
 	// set input histogram
+	void setFSRUnfoldInput(TString filepath, TString hist_dir = "full_phase");
 	void setInput(TString channel, TString var, TString postfix, TString filepath, int nth = 0, bool isSys = false, double bias = 1., TString hist_dir = "full_phase");
 
 	// set background histograms
@@ -113,11 +114,12 @@ public:
 
 	// do unfold 
 	void doISRUnfold(bool doSys = false);
+        void doISRQEDFSRUnfold();
 
         void drawClosurePlots(TString outpdf, TString var, int nthMassBin);
 
 	// draw nominal detector level, unfolded plot, and final result plot without systematic
-	void drawNominalPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false);
+	void drawNominalPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false, bool isFSRUnfold = false);
 
 	// draw input histograms using GetInput	
 	void drawInputPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "");

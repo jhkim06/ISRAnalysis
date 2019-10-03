@@ -96,7 +96,7 @@ void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString p
 
           TString Gen_Pt = "Gen_Pt";
 
-          Gen_Pt = phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Pt;
+          Gen_Pt = phase_name + "/ptll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/" + Gen_Pt;
 
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Pt);
         }
@@ -104,7 +104,7 @@ void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString p
 
           TString Gen_Mass = "Gen_Mass";
 
-          Gen_Mass = phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/" + Gen_Mass;
+          Gen_Mass = phase_name + "/mll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/" + Gen_Mass;
 
           binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Mass);
 
@@ -115,7 +115,7 @@ void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString p
         }
 
         if( var == "Pt" ){
-                nomPtUnfold = new TUnfoldDensityV17(hmcGenGen,
+                nomPtFSRUnfold = new TUnfoldDensityV17(hmcGenGen,
                                                TUnfold::kHistMapOutputHoriz,
                                                TUnfold::kRegModeNone, // fixed to use no regularisation temporary
                                                TUnfold::kEConstraintArea,
@@ -123,7 +123,7 @@ void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString p
                                                binning_Gen,binning_Gen);
         }
         else if( var == "Mass" ){
-                nomMassUnfold = new TUnfoldDensityV17(hmcGenGen,
+                nomMassFSRUnfold = new TUnfoldDensityV17(hmcGenGen,
                                                TUnfold::kHistMapOutputHoriz,
                                                TUnfold::kRegModeNone, // fixed to use no regularisation temporary
                                                TUnfold::kEConstraintArea,
@@ -270,6 +270,31 @@ void ISRUnfold::drawISRMatrixInfo(TString outpdf){
     delete c1;
 }
 
+void ISRUnfold::setFSRUnfoldInput(TString filepath, TString hist_dir){
+
+    TFile* filein = new TFile(filepath);
+    TH1* hmass_input = NULL;
+    TH1* hpt_input = NULL;
+
+    hpt_input= (TH1*)filein->Get(hist_dir + "/hist_ptll_post_fsr/histo_DYJetsnominal");
+    hpt_input->Add((TH1*)filein->Get(hist_dir + "/hist_ptll_post_fsr/histo_DYJets10to50nominal"));
+
+    hmass_input = (TH1*)filein->Get(hist_dir + "/hist_mll_post_fsr/histo_DYJetsnominal");
+    hmass_input->Add((TH1*)filein->Get(hist_dir + "/hist_mll_post_fsr/histo_DYJets10to50nominal"));
+
+    nomPtFSRUnfold->SetInput(nomPtUnfold->GetOutput("hpreFSR_pt", 0, 0, 0, false), 1.);
+    nomMassFSRUnfold->SetInput(nomMassUnfold->GetOutput("hpreFSR_mass", 0, 0, 0, false), 1.);
+
+    //nomPtFSRUnfold->SetInput(hpt_input, 1.);
+    //nomMassFSRUnfold->SetInput(hmass_input, 1.);
+}
+
+void ISRUnfold::doISRQEDFSRUnfold(){
+
+        nomPtFSRUnfold->DoUnfold(0);
+        nomMassFSRUnfold->DoUnfold(0);
+}
+
 void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString filepath, int nth, bool isSys, double bias, TString hist_dir){
 	// No effects on the unfolded results respect to bias factor 
         
@@ -317,6 +342,7 @@ void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString 
                 }
             }
             else{
+
                 if(var == "Pt"){
                     if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
                     if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
@@ -1528,11 +1554,12 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin){
 
 }
 
-void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TString sysName, bool systematic){
+void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TString sysName, bool systematic, bool isFSRUnfold){
 
         const TUnfoldBinningV17* temp_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
         const TUnfoldBinningV17* temp_binning_rec = nomPtUnfold->GetInputBinning("Rec_Pt");
         const TUnfoldBinningV17* temp_binning_rec_mass = nomMassUnfold->GetInputBinning("Rec_Mass");
+        const TUnfoldBinningV17* temp_binning_gen_mass = nomMassUnfold->GetOutputBinning("Gen_Mass");
         // get mass bin definition from (pt, mass) bin definition
         const TVectorD* temp_tvecd = temp_binning->GetDistributionBinning(1);
         const Double_t* massBins = temp_tvecd->GetMatrixArray();
@@ -1578,16 +1605,49 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
             hdysig_mass->Add((TH1*)filein->Get("detector_level/hist_mll/histo_DYJets10to50ToMuMunominal"));
         }
 
+        //TFile* filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DY_FSR_v3.root");
+        //TH1* hdysig_pt = NULL; // get DY 
+        //if(channel_name == "electron"){
+        //    hdysig_pt = (TH1*)filein->Get("fiducial_phase_post_FSR/hist_ptll_post_fsr/histo_DYJetsnominal"); // get DY 
+        //    hdysig_pt->Add((TH1*)filein->Get("fiducial_phase_post_FSR/hist_ptll_post_fsr/histo_DYJets10to50nominal"));
+        //}
+        //if(channel_name == "muon"){
+        //    hdysig_pt = (TH1*)filein->Get("fiducial_phase_post_FSR/hist_ptll_post_fsr/histo_DYJetsToMuMunominal"); // get DY 
+        //    hdysig_pt->Add((TH1*)filein->Get("fiducial_phase_post_FSR/hist_ptll_post_fsr/histo_DYJets10to50ToMuMunominal"));
+        //}
+
+        //TH1* hdysig_mass = NULL;
+        //if(channel_name == "electron"){
+        //    hdysig_mass = (TH1*)filein->Get("fiducial_phase_post_FSR/hist_mll_post_fsr/histo_DYJetsnominal");
+        //    hdysig_mass->Add((TH1*)filein->Get("fiducial_phase_post_FSR/hist_mll_post_fsr/histo_DYJets10to50nominal"));
+        //}
+        //if(channel_name == "muon"){
+        //    hdysig_mass = (TH1*)filein->Get("fiducial_phase_post_FSR/hist_mll_post_fsr/histo_DYJetsToMuMunominal");
+        //    hdysig_mass->Add((TH1*)filein->Get("fiducial_phase_post_FSR/hist_mll_post_fsr/histo_DYJets10to50ToMuMunominal"));
+        //}
+
 	// get nominal unfoled result
 	if(var == "Pt" ){
+            if(!isFSRUnfold){
             hunfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
             h_data_detector  = nomPtUnfold->GetInput("hdata_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 	    hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr")); 
             // get gen histogram from response matrix
 	    hpreFSR_mc = nomPtUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
             h_mc_detector = temp_binning_rec->ExtractHistogram("hdysig", hdysig_pt, 0, kTRUE, "pt[UO];mass[UOC"+ibinMass+"]");
+            }
+            else{
+                hunfolded_data  = nomPtFSRUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr"));
+                // get gen histogram from response matrix
+                hpreFSR_mc = nomPtFSRUnfold->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                
+                h_data_detector  = nomPtFSRUnfold->GetInput("hdata_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                h_mc_detector  = nomPtUnfold->GetBias("hunfolded_pt_temp_",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            }
 	}
 	if(var == "Mass" ){
+                if(!isFSRUnfold){
                 hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
                 h_data_detector = nomMassUnfold->GetInput("hdata_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
 
@@ -1597,6 +1657,18 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 // get gen histogram from response matrix
 		hpreFSR_mc   = nomMassUnfold->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
                 h_mc_detector = temp_binning_rec_mass->ExtractHistogram("hdysig_mass", hdysig_mass, 0, kTRUE, "mass[UO];pt[UOC0]");
+                }
+                else{
+                hunfolded_data  = nomMassFSRUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr"));
+                // get gen histogram from response matrix
+                hpreFSR_mc   = nomMassFSRUnfold->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+               
+                h_data_detector = nomMassFSRUnfold->GetInput("hdata_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                h_data_detector->GetXaxis()->SetRange(h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                h_mc_detector  = nomMassUnfold->GetBias("hunfolded_mass_temp_",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                }
 	}
 
         ratio = ((TH1F*)hunfolded_data->Clone("ratio"));
@@ -1632,6 +1704,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         h_data_detector->SetMarkerSize(.7);
         hunfolded_data->GetYaxis()->SetTitle("Events/bin");
         hunfolded_data->SetMinimum(10.);
+        //hunfolded_data->SetMaximum(1e7);
 
         hpreFSR_mc->SetLineColor(kRed);
         h_mc_detector->SetLineColor(kMagenta);
@@ -1813,7 +1886,8 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 
 	CMS_lumi( c1, 4, 0 );
         c1->cd();
-        c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+".pdf");
+        if(!isFSRUnfold) c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+".pdf");
+        else c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+"_FSRUnfold.pdf");
 
         delete hunfolded_data;
 	delete hunfolded_sys_err;
