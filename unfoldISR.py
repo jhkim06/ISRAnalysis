@@ -187,7 +187,8 @@ if args.getUnfoldResults:
 
 
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", args.channel, False, True)
-        unfoldClass.drawISRMatrixInfo(outputDirectory)
+        unfoldClass.drawISRMatrixInfo(outputDirectory, True)
+        unfoldClass.drawISRMatrixInfo(outputDirectory, False)
 
         for massBin in range(0,5):
 

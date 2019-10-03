@@ -214,7 +214,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         }
 }
 
-void ISRUnfold::drawISRMatrixInfo(TString outpdf){
+void ISRUnfold::drawISRMatrixInfo(TString outpdf, bool detector_unfold){
 
     c1 = new TCanvas("c1","c1", 50, 50, 1500, 700);
     gStyle->SetOptFit(0);
@@ -228,13 +228,23 @@ void ISRUnfold::drawISRMatrixInfo(TString outpdf){
     c1->cd(1)->SetTicks(1);
     c1->cd(1)->SetLogz();
 
-    TH2 *histProb_pt = nomPtUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
-    TH1 *histEfficiency_pt=histProb_pt->ProjectionX("histEfficiency_pt");
+    TH2 *histProb_pt = NULL; 
+    TH1 *histEfficiency_pt = NULL;
+
+    if(detector_unfold){
+        histProb_pt = nomPtUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
+    }
+    else{
+        histProb_pt = nomPtFSRUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
+    }
+
+    histEfficiency_pt=histProb_pt->ProjectionX("histEfficiency_pt");
 
     //TH2 *histProb_pt = sysPtUnfold["detector_temp"].at(0)->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
     //TH1 *histEfficiency_pt=histProb_pt->ProjectionX("histEfficiency_pt");
     histProb_pt->Draw("COLZ");
-    histProb_pt->SetTitle("migration probabilities;p_{T} mass bin index (gen) ;p_{T} mass bin index (rec)");
+    if(detector_unfold) histProb_pt->SetTitle("migration probabilities;p_{T} mass bin index (post FSR) ;p_{T} mass bin index (rec)");
+    else histProb_pt->SetTitle("migration probabilities;p_{T} mass bin index (pre FSR) ;p_{T} mass bin index (post FSR)");
 
     TLine grid_;
     //grid_.SetLineColor(kGray+2);
@@ -265,7 +275,8 @@ void ISRUnfold::drawISRMatrixInfo(TString outpdf){
     histEfficiency_pt->GetYaxis()->SetTitleOffset(1.5);
     histEfficiency_pt->Draw();
 
-    c1->SaveAs(outpdf + "/matrix.pdf");
+    if(detector_unfold) c1->SaveAs(outpdf + "/detector_pt_matrix.pdf");
+    else c1->SaveAs(outpdf + "/fsr_pt_matrix.pdf");
     delete histProb_pt;
     delete c1;
 }
