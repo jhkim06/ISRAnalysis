@@ -93,9 +93,9 @@ if args.getUnfoldResults:
         setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "nominal", False, 0, -1) 
 
         # set systematic response matrix and input histograms
+	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "unfoldBias": 1, "unfoldScan": 1}
         if args.doSys == True:
 	    #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1}
-	    sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "unfoldBias": 1, "unfoldScan": 1}
 
 	    for sysName, nSys in sysDict.items():
 	    	for nthSys in range(0,nSys):
@@ -140,8 +140,20 @@ if args.getUnfoldResults:
 
         unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr_dRp1")
         unfoldClass.setNomFSRTUnfoldDensity("Mass",  unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr_dRp1")
-        unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], "full_phase")
-        unfoldClass.doISRQEDFSRUnfold()
+        unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], False, "", -1, "full_phase")
+
+        if args.doSys == True:
+
+            for sysName, nSys in sysDict.items():
+                for nthSys in range(0,nSys):
+                    unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, "full_phase", "pre_fsr_dRp1") 
+                    unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, "full_phase", "pre_fsr_dRp1") 
+
+                    unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, sysName, nthSys)
+                    unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, sysName, nthSys)
+
+
+        unfoldClass.doISRQEDFSRUnfold(args.doSys)
 
         # set nominal value and also systematic values
         unfoldClass.setMeanPt(args.doSys, False, args.doSys)

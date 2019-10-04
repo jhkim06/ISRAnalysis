@@ -137,6 +137,71 @@ void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString p
         }
 }
 
+void ISRUnfold::setSysFSRTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name, TString fsr_correction_name){
+
+        TFile* filein = new TFile(filepath);
+
+        // set response matrix
+        TH2* hmcGenGen;
+
+        if(sysName != "QED_FSR"){
+            if(var == "Pt")
+                hmcGenGen = (TH2*)filein->Get(phase_name + "/ptll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
+            else if(var == "Mass")
+                hmcGenGen = (TH2*)filein->Get(phase_name + "/mll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
+            else{
+                cout << "ISRUnfold::setNomTUnfoldDensity, only Pt and Mass available for var" << endl;
+                exit (EXIT_FAILURE);
+            }
+        }
+
+        // set binning definition
+        TUnfoldBinning* binning_Gen = NULL;
+
+        if( var == "Pt" ){
+
+          TString Gen_Pt = "Gen_Pt";
+
+          Gen_Pt = phase_name + "/ptll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/" + Gen_Pt;
+
+          binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Pt);
+        }
+        else if( var == "Mass" ){
+
+          TString Gen_Mass = "Gen_Mass";
+
+          Gen_Mass = phase_name + "/mll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/" + Gen_Mass;
+
+          binning_Gen = (TUnfoldBinning*)filein->Get(Gen_Mass);
+
+        }
+        else{
+            cout << "ISRUnfold::setNomTUnfoldDensity, only Pt and Mass available for var" << endl;
+            exit (EXIT_FAILURE);
+        }
+
+        if( var == "Pt" ){
+                sysPtFSRUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenGen,
+                                               TUnfold::kHistMapOutputHoriz,
+                                               TUnfold::kRegModeNone, // fixed to use no regularisation temporary
+                                               TUnfold::kEConstraintArea,
+                                               TUnfoldDensityV17::kDensityModeBinWidth,
+                                               binning_Gen,binning_Gen));
+        }
+        else if( var == "Mass" ){
+                sysMassFSRUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenGen,
+                                               TUnfold::kHistMapOutputHoriz,
+                                               TUnfold::kRegModeNone, // fixed to use no regularisation temporary
+                                               TUnfold::kEConstraintArea,
+                                               TUnfoldDensityV17::kDensityModeBinWidth,
+                                               binning_Gen,binning_Gen));
+        }
+        else{
+            cout << "ISRUnfold::setNomTUnfoldDensity, only Pt and Mass available for var" << endl;
+            exit (EXIT_FAILURE);
+        }
+}
+
 void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name, TString fsr_correction_name){
 
         TFile* filein = new TFile(filepath);
@@ -295,7 +360,7 @@ void ISRUnfold::drawISRMatrixInfo(TString outpdf, bool detector_unfold){
     delete c1;
 }
 
-void ISRUnfold::setFSRUnfoldInput(TString filepath, TString hist_dir){
+void ISRUnfold::setFSRUnfoldInput(TString filepath, bool isSys, TString sysName, int nth, TString phase_name){
 
     TFile* filein = new TFile(filepath);
     TH1* hmass_input = NULL;
@@ -307,17 +372,45 @@ void ISRUnfold::setFSRUnfoldInput(TString filepath, TString hist_dir){
     //hmass_input = (TH1*)filein->Get(hist_dir + "/hist_mll_post_fsr/histo_DYJetsnominal");
     //hmass_input->Add((TH1*)filein->Get(hist_dir + "/hist_mll_post_fsr/histo_DYJets10to50nominal"));
 
-    nomPtFSRUnfold->SetInput(nomPtUnfold->GetOutput("hpreFSR_pt", 0, 0, 0, false), 1.);
-    nomMassFSRUnfold->SetInput(nomMassUnfold->GetOutput("hpreFSR_mass", 0, 0, 0, false), 1.);
-
     //nomPtFSRUnfold->SetInput(hpt_input, 1.);
     //nomMassFSRUnfold->SetInput(hmass_input, 1.);
+
+    if(!isSys){
+        nomPtFSRUnfold->SetInput(nomPtUnfold->GetOutput("hpreFSR_pt", 0, 0, 0, false), 1.);
+        nomMassFSRUnfold->SetInput(nomMassUnfold->GetOutput("hpreFSR_mass", 0, 0, 0, false), 1.);
+    }
+    else{
+        sysPtFSRUnfold[sysName].at(nth)  ->SetInput(sysPtUnfold[sysName].at(nth)->GetOutput("hpreFSR_pt", 0, 0, 0, false),   1.);
+        sysMassFSRUnfold[sysName].at(nth)->SetInput(sysMassUnfold[sysName].at(nth)->GetOutput("hpreFSR_mass", 0, 0, 0, false),   1.);
+    }
+
 }
 
-void ISRUnfold::doISRQEDFSRUnfold(){
+void ISRUnfold::doISRQEDFSRUnfold(bool doSys){
 
-        nomPtFSRUnfold->DoUnfold(0);
-        nomMassFSRUnfold->DoUnfold(0);
+    nomPtFSRUnfold->DoUnfold(0);
+    nomMassFSRUnfold->DoUnfold(0);
+
+    if(doSys){
+        std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtFSRUnfold.begin();
+
+        while(it != sysPtFSRUnfold.end()){
+            int nSys = it->second.size();
+            for(int i = 0; i < nSys; i++){
+               it->second.at(i)->DoUnfold(0);
+            }
+            it++;
+        }
+
+        it = sysMassFSRUnfold.begin();
+        while(it != sysMassFSRUnfold.end()){
+                int nSys = it->second.size();
+                for(int i = 0; i < nSys; i++){
+                    it->second.at(i)->DoUnfold(0);
+                }
+                it++;
+        }
+    }
 }
 
 void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysName, int nth, double bias, TString phase_name){
@@ -879,6 +972,8 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
            }
             delete hpt_temp_data;
             delete hpt_temp_mc;
+            delete h_pre_fsr_pt_temp_data;
+            delete h_pre_fsr_pt_temp_mc;
         }
 
 	// calculate systematic uncertainty for each systematic variation
@@ -1835,6 +1930,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 	    	}
 
 	        delete hmcsys_temp;
+                delete hdatasys_temp;
             }// loop over variation set in each systematic source
 
             // draw systematic envelope for systematic source 

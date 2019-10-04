@@ -45,6 +45,9 @@ private:
 
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtUnfold;
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassUnfold;
+    
+	std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtFSRUnfold;
+	std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassFSRUnfold;
 
 	// nominal mean mass and pt for data and mc, and statistical and systematic errors 
 	vector<Double_t> meanMass_data, meanMassStatErr_data, meanMassSysErr_data, meanMassTotErr_data;
@@ -105,8 +108,10 @@ public:
 	// set systematic TUnfoldDensity
 	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
+        void setSysFSRTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
+
 	// set input histogram
-	void setFSRUnfoldInput(TString filepath, TString hist_dir = "full_phase");
+	void setFSRUnfoldInput(TString filepath, bool isSys = false, TString sysName = "", int nth = 0, TString phase_name = "full_phase");
 	void setInput(TString var, TString filepath, bool isSys = false, TString sysName = "", int nth = 0, double bias = 1., TString phase_name = "full_phase");
 
 	// set background histograms
@@ -120,7 +125,7 @@ public:
 
 	// do unfold 
 	void doISRUnfold(bool doSys = false);
-        void doISRQEDFSRUnfold();
+        void doISRQEDFSRUnfold(bool doSys = false);
 
         void drawClosurePlots(TString outpdf, TString var, int nthMassBin);
 
