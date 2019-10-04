@@ -107,7 +107,7 @@ public:
 
 	// set input histogram
 	void setFSRUnfoldInput(TString filepath, TString hist_dir = "full_phase");
-	void setInput(TString channel, TString var, TString postfix, TString filepath, int nth = 0, bool isSys = false, double bias = 1., TString hist_dir = "full_phase");
+	void setInput(TString var, TString postfix, TString filepath, int nth = 0, bool isSys = false, double bias = 1., TString hist_dir = "full_phase");
 
 	// set background histograms
 	void subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth = 0, bool isSys = false, TString hist_dir = "full_phase");
@@ -148,7 +148,7 @@ public:
 	double Chi2Test(TH1 *data, TH1 *mc);
 
 	// draw ISR result
-	void drawISRresult(TString outpdf, TString channel, bool altMC = false, bool doFit = false);
+	void drawISRresult(TString outpdf, bool altMC = false, bool doFit = false);
 	void drawLCurve(TString outpdf, TString var);
 	void drawRhoLog(TString outpdf, TString var);
 };

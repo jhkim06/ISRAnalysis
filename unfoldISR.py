@@ -4,7 +4,7 @@ import sys
 import ROOT as rt
 
 # TODO make seperate helper module python file
-def setUnfoldBkgs(unfold_class, channel, hfile_path, syst_name, isSys, nthSys):
+def setUnfoldBkgs(unfold_class, hfile_path, syst_name, isSys, nthSys):
 
         unfold_class.subBkgs("Pt", syst_name, hfile_path, "DYJetsToTauTau",       nthSys, isSys, "detector_level")
         unfold_class.subBkgs("Pt", syst_name, hfile_path, "DYJets10to50ToTauTau", nthSys, isSys, "detector_level")
@@ -85,20 +85,20 @@ if args.getUnfoldResults:
         unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", 0, args.phase_space, args.FSR_dR)
         unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", 0, args.phase_space, args.FSR_dR)
 
-        unfoldClass.setInput(args.channel, "Pt",   "Closure", unfoldInputList['matrix'], 0, True, 1., args.phase_space)
-        unfoldClass.setInput(args.channel, "Mass", "Closure", unfoldInputList['matrix'], 0, True, 1., args.phase_space)
+        unfoldClass.setInput("Pt",   "Closure", unfoldInputList['matrix'], 0, True, 1., args.phase_space)
+        unfoldClass.setInput("Mass", "Closure", unfoldInputList['matrix'], 0, True, 1., args.phase_space)
 
         # set unfolding input histogram
-	unfoldClass.setInput(args.channel, "Pt",   "nominal", unfoldInputList['hist'], 0, False, 1., "detector_level")
-	unfoldClass.setInput(args.channel, "Mass", "nominal", unfoldInputList['hist'], 0, False, 1., "detector_level")
-        setUnfoldBkgs(unfoldClass, args.channel, unfoldInputList['hist'], "nominal", False, 0) 
+	unfoldClass.setInput("Pt",   "nominal", unfoldInputList['hist'], 0, False, 1., "detector_level")
+	unfoldClass.setInput("Mass", "nominal", unfoldInputList['hist'], 0, False, 1., "detector_level")
+        setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "nominal", False, 0) 
 
         # temp way to compare post/pre FSR unfolded results
         unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "detector_temp", 0, "fiducial_phase_post_FSR", "post_fsr")
         unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "detector_temp", 0, "fiducial_phase_post_FSR", "post_fsr")
-        unfoldClass.setInput(args.channel, "Pt",   "detector_temp", unfoldInputList['hist'], 0, True, 1., "detector_level")
-        unfoldClass.setInput(args.channel, "Mass", "detector_temp", unfoldInputList['hist'], 0, True, 1., "detector_level")
-        setUnfoldBkgs(unfoldClass, args.channel, unfoldInputList['hist'], "detector_temp", True, 0) 
+        unfoldClass.setInput("Pt",   "detector_temp", unfoldInputList['hist'], 0, True, 1., "detector_level")
+        unfoldClass.setInput("Mass", "detector_temp", unfoldInputList['hist'], 0, True, 1., "detector_level")
+        setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "detector_temp", True, 0) 
 
         # set systematic response matrix and input histograms
         if args.doSys == True:
@@ -124,11 +124,11 @@ if args.getUnfoldResults:
                     if sysName == "unfoldBias": bias = 0.95 
                     
                     # set systematic input histograms
-                    unfoldClass.setInput(args.channel, "Pt",   sysName, unfoldInputList['hist'], nthSys, True, bias, "detector_level")
-                    unfoldClass.setInput(args.channel, "Mass", sysName, unfoldInputList['hist'], nthSys, True, bias, "detector_level")
+                    unfoldClass.setInput("Pt",   sysName, unfoldInputList['hist'], nthSys, True, bias, "detector_level")
+                    unfoldClass.setInput("Mass", sysName, unfoldInputList['hist'], nthSys, True, bias, "detector_level")
                     
                     # set systematic background histograms
-                    setUnfoldBkgs(unfoldClass, args.channel, unfoldInputList['hist'], sysName, True, nthSys)
+                    setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys)
 
 	# unfold 
 	unfoldClass.doISRUnfold(args.doSys)
@@ -186,7 +186,7 @@ if args.getUnfoldResults:
                     unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
 
 
-	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", args.channel, False, True)
+	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, True)
         unfoldClass.drawISRMatrixInfo(outputDirectory, True)
         unfoldClass.drawISRMatrixInfo(outputDirectory, False)
 

@@ -306,7 +306,7 @@ void ISRUnfold::doISRQEDFSRUnfold(){
         nomMassFSRUnfold->DoUnfold(0);
 }
 
-void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString filepath, int nth, bool isSys, double bias, TString hist_dir){
+void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth, bool isSys, double bias, TString hist_dir){
 	// No effects on the unfolded results respect to bias factor 
         
 	TFile* filein = new TFile(filepath);
@@ -317,13 +317,13 @@ void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString 
         // nominal histograms
 	if(!isSys){
             if(var == "Pt"){
-                if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
-                if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
+                if(channel_name == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
+                if(channel_name == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
                 nomPtUnfold->SetInput(hRec,   bias);
             }
             else if(var == "Mass"){
-                if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
-                if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
+                if(channel_name == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
+                if(channel_name == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
                 nomMassUnfold->SetInput(hRec, bias);
             }
             else{
@@ -355,13 +355,13 @@ void ISRUnfold::setInput(TString channel, TString var, TString postfix, TString 
             else{
 
                 if(var == "Pt"){
-                    if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
-                    if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
+                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
+                    if(channel_name == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
                     sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
                 }
                 else if(var == "Mass"){
-                    if(channel == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
-                    if(channel == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
+                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
+                    if(channel_name == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
                     sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); 
                 }
                 else{
@@ -932,12 +932,12 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
 	}// loop for mass bins
 }
 
-void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC, bool doFit){
+void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
 
         gROOT->SetBatch();
 
         int marker_ = 20;
-        if(channel=="muon") marker_ = 21;
+        if(channel_name=="muon") marker_ = 21;
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
@@ -1001,7 +1001,7 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC, bool 
         leg_->SetTextSize(0.025);
         //leg_->SetFillStyle(1);
         leg_->SetBorderSize(0);
-        leg_->AddEntry(grUnfolded, "Unfolded " + channel + " data", "pe");
+        leg_->AddEntry(grUnfolded, "Unfolded " + channel_name + " data", "pe");
         leg_->AddEntry(grMC, "DY MC at pre FSR (aMC@NLO)", "pe");
         if(altMC) leg_->AddEntry(grMCAlt, "DY MC at pre FSR (Madgraph)", "pe");
         leg_->Draw();
@@ -1017,7 +1017,7 @@ void ISRUnfold::drawISRresult(TString outpdf, TString channel, bool altMC, bool 
         }
 
         CMS_lumi( c1, 4, 11 );
-        c1->SaveAs(outpdf + channel + ".pdf");
+        c1->SaveAs(outpdf + channel_name + ".pdf");
 	delete grUnfolded;
 	delete grMC;
 	delete f1;
