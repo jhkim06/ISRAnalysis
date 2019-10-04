@@ -3,6 +3,7 @@
 #include "tdrstyle.C"
 #include "CMS_lumi.C"
 
+// TODO use one function for setting response matrix
 void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString phase_name, TString fsr_correction_name){
 
 	TFile* filein = new TFile(filepath);
@@ -136,16 +137,20 @@ void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString p
         }
 }
 
-void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, TString phase_name, TString fsr_correction_name){
+void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name, TString fsr_correction_name){
 
         TFile* filein = new TFile(filepath);
-	TString nth_;
-	nth_.Form("%d", nth);
 
-	TString matrixName = sysName + "_" + nth_;
+        TString systematic_postfix = sysName;
 
+        if(totSysN == 2){
+            if(nth == 0 ) systematic_postfix+="Up";
+            if(nth == 1 ) systematic_postfix+="Down";
+        }
+
+        // set migration matrix
         TH2* hmcGenRec = NULL;
-	if(sysName=="Alt" || sysName=="unfoldBias" || sysName=="unfoldScan" || sysName=="Closure" || sysName=="detector_temp"){
+	if(sysName=="Alt" || sysName=="unfoldBias" || sysName=="unfoldScan" || sysName=="Closure"){
 
             if(var == "Pt")   hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
             else if(var == "Mass") hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
@@ -153,10 +158,21 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
                 cout << "ISRUnfold::setSysTUnfoldDensity, only Pt and Mass available for var" << endl;
                 exit (EXIT_FAILURE);
             }
-
         }
-        else hmcGenRec = (TH2*)filein->Get("hmc" + var + "GenRec" + matrixName);
+        else{
+            if(var == "Pt"){
+                hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRec_" + systematic_postfix);
+            }
+            else if(var == "Mass"){
+                hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRec_" + systematic_postfix);
+            }
+            else{
+                cout << "ISRUnfold::setSysTUnfoldDensity, only Pt and Mass available for var" << endl;
+                exit (EXIT_FAILURE);
+            }
+        }
 
+        // set bin definition
         TUnfoldBinning* binning_Rec = NULL;
         TUnfoldBinning* binning_Gen = NULL;
 
@@ -239,10 +255,8 @@ void ISRUnfold::drawISRMatrixInfo(TString outpdf, bool detector_unfold){
     }
 
     histEfficiency_pt=histProb_pt->ProjectionX("histEfficiency_pt");
-
-    //TH2 *histProb_pt = sysPtUnfold["detector_temp"].at(0)->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
-    //TH1 *histEfficiency_pt=histProb_pt->ProjectionX("histEfficiency_pt");
     histProb_pt->Draw("COLZ");
+
     if(detector_unfold) histProb_pt->SetTitle("migration probabilities;p_{T} mass bin index (post FSR) ;p_{T} mass bin index (rec)");
     else histProb_pt->SetTitle("migration probabilities;p_{T} mass bin index (pre FSR) ;p_{T} mass bin index (post FSR)");
 
@@ -306,7 +320,7 @@ void ISRUnfold::doISRQEDFSRUnfold(){
         nomMassFSRUnfold->DoUnfold(0);
 }
 
-void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth, bool isSys, double bias, TString hist_dir){
+void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysName, int nth, double bias, TString phase_name){
 	// No effects on the unfolded results respect to bias factor 
         
 	TFile* filein = new TFile(filepath);
@@ -317,13 +331,13 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
         // nominal histograms
 	if(!isSys){
             if(var == "Pt"){
-                if(channel_name == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
-                if(channel_name == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
+                if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleMuonnominal");
+                if(channel_name == "electron") hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleEGnominal");
                 nomPtUnfold->SetInput(hRec,   bias);
             }
             else if(var == "Mass"){
-                if(channel_name == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
-                if(channel_name == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
+                if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleMuonnominal");
+                if(channel_name == "electron") hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleEGnominal");
                 nomMassUnfold->SetInput(hRec, bias);
             }
             else{
@@ -334,17 +348,17 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
         // systematic histograms
 	else{
             // use DY MC histograms as unfolding input       
-	    if(postfix=="Closure"){
+	    if(sysName=="Closure"){
 
                 if(var == "Pt"){
-                    hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJetsnominal");
-                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DYJets10to50nominal"));
-                    sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
+                    hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DYJetsnominal");
+                    hRec->Add((TH1*)filein->Get(phase_name + "/hist_ptll/histo_DYJets10to50nominal"));
+                    sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   bias);
                 }
                 else if(var == "Mass"){
-                    hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJetsnominal");
-                    hRec->Add((TH1*)filein->Get(hist_dir + "/hist_mll/histo_DYJets10to50nominal"));
-                    sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias);
+                    hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DYJetsnominal");
+                    hRec->Add((TH1*)filein->Get(phase_name + "/hist_mll/histo_DYJets10to50nominal"));
+                    sysMassUnfold[sysName].at(nth)->SetInput(hRec,   bias);
                 }
                 else{
                     cout << "ISRUnfold::setInput, only Pt and Mass available for var" << endl;
@@ -352,17 +366,18 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
 
                 }
             }
+            // input histogram(data) for each systematic source
             else{
-
+                // for systematic, using the same input histogram as nominal 
                 if(var == "Pt"){
-                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleMuonnominal");
-                    if(channel_name == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_DoubleEGnominal");
-                    sysPtUnfold[postfix].at(nth)  ->SetInput(hRec,   bias);
+                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleMuonnominal");
+                    if(channel_name == "electron") hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleEGnominal");
+                    sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   bias);
                 }
                 else if(var == "Mass"){
-                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleMuonnominal");
-                    if(channel_name == "electron") hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_DoubleEGnominal");
-                    sysMassUnfold[postfix].at(nth)->SetInput(hRec,   bias); 
+                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleMuonnominal");
+                    if(channel_name == "electron") hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleEGnominal");
+                    sysMassUnfold[sysName].at(nth)->SetInput(hRec,   bias); 
                 }
                 else{
                     cout << "ISRUnfold::setInput, only Pt and Mass available for var" << endl;
@@ -374,20 +389,25 @@ void ISRUnfold::setInput(TString var, TString postfix, TString filepath, int nth
 	delete filein;
 }
 
-void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth, bool isSys, TString hist_dir){
+void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isSys, TString sysName, int totSysN, int nth, TString phase_name){
 
 	TFile* filein = new TFile(filepath);
-        TString nth_;
-        nth_.Form("%d", nth);
         TH1* hRec = NULL;
+
+        TString systematic_postfix = sysName;
+
+        if(totSysN == 2){
+            if(nth == 0 ) systematic_postfix+="Up";
+            if(nth == 1 ) systematic_postfix+="Down";
+        }
 
         // nominal histograms
 	if(!isSys){
                 if(var == "Pt"){
-                    hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_" + bkgName + "nominal");
+                    hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "nominal");
                 }
                 if(var == "Mass"){
-                    hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_" + bkgName + "nominal");
+                    hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "nominal");
                 }
 
         	if( var == "Pt" )   nomPtUnfold->  SubtractBackground(hRec, bkgName);
@@ -395,17 +415,27 @@ void ISRUnfold::subBkgs(TString var, TString postfix, TString filepath, TString 
 	}
         // systematic histograms
 	else{	
-        	hRec = (TH1*)filein->Get("h"+var+"Rec"+postfix+"_"+nth_);
-                if(postfix=="Alt" || postfix=="unfoldBias" || postfix=="unfoldScan" || postfix=="detector_temp"){
-                    if(var == "Pt"){
-                        hRec = (TH1*)filein->Get(hist_dir + "/hist_ptll/histo_" + bkgName + "nominal");
-                    }
-                    if(var == "Mass"){
-                        hRec = (TH1*)filein->Get(hist_dir + "/hist_mll/histo_" + bkgName + "nominal");
-                    }
+            
+            // systematics using nominal detector distributions
+            if(sysName=="Alt" || sysName=="unfoldBias" || sysName=="unfoldScan"){
+                if(var == "Pt"){
+                    hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "nominal");
                 }
-        	if( var == "Pt" )   sysPtUnfold[postfix].at(nth)  ->SubtractBackground(hRec, bkgName);
-        	if( var == "Mass" ) sysMassUnfold[postfix].at(nth)->SubtractBackground(hRec, bkgName);
+                if(var == "Mass"){
+                    hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "nominal");
+                }
+            }
+            else{
+                if(var == "Pt"){
+                    hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "_" + systematic_postfix);
+                }
+                if(var == "Mass"){
+                    hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "_" + systematic_postfix);
+                }
+            }
+
+            if( var == "Pt" )   sysPtUnfold[sysName].at(nth)  ->SubtractBackground(hRec, bkgName);
+            if( var == "Mass" ) sysMassUnfold[sysName].at(nth)->SubtractBackground(hRec, bkgName);
 	}
 	
 	filein->Close();
@@ -580,7 +610,6 @@ double ISRUnfold::Chi2Test(TH1 *data, TH1 *mc){ // check if this is right way to
 
 }
 
-
 // need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
 double ISRUnfold::DoFit(TString var, int nthMassBin){
 
@@ -664,7 +693,6 @@ double ISRUnfold::DoFit(TString var, int nthMassBin){
         delete hrho;
 
 	return chi2/ndf;
-
 }
 
 void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
@@ -706,15 +734,6 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
 	            delete histMCTruth_massAlt;
                 }
 
-                if(detector_unfold){
-                    TH1 *histMCTruth_massAlt= sysMassUnfold["detector_temp"].at(0)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                    histMCTruth_massAlt->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
-                    meanMass_data_detector.   push_back(histMCTruth_massAlt->GetMean());
-                    meanMassStatErr_data_detector.push_back(histMCTruth_massAlt->GetMeanError());
-
-                    delete histMCTruth_massAlt;
-                }
-
                 if(doSys){
 	            std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysMassUnfold.begin();
                     std::map<TString, std::vector<Double_t>> temp_map; // temp map to save systematic results for a mass bin
@@ -748,7 +767,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata.at(i).begin();
                while(it != meanMass_sysdata.at(i).end()){
                     int size_ = it->second.size();
-                    if((it->first)=="FSRDR" || (it->first)=="Closure" || it->first =="detector_temp"){ it++; continue;}
+                    if((it->first)=="FSRDR" || (it->first)=="Closure"){ it++; continue;}
 
                     TH1F *hpdfsys = NULL;
                     if((it->first)=="PDFerror") hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data.at(i)-0.2, meanMass_data.at(i)+0.2); // temp histogram to contain PDF variations
@@ -836,13 +855,6 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
             delete hpt_temp_mcAlt;
            }
 
-           if(detector_unfold){
-            hpt_temp_mcAlt   = sysPtUnfold["detector_temp"].at(0)->GetOutput("hunfolded_pt_temp_",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-            meanPt_data_detector.   push_back(hpt_temp_mcAlt->GetMean());
-            meanPtStatErr_data_detector.push_back(hpt_temp_mcAlt->GetMeanError());
-            delete hpt_temp_mcAlt;
-           }
-
            if(doSys){
             std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtUnfold.begin();
 	    std::map<TString, std::vector<Double_t>> temp_map; // temp map to save systematic results for a mass bin
@@ -877,7 +889,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
                std::map<TString, std::vector<Double_t>>::iterator it = meanPt_sysdata.at(i).begin();
                while(it != meanPt_sysdata.at(i).end()){
 	    	int size_ = it->second.size(); // size of systematic variations
-	    	if((it->first)=="FSRDR" || (it->first)=="Closure" || it->first =="detector_temp"){ it++; continue;}
+	    	if((it->first)=="FSRDR" || (it->first)=="Closure"){ it++; continue;}
 	    	
 	    	TH1F *hpdfsys = NULL;
 	    	if((it->first)=="PDFerror") hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanPt_data.at(i)-0.2, meanPt_data.at(i)+0.2); // temp histogram to contain PDF variations
@@ -943,15 +955,16 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
         writeExtraText = true;       // if extra text
         extraText  = "work in progress";
 
-        c1 = new TCanvas("c1","c1", 50, 50, 850, 700);
+        c1 = new TCanvas("c1","c1", 50, 50, 900, 700);
         c1->cd();
         gStyle->SetOptFit(0);
 
         c1->SetBottomMargin(0.2);
         c1->SetTopMargin(0.08);
-        c1->SetTicks(1);
+        c1->SetTicks(1,1);
         c1->SetLogx();
         c1->SetGridy();
+        c1->SetGridx();
 
         TGraphErrors *grUnfolded = new TGraphErrors(5, &meanMass_data[0], &meanPt_data[0], &meanMassTotErr_data[0], &meanPtTotErr_data[0]);
         grUnfolded->SetLineColor(kBlack);
@@ -960,8 +973,12 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
         grUnfolded->SetMarkerSize(1.);
         grUnfolded->SetLineStyle(1);
         grUnfolded->Draw("ape");
-        grUnfolded->GetYaxis()->SetRangeUser(10.,30.);
+        grUnfolded->GetYaxis()->SetRangeUser(12.,30.);
         grUnfolded->GetXaxis()->SetLimits(30.,500.);
+        grUnfolded->GetXaxis()->SetMoreLogLabels(true);
+        //TAxis* a = grUnfolded->GetXaxis();
+        //a->SetNdivisions(-510);
+        //a->ChangeLabel(1,-1,-1,-1,-1,-1,"-#pi");
         grUnfolded->GetYaxis()->SetTitle("Average p_{T} (GeV)");
         grUnfolded->GetXaxis()->SetTitle("Average Mass (GeV)");
 
@@ -1231,7 +1248,6 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName){
         c1->SaveAs(outpdf+"_"+ibinMass+"_"+sysName+".pdf");
         delete grUnfolded;
 	delete c1;
-
 }
 
 void ISRUnfold::drawNominalRecoPlots(TString outpdf, TString filepath, TString var, int nthMassBin, TString sysName){
@@ -1369,7 +1385,6 @@ void ISRUnfold::studyFSRDRPlots(TString outpdf, TString var, int nthMassBin){
         c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
         c1->cd();
         gStyle->SetOptStat(0);
-
 
         TPad *pad1 = new TPad("pad1","pad1",0,0.4,1,1);
         pad1->SetBottomMargin(0.01);
@@ -1830,7 +1845,6 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 	    //delete hdata_sys_temp;
         }
         ////////////////////////////////////////////////////// systematic ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 	c1->cd();
 

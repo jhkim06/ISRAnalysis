@@ -103,14 +103,14 @@ public:
 	void setNomFSRTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
 	// set systematic TUnfoldDensity
-	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
+	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
 	// set input histogram
 	void setFSRUnfoldInput(TString filepath, TString hist_dir = "full_phase");
-	void setInput(TString var, TString postfix, TString filepath, int nth = 0, bool isSys = false, double bias = 1., TString hist_dir = "full_phase");
+	void setInput(TString var, TString filepath, bool isSys = false, TString sysName = "", int nth = 0, double bias = 1., TString phase_name = "full_phase");
 
 	// set background histograms
-	void subBkgs(TString var, TString postfix, TString filepath, TString bkgName, int nth = 0, bool isSys = false, TString hist_dir = "full_phase");
+	void subBkgs(TString var, TString filepath, TString bkgName, bool isSys = false, TString sysName = "", int totSysN = -1, int nth = 0, TString phase_name = "full_phase");
 
 	// set input data and background histograms for systematic TUnfoldDensity
 	void initSysTUnfoldDensity();
