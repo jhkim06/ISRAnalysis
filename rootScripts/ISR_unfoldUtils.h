@@ -56,9 +56,6 @@ private:
 	vector<Double_t> meanMass_data_pre_fsr, meanMassStatErr_data_pre_fsr, meanMassSysErr_data_pre_fsr, meanMassTotErr_data_pre_fsr;
 	vector<Double_t> meanPt_data_pre_fsr,   meanPtStatErr_data_pre_fsr,   meanPtSysErr_data_pre_fsr, meanPtTotErr_data_pre_fsr;
 
-	vector<Double_t> meanMass_data_detector, meanMassStatErr_data_detector, meanMassSysErr_data_detector, meanMassTotErr_data_detector;
-	vector<Double_t> meanPt_data_detector,   meanPtStatErr_data_detector,   meanPtSysErr_data_detector, meanPtTotErr_data_detector;
-
 	// nominal mean mass and pt for MC at pre FSR
 	vector<Double_t> meanMass_mc, meanMassErr_mc;
 	vector<Double_t> meanPt_mc,   meanPtErr_mc;
@@ -73,9 +70,15 @@ private:
 	std::vector<std::map<TString, Double_t>>  meanMassErr_sysdata;
 	std::vector<std::map<TString, Double_t>>  meanPtErr_sysdata;
 
+	std::vector<std::map<TString, Double_t>>  meanMassErr_sysdata_pre_fsr;
+	std::vector<std::map<TString, Double_t>>  meanPtErr_sysdata_pre_fsr;
+
 	// map to save systematic variation of mean mass and pt for each source
 	std::vector<std::map<TString, std::vector<Double_t>>>  meanMass_sysdata;
 	std::vector<std::map<TString, std::vector<Double_t>>>  meanPt_sysdata;
+
+	std::vector<std::map<TString, std::vector<Double_t>>>  meanMass_sysdata_pre_fsr;
+	std::vector<std::map<TString, std::vector<Double_t>>>  meanPt_sysdata_pre_fsr;
 
 	TCanvas* c1;
 

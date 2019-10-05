@@ -65,6 +65,12 @@ if args.getUnfoldResults:
                 if modifiedLine.split()[1] == "fsr_matrix":
                         unfoldInputList['fsr_matrix'] = modifiedLine.split()[2]
 
+                if modifiedLine.split()[1] == "fsr_photos_matrix":
+                        unfoldInputList['fsr_photos_matrix'] = modifiedLine.split()[2]
+
+                if modifiedLine.split()[1] == "fsr_pythia_matrix":
+                        unfoldInputList['fsr_pythia_matrix'] = modifiedLine.split()[2]
+
                 if modifiedLine.split()[1] == "hist":
                         unfoldInputList['hist'] = modifiedLine.split()[2]
 
@@ -93,7 +99,8 @@ if args.getUnfoldResults:
         setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "nominal", False, 0, -1) 
 
         # set systematic response matrix and input histograms
-	sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "unfoldBias": 1, "unfoldScan": 1}
+	if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "unfoldBias": 1, "unfoldScan": 1}
+        if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "unfoldBias": 1, "unfoldScan": 1}
         if args.doSys == True:
 	    #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1}
 
@@ -138,21 +145,34 @@ if args.getUnfoldResults:
         unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
         unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
-        unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr_dRp1")
-        unfoldClass.setNomFSRTUnfoldDensity("Mass",  unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr_dRp1")
+        # set QED FSR unfolding response matrix and input
+        unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr")
+        unfoldClass.setNomFSRTUnfoldDensity("Mass",  unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr")
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], False, "", -1, "full_phase")
 
         if args.doSys == True:
-
+            # systematic from detector unfolding
             for sysName, nSys in sysDict.items():
                 for nthSys in range(0,nSys):
-                    unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, "full_phase", "pre_fsr_dRp1") 
-                    unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, "full_phase", "pre_fsr_dRp1") 
+                    unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, "full_phase", "pre_fsr") 
+                    unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, "full_phase", "pre_fsr") 
 
                     unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, sysName, nthSys)
-                    unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, sysName, nthSys)
 
+            # QED FSR ststematic
+            unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_photos_matrix'], "QED_FSR", 2, 0, "full_phase", "pre_fsr")
+            unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_photos_matrix'], "QED_FSR", 2, 0, "full_phase", "pre_fsr")
 
+            unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 0)
+            unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 0)
+
+            unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_pythia_matrix'], "QED_FSR", 2, 1, "full_phase", "pre_fsr")
+            unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_pythia_matrix'], "QED_FSR", 2, 1, "full_phase", "pre_fsr")
+
+            unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 1)
+            unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 1)
+
+        # unfolding for QED FSR
         unfoldClass.doISRQEDFSRUnfold(args.doSys)
 
         # set nominal value and also systematic values
@@ -160,34 +180,34 @@ if args.getUnfoldResults:
         unfoldClass.setMeanMass(args.doSys, False, args.doSys)
 
         for massBin in range(0,5):
+             
+            if args.doSys:
+                unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin)
+                unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin)
 
-                if args.doSys:
-                    unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin)
-                    unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin)
-
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin)
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin)
+            unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin)
+            unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin)
 
         for massBin in range(0,5):
 
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt",   massBin, "", False, True)
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin, "", False, True)
+           unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt",   massBin, "", False, True)
+           unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin, "", False, True)
 
         # draw plots including systematic 
         if args.doSys == True:
             for sysName, nSys in sysDict.items():
-
+            
                 if sysName == "Closure" : continue
-
+                
                 for massBin in range(0,5):
-
+                    
                     unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys)
                     unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys)
                     unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
                     unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
 
 
-	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, False)
+	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, True)
         unfoldClass.drawISRMatrixInfo(outputDirectory, True)
         unfoldClass.drawISRMatrixInfo(outputDirectory, False)
 
