@@ -444,7 +444,12 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
         Int_t i_bin = ii+1;
         Double_t binEdge = histProb->GetXaxis()->GetBinUpEdge(i_bin);
         grid_.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(0), binEdge, histProb->GetYaxis()->GetBinUpEdge(histProb->GetYaxis()->GetNbins()) );
+
         if(boundarybin_x == i_bin && i_bin != histProb->GetXaxis()->GetNbins()){ 
+            if(count_drawn_boundary == 0){
+                grid_bin_boundary.DrawLine(histProb->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), histProb->GetYaxis()->GetBinUpEdge(boundarybin_y - yaxis1_nbin), histProb->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), histProb->GetYaxis()->GetBinUpEdge(boundarybin_y) );
+            }
+
             if(add_UO){
                 if(xaxis_binning->HasUnderflow(0)) boundarybin_x++;
                 if(xaxis_binning->HasOverflow(0)) boundarybin_x++;
@@ -478,6 +483,9 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
         grid_.DrawLine(histProb->GetXaxis()->GetBinUpEdge(0), binEdge, histProb->GetXaxis()->GetBinUpEdge(histProb->GetXaxis()->GetNbins()),binEdge );
 
         if(boundarybin_y == i_bin && i_bin != histProb->GetYaxis()->GetNbins()){ 
+            if(count_drawn_boundary == 0){
+                grid_bin_boundary.DrawLine(histProb->GetXaxis()->GetBinUpEdge(boundarybin_x - xaxis1_nbin), histProb->GetYaxis()->GetBinUpEdge(i_bin-yaxis1_nbin), histProb->GetXaxis()->GetBinUpEdge(boundarybin_x), histProb->GetYaxis()->GetBinUpEdge(i_bin-yaxis1_nbin));
+            }
             if(add_UO){
                 if(yaxis_binning->HasUnderflow(0)) boundarybin_y++;
                 if(yaxis_binning->HasOverflow(0)) boundarybin_y++;
