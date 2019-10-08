@@ -347,22 +347,154 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
             exit (EXIT_FAILURE);
     }
 
+    const TUnfoldBinningV17* xaxis_binning;
+    const TVectorD* xaxis1_tvecd;
+    const TVectorD* xaxis2_tvecd;
+    int xaxis1_nbin;
+    int xaxis2_nbin;
+
+    const TUnfoldBinningV17* yaxis_binning = NULL;
+    const TVectorD* yaxis1_tvecd = NULL;
+    const TVectorD* yaxis2_tvecd = NULL;
+    int yaxis1_nbin;
+    int yaxis2_nbin;
+
+    if(var=="Pt"){
+        if(detector_unfold){
+            xaxis_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
+            xaxis1_tvecd = xaxis_binning->GetDistributionBinning(0);
+            xaxis2_tvecd = xaxis_binning->GetDistributionBinning(1);
+            xaxis1_nbin = xaxis1_tvecd->GetNrows() - 1;
+            xaxis2_nbin = xaxis2_tvecd->GetNrows() - 1;
+
+            yaxis_binning = nomPtUnfold->GetInputBinning("Rec_Pt");            
+            yaxis1_tvecd = yaxis_binning->GetDistributionBinning(0);
+            yaxis2_tvecd = yaxis_binning->GetDistributionBinning(1);
+            yaxis1_nbin = yaxis1_tvecd->GetNrows() - 1;
+            yaxis2_nbin = yaxis2_tvecd->GetNrows() - 1;
+        }
+        else{
+            xaxis_binning = nomPtFSRUnfold->GetOutputBinning("Gen_Pt");
+            xaxis1_tvecd = xaxis_binning->GetDistributionBinning(0);
+            xaxis2_tvecd = xaxis_binning->GetDistributionBinning(1);
+            xaxis1_nbin = xaxis1_tvecd->GetNrows() - 1;
+            xaxis2_nbin = xaxis2_tvecd->GetNrows() - 1;
+            
+            yaxis_binning = nomPtFSRUnfold->GetInputBinning("Gen_Pt"); 
+            yaxis1_tvecd = yaxis_binning->GetDistributionBinning(0);
+            yaxis2_tvecd = yaxis_binning->GetDistributionBinning(1);
+            yaxis1_nbin = yaxis1_tvecd->GetNrows() - 1;
+            yaxis2_nbin = yaxis2_tvecd->GetNrows() - 1;
+        }
+    }
+    else if(var=="Mass"){
+        if(detector_unfold){
+            xaxis_binning = nomMassUnfold->GetOutputBinning("Gen_Mass");
+            xaxis1_tvecd = xaxis_binning->GetDistributionBinning(0);
+            xaxis2_tvecd = xaxis_binning->GetDistributionBinning(1);
+            xaxis1_nbin = xaxis1_tvecd->GetNrows() - 1; 
+            xaxis2_nbin = xaxis2_tvecd->GetNrows() - 1; 
+
+            yaxis_binning = nomMassUnfold->GetInputBinning("Rec_Mass");     
+            yaxis1_tvecd = yaxis_binning->GetDistributionBinning(0);
+            yaxis2_tvecd = yaxis_binning->GetDistributionBinning(1);
+            yaxis1_nbin = yaxis1_tvecd->GetNrows() - 1; 
+            yaxis2_nbin = yaxis2_tvecd->GetNrows() - 1; 
+        }    
+        else{
+            xaxis_binning = nomMassFSRUnfold->GetOutputBinning("Gen_Mass");
+            xaxis1_tvecd = xaxis_binning->GetDistributionBinning(0);
+            xaxis2_tvecd = xaxis_binning->GetDistributionBinning(1);
+            xaxis1_nbin = xaxis1_tvecd->GetNrows() - 1; 
+            xaxis2_nbin = xaxis2_tvecd->GetNrows() - 1; 
+     
+            yaxis_binning = nomMassFSRUnfold->GetInputBinning("Gen_Mass"); 
+            yaxis1_tvecd = yaxis_binning->GetDistributionBinning(0);
+            yaxis2_tvecd = yaxis_binning->GetDistributionBinning(1);
+            yaxis1_nbin = yaxis1_tvecd->GetNrows() - 1; 
+            yaxis2_nbin = yaxis2_tvecd->GetNrows() - 1; 
+        }    
+    }    
+    else{
+            cout << "ISRUnfold::drawISRMatrixInfo, only Pt and Mass available for var" << endl;
+            exit (EXIT_FAILURE);
+    }
+
+    // find points to draw lines
+    // count how many axis 1 bins -> then find n points
+    // check axis 1 have under flow 
+
     TLine grid_;
+    TLine grid_bin_boundary;
     //grid_.SetLineColor(kGray+2);
     grid_.SetLineColorAlpha(kGray+2, 0.35);;
     grid_.SetLineStyle(kSolid);
+    grid_bin_boundary.SetLineColorAlpha(kRed, 1.);;
+    grid_bin_boundary.SetLineStyle(kSolid);
+
+    int boundarybin_x = xaxis1_nbin; 
+    if(xaxis_binning->HasUnderflow(0)) boundarybin_x++;
+    int boundarybin_y = yaxis1_nbin; 
+    if(yaxis_binning->HasUnderflow(0)) boundarybin_y++;
+    bool add_UO = true;
+    int count_drawn_boundary = 0;
+
     for( int ii=0; ii<histProb->GetXaxis()->GetNbins(); ii++ )
     {
-            Int_t i_bin = ii+1;
-            Double_t binEdge = histProb->GetXaxis()->GetBinUpEdge(i_bin);
-            grid_.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(0), binEdge, histProb->GetYaxis()->GetBinUpEdge(histProb->GetYaxis()->GetNbins()) );
+        Int_t i_bin = ii+1;
+        Double_t binEdge = histProb->GetXaxis()->GetBinUpEdge(i_bin);
+        grid_.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(0), binEdge, histProb->GetYaxis()->GetBinUpEdge(histProb->GetYaxis()->GetNbins()) );
+        if(boundarybin_x == i_bin && i_bin != histProb->GetXaxis()->GetNbins()){ 
+            if(add_UO){
+                if(xaxis_binning->HasUnderflow(0)) boundarybin_x++;
+                if(xaxis_binning->HasOverflow(0)) boundarybin_x++;
+                add_UO = false;
+            }
+            else{
+                boundarybin_x += xaxis1_nbin;
+                add_UO = true;
+            }
+            grid_bin_boundary.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(boundarybin_y - yaxis1_nbin), binEdge, histProb->GetYaxis()->GetBinUpEdge(boundarybin_y) );
+            if(count_drawn_boundary%2 == 0){
+                if(yaxis_binning->HasUnderflow(0)) boundarybin_y++;
+                if(yaxis_binning->HasOverflow(0)) boundarybin_y++;
+                boundarybin_y += yaxis1_nbin;
+            }
+            count_drawn_boundary++; 
+        }
     }
+
+    boundarybin_x = xaxis1_nbin; 
+    boundarybin_y = yaxis1_nbin; 
+    if(xaxis_binning->HasUnderflow(0)) boundarybin_x++;
+    if(yaxis_binning->HasUnderflow(0)) boundarybin_y++;
+    add_UO = true;
+    count_drawn_boundary = 0;
 
     for( int ii=0; ii<histProb->GetYaxis()->GetNbins(); ii++ )
     {
-            Int_t i_bin = ii+1;
-            Double_t binEdge = histProb->GetYaxis()->GetBinUpEdge(i_bin);
-            grid_.DrawLine(histProb->GetXaxis()->GetBinUpEdge(0), binEdge, histProb->GetXaxis()->GetBinUpEdge(histProb->GetXaxis()->GetNbins()),binEdge );
+        Int_t i_bin = ii+1;
+        Double_t binEdge = histProb->GetYaxis()->GetBinUpEdge(i_bin);
+        grid_.DrawLine(histProb->GetXaxis()->GetBinUpEdge(0), binEdge, histProb->GetXaxis()->GetBinUpEdge(histProb->GetXaxis()->GetNbins()),binEdge );
+
+        if(boundarybin_y == i_bin && i_bin != histProb->GetYaxis()->GetNbins()){ 
+            if(add_UO){
+                if(yaxis_binning->HasUnderflow(0)) boundarybin_y++;
+                if(yaxis_binning->HasOverflow(0)) boundarybin_y++;
+                add_UO = false;
+            }    
+            else{
+                boundarybin_y += yaxis1_nbin;
+                add_UO = true;
+            }    
+            grid_bin_boundary.DrawLine(histProb->GetXaxis()->GetBinUpEdge(boundarybin_x - xaxis1_nbin), binEdge, histProb->GetXaxis()->GetBinUpEdge(boundarybin_x),binEdge);
+            if(count_drawn_boundary%2 == 0){
+                if(xaxis_binning->HasUnderflow(0)) boundarybin_x++;
+                if(xaxis_binning->HasOverflow(0)) boundarybin_x++;
+                boundarybin_x += xaxis1_nbin;
+            }    
+            count_drawn_boundary++; 
+        } 
     }
 
     c1->cd(2);
