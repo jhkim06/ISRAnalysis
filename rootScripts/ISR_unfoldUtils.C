@@ -293,7 +293,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         }
 }
 
-void ISRUnfold::drawISRMatrixInfo(TString outpdf, bool detector_unfold){
+void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unfold){
 
     c1 = new TCanvas("c1","c1", 50, 50, 1500, 700);
     gStyle->SetOptFit(0);
@@ -307,38 +307,62 @@ void ISRUnfold::drawISRMatrixInfo(TString outpdf, bool detector_unfold){
     c1->cd(1)->SetTicks(1);
     c1->cd(1)->SetLogz();
 
-    TH2 *histProb_pt = NULL; 
-    TH1 *histEfficiency_pt = NULL;
+    TH2 *histProb = NULL; 
+    TH1 *histEfficiency = NULL;
 
-    if(detector_unfold){
-        histProb_pt = nomPtUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
+    if(var=="Pt"){
+        if(detector_unfold){
+            histProb = nomPtUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
+        }
+        else{
+            histProb = nomPtFSRUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
+        }
+    }
+    else if(var=="Mass"){
+        if(detector_unfold){
+            histProb = nomMassUnfold->GetProbabilityMatrix("Migration prob. for mass bin",";mass(gen);mass(rec)");
+        }    
+        else{
+            histProb = nomMassFSRUnfold->GetProbabilityMatrix("Migration prob. for mass bin",";mass(gen);mass(rec)");
+        }    
     }
     else{
-        histProb_pt = nomPtFSRUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
+            cout << "ISRUnfold::drawISRMatrixInfo, only Pt and Mass available for var" << endl;
+            exit (EXIT_FAILURE);
     }
 
-    histEfficiency_pt=histProb_pt->ProjectionX("histEfficiency_pt");
-    histProb_pt->Draw("COLZ");
+    histEfficiency=histProb->ProjectionX("histEfficiency");
+    histProb->Draw("COLZ");
 
-    if(detector_unfold) histProb_pt->SetTitle("migration probabilities;p_{T} mass bin index (post FSR) ;p_{T} mass bin index (rec)");
-    else histProb_pt->SetTitle("migration probabilities;p_{T} mass bin index (pre FSR) ;p_{T} mass bin index (post FSR)");
+    if(var=="Pt"){
+        if(detector_unfold) histProb->SetTitle("migration probabilities;p_{T} mass bin index (post FSR) ;p_{T} mass bin index (rec)");
+        else histProb->SetTitle("migration probabilities;p_{T} mass bin index (pre FSR) ;p_{T} mass bin index (post FSR)");
+    }
+    else if(var=="Mass"){
+        if(detector_unfold) histProb->SetTitle("migration probabilities;mass bin index (post FSR) ;mass bin index (rec)");
+        else histProb->SetTitle("migration probabilities;mass bin index (pre FSR) ;mass bin index (post FSR)");
+    }
+    else{
+            cout << "ISRUnfold::drawISRMatrixInfo, only Pt and Mass available for var" << endl;
+            exit (EXIT_FAILURE);
+    }
 
     TLine grid_;
     //grid_.SetLineColor(kGray+2);
     grid_.SetLineColorAlpha(kGray+2, 0.35);;
     grid_.SetLineStyle(kSolid);
-    for( int ii=0; ii<histProb_pt->GetXaxis()->GetNbins(); ii++ )
+    for( int ii=0; ii<histProb->GetXaxis()->GetNbins(); ii++ )
     {
             Int_t i_bin = ii+1;
-            Double_t binEdge = histProb_pt->GetXaxis()->GetBinUpEdge(i_bin);
-            grid_.DrawLine(binEdge, histProb_pt->GetYaxis()->GetBinUpEdge(0), binEdge, histProb_pt->GetYaxis()->GetBinUpEdge(histProb_pt->GetYaxis()->GetNbins()) );
+            Double_t binEdge = histProb->GetXaxis()->GetBinUpEdge(i_bin);
+            grid_.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(0), binEdge, histProb->GetYaxis()->GetBinUpEdge(histProb->GetYaxis()->GetNbins()) );
     }
 
-    for( int ii=0; ii<histProb_pt->GetYaxis()->GetNbins(); ii++ )
+    for( int ii=0; ii<histProb->GetYaxis()->GetNbins(); ii++ )
     {
             Int_t i_bin = ii+1;
-            Double_t binEdge = histProb_pt->GetYaxis()->GetBinUpEdge(i_bin);
-            grid_.DrawLine(histProb_pt->GetXaxis()->GetBinUpEdge(0), binEdge, histProb_pt->GetXaxis()->GetBinUpEdge(histProb_pt->GetXaxis()->GetNbins()),binEdge );
+            Double_t binEdge = histProb->GetYaxis()->GetBinUpEdge(i_bin);
+            grid_.DrawLine(histProb->GetXaxis()->GetBinUpEdge(0), binEdge, histProb->GetXaxis()->GetBinUpEdge(histProb->GetXaxis()->GetNbins()),binEdge );
     }
 
     c1->cd(2);
@@ -348,13 +372,19 @@ void ISRUnfold::drawISRMatrixInfo(TString outpdf, bool detector_unfold){
     c1->cd(2)->SetTicks(1);
     c1->cd(2)->SetGridy();
 
-    histEfficiency_pt->SetTitle("efficiency;p_{T} mass bin (gen) ;#epsilon");
-    histEfficiency_pt->GetYaxis()->SetTitleOffset(1.5);
-    histEfficiency_pt->Draw();
+    histEfficiency->SetTitle("efficiency;p_{T} mass bin (gen) ;A#times#epsilon");
+    histEfficiency->GetYaxis()->SetTitleOffset(1.5);
+    histEfficiency->Draw();
 
-    if(detector_unfold) c1->SaveAs(outpdf + "/detector_pt_matrix.pdf");
-    else c1->SaveAs(outpdf + "/fsr_pt_matrix.pdf");
-    delete histProb_pt;
+    if(var=="Pt"){
+        if(detector_unfold) c1->SaveAs(outpdf + "/detector_pt_matrix.pdf");
+        else c1->SaveAs(outpdf + "/fsr_pt_matrix.pdf");
+    }
+    if(var=="Mass"){
+        if(detector_unfold) c1->SaveAs(outpdf + "/detector_mass_matrix.pdf");
+        else c1->SaveAs(outpdf + "/fsr_mass_matrix.pdf");
+    }
+    delete histProb;
     delete c1;
 }
 
@@ -1204,8 +1234,8 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
 
         gROOT->SetBatch();
 
-        int marker_ = 20;
-        if(channel_name=="muon") marker_ = 21;
+        int marker_ = 22;
+        if(channel_name=="muon") marker_ = 23;
 
         setTDRStyle();
         writeExtraText = true;       // if extra text
@@ -1223,8 +1253,8 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
         c1->SetGridx();
 
         TGraphErrors *grUnfolded = new TGraphErrors(5, &meanMass_data[0], &meanPt_data[0], &meanMassTotErr_data[0], &meanPtTotErr_data[0]);
-        grUnfolded->SetLineColor(kBlack);
-        grUnfolded->SetMarkerColor(kBlack);
+        grUnfolded->SetLineColor(kGray);
+        grUnfolded->SetMarkerColor(kGray);
         grUnfolded->SetMarkerStyle(marker_);
         grUnfolded->SetMarkerSize(1.);
         grUnfolded->SetLineStyle(1);
@@ -1250,7 +1280,7 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
         TGraphErrors *grUnfolded_pre_fsr = new TGraphErrors(5, &meanMass_data_pre_fsr[0], &meanPt_data_pre_fsr[0], &meanMassTotErr_data_pre_fsr[0], &meanPtTotErr_data_pre_fsr[0]);
         grUnfolded_pre_fsr->SetLineColor(kBlack);
         grUnfolded_pre_fsr->SetMarkerColor(kBlack);
-        grUnfolded_pre_fsr->SetMarkerStyle(marker_+4);
+        grUnfolded_pre_fsr->SetMarkerStyle(marker_);
         grUnfolded_pre_fsr->SetMarkerSize(1.);
         grUnfolded_pre_fsr->SetLineStyle(9);
         grUnfolded_pre_fsr->SetLineColor(kBlack);

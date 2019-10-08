@@ -208,8 +208,11 @@ if args.getUnfoldResults:
 
 
 	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, True)
-        unfoldClass.drawISRMatrixInfo(outputDirectory, True)
-        unfoldClass.drawISRMatrixInfo(outputDirectory, False)
+        unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, True)
+        unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, False)
+
+        unfoldClass.drawISRMatrixInfo("Mass", outputDirectory, True)
+        unfoldClass.drawISRMatrixInfo("Mass", outputDirectory, False)
 
 	del unfoldClass
 
