@@ -214,6 +214,10 @@ if args.getUnfoldResults:
         unfoldClass.drawISRMatrixInfo("Mass", outputDirectory, True)
         unfoldClass.drawISRMatrixInfo("Mass", outputDirectory, False)
 
+        unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, False, True)
+        unfoldClass.drawISRMatrixInfo("Mass", outputDirectory, False, True)
+
+
 	del unfoldClass
 
 def makeRecoPlots():

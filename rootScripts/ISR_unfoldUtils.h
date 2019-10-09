@@ -124,7 +124,7 @@ public:
 	void initSysTUnfoldDensity();
 
         // draw migration probability and efficiency plot
-        void drawISRMatrixInfo(TString var, TString outpdf, bool detector_unfold = true);
+        void drawISRMatrixInfo(TString var, TString outpdf, bool detector_unfold = true, bool fsr_systematic = false);
 
 	// do unfold 
 	void doISRUnfold(bool doSys = false);

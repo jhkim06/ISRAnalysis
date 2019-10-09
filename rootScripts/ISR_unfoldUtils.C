@@ -293,7 +293,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         }
 }
 
-void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unfold){
+void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unfold, bool fsr_systematic){
 
     c1 = new TCanvas("c1","c1", 50, 50, 1500, 700);
     gStyle->SetOptFit(0);
@@ -315,7 +315,8 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
             histProb = nomPtUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
         }
         else{
-            histProb = nomPtFSRUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
+            if(!fsr_systematic) histProb = nomPtFSRUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
+            else histProb = sysPtFSRUnfold["QED_FSR"].at(0)->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(rec)");
         }
     }
     else if(var=="Mass"){
@@ -323,7 +324,8 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
             histProb = nomMassUnfold->GetProbabilityMatrix("Migration prob. for mass bin",";mass(gen);mass(rec)");
         }    
         else{
-            histProb = nomMassFSRUnfold->GetProbabilityMatrix("Migration prob. for mass bin",";mass(gen);mass(rec)");
+            if(!fsr_systematic) histProb = nomMassFSRUnfold->GetProbabilityMatrix("Migration prob. for mass bin",";mass(gen);mass(rec)");
+            else histProb = sysMassFSRUnfold["QED_FSR"].at(0)->GetProbabilityMatrix("Migration prob. for mass bin",";mass(gen);mass(rec)");
         }    
     }
     else{
@@ -505,6 +507,11 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
         } 
     }
 
+    TLatex mcName;
+    mcName.SetTextSize(0.035);
+    if(!fsr_systematic) mcName.DrawLatexNDC(0.2, 0.85, "Madgraph5 aMC@NLO + PYTHIA");
+    else mcName.DrawLatexNDC(0.2, 0.85, "Powheg + PHOTOS");
+
     c1->cd(2);
     c1->cd(2)->SetBottomMargin(0.2);
     c1->cd(2)->SetRightMargin(0.2);
@@ -518,11 +525,17 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
 
     if(var=="Pt"){
         if(detector_unfold) c1->SaveAs(outpdf + "/detector_pt_matrix.pdf");
-        else c1->SaveAs(outpdf + "/fsr_pt_matrix.pdf");
+        else{ 
+            if(!fsr_systematic) c1->SaveAs(outpdf + "/fsr_pt_matrix.pdf");
+            else c1->SaveAs(outpdf + "/fsr_pt_photos_matrix.pdf");
+        }
     }
     if(var=="Mass"){
         if(detector_unfold) c1->SaveAs(outpdf + "/detector_mass_matrix.pdf");
-        else c1->SaveAs(outpdf + "/fsr_mass_matrix.pdf");
+        else{
+            if(!fsr_systematic) c1->SaveAs(outpdf + "/fsr_mass_matrix.pdf");
+            else c1->SaveAs(outpdf + "/fsr_mass_photos_matrix.pdf");
+        }
     }
     delete histProb;
     delete c1;
