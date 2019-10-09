@@ -56,6 +56,9 @@ private:
 	vector<Double_t> meanMass_data_pre_fsr, meanMassStatErr_data_pre_fsr, meanMassSysErr_data_pre_fsr, meanMassTotErr_data_pre_fsr;
 	vector<Double_t> meanPt_data_pre_fsr,   meanPtStatErr_data_pre_fsr,   meanPtSysErr_data_pre_fsr, meanPtTotErr_data_pre_fsr;
 
+	vector<Double_t> meanMass_data_pre_fsr_dRp1, meanMassStatErr_data_pre_fsr_dRp1 ;
+	vector<Double_t> meanPt_data_pre_fsr_dRp1,   meanPtStatErr_data_pre_fsr_dRp1;
+
 	// nominal mean mass and pt for MC at pre FSR
 	vector<Double_t> meanMass_mc, meanMassErr_mc;
 	vector<Double_t> meanPt_mc,   meanPtErr_mc;

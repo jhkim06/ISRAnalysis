@@ -149,7 +149,7 @@ if args.getUnfoldResults:
         unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr")
         unfoldClass.setNomFSRTUnfoldDensity("Mass",  unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr")
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], False, "", -1, "full_phase")
-
+        
         if args.doSys == True:
             # systematic from detector unfolding
             for sysName, nSys in sysDict.items():
@@ -171,6 +171,12 @@ if args.getUnfoldResults:
 
             unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 1)
             unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 1)
+        
+        unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], "QED_FSR_dRp1", 1, 0, "full_phase", "pre_fsr_dRp1")
+        unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], "QED_FSR_dRp1", 1, 0, "full_phase", "pre_fsr_dRp1")
+
+        unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR_dRp1", 0)
+        unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR_dRp1", 0)
 
         # unfolding for QED FSR
         unfoldClass.doISRQEDFSRUnfold(args.doSys)
