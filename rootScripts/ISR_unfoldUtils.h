@@ -66,6 +66,9 @@ private:
 	vector<Double_t> meanMass_mc_pre_fsr, meanMassErr_mc_pre_fsr;
 	vector<Double_t> meanPt_mc_pre_fsr,   meanPtErr_mc_pre_fsr;
 
+	vector<Double_t> meanMass_mc_pre_fsr_, meanMassErr_mc_pre_fsr_;
+	vector<Double_t> meanPt_mc_pre_fsr_,   meanPtErr_mc_pre_fsr_;
+
 	vector<Double_t> meanMass_mcAlt, meanMassErr_mcAlt;
 	vector<Double_t> meanPt_mcAlt,   meanPtErr_mcAlt;
 
@@ -151,6 +154,7 @@ public:
 
 	void drawtext(TGraph* g);
 
+        void setMCPreFSRMeanValues(TString filepath);
 	void setMeanPt(bool doSys = false, bool altMC = false, bool detector_unfold = false);
 	void setMeanMass(bool doSys = false, bool altMC = false, bool detector_unfold = false);
 
