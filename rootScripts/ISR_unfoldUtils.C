@@ -971,93 +971,107 @@ double ISRUnfold::Chi2Test(TH1 *data, TH1 *mc){ // check if this is right way to
 // need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
 double ISRUnfold::DoFit(TString var, int nthMassBin, bool isFSRUnfold){
 
-	TH1 *g_fcnHist=0;
-	TMatrixD *g_fcnMatrix=0;
-
-	TH1* hpt_temp_data;
-	TH1* hpt_temp_mc;
-	TH2 *hrho;
-
-        TString ibinMass;
-        ibinMass.Form("%d", nthMassBin);
-
+    TH1 *g_fcnHist=0;
+    TMatrixD *g_fcnMatrix=0;
+    
+    TH1* hpt_temp_data;
+    TH1* hpt_temp_mc;
+    TH2 *hrho;
+    
+    TString ibinMass;
+    ibinMass.Form("%d", nthMassBin);
+    
+    if(var=="Pt"){
         if(!isFSRUnfold){
-	    hpt_temp_data = nomPtUnfold->GetOutput("hunfolded_pt_temp_chi",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-	    hpt_temp_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp_chi",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-	    hrho          = nomPtUnfold->GetRhoIJtotal("histRho_chi", 0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
+            hpt_temp_data = nomPtUnfold->GetOutput("hunfolded_pt_temp_chi",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            hpt_temp_mc   = nomPtUnfold->GetBias("histMCTruth_pt_temp_chi",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            hrho          = nomPtUnfold->GetRhoIJtotal("histRho_chi", 0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
         }
         else{
-	    hpt_temp_data = nomPtFSRUnfold->GetOutput("hunfolded_pt_temp_chi",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-	    hpt_temp_mc   = nomPtFSRUnfold->GetBias("histMCTruth_pt_temp_chi",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-	    hrho          = nomPtFSRUnfold->GetRhoIJtotal("histRho_chi", 0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
+            hpt_temp_data = nomPtFSRUnfold->GetOutput("hunfolded_pt_temp_chi",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            hpt_temp_mc   = nomPtFSRUnfold->GetBias("histMCTruth_pt_temp_chi",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            hrho          = nomPtFSRUnfold->GetRhoIJtotal("histRho_chi", 0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
         } 
-	
-	//cout << "rho matrix dimention: nbinx " << hrho->GetXaxis()->GetNbins() << " nbiny: " << hrho->GetXaxis()->GetNbins() << endl;
-	
-        int n=hpt_temp_data->GetNbinsX(); 
-
-        TMatrixDSym v(n);
-        //g_fcnMatrix=new TMatrixD(n,n);
-        for(int i=0;i<n;i++) {
-           for(int j=0;j<n;j++) {
-              v(i,j)=hrho->GetBinContent(i+1,j+1)*(hpt_temp_data->GetBinError(i+1)*hpt_temp_data->GetBinError(j+1));
-           }
+    }
+    else{
+        if(!isFSRUnfold){
+            hpt_temp_data = nomMassUnfold->GetOutput("hunfolded_pt_temp_chi",0,0,"mass[UO];pt[UOC0]",kTRUE);
+            hpt_temp_mc   = nomMassUnfold->GetBias("histMCTruth_pt_temp_chi",0,0,"mass[UO];pt[UOC0]",kTRUE);
+            hrho          = nomMassUnfold->GetRhoIJtotal("histRho_chi", 0,0,"mass[UO];pt[UOC0]",kTRUE);
         }
-
-        TMatrixDSymEigen ev(v);
-        TMatrixD d(n,n);
-        TVectorD di(ev.GetEigenValues());
-        for(int i=0;i<n;i++) {
-           if(di(i)>0.0) {
-              d(i,i)=1./di(i);
-           } else {
-              cout<<"bad eigenvalue i="<<i<<" di="<<di(i)<<"\n";
-              exit(0);
-           }
+        else{
+            hpt_temp_data = nomMassFSRUnfold->GetOutput("hunfolded_pt_temp_chi",0,0,"mass[UO];pt[UOC0]",kTRUE);
+            hpt_temp_mc   = nomMassFSRUnfold->GetBias("histMCTruth_pt_temp_chi",0,0,"mass[UO];pt[UOC0]",kTRUE);
+            hrho          = nomMassFSRUnfold->GetRhoIJtotal("histRho_chi", 0,0,"mass[UO];pt[UOC0]",kTRUE);
         }
-
-        TMatrixD O(ev.GetEigenVectors());
-        TMatrixD DOT(d,TMatrixD::kMultTranspose,O);
-        g_fcnMatrix=new TMatrixD(O,TMatrixD::kMult,DOT);
-        TMatrixD test(*g_fcnMatrix,TMatrixD::kMult,v);
-        int error=0;
-
-        for(int i=0;i<n;i++) {
-           if(TMath::Abs(test(i,i)-1.0)>1.E-7) {
-              error++;
-           }
-           for(int j=0;j<n;j++) {
-              if(i==j) continue;
-              if(TMath::Abs(test(i,j)>1.E-7)) error++;
-           }
-        }
-
-	// calculate chi2
-        double chi2 = 0.;
-        double ndf = 0.;
-        for(int i=0;i<hpt_temp_data->GetNbinsX();i++) {
-           double di_=hpt_temp_data->GetBinContent(i+1)-hpt_temp_mc->GetBinContent(i+1);
-           if(g_fcnMatrix) {
-              for(int j=0;j<hpt_temp_data->GetNbinsX();j++) {
-                 double dj=hpt_temp_data->GetBinContent(j+1)-hpt_temp_mc->GetBinContent(j+1);
-                 chi2+=di_*dj*(*g_fcnMatrix)(i,j);
-              }
-           } else {
-              double pull=di_/hpt_temp_data->GetBinError(i+1);
-              chi2+=pull*pull;
-           }
-           ndf+=1.0;
-        }
-
-
-	delete g_fcnHist;
-        delete g_fcnMatrix;
-
-        delete hpt_temp_data;
-        delete hpt_temp_mc;
-        delete hrho;
-
-	return chi2/ndf;
+    }
+    
+    //cout << "rho matrix dimention: nbinx " << hrho->GetXaxis()->GetNbins() << " nbiny: " << hrho->GetXaxis()->GetNbins() << endl;
+    
+    int n=hpt_temp_data->GetNbinsX(); 
+    
+    TMatrixDSym v(n);
+    //g_fcnMatrix=new TMatrixD(n,n);
+    for(int i=0;i<n;i++) {
+       for(int j=0;j<n;j++) {
+          v(i,j)=hrho->GetBinContent(i+1,j+1)*(hpt_temp_data->GetBinError(i+1)*hpt_temp_data->GetBinError(j+1));
+       }
+    }
+    
+    TMatrixDSymEigen ev(v);
+    TMatrixD d(n,n);
+    TVectorD di(ev.GetEigenValues());
+    for(int i=0;i<n;i++) {
+       if(di(i)>0.0) {
+          d(i,i)=1./di(i);
+       } else {
+          cout<<"bad eigenvalue i="<<i<<" di="<<di(i)<<"\n";
+          exit(0);
+       }
+    }
+    
+    TMatrixD O(ev.GetEigenVectors());
+    TMatrixD DOT(d,TMatrixD::kMultTranspose,O);
+    g_fcnMatrix=new TMatrixD(O,TMatrixD::kMult,DOT);
+    TMatrixD test(*g_fcnMatrix,TMatrixD::kMult,v);
+    int error=0;
+    
+    for(int i=0;i<n;i++) {
+       if(TMath::Abs(test(i,i)-1.0)>1.E-7) {
+          error++;
+       }
+       for(int j=0;j<n;j++) {
+          if(i==j) continue;
+          if(TMath::Abs(test(i,j)>1.E-7)) error++;
+       }
+    }
+    
+    // calculate chi2
+    double chi2 = 0.;
+    double ndf = 0.;
+    for(int i=0;i<hpt_temp_data->GetNbinsX();i++) {
+       double di_=hpt_temp_data->GetBinContent(i+1)-hpt_temp_mc->GetBinContent(i+1);
+       if(g_fcnMatrix) {
+          for(int j=0;j<hpt_temp_data->GetNbinsX();j++) {
+             double dj=hpt_temp_data->GetBinContent(j+1)-hpt_temp_mc->GetBinContent(j+1);
+             chi2+=di_*dj*(*g_fcnMatrix)(i,j);
+          }
+       } else {
+          double pull=di_/hpt_temp_data->GetBinError(i+1);
+          chi2+=pull*pull;
+       }
+       ndf+=1.0;
+    }
+    
+    
+    delete g_fcnHist;
+    delete g_fcnMatrix;
+    
+    delete hpt_temp_data;
+    delete hpt_temp_mc;
+    delete hrho;
+    
+    return chi2/ndf;
 }
 
 void ISRUnfold::setMCPreFSRMeanValues(TString filepath){
@@ -2356,26 +2370,32 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 	}
 	if(var == "Mass" ){
                 if(!isFSRUnfold){
-                hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                h_data_detector = nomMassUnfold->GetInput("hdata_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    h_data_detector = nomMassUnfold->GetInput("hdata_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+		    hunfolded_sys_err= (TH1F*)hunfolded_data->Clone("sysErr"); 
 
-		hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-		h_data_detector->GetXaxis()->SetRange(h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-		hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr")); 
-                // get gen histogram from response matrix
-		hpreFSR_mc   = nomMassUnfold->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                h_mc_detector = temp_binning_rec_mass->ExtractHistogram("hdysig_mass", hdysig_mass, 0, kTRUE, "mass[UO];pt[UOC0]");
+		    hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+		    h_data_detector->GetXaxis()->SetRange(h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    // get gen histogram from response matrix
+		    hpreFSR_mc   = nomMassUnfold->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    h_mc_detector = temp_binning_rec_mass->ExtractHistogram("hdysig_mass", hdysig_mass, 0, kTRUE, "mass[UO];pt[UOC0]");
+
+                    hpreFSR_mc->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    //h_mc_detector->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
                 }
                 else{
-                hunfolded_data  = nomMassFSRUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr"));
-                // get gen histogram from response matrix
-                hpreFSR_mc   = nomMassFSRUnfold->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    hunfolded_data  = nomMassFSRUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr"));
                
-                h_data_detector = nomMassFSRUnfold->GetInput("hdata_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                h_data_detector->GetXaxis()->SetRange(h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                h_mc_detector  = nomMassUnfold->GetBias("hunfolded_mass_temp_",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    h_data_detector = nomMassFSRUnfold->GetInput("hdata_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    h_data_detector->GetXaxis()->SetRange(h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),h_data_detector->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    // get gen histogram from response matrix
+                    hpreFSR_mc   = nomMassFSRUnfold->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    h_mc_detector  = nomMassUnfold->GetBias("hunfolded_mass_temp_",0,0,"mass[UO];pt[UOC0]",kTRUE);
+
+                    hpreFSR_mc->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    h_mc_detector->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
                 }
 	}
 
@@ -2492,11 +2512,21 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 before_unfolding_chi2.Form("%.2f", chi2_without_correlation);
                 chi2_.DrawLatexNDC(0.2, 0.15, "#splitline{Norm. #chi_{Detector unfolded}^{2}: " + after_unfolding_chi2 + "}{Norm. #chi^{2}: " + before_unfolding_chi2 + "}");
             }
+            else{
+                after_unfolding_chi2.Form("%.2f", DoFit("Mass", nthMassBin));
+                before_unfolding_chi2.Form("%.2f", chi2_without_correlation);
+                chi2_.DrawLatexNDC(0.2, 0.15, "#splitline{Norm. #chi_{Detector unfolded}^{2}: " + after_unfolding_chi2 + "}{Norm. #chi^{2}: " + before_unfolding_chi2 + "}");
+            }
         }
         else{
             if(var == "Pt" ){
                 after_unfolding_chi2.Form("%.2f", DoFit("Pt", nthMassBin, isFSRUnfold));
                 before_unfolding_chi2.Form("%.2f", DoFit("Pt", nthMassBin));
+                chi2_.DrawLatexNDC(0.2, 0.15, "#splitline{Norm. #chi_{FSR unfolded}^{2}: " + after_unfolding_chi2 + "}{Norm. #chi_{detector unfolded}^{2}: " + before_unfolding_chi2 + "}");
+            }
+            else{
+                after_unfolding_chi2.Form("%.2f", DoFit("Mass", nthMassBin, isFSRUnfold));
+                before_unfolding_chi2.Form("%.2f", DoFit("Mass", nthMassBin));
                 chi2_.DrawLatexNDC(0.2, 0.15, "#splitline{Norm. #chi_{FSR unfolded}^{2}: " + after_unfolding_chi2 + "}{Norm. #chi_{detector unfolded}^{2}: " + before_unfolding_chi2 + "}");
             }
         }
