@@ -101,10 +101,12 @@ private:
 
         TString hist_file_path;
         TString channel_name;
+        bool do_normalization;
 public:
-	ISRUnfold(TString channel, TString filepath){
+	ISRUnfold(TString channel, TString filepath, bool norm = true){
             channel_name = channel;
             hist_file_path = filepath;
+            do_normalization = norm;
         }
 	~ISRUnfold(){}
 

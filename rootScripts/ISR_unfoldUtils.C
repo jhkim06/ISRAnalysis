@@ -20,6 +20,11 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString phas
             exit (EXIT_FAILURE);
         }
 
+        if(do_normalization){
+            if(channel_name =="electron") hmcGenRec->Scale(0.959939);
+            else hmcGenRec->Scale(0.953026);
+        }
+
         // set binning definition
         TUnfoldBinning* binning_Rec = NULL;
         TUnfoldBinning* binning_Gen = NULL;
@@ -88,6 +93,11 @@ void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString p
         else{
             cout << "ISRUnfold::setNomTUnfoldDensity, only Pt and Mass available for var" << endl;
             exit (EXIT_FAILURE);
+        }
+
+        if(do_normalization){
+            if(channel_name =="electron") hmcGenGen->Scale(0.959939);
+            else hmcGenGen->Scale(0.953026);
         }
 
         // set binning definition
@@ -183,6 +193,11 @@ void ISRUnfold::setSysFSRTUnfoldDensity(TString var, TString filepath, TString s
             }
         }
 
+        if(do_normalization){
+            if(channel_name =="electron") hmcGenGen->Scale(0.959939);
+            else hmcGenGen->Scale(0.953026);
+        }
+
         // set binning definition
         TUnfoldBinning* binning_Gen = NULL;
 
@@ -272,6 +287,11 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
                 cout << "ISRUnfold::setSysTUnfoldDensity, only Pt and Mass available for var" << endl;
                 exit (EXIT_FAILURE);
             }
+        }
+        
+        if(do_normalization){
+            if(channel_name =="electron") hmcGenRec->Scale(0.959939);
+            else hmcGenRec->Scale(0.953026);
         }
 
         // set bin definition
@@ -702,11 +722,19 @@ void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysN
                 if(var == "Pt"){
                     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DYJetsnominal");
                     hRec->Add((TH1*)filein->Get(phase_name + "/hist_ptll/histo_DYJets10to50nominal"));
+                    if(do_normalization){
+                        if(channel_name=="electron") hRec->Scale(0.959939); 
+                        if(channel_name=="muon") hRec->Scale(0.953026); 
+                    }
                     sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   bias);
                 }
                 else if(var == "Mass"){
                     hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DYJetsnominal");
                     hRec->Add((TH1*)filein->Get(phase_name + "/hist_mll/histo_DYJets10to50nominal"));
+                    if(do_normalization){
+                        if(channel_name=="electron") hRec->Scale(0.959939);
+                        if(channel_name=="muon") hRec->Scale(0.953026);
+                    }
                     sysMassUnfold[sysName].at(nth)->SetInput(hRec,   bias);
                 }
                 else{
@@ -743,6 +771,12 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
 	TFile* filein = new TFile(filepath);
         TH1* hRec = NULL;
 
+        double bkg_scale = 1.;
+        if(do_normalization){
+            if(channel_name=="electron") bkg_scale = 0.959939;
+            if(channel_name=="muon") bkg_scale = 0.953026;
+        }
+
         TString systematic_postfix = sysName;
 
         if(totSysN == 2){
@@ -768,8 +802,8 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
                     hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "nominal");
                 }
 
-        	if( var == "Pt" )   nomPtUnfold->  SubtractBackground(hRec, bkgName);
-        	if( var == "Mass" ) nomMassUnfold->SubtractBackground(hRec, bkgName);
+        	if( var == "Pt" )   nomPtUnfold->  SubtractBackground(hRec, bkgName, bkg_scale);
+        	if( var == "Mass" ) nomMassUnfold->SubtractBackground(hRec, bkgName, bkg_scale);
 	}
         // systematic histograms
 	else{	
@@ -792,8 +826,8 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
                 }
             }
 
-            if( var == "Pt" )   sysPtUnfold[sysName].at(nth)  ->SubtractBackground(hRec, bkgName);
-            if( var == "Mass" ) sysMassUnfold[sysName].at(nth)->SubtractBackground(hRec, bkgName);
+            if( var == "Pt" )   sysPtUnfold[sysName].at(nth)  ->SubtractBackground(hRec, bkgName, bkg_scale);
+            if( var == "Mass" ) sysMassUnfold[sysName].at(nth)->SubtractBackground(hRec, bkgName, bkg_scale);
 	}
 	
 	filein->Close();
@@ -2311,20 +2345,24 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         if(channel_name == "electron"){
             hdysig_pt = (TH1*)filein->Get("detector_level/hist_ptll/histo_DYJetsToEEnominal"); // get DY 
             hdysig_pt->Add((TH1*)filein->Get("detector_level/hist_ptll/histo_DYJets10to50ToEEnominal"));
+            if(do_normalization) hdysig_pt->Scale(0.959939);
         }
         if(channel_name == "muon"){
             hdysig_pt = (TH1*)filein->Get("detector_level/hist_ptll/histo_DYJetsToMuMunominal"); // get DY 
             hdysig_pt->Add((TH1*)filein->Get("detector_level/hist_ptll/histo_DYJets10to50ToMuMunominal"));
+            if(do_normalization) hdysig_pt->Scale(0.953026);
         }
 
         TH1* hdysig_mass = NULL;
         if(channel_name == "electron"){ 
             hdysig_mass = (TH1*)filein->Get("detector_level/hist_mll/histo_DYJetsToEEnominal");
             hdysig_mass->Add((TH1*)filein->Get("detector_level/hist_mll/histo_DYJets10to50ToEEnominal"));
+            if(do_normalization) hdysig_mass->Scale(0.959939);
         }
         if(channel_name == "muon"){
             hdysig_mass = (TH1*)filein->Get("detector_level/hist_mll/histo_DYJetsToMuMunominal");
             hdysig_mass->Add((TH1*)filein->Get("detector_level/hist_mll/histo_DYJets10to50ToMuMunominal"));
+            if(do_normalization) hdysig_mass->Scale(0.953026);
         }
 
         //TFile* filein = new TFile("/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/output/2016/electron/DY_FSR_v3.root");
@@ -2380,8 +2418,10 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 		    hpreFSR_mc   = nomMassUnfold->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
                     h_mc_detector = temp_binning_rec_mass->ExtractHistogram("hdysig_mass", hdysig_mass, 0, kTRUE, "mass[UO];pt[UOC0]");
 
-                    hpreFSR_mc->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                    //h_mc_detector->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    hpreFSR_mc->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    h_mc_detector->GetXaxis()->SetRange(h_mc_detector->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_mc_detector->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+
+                    if(nthMassBin == 2) cout << "normalisation factor: " << h_data_detector->Integral()/h_mc_detector->Integral() << endl;
                 }
                 else{
                     hunfolded_data  = nomMassFSRUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
