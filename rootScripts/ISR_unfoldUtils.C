@@ -2286,6 +2286,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         TH1* h_mc_detector = NULL;
 	TH1* hunfolded_sys_err = NULL;
         TH1* hpreFSR_mc = NULL;
+
         TH1F *ratio = NULL;
         TH1F *ratio_detector = NULL;
         TH1F *ratio_sys_err = NULL;
@@ -2378,12 +2379,23 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 }
 	}
 
-        ratio = ((TH1F*)hunfolded_data->Clone("ratio"));
-        ratio_detector = ((TH1F*)h_data_detector->Clone("ratio_detector"));
-        ratio_sys_err= ((TH1F*)hunfolded_data->Clone("ratio_sys"));
-        ratio->Divide(hpreFSR_mc);
-        ratio_detector->Divide(h_mc_detector);
-        ratio_sys_err->Divide(hpreFSR_mc);
+        bool data_over_mc = false;
+        if(data_over_mc){
+            ratio = (TH1F*)hunfolded_data->Clone("ratio");
+            ratio_detector = (TH1F*)h_data_detector->Clone("ratio_detector");
+            ratio_sys_err= (TH1F*)hunfolded_data->Clone("ratio_sys");
+            ratio->Divide(hpreFSR_mc);
+            ratio_detector->Divide(h_mc_detector);
+            ratio_sys_err->Divide(hpreFSR_mc);
+        }
+        else{
+            ratio = (TH1F*)hpreFSR_mc->Clone("ratio");
+            ratio_detector = (TH1F*)h_mc_detector->Clone("ratio_detector");
+            ratio_sys_err= (TH1F*)hpreFSR_mc->Clone("ratio_sys");
+            ratio->Divide(hunfolded_data);
+            ratio_detector->Divide(h_data_detector);
+            ratio_sys_err->Divide(hunfolded_data);
+        }
 
         c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
         c1->cd();
@@ -2520,13 +2532,23 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
                 // loop over each bin of unfolded histogram
                 for(int ibin = 1; ibin<hunfolded_sys_err->GetNbinsX()+1;ibin++){
 
-                    TH1F * ratio_temp = ((TH1F*)hdatasys_temp->Clone("ratio"));
+                    TH1F * ratio_temp = NULL;
 
-                    if(hdatasys_temp->GetBinContent(ibin) < 0 ){ 
-                        cout << " negative bin exist: " << ibin << " value: " << hdatasys_temp->GetBinContent(ibin) << " prv bin value: " << hdatasys_temp->GetBinContent(ibin - 1) << " next bin value: " << hdatasys_temp->GetBinContent(ibin + 1) <<std::endl;
-	    	    }
+                    if(data_over_mc){
+                        ratio_temp = (TH1F*)hdatasys_temp->Clone("ratio");
+                        if(hdatasys_temp->GetBinContent(ibin) < 0 ){
+                            cout << " negative bin exist: " << ibin << " value: " << hdatasys_temp->GetBinContent(ibin) << " prv bin value: " << hdatasys_temp->GetBinContent(ibin - 1) << " next bin value: " << hdatasys_temp->GetBinContent(ibin + 1) <<std::endl;
+                        }
 
-                    ratio_temp->Divide(hpreFSR_mc);
+                        ratio_temp->Divide(hpreFSR_mc);
+
+                    }
+                    else{
+                        ratio_temp = (TH1F*)hpreFSR_mc->Clone("ratio");
+                        ratio_temp->Divide(hdatasys_temp);
+
+                    }
+
                     // get "envelope"
                     // absolute difference between nominal unfolded histogram and systematic unfolded histogram
                     Double_t temp_err =  fabs(hunfolded_data->GetBinContent(ibin) - hdatasys_temp->GetBinContent(ibin));
@@ -2599,11 +2621,22 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         pad2->Draw();
 
         pad2->cd();
-        ratio->Draw("pe");
-        ratio_detector->Draw("pesame");
-        ratio_detector->SetMarkerColor(kGray+2);
-        ratio_detector->SetLineColor(kGray+2);
-        ratio->GetYaxis()->SetTitle("Data/ MC");
+
+        if(data_over_mc){
+            ratio->Draw("pe");
+            ratio_detector->Draw("pesame");
+            //ratio_detector->SetMarkerColor(kGray+2);
+            //ratio_detector->SetLineColor(kGray+2);
+            ratio->GetYaxis()->SetTitle("Data/ MC");
+        }
+        else{
+            ratio->Draw("hist");
+            ratio_detector->Draw("histsame");
+            ratio->SetLineColor(kRed);
+            ratio_detector->SetLineColor(kMagenta);
+            ratio->GetYaxis()->SetTitle("MC/ Data");
+
+        }
         if(var=="Pt") ratio->GetXaxis()->SetTitle("p_{T} (GeV)");
         if(var=="Mass") ratio->GetXaxis()->SetTitle("mass (GeV)");
         ratio->SetMinimum(0.5);
@@ -2617,7 +2650,8 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
         if(var=="Mass") l_ = new TLine(massBins[nthMassBin],1,massBins[nthMassBin+1],1);
         l_->Draw("same");
         l_->SetLineStyle(1);
-        l_->SetLineColor(kRed);
+        if(data_over_mc) l_->SetLineColor(kRed);
+        else l_->SetLineColor(kBlack);
 
 	CMS_lumi( c1, 4, 0 );
         c1->cd();
