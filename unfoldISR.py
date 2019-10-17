@@ -26,8 +26,10 @@ parser = argparse.ArgumentParser(description='Unfolding for ISR analysis')
 
 parser.add_argument('--channel' , dest = 'channel', default = 'electron', help = 'select channel electron or muon')
 parser.add_argument('--year' , dest = 'year', default = '2016', help = 'select year')
-parser.add_argument('--phase_space' , dest = 'phase_space', default = 'fiducial_phase_pre_FSR_dRp1', help = 'select unfolded phase space')
-parser.add_argument('--FSR_dR' , dest = 'FSR_dR', default = 'dressed_dRp1', help = 'select size of dR for dressed lepton')
+parser.add_argument('--phase_space_detector' , dest = 'phase_space_detector', default = 'fiducial_phase_pre_FSR_dRp1', help = 'select unfolded phase space')
+parser.add_argument('--FSR_dR_detector' , dest = 'FSR_dR_detector', default = 'dressed_dRp1', help = 'select size of dR for dressed lepton')
+parser.add_argument('--phase_space_fsr' , dest = 'phase_space_fsr', default = 'full_phase_dRp1', help = 'select unfolded phase space')
+parser.add_argument('--FSR_dR_fsr' , dest = 'FSR_dR_fsr', default = 'dRp1_pre_fsr', help = 'select size of dR for dressed lepton')
 parser.add_argument('--createInputHists'  , action='store_true'  , help = 'create input histograms')
 parser.add_argument('--getUnfoldResults'  , action='store_true'  , help = 'Get unfolding resutls')
 parser.add_argument('--doSys'  , action='store_true'  , default = False, help = 'Calculate systematics')
@@ -83,15 +85,15 @@ if args.getUnfoldResults:
         unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'])
 
         # set response matrix
-        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], args.phase_space, args.FSR_dR)
-        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], args.phase_space, args.FSR_dR)
+        unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
+        unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
 
         # for closure test
-        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", -1, -1, args.phase_space, args.FSR_dR)
-        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", -1, -1, args.phase_space, args.FSR_dR)
+        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", -1, -1, args.phase_space_detector, args.FSR_dR_detector)
+        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", -1, -1, args.phase_space_detector, args.FSR_dR_detector)
 
-        unfoldClass.setInput("Pt",   unfoldInputList['matrix'], True, "Closure", 0, 1., args.phase_space)
-        unfoldClass.setInput("Mass", unfoldInputList['matrix'], True, "Closure", 0, 1., args.phase_space)
+        unfoldClass.setInput("Pt",   unfoldInputList['matrix'], True, "Closure", 0, 1., args.phase_space_detector)
+        unfoldClass.setInput("Mass", unfoldInputList['matrix'], True, "Closure", 0, 1., args.phase_space_detector)
 
         # set unfolding input histogram
 	unfoldClass.setInput("Pt",   unfoldInputList['hist'], False, "nominal", 0, 1., "detector_level")
@@ -110,8 +112,8 @@ if args.getUnfoldResults:
                     print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
                     
                     # set systematic response matrix
-                    unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space, args.FSR_dR)
-                    unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space, args.FSR_dR)
+                    unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                    unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
                     
                     bias = 1.;
                     if sysName == "unfoldBias": bias = 0.95 
@@ -134,34 +136,34 @@ if args.getUnfoldResults:
             unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
         # set QED FSR unfolding response matrix and input
-        unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr")
-        unfoldClass.setNomFSRTUnfoldDensity("Mass",  unfoldInputList['fsr_matrix'], "full_phase", "pre_fsr")
-        unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], False, "", -1, "full_phase")
+        unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], args.phase_space_fsr, args.FSR_dR_fsr)
+        unfoldClass.setNomFSRTUnfoldDensity("Mass",  unfoldInputList['fsr_matrix'], args.phase_space_fsr, args.FSR_dR_fsr)
+        unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], False, "", -1, args.phase_space_fsr)
         
         if args.doSys == True:
             # systematic from detector unfolding
             for sysName, nSys in sysDict.items():
                 for nthSys in range(0,nSys):
-                    unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, "full_phase", "pre_fsr") 
-                    unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, "full_phase", "pre_fsr") 
+                    unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr) 
+                    unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr) 
 
                     unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, sysName, nthSys)
 
         # QED FSR ststematic
-        unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_photos_matrix'], "QED_FSR", 2, 0, "full_phase", "pre_fsr")
-        unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_photos_matrix'], "QED_FSR", 2, 0, "full_phase", "pre_fsr")
+        unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_photos_matrix'], "QED_FSR", 2, 0, args.phase_space_fsr, args.FSR_dR_fsr)
+        unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_photos_matrix'], "QED_FSR", 2, 0, args.phase_space_fsr, args.FSR_dR_fsr)
 
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 0)
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 0)
 
-        unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_pythia_matrix'], "QED_FSR", 2, 1, "full_phase", "pre_fsr")
-        unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_pythia_matrix'], "QED_FSR", 2, 1, "full_phase", "pre_fsr")
+        unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_pythia_matrix'], "QED_FSR", 2, 1, args.phase_space_fsr, args.FSR_dR_fsr)
+        unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_pythia_matrix'], "QED_FSR", 2, 1, args.phase_space_fsr, args.FSR_dR_fsr)
 
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 1)
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 1)
         
-        unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], "QED_FSR_dRp1", 1, 0, "full_phase", "pre_fsr_dRp1")
-        unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], "QED_FSR_dRp1", 1, 0, "full_phase", "pre_fsr_dRp1")
+        unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], "QED_FSR_dRp1", 1, 0, args.phase_space_fsr, args.FSR_dR_fsr)
+        unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], "QED_FSR_dRp1", 1, 0, args.phase_space_fsr, args.FSR_dR_fsr)
 
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR_dRp1", 0)
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR_dRp1", 0)
@@ -205,12 +207,10 @@ if args.getUnfoldResults:
                 for massBin in range(0,5):
 
                     unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, "QED_FSR", False)
-
-
              
 
 
-	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, False)
+	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, True)
         unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, True)
         unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, False)
 

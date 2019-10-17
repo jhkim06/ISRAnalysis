@@ -86,8 +86,10 @@ void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString p
         // set response matrix
         TH2* hmcGenGen;
 
-        if(var == "Pt")
+        if(var == "Pt"){
             hmcGenGen = (TH2*)filein->Get(phase_name + "/ptll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
+            cout << phase_name + "/ptll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal" << endl;
+        }
         else if(var == "Mass")
             hmcGenGen = (TH2*)filein->Get(phase_name + "/mll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
         else{
