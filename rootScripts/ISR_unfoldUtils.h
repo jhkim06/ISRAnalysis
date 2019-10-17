@@ -148,7 +148,7 @@ public:
 	void drawNominalRecoPlots(TString outpdf, TString filepath, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
 
 	// draw nominal result with systematics 
-	void drawSysPlots(TString outpdf, int nthMassBin = 0, TString sysName = "");
+	void drawSysPlots(TString outpdf, int nthMassBin = 0, TString sysName = "", bool detector_unfold = true);
 
 	void studyFSRDRPlots(TString outpdf, TString var, int nthMassBin);
 
@@ -159,7 +159,7 @@ public:
 	void setMeanMass(bool doSys = false, bool altMC = false, bool detector_unfold = false);
 
 	// need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
-	double DoFit(TString var = "Pt", int nthMassBin = 0); // chi2 fit for unfolded distribution
+	double DoFit(TString var = "Pt", int nthMassBin = 0, bool isFSRUnfold = false); // chi2 fit for unfolded distribution
 	double Chi2Test(TH1 *data, TH1 *mc);
 
 	// draw ISR result

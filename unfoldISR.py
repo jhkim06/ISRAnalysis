@@ -99,8 +99,8 @@ if args.getUnfoldResults:
         setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "nominal", False, 0, -1) 
 
         # set systematic response matrix and input histograms
-	if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "unfoldBias": 1, "unfoldScan": 1}
-        if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "unfoldBias": 1, "unfoldScan": 1}
+	if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "unfoldBias": 1, "unfoldScan": 1}
+        if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "unfoldBias": 1, "unfoldScan": 1}
         if args.doSys == True:
 	    #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1}
 
@@ -199,10 +199,18 @@ if args.getUnfoldResults:
                     unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys)
                     unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys)
                     unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
-                    unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName)
+                    unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, True)
+                    unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, False)
+
+                for massBin in range(0,5):
+
+                    unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, "QED_FSR", False)
 
 
-	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, True)
+             
+
+
+	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, False)
         unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, True)
         unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, False)
 
