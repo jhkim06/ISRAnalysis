@@ -198,8 +198,8 @@ if args.getUnfoldResults:
                 
                 for massBin in range(0,5):
                     
-                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys)
-                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys)
+                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys, True)
+                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys, True)
                     unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
                     unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, True)
                     unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, False)
@@ -207,6 +207,8 @@ if args.getUnfoldResults:
                 for massBin in range(0,5):
 
                     unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, "QED_FSR", False)
+                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+"QED_FSR", "Pt", massBin, "QED_FSR", args.doSys, True)
+                    unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+"QED_FSR", "Mass", massBin, "QED_FSR", args.doSys, True)
              
 
 
