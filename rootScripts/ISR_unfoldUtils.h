@@ -79,6 +79,10 @@ private:
 	std::vector<std::map<TString, Double_t>>  meanMassErr_sysdata_pre_fsr;
 	std::vector<std::map<TString, Double_t>>  meanPtErr_sysdata_pre_fsr;
 
+        // save systematic variation index result in maximum deviation from the nominal measurement
+	std::vector<std::map<TString, Int_t>>  meanMassErrIdx_sysdata_pre_fsr;
+	std::vector<std::map<TString, Int_t>>  meanPtErrIdx_sysdata_pre_fsr;
+
 	// map to save systematic variation of mean mass and pt for each source
 	std::vector<std::map<TString, std::vector<Double_t>>>  meanMass_sysdata;
 	std::vector<std::map<TString, std::vector<Double_t>>>  meanPt_sysdata;

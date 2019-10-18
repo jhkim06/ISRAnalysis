@@ -1271,9 +1271,11 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
         // calculate systematic uncertainty
         if(doSys){
             for(int i = 0; i < nMassBin; i++){
-
+            
                 // detector unfolding
-               std::map<TString, Double_t> temp_map_;
+               std::map<TString, Double_t> temp_map_; 
+               std::map<TString, Int_t> temp_map_sysname_index;
+
                std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata.at(i).begin();
                while(it != meanMass_sysdata.at(i).end()){
                     int size_ = it->second.size();
@@ -1287,7 +1289,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                     Double_t err = -999.; // 
                     // use maximum variation as systematic
                     for(int j = 0; j < size_; j++){
-                            if( (i==5 || i==7) && (it->first)=="Scale") continue;
+                            //if( (i==5 || i==7) && (it->first)=="Scale") continue;
 
                             if((it->first)=="PDFerror"){
                                     hpdfsys->Fill(it->second.at(j));
@@ -1322,9 +1324,10 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                         hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data_pre_fsr.at(i)-0.2, meanMass_data_pre_fsr.at(i)+0.2); // temp histogram to contain PDF variations
 
                     Double_t err = -999.; // 
+                    Int_t index_to_save = -1;
                     // use maximum variation as systematic
                     for(int j = 0; j < size_; j++){
-                            if( (i==5 || i==7) && (it->first)=="Scale") continue;
+                            //if( (i==5 || i==7) && (it->first)=="Scale") continue;
 
                             if((it->first)=="PDFerror"){
                                     hpdfsys->Fill(it->second.at(j));
@@ -1339,7 +1342,8 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                             }
 
                             if( temp_err > err){
-                                   err = temp_err;
+                                err = temp_err;
+                                index_to_save = j;
                             }
                             //cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl;
                     }
@@ -1349,10 +1353,15 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                     }
 
                     temp_map_[it->first] = err;
+                    if((it->first)!="PDFerror" || (it->first)!="QED_FSR"){
+                        temp_map_sysname_index[it->first] = index_to_save;
+                    }
                     it++;
                }
                meanMassErr_sysdata_pre_fsr.push_back(temp_map_);
+               meanPtErrIdx_sysdata_pre_fsr.push_back(temp_map_sysname_index);
                temp_map_.clear();
+               temp_map_sysname_index.clear();
 
             }// loop for mass bins
         }
@@ -1485,6 +1494,8 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
            
             // detector unfolding 
             std::map<TString, Double_t> temp_map_;
+            std::map<TString, Int_t> temp_map_sysname_index;
+
             std::map<TString, std::vector<Double_t>>::iterator it = meanPt_sysdata.at(i).begin();
             while(it != meanPt_sysdata.at(i).end()){
 	    	int size_ = it->second.size(); // size of systematic variations
@@ -1534,8 +1545,8 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
                     hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanPt_data_pre_fsr.at(i)-0.2, meanPt_data_pre_fsr.at(i)+0.2); // temp histogram to contain PDF variations
 
                 Double_t err = -999.; // 
+                Int_t index_to_save = -1;
                 for(int j = 0; j < size_; j++){
-                    //if( (i==5 || i==7) && (it->first)=="Scale") continue;
 
                     if((it->first)=="PDFerror"){
                         hpdfsys->Fill(it->second.at(j));
@@ -1551,19 +1562,27 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
 
                     if( temp_err > err){
                         err = temp_err;
+                        index_to_save = j;
                     }   
                     //cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl; 
                 }// loop for systematic variations
+
                 if((it->first)=="PDFerror"){
                     err = hpdfsys->GetRMS(); // only for 2016 DY MC
                     delete hpdfsys;
                 }
-                if((it->first) == "QED_FSR") cout << "QED FSR error (pt): " << err << endl;
+                //if((it->first) == "QED_FSR") cout << "QED FSR error (pt): " << err << endl;
                 temp_map_[it->first] = err;
+
+                if((it->first)!="PDFerror" || (it->first)!="QED_FSR"){
+                    temp_map_sysname_index[it->first] = index_to_save;
+                }
                 it++;
             }// loop for systematic sources
             meanPtErr_sysdata_pre_fsr.push_back(temp_map_);
+            meanPtErrIdx_sysdata_pre_fsr.push_back(temp_map_sysname_index);
             temp_map_.clear();
+            temp_map_sysname_index.clear();
 
         }// loop for mass binss
     }
