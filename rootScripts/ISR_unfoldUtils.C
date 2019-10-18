@@ -1498,7 +1498,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
 
 	    	Double_t err = -999.; // 
 	    	for(int j = 0; j < size_; j++){
-	    	    if( (i==5 || i==7) && (it->first)=="Scale") continue;
+	    	    //if( (i==5 || i==7) && (it->first)=="Scale") continue;
 
 	    	    if((it->first)=="PDFerror"){
 	     		hpdfsys->Fill(it->second.at(j));
@@ -1535,7 +1535,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
 
                 Double_t err = -999.; // 
                 for(int j = 0; j < size_; j++){
-                    if( (i==5 || i==7) && (it->first)=="Scale") continue;
+                    //if( (i==5 || i==7) && (it->first)=="Scale") continue;
 
                     if((it->first)=="PDFerror"){
                         hpdfsys->Fill(it->second.at(j));
@@ -1555,7 +1555,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
                     //cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl; 
                 }// loop for systematic variations
                 if((it->first)=="PDFerror"){
-                    err = hpdfsys->GetRMS();
+                    err = hpdfsys->GetRMS(); // only for 2016 DY MC
                     delete hpdfsys;
                 }
                 if((it->first) == "QED_FSR") cout << "QED FSR error (pt): " << err << endl;
@@ -1748,7 +1748,7 @@ void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TStr
    TH1* hpt_sys_temp;
    int sysSize = sysPtUnfold[sysName].size();
    for(int i = 0; i < sysSize; i++){
-           if((i==5 || i==7) && sysName=="Scale") continue;
+           //if((i==5 || i==7) && sysName=="Scale") continue;
 
            TString isys;
            isys.Form("%d", i);
@@ -1784,7 +1784,7 @@ void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TStr
    pad2->cd();
 
    for(int i = 0; i < sysSize; i++){
-        if((i==5 || i==7) && sysName=="Scale") continue;
+        //if((i==5 || i==7) && sysName=="Scale") continue;
 
         TString isys;
         isys.Form("%d", i); 
@@ -2580,7 +2580,7 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
 	    int sysSize = sysPtUnfold[sysName].size();
             for(int i = 0; i < sysSize; i++){
                 
-                if((i==5 || i==7) && sysName=="Scale") continue;
+                //if((i==5 || i==7) && sysName=="Scale") continue;
 
                 TString isys;
                 isys.Form("%d", i);
