@@ -1715,7 +1715,103 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
     }// loop for mass bins
 }
 
-void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
+void ISRUnfold::drawISRRun2results(TString outpdf, TCanvas* c_2017, TCanvas* c_2018){
+
+    bool doFit = true;
+    gROOT->SetBatch();
+
+    int marker_ = 20;
+    if(channel_name=="muon") marker_ = 20;
+
+    setTDRStyle();
+    writeExtraText = true;       // if extra text
+    extraText  = "work in progress";
+
+    TString year_string = "Run2";
+
+    c1 = new TCanvas("c_"+channel_name+"_"+year_string, "c_"+channel_name+"_"+year_string, 50, 50, 900, 700);
+    c1->cd();
+    gStyle->SetOptFit(0);
+
+    c1->SetBottomMargin(0.2);
+    c1->SetTopMargin(0.08);
+    //c1->SetTicks();
+    c1->SetLogx();
+    //c1->SetGridy();
+    //c1->SetGridx();
+
+    // 2016 results
+    //TGraphErrors *grUnfolded = new TGraphErrors(5, &meanMass_data[0], &meanPt_data[0], &meanMassTotErr_data[0], &meanPtTotErr_data[0]);
+    //grUnfolded->SetLineColor(kGray+1);
+    //grUnfolded->SetMarkerColor(kGray+1);
+    //grUnfolded->SetMarkerStyle(24);
+    //grUnfolded->SetMarkerSize(0.9);
+    //grUnfolded->SetLineStyle(1);
+    //grUnfolded->Draw("apZ");
+    //grUnfolded->GetYaxis()->SetRangeUser(10.,30.);
+    //grUnfolded->GetXaxis()->SetLimits(30.,500.);
+    //grUnfolded->GetXaxis()->SetMoreLogLabels(true);
+    //grUnfolded->GetYaxis()->SetTitle("Average p_{T} (GeV)");
+    //grUnfolded->GetXaxis()->SetTitle("Average Mass (GeV)");
+
+    TGraphErrors *grUnfolded_pre_fsr = new TGraphErrors(5, &meanMass_data_pre_fsr[0], &meanPt_data_pre_fsr[0], &meanMassTotErr_data_pre_fsr[0], &meanPtTotErr_data_pre_fsr[0]);
+    grUnfolded_pre_fsr->SetLineColor(kBlack);
+    grUnfolded_pre_fsr->SetMarkerColor(kBlack);
+    grUnfolded_pre_fsr->SetMarkerStyle(24);
+    grUnfolded_pre_fsr->SetMarkerSize(0.9);
+    grUnfolded_pre_fsr->SetLineStyle(1);
+    grUnfolded_pre_fsr->Draw("apZ");
+    grUnfolded_pre_fsr->GetYaxis()->SetRangeUser(10.,30.);
+    grUnfolded_pre_fsr->GetXaxis()->SetLimits(30.,500.);
+    grUnfolded_pre_fsr->GetXaxis()->SetMoreLogLabels(true);
+    grUnfolded_pre_fsr->GetYaxis()->SetTitle("Average p_{T} (GeV)");
+    grUnfolded_pre_fsr->GetXaxis()->SetTitle("Average Mass (GeV)");
+
+    TGraphErrors* grUnfolded_pre_fsr_2017 = (TGraphErrors*)c_2017->GetListOfPrimitives()->FindObject("preFSRUnfoldedData_"+channel_name+"_2017");
+    TGraphErrors* grUnfolded_pre_fsr_2018 = (TGraphErrors*)c_2018->GetListOfPrimitives()->FindObject("preFSRUnfoldedData_"+channel_name+"_2018");
+
+    grUnfolded_pre_fsr_2017->SetLineColor(kBlack);
+    grUnfolded_pre_fsr_2017->SetMarkerColor(kBlack);
+    grUnfolded_pre_fsr_2017->SetMarkerStyle(marker_+1);
+    grUnfolded_pre_fsr_2017->SetMarkerSize(0.9);
+    grUnfolded_pre_fsr_2017->SetLineStyle(1);
+    grUnfolded_pre_fsr_2017->Draw("pZ same");
+
+    grUnfolded_pre_fsr_2018->SetLineColor(kBlack);
+    grUnfolded_pre_fsr_2018->SetMarkerColor(kBlack);
+    grUnfolded_pre_fsr_2018->SetMarkerStyle(marker_+2);
+    grUnfolded_pre_fsr_2018->SetMarkerSize(0.9);
+    grUnfolded_pre_fsr_2018->SetLineStyle(1);
+    grUnfolded_pre_fsr_2018->Draw("pZ same");
+
+    TLegend* leg_ = new TLegend(0.53, 0.25, 0.9, 0.5,"","brNDC");
+    leg_->SetTextSize(0.027);
+    leg_->SetFillStyle(0); // transparent 
+    leg_->SetBorderSize(0);
+    leg_->AddEntry(grUnfolded_pre_fsr, "2016 data", "pe");
+    leg_->AddEntry(grUnfolded_pre_fsr_2017, "2017 data ", "pe");
+    leg_->AddEntry(grUnfolded_pre_fsr_2018, "2018 data ", "pe");
+    leg_->Draw();
+
+    TF1 *f1 = NULL;
+    if(doFit){
+        f1 = new TF1("f1", "[0]+[1]*log(x)", 42., 300.);
+        f1->GetXaxis()->SetRangeUser(42., 300.);
+        f1->SetLineColor(kBlack);
+        f1->SetLineWidth(1);
+        //grUnfolded->Fit(f1, "R0"); // R: fitting sub range
+        grUnfolded_pre_fsr->Fit(f1, "R0"); // R: fitting sub range
+        f1->Draw("same");
+    }
+   
+    CMS_lumi( c1, 5, 11 );
+    c1->SaveAs(outpdf + channel_name + "_" + year_string + ".pdf");
+    //delete grUnfolded;
+    delete f1;
+    delete c1;
+}
+
+TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
         
     gROOT->SetBatch();
     
@@ -1725,8 +1821,11 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
     setTDRStyle();
     writeExtraText = true;       // if extra text
     extraText  = "work in progress";
-    
-    c1 = new TCanvas("c1","c1", 50, 50, 900, 700);
+   
+    TString year_string;
+    year_string.Form ("%d", year_);
+ 
+    c1 = new TCanvas("c_"+channel_name+"_"+year_string, "c_"+channel_name+"_"+year_string, 50, 50, 900, 700);
     c1->cd();
     gStyle->SetOptFit(0);
     
@@ -1749,6 +1848,7 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
     grUnfolded->GetXaxis()->SetMoreLogLabels(true);
     grUnfolded->GetYaxis()->SetTitle("Average p_{T} (GeV)");
     grUnfolded->GetXaxis()->SetTitle("Average Mass (GeV)");
+    grUnfolded->SetName("postFSRUnfoldedData_"+channel_name+"_"+year_string);
     
     TGraphErrors *grMC = new TGraphErrors(5, &meanMass_mc[0], &meanPt_mc[0], &meanMassErr_mc[0], &meanPtErr_mc[0]);
     grMC->SetLineColor(kRed);
@@ -1758,6 +1858,7 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
     grMC->SetLineStyle(1);
     grMC->SetLineColor(kRed);
     grMC->Draw("pZ same");
+    grMC->SetName("postFSRMC_"+channel_name+"_"+year_string);
     
     //TGraphErrors *grMC_preFSR = new TGraphErrors(9, &meanMass_mc_pre_fsr_[0], &meanPt_mc_pre_fsr_[0], &meanMassStatErr_mc_pre_fsr_[0], &meanPtStatErr_mc_pre_fsr_[0]);
     TGraphErrors *grMC_preFSR = new TGraphErrors(5, &meanMass_mc_pre_fsr[0], &meanPt_mc_pre_fsr[0], &meanMassSysErr_mc_pre_fsr[0], &meanPtSysErr_mc_pre_fsr[0]);
@@ -1768,6 +1869,7 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
     grMC_preFSR->SetLineStyle(1);
     grMC_preFSR->SetLineColor(kRed);
     grMC_preFSR->Draw("pZ same");
+    grMC_preFSR->SetName("preFSRMC_"+channel_name+"_"+year_string);
     
     TGraphErrors *grUnfolded_pre_fsr_dRp1 = new TGraphErrors(5, &meanMass_data_pre_fsr_dRp1[0], &meanPt_data_pre_fsr_dRp1[0], &meanMassStatErr_data_pre_fsr_dRp1[0], &meanPtStatErr_data_pre_fsr_dRp1[0]);
     grUnfolded_pre_fsr_dRp1->SetLineColor(kGray+2);
@@ -1784,6 +1886,7 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
     grUnfolded_pre_fsr->SetMarkerSize(0.9);
     grUnfolded_pre_fsr->SetLineStyle(1);
     grUnfolded_pre_fsr->Draw("pZ same");
+    grUnfolded_pre_fsr->SetName("preFSRUnfoldedData_"+channel_name+"_"+year_string);
     
     TGraphErrors *grMCAlt;
     if(altMC){
@@ -1822,11 +1925,12 @@ void ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
     }
     
     CMS_lumi( c1, 4, 11 );
-    c1->SaveAs(outpdf + channel_name + ".pdf");
+    c1->SaveAs(outpdf + channel_name + "_" + year_string + ".pdf");
     delete grUnfolded;
     delete grMC;
     delete f1;
-    delete c1;
+    //delete c1;
+    return c1;
 }
 
 void ISRUnfold::drawInputPlots(TString outpdf, TString var, int nthMassBin, TString sysName){

@@ -181,7 +181,8 @@ public:
 	double Chi2Test(TH1 *data, TH1 *mc);
 
 	// draw ISR result
-	void drawISRresult(TString outpdf, bool altMC = false, bool doFit = false);
+	TCanvas* drawISRresult(TString outpdf, bool altMC = false, bool doFit = false);
+        void drawISRRun2results(TString outpdf, TCanvas* c_2017, TCanvas* c_2018);
 	void drawLCurve(TString outpdf, TString var);
 	void drawRhoLog(TString outpdf, TString var);
 };
