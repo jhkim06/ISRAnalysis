@@ -169,6 +169,12 @@ void ISRUnfold::setSysFSRTUnfoldDensity(TString var, TString filepath, TString s
             if(nth == 5 ) systematic_postfix+="ABDown";
         }
 
+        if(totSysN == 101 && sysName == "PDFerror"){
+            TString nth_;
+            nth_.Form ("%03d", nth);
+            systematic_postfix+=nth_;
+        }
+
         // set response matrix
         TH2* hmcGenGen;
 
@@ -265,6 +271,12 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
             if(nth == 3 ) systematic_postfix+="BDown";
             if(nth == 4 ) systematic_postfix+="ABUp";
             if(nth == 5 ) systematic_postfix+="ABDown";
+        }
+
+        if(totSysN == 101 && sysName == "PDFerror"){
+            TString nth_;
+            nth_.Form ("%03d", nth);
+            systematic_postfix+=nth_;
         }
 
         // set migration matrix
@@ -798,6 +810,12 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
             if(nth == 3 ) systematic_postfix+="BDown";
             if(nth == 4 ) systematic_postfix+="ABUp";
             if(nth == 5 ) systematic_postfix+="ABDown";
+        }
+
+        if(totSysN == 101 && sysName == "PDFerror"){
+            TString nth_;
+            nth_.Form ("%03d", nth);
+            systematic_postfix+=nth_;
         }
 
         // nominal histograms
