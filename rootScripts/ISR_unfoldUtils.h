@@ -63,11 +63,12 @@ private:
 	vector<Double_t> meanMass_mc, meanMassErr_mc;
 	vector<Double_t> meanPt_mc,   meanPtErr_mc;
 
-	vector<Double_t> meanMass_mc_pre_fsr, meanMassErr_mc_pre_fsr;
-	vector<Double_t> meanPt_mc_pre_fsr,   meanPtErr_mc_pre_fsr;
+	vector<Double_t> meanMass_mc_pre_fsr, meanMassStatErr_mc_pre_fsr, meanMassSysErr_mc_pre_fsr;
+	vector<Double_t> meanPt_mc_pre_fsr,   meanPtStatErr_mc_pre_fsr, meanPtSysErr_mc_pre_fsr;
 
-	vector<Double_t> meanMass_mc_pre_fsr_, meanMassErr_mc_pre_fsr_;
-	vector<Double_t> meanPt_mc_pre_fsr_,   meanPtErr_mc_pre_fsr_;
+        // temporary vector to save mean values for more mass bins 
+	vector<Double_t> meanMass_mc_pre_fsr_, meanMassStatErr_mc_pre_fsr_;
+	vector<Double_t> meanPt_mc_pre_fsr_,   meanPtStatErr_mc_pre_fsr_;
 
 	vector<Double_t> meanMass_mcAlt, meanMassErr_mcAlt;
 	vector<Double_t> meanPt_mcAlt,   meanPtErr_mcAlt;
@@ -79,9 +80,15 @@ private:
 	std::vector<std::map<TString, Double_t>>  meanMassErr_sysdata_pre_fsr;
 	std::vector<std::map<TString, Double_t>>  meanPtErr_sysdata_pre_fsr;
 
+	std::vector<std::map<TString, Double_t>>  meanMassErr_sysmc_pre_fsr;
+	std::vector<std::map<TString, Double_t>>  meanPtErr_sysmc_pre_fsr;
+
         // save systematic variation index result in maximum deviation from the nominal measurement
 	std::vector<std::map<TString, Int_t>>  meanMassErrIdx_sysdata_pre_fsr;
 	std::vector<std::map<TString, Int_t>>  meanPtErrIdx_sysdata_pre_fsr;
+
+	std::vector<std::map<TString, Int_t>>  meanMassErrIdx_sysmc_pre_fsr;
+	std::vector<std::map<TString, Int_t>>  meanPtErrIdx_sysmc_pre_fsr;
 
 	// map to save systematic variation of mean mass and pt for each source
 	std::vector<std::map<TString, std::vector<Double_t>>>  meanMass_sysdata;
@@ -89,6 +96,9 @@ private:
 
 	std::vector<std::map<TString, std::vector<Double_t>>>  meanMass_sysdata_pre_fsr;
 	std::vector<std::map<TString, std::vector<Double_t>>>  meanPt_sysdata_pre_fsr;
+
+	std::vector<std::map<TString, std::vector<Double_t>>>  meanMass_sysmc_pre_fsr;
+	std::vector<std::map<TString, std::vector<Double_t>>>  meanPt_sysmc_pre_fsr;
 
 	TCanvas* c1;
 
@@ -106,11 +116,13 @@ private:
         TString hist_file_path;
         TString channel_name;
         bool do_normalization;
+        int year_;
 public:
-	ISRUnfold(TString channel, TString filepath, bool norm = true){
+	ISRUnfold(TString channel, TString filepath, bool norm = true, int year = 2016){
             channel_name = channel;
             hist_file_path = filepath;
             do_normalization = norm;
+            year_ = year;
         }
 	~ISRUnfold(){}
 

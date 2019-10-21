@@ -82,7 +82,7 @@ if args.getUnfoldResults:
         import pyScripts.drawUtil as drawutil
 
         # create unfold class
-        unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'])
+        unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'], False, int(args.year))
 
         # set response matrix
         unfoldClass.setNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
@@ -212,7 +212,7 @@ if args.getUnfoldResults:
              
 
 
-	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, True)
+	unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, False)
         unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, True)
         unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, False)
 
