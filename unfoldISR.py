@@ -191,9 +191,17 @@ def doISRAnalysis(args, year, channel, doSys):
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + channel , massBin, sysName, True)
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + channel , massBin, sysName, False)
 
+                unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + channel , "Pt", massBin, sysName, True)
+                unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + channel , "Pt", massBin, sysName, False)
+
+                unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + channel , "Mass", massBin, sysName, True)
+                unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + channel , "Mass", massBin, sysName, False)
+
             for massBin in range(0,5):
 
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + channel , massBin, "QED_FSR", False)
+                unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + channel , "Pt", massBin, "QED_FSR", False)
+                unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + channel , "Mass", massBin, "QED_FSR", False)
                 unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel+"QED_FSR", "Pt", massBin, "QED_FSR", doSys, True)
                 unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel+"QED_FSR", "Mass", massBin, "QED_FSR", doSys, True)
 

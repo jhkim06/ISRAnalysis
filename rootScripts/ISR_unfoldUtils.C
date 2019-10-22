@@ -2312,107 +2312,6 @@ void ISRUnfold::drawNominalRecoPlots(TString outpdf, TString filepath, TString v
 
 }
 
-void ISRUnfold::studyFSRDRPlots(TString outpdf, TString var, int nthMassBin){
-
-        gROOT->SetBatch();
-
-        setTDRStyle();
-        writeExtraText = true;
-        extraText  = "work in progress";
-
-        TString ibinMass;
-        ibinMass.Form("%d", nthMassBin);
-
-        TH1* hunfolded_data = NULL;
-        TH1* hpreFSR_dressed0p1 = NULL;
-        TH1F *ratio = NULL;
-
-        // get nominal unfoled result
-        if(var == "Pt" ){
-                hunfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                hpreFSR_dressed0p1   =    sysPtUnfold["FSRDR"].at(0)->GetBias("histMCTruth_pt_tempAlt",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-        }
-        if(var == "Mass" ){
-                hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"*[UO]",kTRUE);
-                hpreFSR_dressed0p1   =    sysMassUnfold["FSRDR"].at(0)->GetOutput("hunfolded_mass_systemp",0,0,"*[UO]",kTRUE);
-        }
-
-        ratio= ((TH1F*)hunfolded_data->Clone("ratio"));
-        ratio->Divide(hpreFSR_dressed0p1);
-
-        c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
-        c1->cd();
-        gStyle->SetOptStat(0);
-
-        TPad *pad1 = new TPad("pad1","pad1",0,0.4,1,1);
-        pad1->SetBottomMargin(0.01);
-        pad1->SetTopMargin(0.1);
-        pad1->SetTicks(1);
-        pad1->SetLogy();
-        pad1->Draw();
-        pad1->cd();
-
-        hunfolded_data->SetTitle("");
-        hunfolded_data->Draw("p9histe");
-        hpreFSR_dressed0p1->Draw("histsame");
-        hunfolded_data->SetMarkerStyle(20);
-        hunfolded_data->SetMarkerSize(.7);
-        hunfolded_data->SetLineColor(kBlack);
-        hpreFSR_dressed0p1->SetLineColor(kRed);
-        hunfolded_data->GetYaxis()->SetTitle("Events/bin");
-        hunfolded_data->SetMinimum(10.);
-
-        c1->cd();
-
-        TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.4);
-        pad2->SetTopMargin(0.05);
-        pad2->SetBottomMargin(0.2);
-        pad2->SetTicks(1);
-        pad2->SetGridy(1);
-        pad2->Draw();
-
-        pad2->cd();
-        ratio->Draw("hist");
-        ratio->GetYaxis()->SetTitle("#DeltaR=X/ #DeltaR=0.1");
-        ratio->GetXaxis()->SetTitle("p_{T} at pre FSR(GeV)");
-        ratio->SetMinimum(0.5);
-        ratio->SetMaximum(1.5);
-        ratio->SetTitle("");
-        ratio->GetXaxis()->SetTitleOffset(1.5);
-        ratio->GetYaxis()->SetNdivisions(515);
-        ratio->SetLineColor(kRed);
-
-        TH1* hratio_dr_temp;
-        int sysSize = sysPtUnfold["FSRDR"].size();
-        for(int i = 1; i < sysSize; i++){
-
-		TH1* htemp = NULL;
-        	if(var == "Pt" ){
-        	        htemp   =    sysPtUnfold["FSRDR"].at(i)->GetBias("histMCTruth_pt_tempAlt_",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-        	}
-        	if(var == "Mass" ){
-        	        htemp   =    sysMassUnfold["FSRDR"].at(i)->GetOutput("hunfolded_mass_systemp_",0,0,"*[UO]",kTRUE);
-        	}
-		hratio_dr_temp = ((TH1F*)htemp->Clone("htemp"));
-		hratio_dr_temp->Divide(hpreFSR_dressed0p1);
-                hratio_dr_temp->Draw("histsame");
-                hratio_dr_temp->SetLineColor(i);
-                hratio_dr_temp->SetLineStyle(2);
-                delete htemp;
-	}
-
-        CMS_lumi( c1, 4, 0 );
-        c1->cd();
-        c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+".pdf");
-
-	//delete hratio_dr_temp;
-        delete hunfolded_data;
-        delete hpreFSR_dressed0p1;
-        delete pad1;
-        delete pad2;
-        delete c1;
-}
-
 void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin){
 
     const TUnfoldBinningV17* temp_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
@@ -2527,6 +2426,195 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin){
     delete pad2;
     delete c1;
 
+}
+
+void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBin, TString sysName, bool isDetector){
+
+    const TUnfoldBinningV17* temp_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
+    const TUnfoldBinningV17* temp_binning_rec = nomPtUnfold->GetInputBinning("Rec_Pt");
+    const TUnfoldBinningV17* temp_binning_rec_mass = nomMassUnfold->GetInputBinning("Rec_Mass");
+    const TUnfoldBinningV17* temp_binning_gen_mass = nomMassUnfold->GetOutputBinning("Gen_Mass");
+    // get mass bin definition from (pt, mass) bin definition
+    const TVectorD* temp_tvecd = temp_binning->GetDistributionBinning(1);
+    const Double_t* massBins = temp_tvecd->GetMatrixArray();
+
+    gROOT->SetBatch();
+
+    setTDRStyle();
+    writeExtraText = true;
+    extraText  = "work in progress";
+
+    TString ibinMass;
+    ibinMass.Form("%d", nthMassBin);
+
+    TH1*  h_nominal_unfolded_data = NULL;
+    TH1F* ratio = NULL;
+
+    
+    if(sysName!="QED_FSR"){
+        if(isDetector){
+            if(var=="Pt"){
+                h_nominal_unfolded_data  = nomPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            }
+            else{
+                h_nominal_unfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                h_nominal_unfolded_data->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+            }
+        }
+        else{
+            if(var=="Pt"){
+                h_nominal_unfolded_data  = nomPtFSRUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            }
+            else{
+                h_nominal_unfolded_data  = nomMassFSRUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                h_nominal_unfolded_data->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+            }
+        }
+    }
+    else{
+            if(var=="Pt"){
+                h_nominal_unfolded_data  = sysPtFSRUnfold[sysName].at(1)->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            }
+            else{
+                h_nominal_unfolded_data  = sysMassFSRUnfold[sysName].at(1)->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                h_nominal_unfolded_data->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+            }
+    }
+
+    c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
+    c1->cd();
+    gStyle->SetOptStat(0);
+
+    TPad *pad1 = new TPad("pad1","pad1",0,0.4,1,1);
+    pad1->SetBottomMargin(0.);
+    pad1->SetTopMargin(0.1);
+    pad1->SetTicks(1);
+    pad1->SetLogy();
+    pad1->Draw();
+    pad1->cd();
+
+    h_nominal_unfolded_data->SetTitle("");
+    h_nominal_unfolded_data->Draw("p9histe");
+
+    h_nominal_unfolded_data->SetMarkerStyle(20);
+    h_nominal_unfolded_data->SetMarkerSize(.7);
+    h_nominal_unfolded_data->SetLineColor(kBlack);
+    h_nominal_unfolded_data->SetMarkerSize(.7);
+    h_nominal_unfolded_data->GetYaxis()->SetTitle("Events/bin");
+    h_nominal_unfolded_data->SetMinimum(10.);
+    h_nominal_unfolded_data->SetMaximum(9e9);
+
+    TH1* h_data_sys_temp;
+    int sysSize;
+    if(isDetector) sysSize = sysPtUnfold[sysName].size();
+    else sysSize = sysPtFSRUnfold[sysName].size();
+
+    for(int i = 0; i < sysSize; i++){
+
+     if (sysName == "QED_FSR" && i == 1) break;
+     TString isys;
+     isys.Form("%d", i);
+
+     TH1 * hsys_temp = NULL;
+
+    
+     if(isDetector){
+         if(var=="Pt"){
+             hsys_temp  = sysPtUnfold[sysName].at(i)->GetOutput("hunfolded_pt_temp_",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+         }
+         else{
+             hsys_temp  = sysMassUnfold[sysName].at(i)->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+             hsys_temp->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+         }
+     }
+     else{
+         if(var=="Pt"){
+             hsys_temp  = sysPtFSRUnfold[sysName].at(i)->GetOutput("hunfolded_pt_temp_",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+         }
+         else{
+             hsys_temp  = sysMassFSRUnfold[sysName].at(i)->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+             hsys_temp->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+         }
+     }
+     h_data_sys_temp = ((TH1F*)hsys_temp->Clone("sys_temp"));
+     h_data_sys_temp->Draw("histsame");
+     //h_data_sys_temp->SetLineColor(kBlack);
+     h_data_sys_temp->SetLineColor(2+i); 
+     h_data_sys_temp->SetLineStyle(2);
+
+     delete hsys_temp;
+    }
+    c1->cd();
+    
+    TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.4);
+    pad2->SetTopMargin(0.05);
+    pad2->SetBottomMargin(0.2);
+    pad2->SetTicks(1);
+    pad2->SetGridy(1);
+    pad2->Draw();
+    pad2->cd();
+
+   for(int i = 0; i < sysSize; i++){
+
+    if (sysName == "QED_FSR" && i == 1) break;
+        
+    TString isys;
+    isys.Form("%d", i); 
+
+    TH1 * hsys_temp = NULL;
+
+    if(isDetector){
+        if(var=="Pt"){
+            hsys_temp  = sysPtUnfold[sysName].at(i)->GetOutput("hunfolded_pt_temp_",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        }    
+        else{
+            hsys_temp  = sysMassUnfold[sysName].at(i)->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+            hsys_temp->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+        }    
+    }    
+    else{
+        if(var=="Pt"){
+            hsys_temp  = sysPtFSRUnfold[sysName].at(i)->GetOutput("hunfolded_pt_temp_",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        }    
+        else{
+            hsys_temp  = sysMassFSRUnfold[sysName].at(i)->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+            hsys_temp->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+        }    
+    }    
+    ratio = ((TH1F*)hsys_temp->Clone("ratio_temp"));
+    ratio->Divide(h_nominal_unfolded_data);
+    if(i==0 ){
+    ratio->Draw("hist");
+    if(sysName != "QED_FSR")ratio->GetYaxis()->SetTitle("Systematic/ Nominal input");
+    else ratio->GetYaxis()->SetTitle("Photos/ Pythia");
+    ratio->SetLineColor(2+i);
+    ratio->SetMinimum(0.8);
+    ratio->SetMaximum(1.2);
+    ratio->SetTitle("");
+    ratio->GetYaxis()->SetNdivisions(504);
+    ratio->GetYaxis()->SetRangeUser(0.81, 1.19);
+    ratio->SetLineStyle(2);
+    ratio->GetXaxis()->SetTitleOffset(2.5);
+    if(var=="Pt") ratio->GetXaxis()->SetTitle("p_{T} (GeV)");
+    if(var=="Mass") ratio->GetXaxis()->SetTitle("mass (GeV)");
+    }
+    else{
+    ratio->Draw("histsame");
+    ratio->SetLineStyle(2);
+    }
+    delete hsys_temp;
+    }   
+
+   CMS_lumi( c1, 4, 0 );
+   c1->cd();
+   if (isDetector) c1->SaveAs(outpdf+var+"_distribution_"+ibinMass+"_"+sysName+".pdf");
+   else c1->SaveAs(outpdf+var+"distribution_pre_fsr_"+ibinMass+sysName+".pdf");
+
+   delete h_nominal_unfolded_data;
+   delete ratio;
+   delete pad1;
+   delete pad2;
+   delete c1;
 }
 
 void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TString sysName, bool systematic, bool isFSRUnfold){

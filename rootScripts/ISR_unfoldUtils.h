@@ -164,11 +164,10 @@ public:
 
 	// draw reco histograms
 	void drawNominalRecoPlots(TString outpdf, TString filepath, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
+        void drawSysComparionPlots(TString outpdf, TString var, int nthMassBin, TString sysName, bool isFSRUnfold);
 
 	// draw nominal result with systematics 
 	void drawSysPlots(TString outpdf, int nthMassBin = 0, TString sysName = "", bool detector_unfold = true);
-
-	void studyFSRDRPlots(TString outpdf, TString var, int nthMassBin);
 
 	void drawtext(TGraph* g);
 
