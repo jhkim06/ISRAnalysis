@@ -178,7 +178,7 @@ void ISRUnfold::setSysFSRTUnfoldDensity(TString var, TString filepath, TString s
         // set response matrix
         TH2* hmcGenGen;
 
-        if( sysName == "AlphaS" || sysName == "Scale"){
+        if( sysName == "AlphaS" || sysName == "Scale" || sysName == "PDFerror"){
 
             if(var == "Pt")
                 hmcGenGen = (TH2*)filein->Get(phase_name + "/ptll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRec_" + systematic_postfix);
