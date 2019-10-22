@@ -41,6 +41,9 @@ def doISRAnalysis(args, year, channel, doSys):
             if modifiedLine.split()[1] == "matrix":
                     unfoldInputList['matrix'] = modifiedLine.split()[2]
 
+            if modifiedLine.split()[1] == "closure_matrix":
+                    unfoldInputList['closure_matrix'] = modifiedLine.split()[2]
+
             if modifiedLine.split()[1] == "fsr_matrix":
                     unfoldInputList['fsr_matrix'] = modifiedLine.split()[2]
 
@@ -66,11 +69,18 @@ def doISRAnalysis(args, year, channel, doSys):
     unfoldClass.setNomTUnfoldDensity("Mass",unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
 
     # for closure test
-    unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", -1, -1, args.phase_space_detector, args.FSR_dR_detector)
-    unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", -1, -1, args.phase_space_detector, args.FSR_dR_detector)
+    if channel == "electron" and year == "2016":
+        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['closure_matrix'],  "Closure", -1, -1, args.phase_space_detector+"_odd", args.FSR_dR_detector)
+        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['closure_matrix'],  "Closure", -1, -1, args.phase_space_detector+"_odd", args.FSR_dR_detector)
 
-    unfoldClass.setInput("Pt",   unfoldInputList['matrix'], True, "Closure", 0, 1., args.phase_space_detector)
-    unfoldClass.setInput("Mass", unfoldInputList['matrix'], True, "Closure", 0, 1., args.phase_space_detector)
+        unfoldClass.setInput("Pt",   unfoldInputList['closure_matrix'], True, "Closure", 0, 1., args.phase_space_detector+"_even")
+        unfoldClass.setInput("Mass", unfoldInputList['closure_matrix'], True, "Closure", 0, 1., args.phase_space_detector+"_even")
+    else :
+        unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", -1, -1, args.phase_space_detector, args.FSR_dR_detector)
+        unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", -1, -1, args.phase_space_detector, args.FSR_dR_detector)
+
+        unfoldClass.setInput("Pt",   unfoldInputList['matrix'], True, "Closure", 0, 1., args.phase_space_detector)
+        unfoldClass.setInput("Mass", unfoldInputList['matrix'], True, "Closure", 0, 1., args.phase_space_detector)
 
     # set unfolding input histogram
     unfoldClass.setInput("Pt",   unfoldInputList['hist'], False, "nominal", 0, 1., "detector_level")

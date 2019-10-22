@@ -2470,6 +2470,7 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin){
     hunfolded_data->SetLineColor(kBlack);
     hunfolded_data->GetYaxis()->SetTitle("Events/bin");
     hunfolded_data->SetMinimum(10.);
+    hunfolded_data->SetMaximum(9e9);
 
     hpreFSR_mc->SetLineColor(kRed);
 
@@ -2478,42 +2479,43 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin){
     mean_nom.Form("%.5f", hunfolded_data->GetMean());
     meanMC_nom.Form("%.5f", hpreFSR_mc->GetMean());
 
-    TLegend* leg_nom = new TLegend(0.45, 0.4, 0.75, 0.6,"","brNDC");
+    TLegend* leg_nom = new TLegend(0.45, 0.2, 0.75, 0.4,"","brNDC");
     //leg_nom->SetNColumns(2);
-    leg_nom->SetTextSize(0.055);
+    leg_nom->SetTextSize(0.05);
     leg_nom->SetFillStyle(0);
     leg_nom->SetBorderSize(0);
-    leg_nom->AddEntry(hunfolded_data, "Unfolded MC (mean: " + mean_nom + ")", "pl");
-    leg_nom->AddEntry(hpreFSR_mc, "Gen MC (mean: " + meanMC_nom + ")", "l");
+    leg_nom->AddEntry(hunfolded_data, "Unfolded MC", "pl");
+    leg_nom->AddEntry(hpreFSR_mc, "Gen MC", "l");
 
     TLatex chi2_norm;
     TString chi2_;
 
     // TODO add Mass option 
-    if(var == "Pt" ){
-            chi2_.Form("%f",DoFit("Pt", nthMassBin));
-            chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
-    }
+    //if(var == "Pt" ){
+    //        chi2_.Form("%f",DoFit("Pt", nthMassBin));
+    //        chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
+    //}
     leg_nom->Draw();
 
     c1->cd();
 
     TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.4);
     pad2->SetTopMargin(0.05);
-    pad2->SetBottomMargin(0.2);
+    pad2->SetBottomMargin(0.5);
     pad2->SetTicks(1);
     pad2->SetGridy(1);
     pad2->Draw();
 
     pad2->cd();
     ratio->Draw("histe");
-    ratio->GetYaxis()->SetTitle("Unfold/ MC Gen");
+    ratio->GetYaxis()->SetTitle("Unfold MC/ Gen MC");
     ratio->GetXaxis()->SetTitle("p_{T} at pre FSR(GeV)");
-    ratio->SetMinimum(0.8);
-    ratio->SetMaximum(1.2);
+    ratio->SetMinimum(0.6);
+    ratio->SetMaximum(1.4);
     ratio->SetTitle("");
-    ratio->GetXaxis()->SetTitleOffset(1.5);
-    ratio->GetYaxis()->SetNdivisions(515);
+    ratio->GetXaxis()->SetTitleOffset(5.5);
+    ratio->GetYaxis()->SetNdivisions(504);
+    ratio->GetYaxis()->SetRangeUser(0.61, 1.39);
 
     CMS_lumi( c1, 4, 0 );
     c1->cd();
