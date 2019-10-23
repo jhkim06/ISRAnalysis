@@ -1359,8 +1359,10 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                     }
 
                     TH1F *hpdfsys = NULL;
+                    TH1F *hpdfsys_mc = NULL;
                     if((it->first)=="PDFerror"){ 
                         hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data_pre_fsr.at(i)-0.2, meanMass_data_pre_fsr.at(i)+0.2); // temp histogram to contain PDF variations
+                        hpdfsys_mc = new TH1F("pdfsys_mc", "pdfsys_mc", 100, meanMass_data_pre_fsr.at(i)-0.2, meanMass_data_pre_fsr.at(i)+0.2); // temp histogram to contain PDF variations
                     }
 
                     Double_t err = -999.; // 
@@ -1373,6 +1375,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
 
                             if((it->first)=="PDFerror"){
                                     hpdfsys->Fill(it->second.at(j));
+                                    hpdfsys_mc->Fill(meanMass_sysmc_pre_fsr.at(i)[it->first].at(j));
                             }
 
                             Double_t temp_err =  0.;
@@ -1400,7 +1403,9 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                     }
                     if((it->first)=="PDFerror"){
                             err = hpdfsys->GetRMS();
+                            err_mc = hpdfsys_mc->GetRMS();
                             delete hpdfsys;
+                            delete hpdfsys_mc;
                     }
 
                     temp_map_[it->first] = err;
@@ -1619,8 +1624,10 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
                 }   
                 
                 TH1F *hpdfsys = NULL;
+                TH1F *hpdfsys_mc = NULL;
                 if((it->first)=="PDFerror")
                     hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanPt_data_pre_fsr.at(i)-0.2, meanPt_data_pre_fsr.at(i)+0.2); // temp histogram to contain PDF variations
+                    hpdfsys_mc = new TH1F("pdfsys_mc", "pdfsys_mc", 100, meanPt_data_pre_fsr.at(i)-0.2, meanPt_data_pre_fsr.at(i)+0.2); // temp histogram to contain PDF variations
 
                 Double_t err = -999.; // 
                 Double_t err_mc = -999.; //
@@ -1630,6 +1637,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
 
                     if((it->first)=="PDFerror"){
                         hpdfsys->Fill(it->second.at(j));
+                        hpdfsys_mc->Fill(meanPt_sysmc_pre_fsr.at(i)[it->first].at(j));
                     }   
 
                     Double_t temp_err =  0.;
@@ -1656,7 +1664,9 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
 
                 if((it->first)=="PDFerror"){
                     err = hpdfsys->GetRMS(); // only for 2016 DY MC
+                    err_mc = hpdfsys_mc->GetRMS(); // only for 2016 DY MC
                     delete hpdfsys;
+                    delete hpdfsys_mc;
                 }
                 //if((it->first) == "QED_FSR") cout << "QED FSR error (pt): " << err << endl;
                 temp_map_[it->first] = err;
@@ -1862,13 +1872,15 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
     
     //TGraphErrors *grMC_preFSR = new TGraphErrors(9, &meanMass_mc_pre_fsr_[0], &meanPt_mc_pre_fsr_[0], &meanMassStatErr_mc_pre_fsr_[0], &meanPtStatErr_mc_pre_fsr_[0]);
     TGraphErrors *grMC_preFSR = new TGraphErrors(5, &meanMass_mc_pre_fsr[0], &meanPt_mc_pre_fsr[0], &meanMassSysErr_mc_pre_fsr[0], &meanPtSysErr_mc_pre_fsr[0]);
-    grMC_preFSR->SetLineColor(kRed);
-    grMC_preFSR->SetMarkerColor(kRed);
-    grMC_preFSR->SetMarkerStyle(marker_);
-    grMC_preFSR->SetMarkerSize(.5);
-    grMC_preFSR->SetLineStyle(1);
-    grMC_preFSR->SetLineColor(kRed);
-    grMC_preFSR->Draw("pZ same");
+    //grMC_preFSR->SetMarkerColor(kRed);
+    //grMC_preFSR->SetMarkerStyle(marker_);
+    //grMC_preFSR->SetMarkerSize(.5);
+    //grMC_preFSR->SetLineStyle(1);
+    //grMC_preFSR->SetLineColor(kRed);
+    //grMC_preFSR->Draw("pZ same");
+    grMC_preFSR->SetFillColor(kRed);
+    grMC_preFSR->SetFillStyle(3005);
+    grMC_preFSR->Draw("E3 same");
     grMC_preFSR->SetName("preFSRMC_"+channel_name+"_"+year_string);
     
     TGraphErrors *grUnfolded_pre_fsr_dRp1 = new TGraphErrors(5, &meanMass_data_pre_fsr_dRp1[0], &meanPt_data_pre_fsr_dRp1[0], &meanMassStatErr_data_pre_fsr_dRp1[0], &meanPtStatErr_data_pre_fsr_dRp1[0]);
