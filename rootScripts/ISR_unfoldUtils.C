@@ -77,6 +77,8 @@ void ISRUnfold::setNomTUnfoldDensity(TString var, TString filepath, TString phas
             cout << "ISRUnfold::setNomTUnfoldDensity, only Pt and Mass available for var" << endl;
             exit (EXIT_FAILURE);
         }
+
+    filein->Close();
 }
 
 void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString phase_name, TString fsr_correction_name){
@@ -147,6 +149,8 @@ void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString p
             cout << "ISRUnfold::setNomTUnfoldDensity, only Pt and Mass available for var" << endl;
             exit (EXIT_FAILURE);
         }
+
+    filein->Close();
 }
 
 void ISRUnfold::setSysFSRTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name, TString fsr_correction_name){
@@ -160,7 +164,7 @@ void ISRUnfold::setSysFSRTUnfoldDensity(TString var, TString filepath, TString s
             if(nth == 1 ) systematic_postfix+="Down";
         }
 
-        if(totSysN == 6 && sysName == "Scale"){
+        if(totSysN == 6 && (sysName == "Scale" || sysName == "pdfScale")){
             if(nth == 0 ) systematic_postfix+="AUp";
             if(nth == 1 ) systematic_postfix+="ADown";
             if(nth == 2 ) systematic_postfix+="BUp";
@@ -178,7 +182,7 @@ void ISRUnfold::setSysFSRTUnfoldDensity(TString var, TString filepath, TString s
         // set response matrix
         TH2* hmcGenGen;
 
-        if( sysName == "AlphaS" || sysName == "Scale" || sysName == "PDFerror"){
+        if( (sysName == "AlphaS" || sysName == "alphaS") || (sysName == "Scale" || sysName == "pdfScale") || sysName == "PDFerror"){
 
             if(var == "Pt")
                 hmcGenGen = (TH2*)filein->Get(phase_name + "/ptll_gen_post_fsr_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRec_" + systematic_postfix);
@@ -251,6 +255,8 @@ void ISRUnfold::setSysFSRTUnfoldDensity(TString var, TString filepath, TString s
             cout << "ISRUnfold::setNomTUnfoldDensity, only Pt and Mass available for var" << endl;
             exit (EXIT_FAILURE);
         }
+
+    filein->Close();
 }
 
 void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name, TString fsr_correction_name){
@@ -264,7 +270,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
             if(nth == 1 ) systematic_postfix+="Down";
         }
 
-        if(totSysN == 6 && sysName =="Scale"){
+        if(totSysN == 6 && (sysName =="Scale" || sysName =="pdfScale")){
             if(nth == 0 ) systematic_postfix+="AUp";
             if(nth == 1 ) systematic_postfix+="ADown";
             if(nth == 2 ) systematic_postfix+="BUp";
@@ -364,6 +370,8 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
             cout << "ISRUnfold::setSysTUnfoldDensity, only Pt and Mass available for var" << endl;
             exit (EXIT_FAILURE);
         }
+
+    filein->Close();
 }
 
 void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unfold, bool fsr_systematic){
@@ -674,6 +682,7 @@ void ISRUnfold::setFSRUnfoldInput(TString filepath, bool isSys, TString sysName,
         }
     }
 
+    filein->Close();
 }
 
 void ISRUnfold::doISRQEDFSRUnfold(bool doSys){
@@ -797,13 +806,21 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
         }
 
         TString systematic_postfix = sysName;
+        if(year_ == 2017 ){
+            if(sysName == "Scale"){
+                systematic_postfix = "pdfScale";
+            }
+            if(sysName == "AlphaS"){
+                systematic_postfix = "alphaS";
+            }
+        }
 
         if(totSysN == 2){
             if(nth == 0 ) systematic_postfix+="Up";
             if(nth == 1 ) systematic_postfix+="Down";
         }
 
-        if(totSysN == 6 && sysName == "Scale"){
+        if(totSysN == 6 && (sysName == "Scale" || sysName =="pdfScale")){
             if(nth == 0 ) systematic_postfix+="AUp";
             if(nth == 1 ) systematic_postfix+="ADown";
             if(nth == 2 ) systematic_postfix+="BUp";
@@ -843,14 +860,25 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
                 }
             }
             else{
-                if(var == "Pt"){
-                    hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "_" + systematic_postfix);
+                if( (bkgName=="WW_pythia" || bkgName=="WZ_pythia" || bkgName=="ZZ_pythia") && (sysName=="pdfScale"||sysName=="Scale" || sysName=="AlphaS"||sysName=="alphaS")){
+                    if(var == "Pt"){
+                        hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "nominal");
+                    }
+                    if(var == "Mass"){
+                        hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "nominal");
+                    }
                 }
-                if(var == "Mass"){
-                    hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "_" + systematic_postfix);
+                else{
+                    if(var == "Pt"){
+                        hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "_" + systematic_postfix);
+                    }
+                    if(var == "Mass"){
+                        hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "_" + systematic_postfix);
+                    }
                 }
             }
 
+            cout << "bkg: " << bkgName << " " << phase_name + "/hist_ptll/histo_" + bkgName + "_" + systematic_postfix << endl;
             if( var == "Pt" )   sysPtUnfold[sysName].at(nth)  ->SubtractBackground(hRec, bkgName, bkg_scale);
             if( var == "Mass" ) sysMassUnfold[sysName].at(nth)->SubtractBackground(hRec, bkgName, bkg_scale);
 	}
@@ -971,6 +999,7 @@ void ISRUnfold::doISRUnfold(bool doSys){
 	    while(it != sysPtUnfold.end()){
 	    	int nSys = it->second.size();
 	    	for(int i = 0; i < nSys; i++){
+                        cout << it->first << endl;
 	    		if((it->first)=="unfoldScan" || (it->first)=="unfoldBias" ){
 	    			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
   	    			iBest=it->second.at(i)->ScanTau(nScan,0.,0.,&rhoLogTau,
@@ -1878,9 +1907,12 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
     //grMC_preFSR->SetLineStyle(1);
     //grMC_preFSR->SetLineColor(kRed);
     //grMC_preFSR->Draw("pZ same");
-    grMC_preFSR->SetFillColor(kRed);
-    grMC_preFSR->SetFillStyle(3005);
+    //
+    //grMC_preFSR->SetFillColor(kRed);
+    //grMC_preFSR->SetFillStyle(3001);
+    grMC_preFSR->SetFillColorAlpha(kRed,0.3);
     grMC_preFSR->Draw("E3 same");
+    //grMC_preFSR->Draw("E2 same");
     grMC_preFSR->SetName("preFSRMC_"+channel_name+"_"+year_string);
     
     TGraphErrors *grUnfolded_pre_fsr_dRp1 = new TGraphErrors(5, &meanMass_data_pre_fsr_dRp1[0], &meanPt_data_pre_fsr_dRp1[0], &meanMassStatErr_data_pre_fsr_dRp1[0], &meanPtStatErr_data_pre_fsr_dRp1[0]);

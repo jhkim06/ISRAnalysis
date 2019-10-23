@@ -88,8 +88,18 @@ def doISRAnalysis(args, year, channel, doSys):
     setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "nominal", False, 0, -1)
 
     # set systematic response matrix and input histograms
-    if channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 101, "unfoldBias": 1, "unfoldScan": 1}
-    if channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 101, "unfoldBias": 1, "unfoldScan": 1}
+    if year == "2016":
+        if channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 101, "unfoldBias": 1, "unfoldScan": 1}
+        if channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 101, "unfoldBias": 1, "unfoldScan": 1}
+
+    if year == "2017":
+        if channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "unfoldBias": 1, "unfoldScan": 1}
+        if channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "unfoldBias": 1, "unfoldScan": 1}
+
+    if year == "2018":
+        if channel == "electron" : sysDict = {"PU": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "Scale": 6, "unfoldBias": 1, "unfoldScan": 1}
+        if channel == "muon" :     sysDict = {"PU": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "Scale": 6, "unfoldBias": 1, "unfoldScan": 1}
+
     if doSys == True:
         #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1}
 
@@ -258,8 +268,8 @@ if args.doISRAnalysis:
 
     print "use ISR function"    
     result_2016 = doISRAnalysis(args, "2016", args.channel, True)
-    result_2017 = doISRAnalysis(args, "2017", args.channel, False)
-    result_2018 = doISRAnalysis(args, "2018", args.channel, False)
+    result_2017 = doISRAnalysis(args, "2017", args.channel, True)
+    result_2018 = doISRAnalysis(args, "2018", args.channel, True)
 
     result_2016.drawISRresult(outputDirectory + "ISRfit_", False, False)
     canvas_2017 = result_2017.drawISRresult(outputDirectory + "ISRfit_", False, False)
