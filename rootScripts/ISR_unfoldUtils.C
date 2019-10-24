@@ -878,7 +878,7 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
                 }
             }
 
-            cout << "bkg: " << bkgName << " " << phase_name + "/hist_ptll/histo_" + bkgName + "_" + systematic_postfix << endl;
+            //cout << "bkg: " << bkgName << " " << phase_name + "/hist_ptll/histo_" + bkgName + "_" + systematic_postfix << endl;
             if( var == "Pt" )   sysPtUnfold[sysName].at(nth)  ->SubtractBackground(hRec, bkgName, bkg_scale);
             if( var == "Mass" ) sysMassUnfold[sysName].at(nth)->SubtractBackground(hRec, bkgName, bkg_scale);
 	}
@@ -999,7 +999,7 @@ void ISRUnfold::doISRUnfold(bool doSys){
 	    while(it != sysPtUnfold.end()){
 	    	int nSys = it->second.size();
 	    	for(int i = 0; i < nSys; i++){
-                        cout << it->first << endl;
+                        //cout << it->first << endl;
 	    		if((it->first)=="unfoldScan" || (it->first)=="unfoldBias" ){
 	    			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
   	    			iBest=it->second.at(i)->ScanTau(nScan,0.,0.,&rhoLogTau,
@@ -1796,8 +1796,8 @@ void ISRUnfold::drawISRRun2results(TString outpdf, TCanvas* c_2017, TCanvas* c_2
     TGraphErrors *grUnfolded_pre_fsr = new TGraphErrors(5, &meanMass_data_pre_fsr[0], &meanPt_data_pre_fsr[0], &meanMassTotErr_data_pre_fsr[0], &meanPtTotErr_data_pre_fsr[0]);
     grUnfolded_pre_fsr->SetLineColor(kBlack);
     grUnfolded_pre_fsr->SetMarkerColor(kBlack);
-    grUnfolded_pre_fsr->SetMarkerStyle(24);
-    grUnfolded_pre_fsr->SetMarkerSize(0.9);
+    grUnfolded_pre_fsr->SetMarkerStyle(20);
+    grUnfolded_pre_fsr->SetMarkerSize(1.);
     grUnfolded_pre_fsr->SetLineStyle(1);
     grUnfolded_pre_fsr->Draw("apZ");
     grUnfolded_pre_fsr->GetYaxis()->SetRangeUser(10.,30.);
@@ -1809,26 +1809,63 @@ void ISRUnfold::drawISRRun2results(TString outpdf, TCanvas* c_2017, TCanvas* c_2
     TGraphErrors* grUnfolded_pre_fsr_2017 = (TGraphErrors*)c_2017->GetListOfPrimitives()->FindObject("preFSRUnfoldedData_"+channel_name+"_2017");
     TGraphErrors* grUnfolded_pre_fsr_2018 = (TGraphErrors*)c_2018->GetListOfPrimitives()->FindObject("preFSRUnfoldedData_"+channel_name+"_2018");
 
+    TGraphErrors* grMC_pre_fsr_2017 = (TGraphErrors*)c_2017->GetListOfPrimitives()->FindObject("preFSRMC_"+channel_name+"_2017");
+    TGraphErrors* grMC_pre_fsr_2018 = (TGraphErrors*)c_2018->GetListOfPrimitives()->FindObject("preFSRMC_"+channel_name+"_2018");
+
     grUnfolded_pre_fsr_2017->SetLineColor(kBlack);
     grUnfolded_pre_fsr_2017->SetMarkerColor(kBlack);
     grUnfolded_pre_fsr_2017->SetMarkerStyle(marker_+1);
-    grUnfolded_pre_fsr_2017->SetMarkerSize(0.9);
+    grUnfolded_pre_fsr_2017->SetMarkerSize(1.);
     grUnfolded_pre_fsr_2017->SetLineStyle(1);
     grUnfolded_pre_fsr_2017->Draw("pZ same");
 
     grUnfolded_pre_fsr_2018->SetLineColor(kBlack);
     grUnfolded_pre_fsr_2018->SetMarkerColor(kBlack);
     grUnfolded_pre_fsr_2018->SetMarkerStyle(marker_+2);
-    grUnfolded_pre_fsr_2018->SetMarkerSize(0.9);
+    grUnfolded_pre_fsr_2018->SetMarkerSize(1.);
     grUnfolded_pre_fsr_2018->SetLineStyle(1);
     grUnfolded_pre_fsr_2018->Draw("pZ same");
 
+    //grMC_pre_fsr_2017->SetFillColorAlpha(kBlack,0.3);
+    //grMC_pre_fsr_2017->Draw("E3 same");
+
+    grMC_pre_fsr_2017->SetMarkerColor(kRed);
+    grMC_pre_fsr_2017->SetMarkerStyle(21);
+    grMC_pre_fsr_2017->SetMarkerSize(0.9);
+    grMC_pre_fsr_2017->SetLineStyle(1);
+    grMC_pre_fsr_2017->SetLineColor(kRed);
+    grMC_pre_fsr_2017->Draw("pZ same");
+
+    //grMC_pre_fsr_2018->SetFillColorAlpha(kBlack,0.3);
+    //grMC_pre_fsr_2018->Draw("E3 same");
+
+    grMC_pre_fsr_2018->SetMarkerColor(kRed);
+    grMC_pre_fsr_2018->SetMarkerStyle(marker_);
+    grMC_pre_fsr_2018->SetMarkerSize(0.9);
+    grMC_pre_fsr_2018->SetLineStyle(1);
+    grMC_pre_fsr_2018->SetLineColor(kRed);
+    //grMC_pre_fsr_2018->Draw("pZ same");
+
+    TGraphErrors *grMC_pre_fsr_2016 = new TGraphErrors(5, &meanMass_mc_pre_fsr[0], &meanPt_mc_pre_fsr[0], &meanMassSysErr_mc_pre_fsr[0], &meanPtSysErr_mc_pre_fsr[0]);
+    //grMC_preFSR->SetFillColorAlpha(kBlack,0.3);
+    //grMC_preFSR->Draw("E3 same");
+
+    grMC_pre_fsr_2016->SetMarkerColor(kRed);
+    grMC_pre_fsr_2016->SetMarkerStyle(20);
+    grMC_pre_fsr_2016->SetMarkerSize(1.);
+    grMC_pre_fsr_2016->SetLineStyle(1);
+    grMC_pre_fsr_2016->SetLineColor(kRed);
+    grMC_pre_fsr_2016->Draw("pZ same");
+
     TLegend* leg_ = new TLegend(0.53, 0.25, 0.9, 0.5,"","brNDC");
+    leg_->SetNColumns(2);
     leg_->SetTextSize(0.027);
     leg_->SetFillStyle(0); // transparent 
     leg_->SetBorderSize(0);
     leg_->AddEntry(grUnfolded_pre_fsr, "2016 data", "pe");
+    leg_->AddEntry(grMC_pre_fsr_2016, "2016 DY MC", "pe");
     leg_->AddEntry(grUnfolded_pre_fsr_2017, "2017 data ", "pe");
+    leg_->AddEntry(grMC_pre_fsr_2017, "2017,2018 DY MC", "pe");
     leg_->AddEntry(grUnfolded_pre_fsr_2018, "2018 data ", "pe");
     leg_->Draw();
 
