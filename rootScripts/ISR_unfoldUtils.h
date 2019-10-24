@@ -157,7 +157,7 @@ public:
         void drawClosurePlots(TString outpdf, TString var, int nthMassBin);
 
 	// draw nominal detector level, unfolded plot, and final result plot without systematic
-	void drawNominalPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false, bool isFSRUnfold = false);
+	void drawNominalPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false, bool isFSRUnfold = false, bool fullSys = false);
 
 	// draw input histograms using GetInput	
 	void drawInputPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "");

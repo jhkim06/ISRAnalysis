@@ -2698,7 +2698,7 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
    delete c1;
 }
 
-void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TString sysName, bool systematic, bool isFSRUnfold){
+void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TString sysName, bool systematic, bool isFSRUnfold, bool fullSys){
 
         const TUnfoldBinningV17* temp_binning = nomPtUnfold->GetOutputBinning("Gen_Pt");
         const TUnfoldBinningV17* temp_binning_rec = nomPtUnfold->GetInputBinning("Rec_Pt");
@@ -2966,166 +2966,194 @@ void ISRUnfold::drawNominalPlots(TString outpdf, TString var, int nthMassBin, TS
             }
         }
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////// systematics ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        if(isFSRUnfold && systematic && (sysName != "PDFerror")){
-             
-            TH1 * hdatasys0_temp = NULL;
-            TH1 * hdatasys1_temp = NULL;
+        /////////////////////////// systematics ////////////////////////////
+       
+        std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtFSRUnfold.begin();
+        if(isFSRUnfold && systematic ){
 
-            TH1 * hmcsys0_temp = NULL;
-            TH1 * hmcsys1_temp = NULL;
-            int systematic_variation_index = 0;
-            int systematic_variation_index_mc = 0;
-      
-            // read histogram giving maximum variation on mean value 
-            if(var == "Pt"){
-                if(sysName != "QED_FSR"){
-                    systematic_variation_index = meanPtErrIdx_sysdata_pre_fsr.at(nthMassBin)[sysName];
-                    hdatasys0_temp = sysPtFSRUnfold[sysName].at(systematic_variation_index)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-
-                    systematic_variation_index_mc = meanPtErrIdx_sysmc_pre_fsr.at(nthMassBin)[sysName];
-                    //cout << "sys: " << sysName << " index: " << systematic_variation_index_mc << endl; 
-                    hmcsys0_temp = sysPtFSRUnfold[sysName].at(systematic_variation_index_mc)->GetBias("hmc_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                }
-                else{
-                    hdatasys0_temp = sysPtFSRUnfold[sysName].at(0)->GetOutput("hunfolded_pt_systemp_fsr0",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                    hdatasys1_temp = sysPtFSRUnfold[sysName].at(1)->GetOutput("hunfolded_pt_systemp_fsr1",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-
-                    hmcsys0_temp = sysPtFSRUnfold[sysName].at(0)->GetBias("hmc_pt_systemp_fsr0",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                    hmcsys1_temp = sysPtFSRUnfold[sysName].at(1)->GetBias("hmc_pt_systemp_fsr1",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                }
-            }
-
-            if(var == "Mass"){
-                if(sysName != "QED_FSR"){
-                    systematic_variation_index = meanMassErrIdx_sysdata_pre_fsr.at(nthMassBin)[sysName];
-                    hdatasys0_temp = sysMassFSRUnfold[sysName].at(systematic_variation_index)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                    hdatasys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-
-                    systematic_variation_index_mc = meanMassErrIdx_sysmc_pre_fsr.at(nthMassBin)[sysName];
-                    hmcsys0_temp = sysMassFSRUnfold[sysName].at(systematic_variation_index_mc)->GetBias("hmc_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                    hmcsys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                }
-                else{
-                    hdatasys0_temp = sysMassFSRUnfold[sysName].at(0)->GetOutput("hunfolded_mass_systemp_fsr0",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                    hdatasys1_temp = sysMassFSRUnfold[sysName].at(1)->GetOutput("hunfolded_mass_systemp_fsr1",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                    hdatasys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                    hdatasys1_temp->GetXaxis()->SetRange(hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-
-                    hmcsys0_temp = sysMassFSRUnfold[sysName].at(0)->GetBias("hmc_mass_systemp_fsr0",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                    hmcsys1_temp = sysMassFSRUnfold[sysName].at(1)->GetBias("hmc_mass_systemp_fsr1",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                    hmcsys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                    hmcsys1_temp->GetXaxis()->SetRange(hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                }
-            }
-
-            TH1F * ratio0_temp = NULL;
-            TH1F * ratio1_temp = NULL;
-
-            TH1F * ratio0_temp_mc = NULL;
-            TH1F * ratio1_temp_mc = NULL;
-
-            if(sysName != "QED_FSR"){
-                if(data_over_mc){
-                    ratio0_temp = (TH1F*)hdatasys0_temp->Clone("ratio");
-                    ratio0_temp->Divide(hpreFSR_mc);
-
-                    ratio0_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
-                    ratio0_temp_mc->Divide(hmcsys0_temp);
-                }
-                else{
-                    ratio0_temp = (TH1F*)hpreFSR_mc->Clone("ratio");
-                    ratio0_temp->Divide(hdatasys0_temp);
-
-                    ratio0_temp_mc = (TH1F*)hmcsys0_temp->Clone("ratio_mc");
-                    ratio0_temp_mc->Divide(hunfolded_data);
-                }
-            }
-            else{
-                if(data_over_mc){
-                    ratio0_temp = (TH1F*)hdatasys0_temp->Clone("ratio");
-                    ratio0_temp->Divide(hpreFSR_mc);
-
-                    ratio1_temp = (TH1F*)hdatasys1_temp->Clone("ratio");
-                    ratio1_temp->Divide(hpreFSR_mc);
-
-                    ratio0_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
-                    ratio0_temp_mc->Divide(hmcsys0_temp);
-
-                    ratio1_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
-                    ratio1_temp_mc->Divide(hmcsys1_temp);
-                }
-                else{
-                    ratio0_temp = (TH1F*)hpreFSR_mc->Clone("ratio");
-                    ratio0_temp->Divide(hdatasys0_temp);
-
-                    ratio1_temp = (TH1F*)hpreFSR_mc->Clone("ratio");
-                    ratio1_temp->Divide(hdatasys1_temp);
-
-                    ratio0_temp_mc = (TH1F*)hmcsys0_temp->Clone("ratio");
-                    ratio0_temp_mc->Divide(hunfolded_data);
-
-                    ratio1_temp_mc = (TH1F*)hmcsys1_temp->Clone("ratio");
-                    ratio1_temp_mc->Divide(hunfolded_data);
-
-                }
-            }
-           
-
-
-            // loop over each bin of unfolded histogram
+            //initialize errors
             for(int ibin = 1; ibin<hunfolded_sys_err->GetNbinsX()+1;ibin++){
-                Double_t temp_err;
-                Double_t temp_err_mc;
-                Double_t temp_ratio_err;
-                Double_t temp_ratio_err_mc;
-                // get "envelope"
-                // absolute difference between nominal unfolded histogram and systematic unfolded histogram
-                if(sysName != "QED_FSR"){
-                    temp_err =  fabs(hunfolded_data->GetBinContent(ibin) - hdatasys0_temp->GetBinContent(ibin));
-                    temp_ratio_err = fabs(ratio->GetBinContent(ibin) - ratio0_temp->GetBinContent(ibin));
 
-                    temp_err_mc =  fabs(hpreFSR_mc->GetBinContent(ibin) - hmcsys0_temp->GetBinContent(ibin));
-                    temp_ratio_err_mc = fabs(ratio->GetBinContent(ibin) - ratio0_temp_mc->GetBinContent(ibin));
-                }
-                else{   
-                    temp_err =  fabs(hdatasys0_temp->GetBinContent(ibin) - hdatasys1_temp->GetBinContent(ibin));
-                    temp_ratio_err = fabs(ratio0_temp->GetBinContent(ibin) - ratio1_temp->GetBinContent(ibin));
-
-                    temp_err_mc =  fabs(hmcsys0_temp->GetBinContent(ibin) - hmcsys1_temp->GetBinContent(ibin));
-                    temp_ratio_err_mc = fabs(ratio0_temp_mc->GetBinContent(ibin) - ratio1_temp_mc->GetBinContent(ibin));
-                }
-
-                hunfolded_sys_err->SetBinError(ibin, temp_err);
-                hpreFSR_mc_sys_err->SetBinError(ibin, temp_err_mc);
+                hunfolded_sys_err->SetBinError(ibin, 0.);
+                hpreFSR_mc_sys_err->SetBinError(ibin, 0.);
                 ratio_sys_err->SetBinContent(ibin, 1.);
-	        if(temp_ratio_err < 5.e-6) temp_ratio_err = 1.e-6;
-                ratio_sys_err->SetBinError(ibin, temp_ratio_err);
-	        if(temp_ratio_err_mc < 5.e-6) temp_ratio_err_mc = 1.e-6;
-                ratio_sys_err_mc->SetBinError(ibin, temp_ratio_err_mc);
+                ratio_sys_err->SetBinError(ibin, 0.);
+                ratio_sys_err_mc->SetBinError(ibin, 0.);
 
-            }// loop for bin contents
+            }
 
-            delete ratio0_temp;
-            delete ratio1_temp;
-            delete ratio0_temp_mc;
-            delete ratio1_temp_mc;
-            delete hdatasys0_temp;
-            delete hdatasys1_temp;
-            delete hmcsys0_temp;
-            delete hmcsys1_temp;
+            
+            while(it != sysPtFSRUnfold.end()){ 
+            if(!fullSys && it->first != sysName){it++; continue;}
 
-            // draw systematic envelope for systematic source 
-            hunfolded_sys_err->SetLineColor(12);
-            hunfolded_sys_err->SetFillColor(12);
-            hunfolded_sys_err->SetLineWidth(5);
-            hunfolded_sys_err->SetFillStyle(3005);
-            hunfolded_sys_err->SetMarkerSize(0);
-            hunfolded_sys_err->Draw("E2 same");
+            if((it->first != "PDFerror" && it->first != "Closure")){
 
-	    //delete hdata_sys_temp;
+                 
+                TH1 * hdatasys0_temp = NULL;
+                TH1 * hdatasys1_temp = NULL;
+
+                TH1 * hmcsys0_temp = NULL;
+                TH1 * hmcsys1_temp = NULL;
+
+                int systematic_variation_index = 0;
+                int systematic_variation_index_mc = 0;
+      
+                // read histogram giving maximum variation on mean value 
+                if(var == "Pt"){
+                    if(it->first != "QED_FSR"){
+                        systematic_variation_index = meanPtErrIdx_sysdata_pre_fsr.at(nthMassBin)[it->first];
+                        hdatasys0_temp = sysPtFSRUnfold[it->first].at(systematic_variation_index)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+
+                        systematic_variation_index_mc = meanPtErrIdx_sysmc_pre_fsr.at(nthMassBin)[it->first];
+                        //cout << "sys: " << it->first << " index: " << systematic_variation_index_mc << endl; 
+                        hmcsys0_temp = sysPtFSRUnfold[it->first].at(systematic_variation_index_mc)->GetBias("hmc_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                    }
+                    else{
+                        hdatasys0_temp = sysPtFSRUnfold[it->first].at(0)->GetOutput("hunfolded_pt_systemp_fsr0",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                        hdatasys1_temp = sysPtFSRUnfold[it->first].at(1)->GetOutput("hunfolded_pt_systemp_fsr1",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+
+                        hmcsys0_temp = sysPtFSRUnfold[it->first].at(0)->GetBias("hmc_pt_systemp_fsr0",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                        hmcsys1_temp = sysPtFSRUnfold[it->first].at(1)->GetBias("hmc_pt_systemp_fsr1",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                    }
+                }
+
+                if(var == "Mass"){
+                    if(it->first != "QED_FSR"){
+                        systematic_variation_index = meanMassErrIdx_sysdata_pre_fsr.at(nthMassBin)[it->first];
+                        hdatasys0_temp = sysMassFSRUnfold[it->first].at(systematic_variation_index)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                        hdatasys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+
+                        systematic_variation_index_mc = meanMassErrIdx_sysmc_pre_fsr.at(nthMassBin)[it->first];
+                        hmcsys0_temp = sysMassFSRUnfold[it->first].at(systematic_variation_index_mc)->GetBias("hmc_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                        hmcsys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    }
+                    else{
+                        hdatasys0_temp = sysMassFSRUnfold[it->first].at(0)->GetOutput("hunfolded_mass_systemp_fsr0",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                        hdatasys1_temp = sysMassFSRUnfold[it->first].at(1)->GetOutput("hunfolded_mass_systemp_fsr1",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                        hdatasys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                        hdatasys1_temp->GetXaxis()->SetRange(hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+
+                        hmcsys0_temp = sysMassFSRUnfold[it->first].at(0)->GetBias("hmc_mass_systemp_fsr0",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                        hmcsys1_temp = sysMassFSRUnfold[it->first].at(1)->GetBias("hmc_mass_systemp_fsr1",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                        hmcsys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                        hmcsys1_temp->GetXaxis()->SetRange(hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    }
+                }
+
+                TH1F * ratio0_temp = NULL;
+                TH1F * ratio1_temp = NULL;
+
+                TH1F * ratio0_temp_mc = NULL;
+                TH1F * ratio1_temp_mc = NULL;
+
+                if(it->first != "QED_FSR"){
+                    if(data_over_mc){
+                        ratio0_temp = (TH1F*)hdatasys0_temp->Clone("ratio");
+                        ratio0_temp->Divide(hpreFSR_mc);
+
+                        ratio0_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
+                        ratio0_temp_mc->Divide(hmcsys0_temp);
+                    }
+                    else{
+                        ratio0_temp = (TH1F*)hpreFSR_mc->Clone("ratio");
+                        ratio0_temp->Divide(hdatasys0_temp);
+
+                        ratio0_temp_mc = (TH1F*)hmcsys0_temp->Clone("ratio_mc");
+                        ratio0_temp_mc->Divide(hunfolded_data);
+                    }
+                }
+                else{
+                    if(data_over_mc){
+                        ratio0_temp = (TH1F*)hdatasys0_temp->Clone("ratio");
+                        ratio0_temp->Divide(hpreFSR_mc);
+
+                        ratio1_temp = (TH1F*)hdatasys1_temp->Clone("ratio");
+                        ratio1_temp->Divide(hpreFSR_mc);
+
+                        ratio0_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
+                        ratio0_temp_mc->Divide(hmcsys0_temp);
+
+                        ratio1_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
+                        ratio1_temp_mc->Divide(hmcsys1_temp);
+                    }
+                    else{
+                        ratio0_temp = (TH1F*)hpreFSR_mc->Clone("ratio");
+                        ratio0_temp->Divide(hdatasys0_temp);
+
+                        ratio1_temp = (TH1F*)hpreFSR_mc->Clone("ratio");
+                        ratio1_temp->Divide(hdatasys1_temp);
+
+                        ratio0_temp_mc = (TH1F*)hmcsys0_temp->Clone("ratio");
+                        ratio0_temp_mc->Divide(hunfolded_data);
+
+                        ratio1_temp_mc = (TH1F*)hmcsys1_temp->Clone("ratio");
+                        ratio1_temp_mc->Divide(hunfolded_data);
+
+                    }
+                }
+               
+
+
+                // loop over each bin of unfolded histogram
+                for(int ibin = 1; ibin<hunfolded_sys_err->GetNbinsX()+1;ibin++){
+                    Double_t temp_err = 0.;
+                    Double_t temp_err_mc = 0.;
+                    Double_t temp_ratio_err = 0.;
+                    Double_t temp_ratio_err_mc = 0.;
+
+                    Double_t previous_err = hunfolded_sys_err->GetBinError(ibin);
+                    Double_t previous_err_mc = hpreFSR_mc_sys_err->GetBinError(ibin);
+                    Double_t previous_ratio_err = ratio_sys_err->GetBinError(ibin);
+                    Double_t previous_ratio_err_mc = ratio_sys_err_mc->GetBinError(ibin);
+
+                    if(it->first != "QED_FSR"){
+                        temp_err =  fabs(hunfolded_data->GetBinContent(ibin) - hdatasys0_temp->GetBinContent(ibin));
+                        temp_ratio_err = fabs(ratio->GetBinContent(ibin) - ratio0_temp->GetBinContent(ibin));
+
+                        temp_err_mc =  fabs(hpreFSR_mc->GetBinContent(ibin) - hmcsys0_temp->GetBinContent(ibin));
+                        temp_ratio_err_mc = fabs(ratio->GetBinContent(ibin) - ratio0_temp_mc->GetBinContent(ibin));
+                    }
+                    else{   
+                        temp_err =  fabs(hdatasys0_temp->GetBinContent(ibin) - hdatasys1_temp->GetBinContent(ibin));
+                        temp_ratio_err = fabs(ratio0_temp->GetBinContent(ibin) - ratio1_temp->GetBinContent(ibin));
+
+                        temp_err_mc =  fabs(hmcsys0_temp->GetBinContent(ibin) - hmcsys1_temp->GetBinContent(ibin));
+                        temp_ratio_err_mc = fabs(ratio0_temp_mc->GetBinContent(ibin) - ratio1_temp_mc->GetBinContent(ibin));
+                    }
+
+                    hunfolded_sys_err->SetBinError(ibin, sqrt(pow(previous_err,2)+pow(temp_err,2)));
+                    hpreFSR_mc_sys_err->SetBinError(ibin, sqrt(pow(previous_err_mc,2)+pow(temp_err_mc,2)));
+                    ratio_sys_err->SetBinContent(ibin, 1.);
+	            if(temp_ratio_err < 5.e-6) temp_ratio_err = 1.e-6;
+                    ratio_sys_err->SetBinError(ibin, sqrt(pow(previous_ratio_err,2)+pow(temp_ratio_err,2)));
+	            if(temp_ratio_err_mc < 5.e-6) temp_ratio_err_mc = 1.e-6;
+                    ratio_sys_err_mc->SetBinError(ibin, sqrt(pow(previous_ratio_err_mc,2)+pow(temp_ratio_err_mc,2)));
+
+                }// loop for bin contents
+
+                delete ratio0_temp;
+                delete ratio1_temp;
+                delete ratio0_temp_mc;
+                delete ratio1_temp_mc;
+                delete hdatasys0_temp;
+                delete hdatasys1_temp;
+                delete hmcsys0_temp;
+                delete hmcsys1_temp;
+                }
+	        //delete hdata_sys_temp;
+	        it++;
+            }
+
+                // draw systematic envelope for systematic source 
+                hunfolded_sys_err->SetLineColor(12);
+                hunfolded_sys_err->SetFillColor(12);
+                hunfolded_sys_err->SetLineWidth(5);
+                hunfolded_sys_err->SetFillStyle(3005);
+                hunfolded_sys_err->SetMarkerSize(0);
+                hunfolded_sys_err->Draw("E2 same");
+
         }
-        ////////////////////////////////////////////////////// systematic ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////// systematic /////////////////////////////////////
 
 	c1->cd();
 
