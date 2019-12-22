@@ -50,14 +50,18 @@ private:
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassFSRUnfold;
 
 	// nominal mean mass and pt for data and mc, and statistical and systematic errors 
+
+        // detector level 
+	vector<Double_t> meanMass_data_detector, meanMassStatErr_data_detector, meanMassSysErr_data_detector, meanMassTotErr_data_detector;
+	vector<Double_t> meanPt_data_detector,   meanPtStatErr_data_detector,   meanPtSysErr_data_detector, meanPtTotErr_data_detector;
+
+        // detector unfolded results
 	vector<Double_t> meanMass_data, meanMassStatErr_data, meanMassSysErr_data, meanMassTotErr_data;
 	vector<Double_t> meanPt_data,   meanPtStatErr_data,   meanPtSysErr_data, meanPtTotErr_data;
 
+        // pre FSR unfolded results
 	vector<Double_t> meanMass_data_pre_fsr, meanMassStatErr_data_pre_fsr, meanMassSysErr_data_pre_fsr, meanMassTotErr_data_pre_fsr;
 	vector<Double_t> meanPt_data_pre_fsr,   meanPtStatErr_data_pre_fsr,   meanPtSysErr_data_pre_fsr, meanPtTotErr_data_pre_fsr;
-
-	vector<Double_t> meanMass_data_pre_fsr_dRp1, meanMassStatErr_data_pre_fsr_dRp1 ;
-	vector<Double_t> meanPt_data_pre_fsr_dRp1,   meanPtStatErr_data_pre_fsr_dRp1;
 
 	// nominal mean mass and pt for MC at pre FSR
 	vector<Double_t> meanMass_mc, meanMassErr_mc;
@@ -127,7 +131,7 @@ public:
 	~ISRUnfold(){}
 
 	// set nominal TUnfoldDensity 
-	void setNomTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
+	void SetNomTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
 	// set nominal TUnfoldDensity 
 	void setNomFSRTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
@@ -156,7 +160,7 @@ public:
 
         void drawClosurePlots(TString outpdf, TString var, int nthMassBin);
 
-	// draw nominal detector level, unfolded plot, and final result plot without systematic
+	// 
 	void drawNominalPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false, bool isFSRUnfold = false, bool fullSys = false);
 
 	// draw input histograms using GetInput	
@@ -181,9 +185,11 @@ public:
 
 	// draw ISR result
 	TCanvas* drawISRresult(TString outpdf, bool altMC = false, bool doFit = false);
-        void drawISRRun2results(TString outpdf, TCanvas* c_2017, TCanvas* c_2018);
+        void drawISRRun2results(TString outpdf, TCanvas* c_2017, TCanvas* c_2018, TCanvas* c_muon_2016, TCanvas* c_muon_2017, TCanvas* c_muon_2018);
 	void drawLCurve(TString outpdf, TString var);
 	void drawRhoLog(TString outpdf, TString var);
+
+        void SavePtMassHists();
 };
 
 #endif

@@ -118,7 +118,7 @@ CMS_lumi( TPad* pad, int iPeriod, int iPosX )
     {
       posX_ =  1-r - relPosX*(1-l-r);
     }
-  float posY_ = 1-t - relPosY*(1-t-b);
+  float posY_ = 0.99 * (1-t - relPosY*(1-t-b));
   if( !outOfFrame )
     {
       if( drawLogo )
@@ -142,13 +142,13 @@ CMS_lumi( TPad* pad, int iPeriod, int iPosX )
 	  latex.SetTextFont(cmsTextFont);
 	  latex.SetTextSize(cmsTextSize*t);
 	  latex.SetTextAlign(align_);
-	  latex.DrawLatex(posX_*0.85, posY_, cmsText);
+	  latex.DrawLatex(posX_, posY_, cmsText);
 	  if( writeExtraText ) 
 	    {
 	      latex.SetTextFont(extraTextFont);
 	      latex.SetTextAlign(align_);
 	      latex.SetTextSize(extraTextSize*t);
-	      latex.DrawLatex(posX_*0.85, posY_- relExtraDY*cmsTextSize*t, extraText);
+	      latex.DrawLatex(posX_, posY_- relExtraDY*cmsTextSize*t, extraText);
 	    }
 	}
     }
@@ -162,7 +162,7 @@ CMS_lumi( TPad* pad, int iPeriod, int iPosX )
       latex.SetTextFont(extraTextFont);
       latex.SetTextSize(extraTextSize*t);
       latex.SetTextAlign(align_);
-      latex.DrawLatex(posX_*0.85, posY_, extraText);      
+      latex.DrawLatex(posX_, posY_, extraText);      
     }
   return;
 }
