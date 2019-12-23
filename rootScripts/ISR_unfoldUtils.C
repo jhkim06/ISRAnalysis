@@ -752,7 +752,8 @@ void ISRUnfold::doISRQEDFSRUnfold(bool doSys)
     {
         std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtFSRUnfold.begin();
 
-        while(it != sysPtFSRUnfold.end()){
+        while(it != sysPtFSRUnfold.end())
+        {
             int nSys = it->second.size();
             for(int i = 0; i < nSys; i++){
                it->second.at(i)->DoUnfold(0);
@@ -2982,128 +2983,230 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName, bo
 
     double amax = 0.;
     double amin = 0.;
+
+    bool isFullSys = false;
+    bool isRangeUpdated = false;
+
+    int marker_color_sys = 632;
+    int marker_style_sys = 24;
+
+    if(sysName == "full")
+    {
+        isFullSys = true;
+        marker_color_sys = 900;
+    }
     
-    TGraphErrors *grNominal;
-    TGraphErrors *grStatErr;
-    TGraph *grSys;
+    TGraphErrors* p_grNominal;
+    TGraphErrors* p_grStatErr;
+    TGraph* grSys;
+    vector<TGraph*> pv_grSys; 
     
     if(detector_unfold)
     {
         // set axis min and max range
-        sysSize = sysPtUnfold[sysName].size();
         amaxMass=meanMass_data[nthMassBin] + (2. * meanMassTotErr_data[nthMassBin]);
         aminMass=meanMass_data[nthMassBin] - (2. * meanMassTotErr_data[nthMassBin]);
         amaxPt=meanPt_data[nthMassBin] + (2. * meanPtTotErr_data[nthMassBin]);
         aminPt=meanPt_data[nthMassBin] - (2. * meanPtTotErr_data[nthMassBin]);
 
-        for(int i=0;i<sysSize;i++)
+        // nominal point with total uncertainty                                                                                                                                                                                             
+        TGaxis::SetMaxDigits(4);                                                                                                                                                                                                            
+        p_grNominal = new TGraphErrors(1, &meanMass_data[nthMassBin], &meanPt_data[nthMassBin], &meanMassTotErr_data[nthMassBin], &meanPtTotErr_data[nthMassBin]);                                                                          
+        p_grNominal->SetLineColor(1);                                                                                                                                                                                                       
+        p_grNominal->SetFillColor(12);                                                                                                                                                                                                      
+        p_grNominal->SetFillStyle(3005);                                                                                                                                                                                                    
+        p_grNominal->SetMarkerStyle(20);                                                                                                                                                                                                    
+        p_grNominal->SetMarkerSize(1.2);                                                                                                                                                                                                    
+        p_grNominal->Draw("a2");                                                                                                                                                                                                            
+        p_grNominal->GetYaxis()->SetRangeUser(aminPt*0.995,amaxPt*1.005);                                                                                                                                                                   
+        p_grNominal->GetXaxis()->SetLimits(meanMass_data[nthMassBin] - (amaxPt*1.005-aminPt*0.995)/2., meanMass_data[nthMassBin] + (amaxPt*1.005-aminPt*0.995)/2.);                                                                         
+        //p_grNominal->GetXaxis()->SetLimits(aminMass*0.995,amaxMass*1.005);                                                                                                                                                                
+        //p_grNominal->GetXaxis()->SetNdivisions(505, false);                                                                                                                                                                               
+        p_grNominal->GetYaxis()->SetTitle("Average p_{T} (GeV)");                                                                                                                                                                           
+        p_grNominal->GetXaxis()->SetTitle("Average Mass (GeV)");                                                                                                                                                                            
+        p_grNominal->GetXaxis()->SetTitleOffset(1.5);                                                                                                                                                                                       
+                                                                                                                                                                                                                                            
+        // meanPtStatErr_data                                                                                                                                                                                                               
+        p_grStatErr = new TGraphErrors(1, &meanMass_data[nthMassBin], &meanPt_data[nthMassBin], &meanMassStatErr_data[nthMassBin], &meanPtStatErr_data[nthMassBin]); 
+
+        TLegend* leg = new TLegend(0.6, 0.4, 0.85, 0.9,"","brNDC");                                                                                                                                                                        
+        leg->SetTextSize(0.02);                                                                                                                                                                                                             
+        leg->SetFillStyle(0);                                                                                                                                                                                                               
+        leg->SetBorderSize(0);                                                                                                                                                                                                              
+                                                                                                                                                                                                                                            
+        leg->AddEntry(p_grNominal, "Total uncertainty", "f");                                                                                                                                                                               
+        leg->AddEntry(p_grStatErr,  "Nominal with stat. uncertainty" , "pe");                                                                                                                                                               
+
+        std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it;
+        if(!isFullSys)
         {
-           amaxMass=TMath::Max(amaxMass, (meanMass_sysdata.at(nthMassBin)[sysName])[i]);
-           aminMass=TMath::Min(aminMass, (meanMass_sysdata.at(nthMassBin)[sysName])[i]);
-    
-           amaxPt=TMath::Max(amaxPt, (meanPt_sysdata.at(nthMassBin)[sysName])[i]);
-           aminPt=TMath::Min(aminPt, (meanPt_sysdata.at(nthMassBin)[sysName])[i]);
+            it = sysPtUnfold.find(sysName);
         }
+        else
+        {
+            it = sysPtUnfold.begin();
+        }
+
+        int p_index = 0;
+        while(it != sysPtUnfold.end())
+        {
+            sysSize = it->second.size();
+
+            // check if ranges needed to be updated
+            for(int i=0;i<sysSize;i++)
+            {
+                double temp_amaxMass = amaxMass;
+                double temp_aminMass = aminMass;
+                double temp_amaxPt = amaxPt;
+                double temp_aminPt = aminPt;  
+
+                amaxMass=TMath::Max(amaxMass, (meanMass_sysdata.at(nthMassBin)[it->first])[i]);
+                aminMass=TMath::Min(aminMass, (meanMass_sysdata.at(nthMassBin)[it->first])[i]);
     
-        // nominal point with total uncertainty
-        TGaxis::SetMaxDigits(4);   
-        grNominal = new TGraphErrors(1, &meanMass_data[nthMassBin], &meanPt_data[nthMassBin], &meanMassTotErr_data[nthMassBin], &meanPtTotErr_data[nthMassBin]);
-        grNominal->SetLineColor(1);
-        grNominal->SetFillColor(12);
-        grNominal->SetFillStyle(3005);
-        grNominal->SetMarkerStyle(20);
-        grNominal->SetMarkerSize(1.2);
-        grNominal->Draw("a2");
-        grNominal->GetYaxis()->SetRangeUser(aminPt*0.995,amaxPt*1.005);
-        grNominal->GetXaxis()->SetLimits(meanMass_data[nthMassBin] - (amaxPt*1.005-aminPt*0.995)/2., meanMass_data[nthMassBin] + (amaxPt*1.005-aminPt*0.995)/2.); 
-        //grNominal->GetXaxis()->SetLimits(aminMass*0.995,amaxMass*1.005);
-        //grNominal->GetXaxis()->SetNdivisions(505, false);
-        grNominal->GetYaxis()->SetTitle("Average p_{T} (GeV)");
-        grNominal->GetXaxis()->SetTitle("Average Mass (GeV)");
-        grNominal->GetXaxis()->SetTitleOffset(1.5);
+                amaxPt=TMath::Max(amaxPt, (meanPt_sysdata.at(nthMassBin)[it->first])[i]);
+                aminPt=TMath::Min(aminPt, (meanPt_sysdata.at(nthMassBin)[it->first])[i]);
+
+                if( fabs(amaxMass-temp_amaxMass) > 1e-5 || fabs(aminMass-temp_aminMass) > 1e-5
+                    || fabs(amaxPt-temp_amaxPt) > 1e-5 || fabs(aminPt-temp_aminPt) > 1e-5)
+                {
+                    isRangeUpdated = true;
+                }
+            }
     
-        // meanPtStatErr_data
-        grStatErr = new TGraphErrors(1, &meanMass_data[nthMassBin], &meanPt_data[nthMassBin], &meanMassStatErr_data[nthMassBin], &meanPtStatErr_data[nthMassBin]);
-    
-        grSys = new TGraph(sysSize, &(meanMass_sysdata.at(nthMassBin)[sysName])[0], &(meanPt_sysdata.at(nthMassBin)[sysName])[0] );
-        grSys->SetLineColor(kRed);
-        grSys->SetMarkerColor(kRed);
-        grSys->SetMarkerStyle(24);
-        grSys->SetMarkerSize(1.2);
-        grSys->SetLineStyle(1);
-        grSys->Draw("pe same ");
-        drawtext(grSys);
-    
-        grStatErr->Draw("pesame");
-    
-        TLegend* leg = new TLegend(0.6, 0.70, 0.85, 0.9,"","brNDC");
-        leg->SetTextSize(0.02);
-        leg->SetFillStyle(0);
-        leg->SetBorderSize(0);
-    
-        leg->AddEntry(grNominal, "Total uncertainty", "f");
-        leg->AddEntry(grSys,      "Systematic source : " + sysName, "p");
-        leg->AddEntry(grStatErr,  "Nominal with stat. uncertainty" , "pe");
+            // TODO make option to draw all systematic points here 
+            pv_grSys.push_back(new TGraph(sysSize, &(meanMass_sysdata.at(nthMassBin)[it->first])[0], &(meanPt_sysdata.at(nthMassBin)[it->first])[0]));
+            pv_grSys[p_index]->SetLineColor(marker_color_sys);
+            pv_grSys[p_index]->SetMarkerColor(marker_color_sys);
+            pv_grSys[p_index]->SetMarkerStyle(marker_style_sys++);
+            pv_grSys[p_index]->SetMarkerSize(1.2);
+            pv_grSys[p_index]->SetLineStyle(1);
+            pv_grSys[p_index]->Draw("pe same ");
+            drawtext(pv_grSys[p_index]);
+
+            leg->AddEntry(pv_grSys[p_index],      "Systematic source : " + it->first, "p");
+
+            if(isFullSys)
+            {
+                it++;
+                p_index++;
+                marker_color_sys++;
+            }
+            else
+            {
+                break;
+            }
+        }    
+        p_grStatErr->Draw("pesame");
         leg->Draw();
     }
     else
     {
     
         // set axis min and max range
-        sysSize = sysPtFSRUnfold[sysName].size();
-        amaxMass=meanMass_data_pre_fsr[nthMassBin] + 2. * meanMassTotErr_data_pre_fsr[nthMassBin];
-        aminMass=meanMass_data_pre_fsr[nthMassBin] - 2. * meanMassTotErr_data_pre_fsr[nthMassBin];
-        amaxPt=meanPt_data_pre_fsr[nthMassBin] + 2. * meanPtTotErr_data_pre_fsr[nthMassBin];
-        aminPt=meanPt_data_pre_fsr[nthMassBin] - 2. * meanPtTotErr_data_pre_fsr[nthMassBin];
+        amaxMass=meanMass_data_pre_fsr[nthMassBin] + (2. * meanMassTotErr_data_pre_fsr[nthMassBin]);
+        aminMass=meanMass_data_pre_fsr[nthMassBin] - (2. * meanMassTotErr_data_pre_fsr[nthMassBin]);
+        amaxPt=meanPt_data_pre_fsr[nthMassBin] + (2. * meanPtTotErr_data_pre_fsr[nthMassBin]);
+        aminPt=meanPt_data_pre_fsr[nthMassBin] - (2. * meanPtTotErr_data_pre_fsr[nthMassBin]);
 
-        for(int i=0;i<sysSize;i++) 
+        // nominal point with total uncertainty                                                                                                                                                                                             
+        TGaxis::SetMaxDigits(4);                                                                                                                                                                                                            
+        p_grNominal = new TGraphErrors(1, &meanMass_data_pre_fsr[nthMassBin], &meanPt_data_pre_fsr[nthMassBin], &meanMassTotErr_data_pre_fsr[nthMassBin], &meanPtTotErr_data_pre_fsr[nthMassBin]);                                                                          
+        p_grNominal->SetLineColor(1);                                                                                                                                                                                                       
+        p_grNominal->SetFillColor(12);                                                                                                                                                                                                      
+        p_grNominal->SetFillStyle(3005);                                                                                                                                                                                                    
+        p_grNominal->SetMarkerStyle(20);                                                                                                                                                                                                    
+        p_grNominal->SetMarkerSize(1.2);                                                                                                                                                                                                    
+        p_grNominal->Draw("a2");                                                                                                                                                                                                            
+        p_grNominal->GetYaxis()->SetRangeUser(aminPt*0.995,amaxPt*1.005);                                                                                                                                                                   
+        p_grNominal->GetXaxis()->SetLimits(meanMass_data_pre_fsr[nthMassBin] - (amaxPt*1.005-aminPt*0.995)/2., meanMass_data_pre_fsr[nthMassBin] + (amaxPt*1.005-aminPt*0.995)/2.);                                                                         
+        //p_grNominal->GetXaxis()->SetLimits(aminMass*0.995,amaxMass*1.005);                                                                                                                                                                
+        //p_grNominal->GetXaxis()->SetNdivisions(505, false);                                                                                                                                                                               
+        p_grNominal->GetYaxis()->SetTitle("Average p_{T} (GeV)");                                                                                                                                                                           
+        p_grNominal->GetXaxis()->SetTitle("Average Mass (GeV)");                                                                                                                                                                            
+        p_grNominal->GetXaxis()->SetTitleOffset(1.5);                                                                                                                                                                                       
+                                                                                                                                                                                                                                            
+        // meanPtStatErr_data_pre_fsr                                                                                                                                                                                                               
+        p_grStatErr = new TGraphErrors(1, &meanMass_data_pre_fsr[nthMassBin], &meanPt_data_pre_fsr[nthMassBin], &meanMassStatErr_data_pre_fsr[nthMassBin], &meanPtStatErr_data_pre_fsr[nthMassBin]); 
+
+        TLegend* leg = new TLegend(0.6, 0.4, 0.85, 0.9,"","brNDC");                                                                                                                                                                        
+        leg->SetTextSize(0.02);                                                                                                                                                                                                             
+        leg->SetFillStyle(0);                                                                                                                                                                                                               
+        leg->SetBorderSize(0);                                                                                                                                                                                                              
+                                                                                                                                                                                                                                            
+        leg->AddEntry(p_grNominal, "Total uncertainty", "f");                                                                                                                                                                               
+        leg->AddEntry(p_grStatErr,  "Nominal with stat. uncertainty" , "pe");                                                                                                                                                               
+
+        std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it;
+        if(!isFullSys)
         {
-           amaxMass=TMath::Max(amaxMass, (meanMass_sysdata_pre_fsr.at(nthMassBin)[sysName])[i]);
-           aminMass=TMath::Min(aminMass, (meanMass_sysdata_pre_fsr.at(nthMassBin)[sysName])[i]);
-    
-           amaxPt=TMath::Max(amaxPt, (meanPt_sysdata_pre_fsr.at(nthMassBin)[sysName])[i]);
-           aminPt=TMath::Min(aminPt, (meanPt_sysdata_pre_fsr.at(nthMassBin)[sysName])[i]);
+            it = sysPtUnfold.find(sysName);
         }
-    
-        // nominal point with total uncertainty
-        TGaxis::SetMaxDigits(4);
-        grNominal = new TGraphErrors(1, &meanMass_data_pre_fsr[nthMassBin], &meanPt_data_pre_fsr[nthMassBin], &meanMassTotErr_data_pre_fsr[nthMassBin], &meanPtTotErr_data_pre_fsr[nthMassBin]);
-        grNominal->SetLineColor(1);
-        grNominal->SetFillColor(12);
-        grNominal->SetFillStyle(3005);
-        grNominal->SetMarkerStyle(20);
-        grNominal->SetMarkerSize(1.2);
-        grNominal->Draw("a2");
-        grNominal->GetYaxis()->SetRangeUser(aminPt*0.995,amaxPt*1.005);
-        grNominal->GetXaxis()->SetLimits(meanMass_data_pre_fsr[nthMassBin] - (amaxPt*1.005-aminPt*0.995)/2., meanMass_data_pre_fsr[nthMassBin] + (amaxPt*1.005-aminPt*0.995)/2.);
-        //grNominal->GetXaxis()->SetLimits(aminMass*0.995,amaxMass*1.005);
-        //grNominal->GetXaxis()->SetNdivisions(505, false);
-        grNominal->GetYaxis()->SetTitle("Average p_{T} (GeV)");
-        grNominal->GetXaxis()->SetTitle("Average Mass (GeV)");
-        grNominal->GetXaxis()->SetTitleOffset(1.5);
-    
-        // meanPtStatErr_data
-        grStatErr = new TGraphErrors(1, &meanMass_data_pre_fsr[nthMassBin], &meanPt_data_pre_fsr[nthMassBin], &meanMassStatErr_data_pre_fsr[nthMassBin], &meanPtStatErr_data_pre_fsr[nthMassBin]);
-    
-        grSys = new TGraph(sysSize, &(meanMass_sysdata_pre_fsr.at(nthMassBin)[sysName])[0], &(meanPt_sysdata_pre_fsr.at(nthMassBin)[sysName])[0] );
-        grSys->SetLineColor(kRed);
-        grSys->SetMarkerColor(kRed);
-        grSys->SetMarkerStyle(24);
-        grSys->SetMarkerSize(1.2);
-        grSys->SetLineStyle(1);
-        grSys->Draw("pe same ");
-        drawtext(grSys);
+        else
+        {
+            it = sysPtUnfold.begin();
+        }
 
-        grStatErr->Draw("pesame");
+        int p_index = 0;
+        while(it != sysPtUnfold.end())
+        {
+            sysSize = it->second.size();
+
+            // check if ranges needed to be updated
+            for(int i=0;i<sysSize;i++)
+            {
+                double temp_amaxMass = amaxMass;
+                double temp_aminMass = aminMass;
+                double temp_amaxPt = amaxPt;
+                double temp_aminPt = aminPt;  
+
+                amaxMass=TMath::Max(amaxMass, (meanMass_sysdata_pre_fsr.at(nthMassBin)[it->first])[i]);
+                aminMass=TMath::Min(aminMass, (meanMass_sysdata_pre_fsr.at(nthMassBin)[it->first])[i]);
     
-        TLegend* leg = new TLegend(0.6, 0.70, 0.85, 0.9,"","brNDC");
-        leg->SetTextSize(0.02);
-        leg->SetFillStyle(0);
-        leg->SetBorderSize(0);
-    
-        leg->AddEntry(grNominal, "Total uncertainty", "f");
-        leg->AddEntry(grSys,      "Systematic source : " + sysName, "p");
-        leg->AddEntry(grStatErr,  "Nominal with stat. uncertainty" , "pe");
+                amaxPt=TMath::Max(amaxPt, (meanPt_sysdata_pre_fsr.at(nthMassBin)[it->first])[i]);
+                aminPt=TMath::Min(aminPt, (meanPt_sysdata_pre_fsr.at(nthMassBin)[it->first])[i]);
+
+                if( fabs(amaxMass-temp_amaxMass) > 1e-5 || fabs(aminMass-temp_aminMass) > 1e-5
+                    || fabs(amaxPt-temp_amaxPt) > 1e-5 || fabs(aminPt-temp_aminPt) > 1e-5)
+                {
+                    isRangeUpdated = true;
+                }
+            }
+   
+            double temp_marker_color = marker_color_sys;
+            if(it->first == "PDFerror") 
+            {
+                marker_color_sys = 870; //kAzure + 10
+            }
+            if(it->first == "Scale") 
+            {
+                marker_color_sys = 601; //kBlue + 1
+            }
+            
+            pv_grSys.push_back(new TGraph(sysSize, &(meanMass_sysdata_pre_fsr.at(nthMassBin)[it->first])[0], &(meanPt_sysdata_pre_fsr.at(nthMassBin)[it->first])[0]));
+            pv_grSys[p_index]->SetLineColor(marker_color_sys);
+            pv_grSys[p_index]->SetMarkerColor(marker_color_sys);
+            pv_grSys[p_index]->SetMarkerStyle(marker_style_sys++);
+            pv_grSys[p_index]->SetMarkerSize(1.2);
+            pv_grSys[p_index]->SetLineStyle(1);
+            pv_grSys[p_index]->Draw("pe same ");
+            drawtext(pv_grSys[p_index]);
+
+            marker_color_sys = temp_marker_color;
+
+            leg->AddEntry(pv_grSys[p_index],      "Systematic source : " + it->first, "p");
+
+            if(isFullSys)
+            {
+                it++;
+                p_index++;
+                marker_color_sys++;
+            }
+            else
+            {
+                break;
+            }
+        }    
+        p_grStatErr->Draw("pesame");
         leg->Draw();
 
     }
@@ -3112,8 +3215,16 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName, bo
     if (detector_unfold) c1->SaveAs(outpdf+"_"+ibinMass+"_"+sysName+".pdf");
     else c1->SaveAs(outpdf+"_"+ibinMass+"_pre_fsr_"+sysName+".pdf");
     
-    delete grNominal, grStatErr, grSys;
+    delete p_grNominal, p_grStatErr;
     delete c1;
+
+    int pv_size = pv_grSys.size();
+    for(int i = 0; i < pv_size; i++)
+    {
+        delete pv_grSys[i];
+    }
+    //if(!detector_unfold)
+    //    delete grSys;
 }
 
 void ISRUnfold::drawNominalRecoPlots(TString outpdf, TString filepath, TString var, int nthMassBin, TString sysName){

@@ -186,9 +186,14 @@ def doISRAnalysis(args, year, channel, doSys):
 
     # draw plots including systematic 
     if doSys == True:
+        # make output directory for systematic plots
+        dirSysPlots = "SysPlots/"
+        if not os.path.exists( outputDirectory + dirSysPlots ):
+            os.makedirs( outputDirectory + dirSysPlots )
+
         for sysName, nSys in sysDict.items():
             
-            if sysName == "Closure" : continue
+            if sysName is "Closure" : continue
 
             for massBin in range(0,5):
                 unfoldClass.drawInputPlots(outputDirectory + channel + sysName, "Pt", massBin, sysName)
@@ -197,17 +202,22 @@ def doISRAnalysis(args, year, channel, doSys):
                 unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel+sysName, "Mass", massBin, sysName, doSys, True)
 
                 if sysName is not "QED_FSR":
-                    unfoldClass.drawSysPlots(outputDirectory + "Sys_" + channel , massBin, sysName, True)
+
+                    unfoldClass.drawSysPlots(outputDirectory + dirSysPlots + "Sys_" + channel , massBin, sysName, True)
                     unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + channel , "Pt", massBin, sysName, True)
                     unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + channel , "Mass", massBin, sysName, True)
 
-                unfoldClass.drawSysPlots(outputDirectory + "Sys_" + channel , massBin, sysName, False)
+                unfoldClass.drawSysPlots(outputDirectory + dirSysPlots + "Sys_" + channel , massBin, sysName, False)
                 unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + channel , "Pt", massBin, sysName, False)
                 unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + channel , "Mass", massBin, sysName, False)
 
         # draw with full systematic error
         for massBin in range(0,5):
-        
+       
+            # draw all systematic points in one plot
+            unfoldClass.drawSysPlots(outputDirectory + dirSysPlots + "Sys_" + channel , massBin, "full", True)
+            unfoldClass.drawSysPlots(outputDirectory + dirSysPlots + "Sys_" + channel , massBin, "full", False)
+ 
             unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel+"fullSys", "Pt", massBin, "full", doSys, True, True)
             unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel+"fullSys", "Mass", massBin, "full", doSys, True, True)
 
