@@ -2,6 +2,10 @@
 #include "tdrstyle.C"
 #include "CMS_lumi.C"
 
+void ISRUnfold::setOutputBaseDir(TString outPath)
+{
+   output_baseDir = outPath; 
+}
 void ISRUnfold::SetNomTUnfoldDensity(TString var, TString filepath, TString phase_name, TString fsr_correction_name)
 {
 
@@ -388,7 +392,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         exit (EXIT_FAILURE);
     }
 
-    TUnfold::ERegMode mode=TUnfold::kRegModeNone;
+    TUnfold::ERegMode mode = regMode_detector;
     if( sysName =="unfoldScan" || sysName=="unfoldBias")
     {
         mode = TUnfold::kRegModeCurvature;
@@ -399,7 +403,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
     {
             sysPtUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
                                            TUnfold::kHistMapOutputHoriz,
-                                           regMode_detector, 
+                                           mode, 
                                            TUnfold::kEConstraintArea,
                                            TUnfoldDensityV17::kDensityModeBinWidth,
                                            binning_Gen,binning_Rec));
@@ -409,7 +413,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
     {
             sysMassUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
                                            TUnfold::kHistMapOutputHoriz,
-                                           regMode_detector, 
+                                           mode, 
                                            TUnfold::kEConstraintArea,
                                            TUnfoldDensityV17::kDensityModeBinWidth,
                                            binning_Gen,binning_Rec));

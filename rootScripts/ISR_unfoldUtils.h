@@ -116,6 +116,7 @@ private:
         TUnfold::ERegMode regMode_FSR;
         
         TString hist_file_path;
+        TString output_baseDir;
         TString channel_name;
         bool do_normalization;
         int year;
@@ -145,11 +146,16 @@ public:
         }
 	~ISRUnfold(){}
 
+        void setOutputBaseDir(TString outPath);
+
 	// set nominal TUnfoldDensity 
 	void SetNomTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
 	// set nominal TUnfoldDensity 
 	void setNomFSRTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
+
+        // do closure test: use the nominal probability matrix 
+        // void doClosureTest(TString var, TString filepath, TString outdir);
 
 	// set systematic TUnfoldDensity
 	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
