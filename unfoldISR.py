@@ -334,20 +334,18 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     
     import pyScripts.unfoldUtil as unfoldutil
     import pyScripts.drawUtil as drawutil
+
+    DetectorUnfold = 0;
+    FSRUnfold = 1;
     
     # create unfold class                                                                    # regularization mode
     unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'], False, int(args.year), int(0))
-    
+    unfoldClass.setOutputBaseDir(outputDirectory)
     # set response matrix
     unfoldClass.SetNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
     unfoldClass.SetNomTUnfoldDensity("Mass",unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
-    
-    # for closure test
-    unfoldClass.setSysTUnfoldDensity("Pt",   unfoldInputList['matrix'],  "Closure", -1, -1, args.phase_space_detector, args.FSR_dR_detector)
-    unfoldClass.setSysTUnfoldDensity("Mass", unfoldInputList['matrix'],  "Closure", -1, -1, args.phase_space_detector, args.FSR_dR_detector)
-    
-    unfoldClass.setInput("Pt",   unfoldInputList['matrix'], True, "Closure", 0, 1., args.phase_space_detector)
-    unfoldClass.setInput("Mass", unfoldInputList['matrix'], True, "Closure", 0, 1., args.phase_space_detector)
+
+    unfoldClass.doClosureTest(DetectorUnfold, unfoldInputList['matrix'], args.phase_space_detector)
     
     # set unfolding input histogram
     unfoldClass.setInput("Pt",   unfoldInputList['hist'], False, "nominal", 0, 1., "detector_level")
@@ -381,8 +379,6 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys, nSys)
                  
 
-    DetectorUnfold = 0;
-    FSRUnfold = 1;
     # unfold 
     unfoldClass.doISRUnfold(DetectorUnfold, args.doSys)
     
@@ -444,8 +440,6 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     if args.doSys == True:
         for sysName, nSys in sysDict.items():
         
-            if sysName == "Closure" : continue
-            
             for massBin in range(0,5):
                 
                 unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys, True)

@@ -71,12 +71,28 @@ void ISRUnfold::SetNomTUnfoldDensity(TString var, TString filepath, TString phas
         	                               TUnfold::kEConstraintArea,
         	                               TUnfoldDensityV17::kDensityModeBinWidth,
         	                               binning_Gen,binning_Rec);
+
+                // for closure test
+                nomPtUnfold_closure = new TUnfoldDensityV17(hmcGenRec, 
+                                               TUnfold::kHistMapOutputHoriz,                                                                                                                                                                                        
+                                               regMode_detector,                                                                                                                                                                                                    
+                                               TUnfold::kEConstraintArea,                                                                                                                                                                                           
+                                               TUnfoldDensityV17::kDensityModeBinWidth,                                                                                                                                                                             
+                                               binning_Gen,binning_Rec);    
 	}
         else if( var == "Mass" )
         {
                 nomMassUnfold = new TUnfoldDensityV17(hmcGenRec,
                                                TUnfold::kHistMapOutputHoriz,
-                                               regMode_detector, // fixed to use no regularisation temporary
+                                               regMode_detector, 
+                                               TUnfold::kEConstraintArea,
+                                               TUnfoldDensityV17::kDensityModeBinWidth,
+                                               binning_Gen,binning_Rec);
+
+                // for closure
+                nomMassUnfold_closure = new TUnfoldDensityV17(hmcGenRec,
+                                               TUnfold::kHistMapOutputHoriz,
+                                               regMode_detector, 
                                                TUnfold::kEConstraintArea,
                                                TUnfoldDensityV17::kDensityModeBinWidth,
                                                binning_Gen,binning_Rec);
@@ -331,7 +347,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
     // set migration matrix
     TH2* hmcGenRec = NULL;
     // systematic using the same response matrix with different unfolding condition
-    if(sysName=="Alt" || sysName=="unfoldBias" || sysName=="unfoldScan" || sysName=="Closure")
+    if(sysName=="Alt" || sysName=="unfoldBias" || sysName=="unfoldScan")
     {
 
         if(var == "Pt")   hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
@@ -754,7 +770,6 @@ void ISRUnfold::setFSRUnfoldInput(TString filepath, bool isSys, TString sysName,
 
 void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysName, int nth, double bias, TString phase_name)
 {
-	// No effects on the unfolded results respect to bias factor 
 	TFile* filein = new TFile(filepath);
         TString nth_;
         nth_.Form("%d", nth);
@@ -787,65 +802,90 @@ void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysN
 	else
         {
             // use DY MC histograms as unfolding input       
-	    if(sysName=="Closure")
-            {
-
-                if(var == "Pt")
-                {
-                    hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DYJetsnominal");
-                    hRec->Add((TH1*)filein->Get(phase_name + "/hist_ptll/histo_DYJets10to50nominal"));
-                    if(do_normalization)
-                    {
-                        if(channel_name=="electron") hRec->Scale(0.959939); 
-                        if(channel_name=="muon") hRec->Scale(0.953026); 
-                    }
-                    sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   bias);
-                }
-                else if(var == "Mass")
-                {
-                    hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DYJetsnominal");
-                    hRec->Add((TH1*)filein->Get(phase_name + "/hist_mll/histo_DYJets10to50nominal"));
-                    if(do_normalization)
-                    {
-                        if(channel_name=="electron") hRec->Scale(0.959939);
-                        if(channel_name=="muon") hRec->Scale(0.953026);
-                    }
-                    sysMassUnfold[sysName].at(nth)->SetInput(hRec,   bias);
-                }
-                else
-                {
-                    cout << "ISRUnfold::setInput, only Pt and Mass available for var" << endl;
-                    exit (EXIT_FAILURE);
-
-                }
-            }
             // input histogram(data) for each systematic source
+            
+            // for systematic, using the same input histogram as nominal 
+            if(var == "Pt")
+            {
+                if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleMuonnominal");
+                if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleEGnominal");
+                if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_EGammanominal");
+                sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   bias);
+            }
+            else if(var == "Mass")
+            {
+                if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleMuonnominal");
+                if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleEGnominal");
+                if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_EGammanominal");
+                sysMassUnfold[sysName].at(nth)->SetInput(hRec,   bias); 
+            }
             else
             {
-                // for systematic, using the same input histogram as nominal 
-                if(var == "Pt")
-                {
-                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleMuonnominal");
-                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleEGnominal");
-                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_EGammanominal");
-                    sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   bias);
-                }
-                else if(var == "Mass")
-                {
-                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleMuonnominal");
-                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleEGnominal");
-                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_EGammanominal");
-                    sysMassUnfold[sysName].at(nth)->SetInput(hRec,   bias); 
-                }
-                else
-                {
-                    cout << "ISRUnfold::setInput, only Pt and Mass available for var" << endl;
-                    exit (EXIT_FAILURE);
-                }
+                cout << "ISRUnfold::setInput, only Pt and Mass available for var" << endl;
+                exit (EXIT_FAILURE);
             }
+             
 	}
 	filein->Close();
 	delete filein;
+}
+
+void ISRUnfold::doClosureTest(int detOrFSR_unfold, TString filepath, TString phase_name)
+{
+    TFile* filein = new TFile(filepath);                                                                                                                                                                                                                        
+    TH1* hRec_pt = NULL;    
+    TH1* hRec_mass = NULL;    
+        
+    hRec_pt = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DYJetsnominal");                                                                                                                                                                        
+    hRec_pt->Add((TH1*)filein->Get(phase_name + "/hist_ptll/histo_DYJets10to50nominal"));                                                                                                                                                              
+    nomPtUnfold_closure->SetInput(hRec_pt,   nominal_bias);                                                                                                                                                                                         
+
+    hRec_mass = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DYJetsnominal");                                                                                                                                                                         
+    hRec_mass->Add((TH1*)filein->Get(phase_name + "/hist_mll/histo_DYJets10to50nominal"));                                                                                                                                                               
+    nomMassUnfold_closure->SetInput(hRec_mass,   nominal_bias);                                                                                                                                                                                         
+
+    // unfold
+    if(detOrFSR_unfold == 0)                                                                                                                                                                                                                                                           
+    {                                                                                                                                                                                                                                                                                  
+        if(regMode_detector == TUnfold::kRegModeNone)                                                                                                                                                                                                                                  
+        {                                                                                                                                                                                                                                                                              
+            // no regularisation, set tau as zero                                                                                                                                                                                                                                      
+            nomPtUnfold_closure->DoUnfold(0); 
+            nomMassUnfold_closure->DoUnfold(0); 
+        }                                                                                                                                                                                                                                                                              
+        else                                                                                                                                                                                                                                                                           
+        {                                                                                                                                                                                                                                                                              
+            // regularization, use ScanTau() as a default method to find tau                                                                                                                                                                                                           
+            iBest=nomPtUnfold_closure->ScanTau(nScan,0.,0.,&rhoLogTau, 
+                                       TUnfoldDensity::kEScanTauRhoAvgSys,                                                                                                                                                                                                             
+                                       0,0,                                                                                                                                                                                                                                            
+                                       &lCurve);                                                                                                                                                                                                                                       
+                                                                                                                                                                                                                                                                                       
+            iBest_mass=nomMassUnfold_closure->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
+                                       TUnfoldDensity::kEScanTauRhoAvgSys,                                                                                                                                                                                                             
+                                       0,0,                                                                                                                                                                                                                                            
+                                       &lCurve_mass);                                                                                                                                                                                                                                  
+        }                                                                                                                                                                                                                                                                              
+    }                                                                                                                                                                                                                                                                                  
+    else if(detOrFSR_unfold == 1)                                                                                                                                                                                                                                                      
+    // FSR unfolding                                                                                                                                                                                                                                                                   
+    {                                                                                                                                                                                                                                                                                  
+        if(regMode_FSR == TUnfold::kRegModeNone)                                                                                                                                                                                                                                       
+        {                                                                                                                                                                                                                                                                              
+            // no regularisation, set tau as zero                                                                                                                                                                                                                                      
+            nomPtFSRUnfold_closure->DoUnfold(0); 
+            nomMassFSRUnfold_closure->DoUnfold(0); 
+        }                                                                                                                                                                                                                                                                              
+        else                                                                                                                                                                                                                                                                           
+        {                                                                                                                                                                                                                                                                              
+            // regularization option not ready yet                                                                                                                                                                                                                                     
+        }                                                                                                                                                                                                                                                                              
+    }                                                                                                                                                                                                                                                                                  
+    else{                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                       
+        cout << " invalid unfolding step..." << endl;                                                                                                                                                                                                                                  
+        exit(EXIT_FAILURE);                                                                                                                                                                                                                                                            
+    }    
 }
 
 void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isSys, TString sysName, int totSysN, int nth, TString phase_name)
@@ -1431,9 +1471,6 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata.at(i).begin();
                while(it != meanMass_sysdata.at(i).end()){
                     int size_ = it->second.size();
-                    if( (it->first) == "Closure" ){ 
-                        it++; continue;
-                    }
 
                     TH1F *hpdfsys = NULL;
                     if((it->first)=="PDFerror") hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data.at(i)-0.2, meanMass_data.at(i)+0.2); // temp histogram to contain PDF variations
@@ -1467,9 +1504,6 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                it = meanMass_sysdata_pre_fsr.at(i).begin();
                while(it != meanMass_sysdata_pre_fsr.at(i).end()){
                     int size_ = it->second.size();
-                    if((it->first) == "Closure"){
-                        it++; continue;
-                    }
 
                     TH1F *hpdfsys = NULL;
                     TH1F *hpdfsys_mc = NULL;
@@ -1707,10 +1741,6 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
             while(it != meanPt_sysdata.at(i).end())
             {
 	    	int size_ = it->second.size(); // size of systematic variations
-	    	if((it->first)=="Closure")
-                {
-                    it++; continue;
-                }
                 	
 	    	TH1F *hpdfsys = NULL;
 	    	if((it->first)=="PDFerror")
@@ -1748,10 +1778,6 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold){
             while(it != meanPt_sysdata_pre_fsr.at(i).end())
             {
                 int size_ = it->second.size(); // size of systematic variations
-                if((it->first)=="Closure")
-                {
-                    it++; continue;
-                }   
                 
                 TH1F *hpdfsys = NULL;
                 TH1F *hpdfsys_mc = NULL;
@@ -3346,7 +3372,7 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin)
     // get nominal unfoled result
     if(var == "Pt" )
     {
-        hunfolded_data  = sysPtUnfold["Closure"].at(0)->GetOutput("hunfolded_pt_closure",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        hunfolded_data  = nomPtUnfold_closure->GetOutput("hunfolded_pt_closure",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
         // hpreFSR_mc   =    sysPtUnfold["Closure"].at(0)->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
         TFile* filein = new TFile("/home/jhkim/temp/ISR_response.root"); 
@@ -3357,16 +3383,16 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin)
         }  
         else
         {
-            hpreFSR_mc   =    sysPtUnfold["Closure"].at(0)->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            hpreFSR_mc   =    nomPtUnfold_closure->GetBias("histMCTruth_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
         }
     }
       
     if(var == "Mass" )
     {
-        hunfolded_data  = sysMassUnfold["Closure"].at(0)->GetOutput("hunfolded_mass_closure",0,0,"mass[UO];pt[UOC0]",kTRUE);
+        hunfolded_data  = nomMassUnfold_closure->GetOutput("hunfolded_mass_closure",0,0,"mass[UO];pt[UOC0]",kTRUE);
         hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 
-        hpreFSR_mc   = sysMassUnfold["Closure"].at(0)->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+        hpreFSR_mc   = nomMassUnfold_closure->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
         hpreFSR_mc->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
     }
 

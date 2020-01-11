@@ -40,8 +40,14 @@ private:
 	TUnfoldDensityV17* nomPtUnfold;
 	TUnfoldDensityV17* nomMassUnfold;
 
+	TUnfoldDensityV17* nomPtUnfold_closure;
+	TUnfoldDensityV17* nomMassUnfold_closure;
+
 	TUnfoldDensityV17* nomPtFSRUnfold;
 	TUnfoldDensityV17* nomMassFSRUnfold;
+
+	TUnfoldDensityV17* nomPtFSRUnfold_closure;
+	TUnfoldDensityV17* nomMassFSRUnfold_closure;
 
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtUnfold;
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassUnfold;
@@ -49,6 +55,7 @@ private:
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtFSRUnfold;
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassFSRUnfold;
 
+        // results
         // detector level 
 	vector<Double_t> meanMass_data_detector, meanMassStatErr_data_detector, meanMassSysErr_data_detector, meanMassTotErr_data_detector;
 	vector<Double_t> meanPt_data_detector,   meanPtStatErr_data_detector,   meanPtSysErr_data_detector, meanPtTotErr_data_detector;
@@ -114,6 +121,7 @@ private:
         // conditions for unfolding
         TUnfold::ERegMode regMode_detector;
         TUnfold::ERegMode regMode_FSR;
+        double nominal_bias;
         
         TString hist_file_path;
         TString output_baseDir;
@@ -132,6 +140,7 @@ public:
             do_normalization = norm;
             year = year_;
 
+            nominal_bias = 1.;
             if(regMode_detector_ == 0)
                 regMode_detector = TUnfold::kRegModeNone;
             if(regMode_detector_ == 1)
@@ -155,7 +164,7 @@ public:
 	void setNomFSRTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
         // do closure test: use the nominal probability matrix 
-        // void doClosureTest(TString var, TString filepath, TString outdir);
+        void doClosureTest(int detOrFSR_unfold, TString filepath, TString phase_name = "full_phase");
 
 	// set systematic TUnfoldDensity
 	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
