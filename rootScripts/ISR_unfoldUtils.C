@@ -262,11 +262,19 @@ void ISRUnfold::setSysFSRTUnfoldDensity(TString var, TString filepath, TString s
             exit (EXIT_FAILURE);
         }
 
+        TUnfold::ERegMode mode = regMode_FSR;
+        if( sysName =="unfoldScan" || sysName=="unfoldBias")
+        { 
+            mode = TUnfold::kRegModeCurvature; 
+            //mode = TUnfold::kRegModeMixed;
+        }                                                                                                                                                                                                                                                               
+                 
+
         if( var == "Pt" )
         {
                 sysPtFSRUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenGen,
                                                TUnfold::kHistMapOutputHoriz,
-                                               regMode_FSR, // fixed to use no regularisation temporary
+                                               mode, 
                                                TUnfold::kEConstraintArea,
                                                TUnfoldDensityV17::kDensityModeBinWidth,
                                                binning_Gen,binning_Gen));
@@ -275,7 +283,7 @@ void ISRUnfold::setSysFSRTUnfoldDensity(TString var, TString filepath, TString s
         {
                 sysMassFSRUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenGen,
                                                TUnfold::kHistMapOutputHoriz,
-                                               regMode_FSR, // fixed to use no regularisation temporary
+                                               mode, // fixed to use no regularisation temporary
                                                TUnfold::kEConstraintArea,
                                                TUnfoldDensityV17::kDensityModeBinWidth,
                                                binning_Gen,binning_Gen));
@@ -744,36 +752,6 @@ void ISRUnfold::setFSRUnfoldInput(TString filepath, bool isSys, TString sysName,
     delete filein;
 }
 
-void ISRUnfold::doISRQEDFSRUnfold(bool doSys)
-{
-
-    nomPtFSRUnfold->DoUnfold(0);
-    nomMassFSRUnfold->DoUnfold(0);
-
-    if(doSys)
-    {
-        std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtFSRUnfold.begin();
-
-        while(it != sysPtFSRUnfold.end())
-        {
-            int nSys = it->second.size();
-            for(int i = 0; i < nSys; i++){
-               it->second.at(i)->DoUnfold(0);
-            }
-            it++;
-        }
-
-        it = sysMassFSRUnfold.begin();
-        while(it != sysMassFSRUnfold.end()){
-                int nSys = it->second.size();
-                for(int i = 0; i < nSys; i++){
-                    it->second.at(i)->DoUnfold(0);
-                }
-                it++;
-        }
-    }
-}
-
 void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysName, int nth, double bias, TString phase_name)
 {
 	// No effects on the unfolded results respect to bias factor 
@@ -1065,7 +1043,7 @@ void ISRUnfold::drawRhoLog(TString outpdf, TString var)
 
 }
 
-void ISRUnfold::doISRUnfold(bool doSys){
+void ISRUnfold::doISRUnfold(int detOrFSR_unfold, bool doSys){
 
 	double tauMin=1.e-4;
 	double tauMax=1.e-3;
@@ -1080,35 +1058,78 @@ void ISRUnfold::doISRUnfold(bool doSys){
         lCurve_mass=0;
         iBest_mass = 0;
 
-        
-        if(regMode_detector == TUnfold::kRegModeNone)
+       
+        if(detOrFSR_unfold == 0)
         {
-            // no regularisation, set tau as zero
-	    nomPtUnfold->DoUnfold(0);
-	    nomMassUnfold->DoUnfold(0);
+            if(regMode_detector == TUnfold::kRegModeNone)
+            {
+                // no regularisation, set tau as zero
+	        nomPtUnfold->DoUnfold(0);
+	        nomMassUnfold->DoUnfold(0);
+            }
+            else
+            {
+                // regularization, use ScanTau() as a default method to find tau
+                iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau,                                                                                                                                                                                              
+                                           TUnfoldDensity::kEScanTauRhoAvgSys,                                                                                                                                                                                  
+                                           0,0,                                                                                                                                                                                                                 
+                                           &lCurve);                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                
+                iBest_mass=nomMassUnfold->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,                                                                                                                                                                             
+                                           TUnfoldDensity::kEScanTauRhoAvgSys,                                                                                                                                                                                  
+                                           0,0,                                                                                                                                                                                                                 
+                                           &lCurve_mass);
+            }
         }
-        else
+        else if(detOrFSR_unfold == 1) 
+        // FSR unfolding
         {
+            if(regMode_FSR == TUnfold::kRegModeNone)
+            {
+                // no regularisation, set tau as zero                                                                                                                                                                                                           
+                nomPtFSRUnfold->DoUnfold(0);                                                                                                                                              
+                nomMassFSRUnfold->DoUnfold(0); 
+            }
+            else
+            {
+                // regularization option not ready yet
+            }
+        }
+        else{
 
-            iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau,                                                                                                                                                                                 
-                                       TUnfoldDensity::kEScanTauRhoAvgSys,                                                                                                                                                                          
-                                       0,0,                                                                                                                                                                                                         
-                                       &lCurve);      
-
-            iBest_mass=nomMassUnfold->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,                                                                                                                                                              
-                                       TUnfoldDensity::kEScanTauRhoAvgSys,                                                                                                                                                                      
-                                       0,0,                                                                                                                                                                                                     
-                                       &lCurve_mass);      
+            cout << " invalid unfolding step..." << endl;
+            exit(EXIT_FAILURE);
         }
 
-        if(doSys){
-	    std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtUnfold.begin();
+        // for systematic
+        if(doSys)
+        {
+	    std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it;
+	    std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it_end;
 
-	    while(it != sysPtUnfold.end()){
+            // unfolding for pt distribution
+            if(detOrFSR_unfold == 0)
+            {
+	        it = sysPtUnfold.begin();
+	        it_end = sysPtUnfold.end();
+            }
+            else if(detOrFSR_unfold == 1) 
+            {
+	        it = sysPtFSRUnfold.begin();
+	        it_end = sysPtFSRUnfold.end();
+            }
+            else
+            {
+                cout << " invalid unfolding step..." << endl;
+                exit(EXIT_FAILURE);
+            }
+
+	    while(it != it_end){
 	    	int nSys = it->second.size();
 	    	for(int i = 0; i < nSys; i++){
-                        //cout << it->first << endl;
-	    		if((it->first)=="unfoldScan" || (it->first)=="unfoldBias" ){
+                        
+	    		if((it->first)=="unfoldScan" || (it->first)=="unfoldBias" )
+                        {
 	    			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
   	    			iBest=it->second.at(i)->ScanTau(nScan,0.,0.,&rhoLogTau,
   	    			                           TUnfoldDensity::kEScanTauRhoAvgSys,
@@ -1121,8 +1142,24 @@ void ISRUnfold::doISRUnfold(bool doSys){
 	    	it++;
 	    }
 
-	    it = sysMassUnfold.begin();
-            while(it != sysMassUnfold.end()){
+            // unfolding for mass distribution
+            if(detOrFSR_unfold == 0)
+            {
+	        it = sysMassUnfold.begin();
+	        it_end = sysMassUnfold.end();
+            }
+            else if(detOrFSR_unfold == 1)
+            {
+	        it = sysMassFSRUnfold.begin();
+	        it_end = sysMassFSRUnfold.end();
+            }
+            else
+            {
+                cout << " invalid unfolding step..." << endl;
+                exit(EXIT_FAILURE);
+            }
+
+            while(it != it_end){
                     int nSys = it->second.size();
                     for(int i = 0; i < nSys; i++){
                             if((it->first)=="unfoldScan" || (it->first)=="unfoldBias"){

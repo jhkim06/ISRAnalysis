@@ -336,7 +336,7 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     import pyScripts.drawUtil as drawutil
     
     # create unfold class                                                                    # regularization mode
-    unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'], False, int(args.year), int(3))
+    unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'], False, int(args.year), int(0))
     
     # set response matrix
     unfoldClass.SetNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
@@ -350,8 +350,8 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     unfoldClass.setInput("Mass", unfoldInputList['matrix'], True, "Closure", 0, 1., args.phase_space_detector)
     
     # set unfolding input histogram
-    unfoldClass.setInput("Pt",   unfoldInputList['hist'], False, "nominal", 0, 0., "detector_level")
-    unfoldClass.setInput("Mass", unfoldInputList['hist'], False, "nominal", 0, 0., "detector_level")
+    unfoldClass.setInput("Pt",   unfoldInputList['hist'], False, "nominal", 0, 1., "detector_level")
+    unfoldClass.setInput("Mass", unfoldInputList['hist'], False, "nominal", 0, 1., "detector_level")
     setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "nominal", False, 0, -1) 
     
     # set systematic response matrix and input histograms
@@ -380,8 +380,11 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 # set systematic background histograms
                 setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys, nSys)
                  
+
+    DetectorUnfold = 0;
+    FSRUnfold = 1;
     # unfold 
-    unfoldClass.doISRUnfold(args.doSys)
+    unfoldClass.doISRUnfold(DetectorUnfold, args.doSys)
     
     if args.doSys == True:
         unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
@@ -416,7 +419,8 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 1)
     
     # unfolding for QED FSR
-    unfoldClass.doISRQEDFSRUnfold(args.doSys)
+    #unfoldClass.doISRQEDFSRUnfold(args.doSys)
+    unfoldClass.doISRUnfold(FSRUnfold, args.doSys)
     
     # set nominal value and also systematic values
     unfoldClass.setMeanPt(args.doSys, False, args.doSys)

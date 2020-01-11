@@ -175,8 +175,7 @@ public:
         void drawISRMatrixInfo(TString var, TString outpdf, bool detector_unfold = true, bool fsr_systematic = false);
 
 	// do unfold 
-	void doISRUnfold(bool doSys = false);
-        void doISRQEDFSRUnfold(bool doSys = false);
+	void doISRUnfold(int detOrFSR_unfold = 0, bool doSys = false);
 
         void drawClosurePlots(TString outpdf, TString var, int nthMassBin);
 
