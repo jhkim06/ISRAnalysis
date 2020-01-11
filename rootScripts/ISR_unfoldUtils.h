@@ -49,8 +49,6 @@ private:
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtFSRUnfold;
 	std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassFSRUnfold;
 
-	// nominal mean mass and pt for data and mc, and statistical and systematic errors 
-
         // detector level 
 	vector<Double_t> meanMass_data_detector, meanMassStatErr_data_detector, meanMassSysErr_data_detector, meanMassTotErr_data_detector;
 	vector<Double_t> meanPt_data_detector,   meanPtStatErr_data_detector,   meanPtSysErr_data_detector, meanPtTotErr_data_detector;
@@ -69,10 +67,6 @@ private:
 
 	vector<Double_t> meanMass_mc_pre_fsr, meanMassStatErr_mc_pre_fsr, meanMassSysErr_mc_pre_fsr;
 	vector<Double_t> meanPt_mc_pre_fsr,   meanPtStatErr_mc_pre_fsr, meanPtSysErr_mc_pre_fsr;
-
-        // temporary vector to save mean values for more mass bins 
-	vector<Double_t> meanMass_mc_pre_fsr_, meanMassStatErr_mc_pre_fsr_;
-	vector<Double_t> meanPt_mc_pre_fsr_,   meanPtStatErr_mc_pre_fsr_;
 
 	vector<Double_t> meanMass_mcAlt, meanMassErr_mcAlt;
 	vector<Double_t> meanPt_mcAlt,   meanPtErr_mcAlt;
@@ -117,16 +111,37 @@ private:
         TGraph *lCurve_mass;
         Int_t iBest_mass;
 
+        // conditions for unfolding
+        TUnfold::ERegMode regMode_detector;
+        TUnfold::ERegMode regMode_FSR;
+        
         TString hist_file_path;
         TString channel_name;
         bool do_normalization;
-        int year_;
+        int year;
+        
 public:
-	ISRUnfold(TString channel, TString filepath, bool norm = true, int year = 2016){
+
+        // constructor
+	ISRUnfold(TString channel, TString filepath, bool norm = true, int year_ = 2016, 
+                int regMode_detector_ = TUnfold::kRegModeNone, int regMode_FSR_ = TUnfold::kRegModeNone)
+        {
             channel_name = channel;
             hist_file_path = filepath;
             do_normalization = norm;
-            year_ = year;
+            year = year_;
+
+            if(regMode_detector_ == 0)
+                regMode_detector = TUnfold::kRegModeNone;
+            if(regMode_detector_ == 1)
+                regMode_detector = TUnfold::kRegModeSize;
+            if(regMode_detector_ == 2)
+                regMode_detector = TUnfold::kRegModeDerivative; 
+            if(regMode_detector_ == 3)
+                regMode_detector = TUnfold::kRegModeCurvature; 
+
+            if(regMode_FSR_ == 0)
+                regMode_FSR = TUnfold::kRegModeNone;
         }
 	~ISRUnfold(){}
 
@@ -138,7 +153,6 @@ public:
 
 	// set systematic TUnfoldDensity
 	void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
-
         void setSysFSRTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
 	// set input histogram
@@ -175,7 +189,6 @@ public:
 
 	void drawtext(TGraph* g);
 
-        void setMCPreFSRMeanValues(TString filepath);
 	void setMeanPt(bool doSys = false, bool altMC = false, bool detector_unfold = false);
 	void setMeanMass(bool doSys = false, bool altMC = false, bool detector_unfold = false);
 
