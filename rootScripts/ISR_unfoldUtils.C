@@ -2,10 +2,16 @@
 #include "tdrstyle.C"
 #include "CMS_lumi.C"
 
+void ISRUnfold::setBias(double bias)            
+{                                                                                                                                                                                                                             
+   nominal_bias = bias;                                                                                                                                                                                                  
+}                                                                                                                                                                                                                             
+
 void ISRUnfold::setOutputBaseDir(TString outPath)
 {
    output_baseDir = outPath; 
 }
+
 void ISRUnfold::SetNomTUnfoldDensity(TString var, TString filepath, TString phase_name, TString fsr_correction_name)
 {
 
@@ -832,6 +838,9 @@ void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysN
 
 void ISRUnfold::doClosureTest(int detOrFSR_unfold, TString filepath, TString phase_name)
 {
+
+    nScan = 50;
+    nScan_mass = 50;
     TFile* filein = new TFile(filepath);                                                                                                                                                                                                                        
     TH1* hRec_pt = NULL;    
     TH1* hRec_mass = NULL;    
@@ -1088,12 +1097,12 @@ void ISRUnfold::doISRUnfold(int detOrFSR_unfold, bool doSys){
 	double tauMin=1.e-4;
 	double tauMax=1.e-3;
 
-  	nScan=30;
+  	nScan=50;
   	rhoLogTau=0;
   	lCurve=0;
 	iBest = 0;
 
-        nScan_mass=30;
+        nScan_mass=50;
         rhoLogTau_mass=0;
         lCurve_mass=0;
         iBest_mass = 0;
@@ -1110,9 +1119,9 @@ void ISRUnfold::doISRUnfold(int detOrFSR_unfold, bool doSys){
             else
             {
                 // regularization, use ScanTau() as a default method to find tau
-                iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau,                                                                                                                                                                                              
-                                           TUnfoldDensity::kEScanTauRhoAvgSys,                                                                                                                                                                                  
-                                           0,0,                                                                                                                                                                                                                 
+                iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau, 
+                                           TUnfoldDensity::kEScanTauRhoAvgSys, 
+                                           0,0,                                                                                                                                                                                              
                                            &lCurve);                                                                                                                                                                                                            
                                                                                                                                                                                                                                                                 
                 iBest_mass=nomMassUnfold->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,                                                                                                                                                                             
@@ -3389,11 +3398,14 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin)
       
     if(var == "Mass" )
     {
+        TFile* filein = new TFile("/home/jhkim/temp/ISR_response.root"); 
+
         hunfolded_data  = nomMassUnfold_closure->GetOutput("hunfolded_mass_closure",0,0,"mass[UO];pt[UOC0]",kTRUE);
         hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 
-        hpreFSR_mc   = nomMassUnfold_closure->GetBias("histMCTruth_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-        hpreFSR_mc->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+        hpreFSR_mc   = (TH1*)filein->Get("fiducial_phase_pre_FSR_dRp1_m"+ low_mass_edge[nthMassBin] + "to" + high_mass_edge[nthMassBin] + "/mll/histo_DYJets");
+        hpreFSR_mc->Add((TH1*)filein->Get("fiducial_phase_pre_FSR_dRp1_m"+ low_mass_edge[nthMassBin] + "to" + high_mass_edge[nthMassBin] + "/mll/histo_DYJets10to50")); 
+        hpreFSR_mc->GetXaxis()->SetRange(massBins[nthMassBin], massBins[nthMassBin+1]);
     }
 
     ratio= ((TH1F*)hunfolded_data->Clone("ratio"));
@@ -3435,6 +3447,8 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin)
     TString meanMC_nom;
     mean_nom.Form("%.2f", hunfolded_data->GetMean());
     meanMC_nom.Form("%.2f", hpreFSR_mc->GetMean());
+    cout << "mass mean: " << hunfolded_data->GetMean() << endl;
+    cout << "mass mean: " << hpreFSR_mc->GetMean() << endl;
 
     TLegend* leg_nom = new TLegend(0.45, 0.7, 0.75, 0.9,"","brNDC");
     //leg_nom->SetNColumns(2);
@@ -3522,7 +3536,7 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
             else
             {
                 h_nominal_unfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                h_nominal_unfolded_data->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                h_nominal_unfolded_data->GetXaxis()->SetRange(massBins[nthMassBin], massBins[nthMassBin+1]);
             }
         }
         else
@@ -3532,7 +3546,7 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
             }
             else{
                 h_nominal_unfolded_data  = nomMassFSRUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                h_nominal_unfolded_data->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                h_nominal_unfolded_data->GetXaxis()->SetRange(massBins[nthMassBin], massBins[nthMassBin+1]);
             }
         }
     }
@@ -3542,7 +3556,7 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
             }
             else{
                 h_nominal_unfolded_data  = sysMassFSRUnfold[sysName].at(1)->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                h_nominal_unfolded_data->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                h_nominal_unfolded_data->GetXaxis()->SetRange(massBins[nthMassBin], massBins[nthMassBin+1]);
             }
     }
 
@@ -3588,7 +3602,7 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
          }
          else{
              hsys_temp  = sysMassUnfold[sysName].at(i)->GetOutput("hunfolded_mass_temp_",0,0,"mass[UO];pt[UOC0]",kTRUE);
-             hsys_temp->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+             hsys_temp->GetXaxis()->SetRange(massBins[nthMassBin], massBins[nthMassBin+1]);
          }
      }
      else{
@@ -3597,7 +3611,7 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
          }
          else{
              hsys_temp  = sysMassFSRUnfold[sysName].at(i)->GetOutput("hunfolded_mass_temp_",0,0,"mass[UO];pt[UOC0]",kTRUE);
-             hsys_temp->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+             hsys_temp->GetXaxis()->SetRange(massBins[nthMassBin], massBins[nthMassBin+1]);
          }
      }
      h_data_sys_temp = ((TH1F*)hsys_temp->Clone("sys_temp"));
@@ -3633,7 +3647,7 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
         }    
         else{
             hsys_temp  = sysMassUnfold[sysName].at(i)->GetOutput("hunfolded_mass_temp_",0,0,"mass[UO];pt[UOC0]",kTRUE);
-            hsys_temp->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+            hsys_temp->GetXaxis()->SetRange(massBins[nthMassBin], massBins[nthMassBin+1]);
         }    
     }    
     else{
@@ -3642,7 +3656,7 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
         }    
         else{
             hsys_temp  = sysMassFSRUnfold[sysName].at(i)->GetOutput("hunfolded_mass_temp_",0,0,"mass[UO];pt[UOC0]",kTRUE);
-            hsys_temp->GetXaxis()->SetRange(h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), h_nominal_unfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+            hsys_temp->GetXaxis()->SetRange(massBins[nthMassBin], massBins[nthMassBin+1]);
         }    
     }    
 

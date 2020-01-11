@@ -337,10 +337,13 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
     DetectorUnfold = 0;
     FSRUnfold = 1;
+
+    bias = 1.0
     
     # create unfold class                                                                    # regularization mode
     unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'], False, int(args.year), int(0))
     unfoldClass.setOutputBaseDir(outputDirectory)
+    unfoldClass.setBias(bias)
     # set response matrix
     unfoldClass.SetNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
     unfoldClass.SetNomTUnfoldDensity("Mass",unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
@@ -348,8 +351,8 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     unfoldClass.doClosureTest(DetectorUnfold, unfoldInputList['matrix'], args.phase_space_detector)
     
     # set unfolding input histogram
-    unfoldClass.setInput("Pt",   unfoldInputList['hist'], False, "nominal", 0, 1., "detector_level")
-    unfoldClass.setInput("Mass", unfoldInputList['hist'], False, "nominal", 0, 1., "detector_level")
+    unfoldClass.setInput("Pt",   unfoldInputList['hist'], False, "nominal", 0, bias, "detector_level")
+    unfoldClass.setInput("Mass", unfoldInputList['hist'], False, "nominal", 0, bias, "detector_level")
     setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "nominal", False, 0, -1) 
     
     # set systematic response matrix and input histograms
@@ -368,7 +371,6 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
                 unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
                 
-                bias = 1.
                 if sysName == "unfoldBias": bias = 0.95 
                 
                 # set systematic input histograms
@@ -415,7 +417,6 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 1)
     
     # unfolding for QED FSR
-    #unfoldClass.doISRQEDFSRUnfold(args.doSys)
     unfoldClass.doISRUnfold(FSRUnfold, args.doSys)
     
     # set nominal value and also systematic values
@@ -424,17 +425,14 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     
     for massBin in range(0,5):
          
-        if args.doSys:
-            unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin)
-            unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin)
+        unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin)
+        unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin)
     
         unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin)
         unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin)
     
-    for massBin in range(0,5):
-    
-       unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt",   massBin, "", False, True)
-       unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin, "", False, True)
+        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt",   massBin, "", False, True)
+        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin, "", False, True)
     
     # draw plots including systematic 
     if args.doSys == True:

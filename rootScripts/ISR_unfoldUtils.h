@@ -133,7 +133,7 @@ public:
 
         // constructor
 	ISRUnfold(TString channel, TString filepath, bool norm = true, int year_ = 2016, 
-                int regMode_detector_ = TUnfold::kRegModeNone, int regMode_FSR_ = TUnfold::kRegModeNone)
+                int regMode_detector_ = 0, int regMode_FSR_ = 0)
         {
             channel_name = channel;
             hist_file_path = filepath;
@@ -156,6 +156,7 @@ public:
 	~ISRUnfold(){}
 
         void setOutputBaseDir(TString outPath);
+        void setBias(double bias);
 
 	// set nominal TUnfoldDensity 
 	void SetNomTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
