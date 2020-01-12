@@ -338,10 +338,10 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     DetectorUnfold = 0;
     FSRUnfold = 1;
 
-    bias = 1.0
+    bias = 0.9
     
     # create unfold class                                                                    # regularization mode
-    unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'], False, int(args.year), int(0))
+    unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'], False, int(args.year), int(1))
     unfoldClass.setOutputBaseDir(outputDirectory)
     unfoldClass.setBias(bias)
     # set response matrix
