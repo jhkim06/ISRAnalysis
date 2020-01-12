@@ -1357,279 +1357,279 @@ double ISRUnfold::DoFit(TString var, int nthMassBin, bool isFSRUnfold){
 }
 
 void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
+            
+    int nMassBin = -1;
 
-        int nMassBin = -1;
-
-        const TUnfoldBinningV17* temp_binning_gen_pt = nomPtUnfold->GetOutputBinning("Gen_Pt");
-	const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
-        nMassBin = temp_tvecd->GetNrows() - 1;
-	const Double_t* massBins = temp_tvecd->GetMatrixArray();
+    const TUnfoldBinningV17* temp_binning_gen_pt = nomPtUnfold->GetOutputBinning("Gen_Pt");
+    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    nMassBin = temp_tvecd->GetNrows() - 1;
+    const Double_t* massBins = temp_tvecd->GetMatrixArray();
 
 
-        TH1 * h_detector_mass = nomMassUnfold->GetInput("h_detector_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+    TH1 * h_detector_mass = nomMassUnfold->GetInput("h_detector_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
 
-        // set nominal detector & QED FSR unfolded results
-        TH1* hunfolded_mass =  nomMassUnfold->GetOutput("hunfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
-        TH1 *histMCTruth_mass= nomMassUnfold->GetBias("histMCTruth_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+    // set nominal detector & QED FSR unfolded results
+    TH1* hunfolded_mass =  nomMassUnfold->GetOutput("hunfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+    TH1 *histMCTruth_mass= nomMassUnfold->GetBias("histMCTruth_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
 
-        TH1* h_fsr_unfolded_mass =  nomMassFSRUnfold->GetOutput("h_fsr_unfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
-        TH1 *histMCTruth_pre_fsr_mass= nomMassFSRUnfold->GetBias("histMCTruth_pre_fsr_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+    TH1* h_fsr_unfolded_mass =  nomMassFSRUnfold->GetOutput("h_fsr_unfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+    TH1 *histMCTruth_pre_fsr_mass= nomMassFSRUnfold->GetBias("histMCTruth_pre_fsr_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
 
-        // loop over mass bins
-        for(int ibin = 0; ibin < nMassBin; ibin++){
+    // loop over mass bins
+    for(int ibin = 0; ibin < nMassBin; ibin++){
 
-                h_detector_mass->GetXaxis()->  SetRange(h_detector_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),h_detector_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+            h_detector_mass->GetXaxis()->  SetRange(h_detector_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),h_detector_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
 
-                hunfolded_mass->GetXaxis()->  SetRange(hunfolded_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
-                histMCTruth_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+            hunfolded_mass->GetXaxis()->  SetRange(hunfolded_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+            histMCTruth_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
 
-                h_fsr_unfolded_mass->GetXaxis()->  SetRange(hunfolded_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
-                histMCTruth_pre_fsr_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+            h_fsr_unfolded_mass->GetXaxis()->  SetRange(hunfolded_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+            histMCTruth_pre_fsr_mass->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
 
-                meanMass_data_detector. push_back(h_detector_mass->GetMean());
-                meanMassStatErr_data_detector.push_back(h_detector_mass->GetMeanError());
+            meanMass_data_detector. push_back(h_detector_mass->GetMean());
+            meanMassStatErr_data_detector.push_back(h_detector_mass->GetMeanError());
 
-                meanMass_data.   push_back(hunfolded_mass->GetMean());
-                meanMassStatErr_data.push_back(hunfolded_mass->GetMeanError());
+            meanMass_data.   push_back(hunfolded_mass->GetMean());
+            meanMassStatErr_data.push_back(hunfolded_mass->GetMeanError());
 
-                meanMass_data_pre_fsr.   push_back(h_fsr_unfolded_mass->GetMean());
-                meanMassStatErr_data_pre_fsr.push_back(h_fsr_unfolded_mass->GetMeanError());
+            meanMass_data_pre_fsr.   push_back(h_fsr_unfolded_mass->GetMean());
+            meanMassStatErr_data_pre_fsr.push_back(h_fsr_unfolded_mass->GetMeanError());
 
-                meanMass_mc.   push_back(histMCTruth_mass->GetMean());
-                meanMassErr_mc.push_back(histMCTruth_mass->GetMeanError());
+            meanMass_mc.   push_back(histMCTruth_mass->GetMean());
+            meanMassErr_mc.push_back(histMCTruth_mass->GetMeanError());
 
-                meanMass_mc_pre_fsr.   push_back(histMCTruth_pre_fsr_mass->GetMean());
+            meanMass_mc_pre_fsr.   push_back(histMCTruth_pre_fsr_mass->GetMean());
 
-                if(altMC){
-                    TH1 *histMCTruth_massAlt= sysMassUnfold["Alt"].at(0)->GetBias("histMCTruth_massAlt",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                    histMCTruth_massAlt->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
-                    meanMass_mcAlt.   push_back(histMCTruth_massAlt->GetMean());
-                    meanMassErr_mcAlt.push_back(histMCTruth_massAlt->GetMeanError());
+            if(altMC){
+                TH1 *histMCTruth_massAlt= sysMassUnfold["Alt"].at(0)->GetBias("histMCTruth_massAlt",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                histMCTruth_massAlt->GetXaxis()->SetRange(histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMCTruth_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+                meanMass_mcAlt.   push_back(histMCTruth_massAlt->GetMean());
+                meanMassErr_mcAlt.push_back(histMCTruth_massAlt->GetMeanError());
 
-	            delete histMCTruth_massAlt;
-                }
-
-                // save systematic mean mass values
-                if(doSys){
-                    // detector unfolding systematics
-	            std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysMassUnfold.begin();
-                    std::map<TString, std::vector<Double_t>> temp_map; // temp map to save systematic results for a mass bin
-                    std::map<TString, std::vector<Double_t>> temp_map_mc; // temp map to save systematic results for a mass bin
-
-           	    while(it != sysMassUnfold.end()){
-           	            int nSys = it->second.size();
-           	            TH1* hdatasys_temp;
-           	            for(int i = 0; i < nSys; i++){
-           	                 hdatasys_temp = sysMassUnfold[it->first].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-		                 hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[ibin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
-           	                 temp_map[it->first].push_back(hdatasys_temp->GetMean());
-
-           	                 delete hdatasys_temp;
-           	            }
-           	            it++;
-           	    }
-           	    meanMass_sysdata.push_back(temp_map);
-           	    temp_map.clear();
-
-                    // QED FSR unfolding systematics
-                    it = sysMassFSRUnfold.begin();
-                    while(it != sysMassFSRUnfold.end()){
-                            int nSys = it->second.size();
-                            TH1* hdatasys_temp;
-                            for(int i = 0; i < nSys; i++){
-
-                                hdatasys_temp = sysMassFSRUnfold[it->first].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                                hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[ibin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
-                                temp_map[it->first].push_back(hdatasys_temp->GetMean());
-
-                                delete hdatasys_temp;
-
-                                hdatasys_temp = sysMassFSRUnfold[it->first].at(i)->GetBias("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                                hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[ibin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
-                                temp_map_mc[it->first].push_back(hdatasys_temp->GetMean());
-                                //cout << it->first << endl;
-                                //cout << "mean: " << hdatasys_temp->GetMean() << endl;
-
-                                delete hdatasys_temp;
-                            }
-                            it++;
-                    }
-                    meanMass_sysdata_pre_fsr.push_back(temp_map);
-                    meanMass_sysmc_pre_fsr.push_back(temp_map_mc);
-                    temp_map.clear();
-                    temp_map_mc.clear();
-                }
-        }
-
-        delete h_detector_mass;
-	delete hunfolded_mass;
-	delete histMCTruth_mass;
-        delete h_fsr_unfolded_mass;
-        delete histMCTruth_pre_fsr_mass;
-
-        // calculate systematic uncertainty
-        if(doSys){
-            for(int i = 0; i < nMassBin; i++){
-
-                // detector unfolding
-               std::map<TString, Double_t> temp_map_;
-               std::map<TString, Double_t> temp_map_mc_;
-               std::map<TString, Int_t> temp_map_sysname_index;
-               std::map<TString, Int_t> temp_map_mc_sysname_index;
-
-               std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata.at(i).begin();
-               while(it != meanMass_sysdata.at(i).end()){
-                    int size_ = it->second.size();
-
-                    TH1F *hpdfsys = NULL;
-                    if((it->first)=="PDFerror") hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data.at(i)-0.2, meanMass_data.at(i)+0.2); // temp histogram to contain PDF variations
-
-                    Double_t err = -999.; //
-                    // use maximum variation as systematic
-                    for(int j = 0; j < size_; j++){
-                            //if( (i==5 || i==7) && (it->first)=="Scale") continue;
-
-                            if((it->first)=="PDFerror"){
-                                    hpdfsys->Fill(it->second.at(j));
-                            }
-
-                            Double_t temp_err =  fabs(meanMass_data.at(i) - it->second.at(j));
-                            if( temp_err > err){
-                                   err = temp_err;
-                            }
-                            //cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl;
-                    }
-                    if((it->first)=="PDFerror"){
-                            err = hpdfsys->GetRMS();
-                            delete hpdfsys;
-                    }
-
-                    temp_map_[it->first] = err;
-                    it++;
-               }
-               meanMassErr_sysdata.push_back(temp_map_);
-               temp_map_.clear();
-
-               it = meanMass_sysdata_pre_fsr.at(i).begin();
-               while(it != meanMass_sysdata_pre_fsr.at(i).end()){
-                    int size_ = it->second.size();
-
-                    TH1F *hpdfsys = NULL;
-                    TH1F *hpdfsys_mc = NULL;
-
-                    if((it->first)=="PDFerror")
-                    {
-                        hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data_pre_fsr.at(i)-0.2, meanMass_data_pre_fsr.at(i)+0.2); // temp histogram to contain PDF variations
-                        hpdfsys_mc = new TH1F("pdfsys_mc", "pdfsys_mc", 100, meanMass_data_pre_fsr.at(i)-0.2, meanMass_data_pre_fsr.at(i)+0.2); // temp histogram to contain PDF variations
-                    }
-
-                    Double_t err = -999.; //
-                    Double_t err_mc = -999.; //
-                    Int_t index_to_save = -1;
-                    Int_t index_to_save_mc = -1;
-                    // use maximum variation as systematic
-                    for(int j = 0; j < size_; j++)
-                    {
-                            //if( (i==5 || i==7) && (it->first)=="Scale") continue;
-
-                            if((it->first)=="PDFerror")
-                            {
-                                    hpdfsys->Fill(it->second.at(j));
-                                    hpdfsys_mc->Fill(meanMass_sysmc_pre_fsr.at(i)[it->first].at(j));
-                            }
-
-                            Double_t temp_err =  0.;
-                            Double_t temp_err_mc =  0.;
-                            if((it->first) == "QED_FSR")
-                            {
-                                temp_err = fabs(it->second.at(0) - it->second.at(1));
-                                temp_err_mc = fabs((meanMass_sysmc_pre_fsr.at(i)[it->first]).at(0) - (meanMass_sysmc_pre_fsr.at(i)[it->first]).at(1));
-                            }
-                            else
-                            {
-                                temp_err =  fabs(meanMass_data_pre_fsr.at(i) - it->second.at(j));
-                                temp_err_mc = fabs(meanMass_mc_pre_fsr.at(i) - (meanMass_sysmc_pre_fsr.at(i)[it->first]).at(j));
-                                //cout << it->first << " " << meanMass_mc_pre_fsr.at(i) << " " << (meanMass_sysmc_pre_fsr.at(i)[it->first]).at(j) << endl;
-                            }
-
-                            if( temp_err > err)
-                            {
-                                err = temp_err;
-                                index_to_save = j;
-                            }
-
-                            if( temp_err_mc > err_mc)
-                            {
-                                err_mc = temp_err_mc;
-                                index_to_save_mc = j;
-                            }
-                            //cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl;
-                    }
-
-                    if((it->first)=="PDFerror")
-                    {
-                        err = hpdfsys->GetRMS();
-                        err_mc = hpdfsys_mc->GetRMS();
-                        delete hpdfsys;
-                        delete hpdfsys_mc;
-                    }
-
-                    temp_map_[it->first] = err;
-                    temp_map_mc_[it->first] = err_mc;
-
-                    temp_map_sysname_index[it->first] = index_to_save;
-                    temp_map_mc_sysname_index[it->first] = index_to_save_mc;
-                    it++;
-               }
-               meanMassErr_sysdata_pre_fsr.push_back(temp_map_);
-               meanMassErrIdx_sysdata_pre_fsr.push_back(temp_map_sysname_index);
-
-               meanMassErr_sysmc_pre_fsr.push_back(temp_map_mc_);
-               meanMassErrIdx_sysmc_pre_fsr.push_back(temp_map_mc_sysname_index);
-
-               temp_map_.clear();
-               temp_map_mc_.clear();
-               temp_map_sysname_index.clear();
-               temp_map_mc_sysname_index.clear();
-
-            }// loop for mass bins
-        }
-
-        for(int i = 0; i < nMassBin; i++){
-            Double_t totalSys = 0.;
-            Double_t totalSys_pre_fsr = 0.;
-            Double_t totalSys_mc_pre_fsr = 0.;
-
-            //cout << i << " th mass bin... " << endl;
-            if(doSys){
-                std::map<TString, Double_t>::iterator it = meanMassErr_sysdata.at(i).begin();
-                while(it != meanMassErr_sysdata.at(i).end()){
-
-                     //cout << i << " th mass bin, mass" << it->first << " " << it->second << endl;
-                     totalSys += pow(it->second, 2);
-                     it++;
-                }
-                //cout << i << " th mass bin, total mass systematic uncertainty: " << sqrt(totalSys) << " statistical error: " << meanMassStatErr_data.at(i) << endl;
-
-                it = meanMassErr_sysdata_pre_fsr.at(i).begin();
-                while(it != meanMassErr_sysdata_pre_fsr.at(i).end()){
-
-                     //cout << "mass systematic: " << it->first << " " << it->second/ meanMass_data_pre_fsr.at(i) * 100.<< endl;
-                     //cout << i << " th mass bin, mass" << it->first << " " << it->second << endl;
-                     totalSys_pre_fsr += pow(it->second, 2);
-                     totalSys_mc_pre_fsr += pow(meanMassErr_sysmc_pre_fsr.at(i)[it->first], 2);
-                     it++;
-                }
-
+                delete histMCTruth_massAlt;
             }
-            meanMassSysErr_data.push_back(sqrt(totalSys));
-	    meanMassTotErr_data.push_back(sqrt(totalSys + pow(meanMassStatErr_data.at(i),2)));
 
-            meanMassSysErr_mc_pre_fsr.push_back(sqrt(totalSys_mc_pre_fsr));
+            // save systematic mean mass values
+            if(doSys){
+                // detector unfolding systematics
+                std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysMassUnfold.begin();
+                std::map<TString, std::vector<Double_t>> temp_map; // temp map to save systematic results for a mass bin
+                std::map<TString, std::vector<Double_t>> temp_map_mc; // temp map to save systematic results for a mass bin
 
-            meanMassSysErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr));
-	    meanMassTotErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanMassStatErr_data_pre_fsr.at(i),2)));
+       	    while(it != sysMassUnfold.end()){
+       	            int nSys = it->second.size();
+       	            TH1* hdatasys_temp;
+       	            for(int i = 0; i < nSys; i++){
+       	                 hdatasys_temp = sysMassUnfold[it->first].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+    	                 hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[ibin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+       	                 temp_map[it->first].push_back(hdatasys_temp->GetMean());
+
+       	                 delete hdatasys_temp;
+       	            }
+       	            it++;
+       	    }
+       	    meanMass_sysdata.push_back(temp_map);
+       	    temp_map.clear();
+
+                // QED FSR unfolding systematics
+                it = sysMassFSRUnfold.begin();
+                while(it != sysMassFSRUnfold.end()){
+                        int nSys = it->second.size();
+                        TH1* hdatasys_temp;
+                        for(int i = 0; i < nSys; i++){
+
+                            hdatasys_temp = sysMassFSRUnfold[it->first].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                            hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[ibin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+                            temp_map[it->first].push_back(hdatasys_temp->GetMean());
+
+                            delete hdatasys_temp;
+
+                            hdatasys_temp = sysMassFSRUnfold[it->first].at(i)->GetBias("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                            hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[ibin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+                            temp_map_mc[it->first].push_back(hdatasys_temp->GetMean());
+                            //cout << it->first << endl;
+                            //cout << "mean: " << hdatasys_temp->GetMean() << endl;
+
+                            delete hdatasys_temp;
+                        }
+                        it++;
+                }
+                meanMass_sysdata_pre_fsr.push_back(temp_map);
+                meanMass_sysmc_pre_fsr.push_back(temp_map_mc);
+                temp_map.clear();
+                temp_map_mc.clear();
+            }
+    }
+
+    delete h_detector_mass;
+    delete hunfolded_mass;
+    delete histMCTruth_mass;
+    delete h_fsr_unfolded_mass;
+    delete histMCTruth_pre_fsr_mass;
+
+    // calculate systematic uncertainty
+    if(doSys){
+        for(int i = 0; i < nMassBin; i++){
+
+            // detector unfolding
+           std::map<TString, Double_t> temp_map_;
+           std::map<TString, Double_t> temp_map_mc_;
+           std::map<TString, Int_t> temp_map_sysname_index;
+           std::map<TString, Int_t> temp_map_mc_sysname_index;
+
+           std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata.at(i).begin();
+           while(it != meanMass_sysdata.at(i).end()){
+                int size_ = it->second.size();
+
+                TH1F *hpdfsys = NULL;
+                if((it->first)=="PDFerror") hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data.at(i)-0.2, meanMass_data.at(i)+0.2); // temp histogram to contain PDF variations
+
+                Double_t err = -999.; //
+                // use maximum variation as systematic
+                for(int j = 0; j < size_; j++){
+                        //if( (i==5 || i==7) && (it->first)=="Scale") continue;
+
+                        if((it->first)=="PDFerror"){
+                                hpdfsys->Fill(it->second.at(j));
+                        }
+
+                        Double_t temp_err =  fabs(meanMass_data.at(i) - it->second.at(j));
+                        if( temp_err > err){
+                               err = temp_err;
+                        }
+                        //cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl;
+                }
+                if((it->first)=="PDFerror"){
+                        err = hpdfsys->GetRMS();
+                        delete hpdfsys;
+                }
+
+                temp_map_[it->first] = err;
+                it++;
+           }
+           meanMassErr_sysdata.push_back(temp_map_);
+           temp_map_.clear();
+
+           it = meanMass_sysdata_pre_fsr.at(i).begin();
+           while(it != meanMass_sysdata_pre_fsr.at(i).end()){
+                int size_ = it->second.size();
+
+                TH1F *hpdfsys = NULL;
+                TH1F *hpdfsys_mc = NULL;
+
+                if((it->first)=="PDFerror")
+                {
+                    hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data_pre_fsr.at(i)-0.2, meanMass_data_pre_fsr.at(i)+0.2); // temp histogram to contain PDF variations
+                    hpdfsys_mc = new TH1F("pdfsys_mc", "pdfsys_mc", 100, meanMass_data_pre_fsr.at(i)-0.2, meanMass_data_pre_fsr.at(i)+0.2); // temp histogram to contain PDF variations
+                }
+
+                Double_t err = -999.; //
+                Double_t err_mc = -999.; //
+                Int_t index_to_save = -1;
+                Int_t index_to_save_mc = -1;
+                // use maximum variation as systematic
+                for(int j = 0; j < size_; j++)
+                {
+                        //if( (i==5 || i==7) && (it->first)=="Scale") continue;
+
+                        if((it->first)=="PDFerror")
+                        {
+                                hpdfsys->Fill(it->second.at(j));
+                                hpdfsys_mc->Fill(meanMass_sysmc_pre_fsr.at(i)[it->first].at(j));
+                        }
+
+                        Double_t temp_err =  0.;
+                        Double_t temp_err_mc =  0.;
+                        if((it->first) == "QED_FSR")
+                        {
+                            temp_err = fabs(it->second.at(0) - it->second.at(1));
+                            temp_err_mc = fabs((meanMass_sysmc_pre_fsr.at(i)[it->first]).at(0) - (meanMass_sysmc_pre_fsr.at(i)[it->first]).at(1));
+                        }
+                        else
+                        {
+                            temp_err =  fabs(meanMass_data_pre_fsr.at(i) - it->second.at(j));
+                            temp_err_mc = fabs(meanMass_mc_pre_fsr.at(i) - (meanMass_sysmc_pre_fsr.at(i)[it->first]).at(j));
+                            //cout << it->first << " " << meanMass_mc_pre_fsr.at(i) << " " << (meanMass_sysmc_pre_fsr.at(i)[it->first]).at(j) << endl;
+                        }
+
+                        if( temp_err > err)
+                        {
+                            err = temp_err;
+                            index_to_save = j;
+                        }
+
+                        if( temp_err_mc > err_mc)
+                        {
+                            err_mc = temp_err_mc;
+                            index_to_save_mc = j;
+                        }
+                        //cout << i << " th mass bin, " << it->first << j << " th sys value: " << it->second.at(j) << endl;
+                }
+
+                if((it->first)=="PDFerror")
+                {
+                    err = hpdfsys->GetRMS();
+                    err_mc = hpdfsys_mc->GetRMS();
+                    delete hpdfsys;
+                    delete hpdfsys_mc;
+                }
+
+                temp_map_[it->first] = err;
+                temp_map_mc_[it->first] = err_mc;
+
+                temp_map_sysname_index[it->first] = index_to_save;
+                temp_map_mc_sysname_index[it->first] = index_to_save_mc;
+                it++;
+           }
+           meanMassErr_sysdata_pre_fsr.push_back(temp_map_);
+           meanMassErrIdx_sysdata_pre_fsr.push_back(temp_map_sysname_index);
+
+           meanMassErr_sysmc_pre_fsr.push_back(temp_map_mc_);
+           meanMassErrIdx_sysmc_pre_fsr.push_back(temp_map_mc_sysname_index);
+
+           temp_map_.clear();
+           temp_map_mc_.clear();
+           temp_map_sysname_index.clear();
+           temp_map_mc_sysname_index.clear();
+
+        }// loop for mass bins
+    }
+
+    for(int i = 0; i < nMassBin; i++){
+        Double_t totalSys = 0.;
+        Double_t totalSys_pre_fsr = 0.;
+        Double_t totalSys_mc_pre_fsr = 0.;
+
+        //cout << i << " th mass bin... " << endl;
+        if(doSys){
+            std::map<TString, Double_t>::iterator it = meanMassErr_sysdata.at(i).begin();
+            while(it != meanMassErr_sysdata.at(i).end()){
+
+                 //cout << i << " th mass bin, mass" << it->first << " " << it->second << endl;
+                 totalSys += pow(it->second, 2);
+                 it++;
+            }
+            //cout << i << " th mass bin, total mass systematic uncertainty: " << sqrt(totalSys) << " statistical error: " << meanMassStatErr_data.at(i) << endl;
+
+            it = meanMassErr_sysdata_pre_fsr.at(i).begin();
+            while(it != meanMassErr_sysdata_pre_fsr.at(i).end()){
+
+                 //cout << "mass systematic: " << it->first << " " << it->second/ meanMass_data_pre_fsr.at(i) * 100.<< endl;
+                 //cout << i << " th mass bin, mass" << it->first << " " << it->second << endl;
+                 totalSys_pre_fsr += pow(it->second, 2);
+                 totalSys_mc_pre_fsr += pow(meanMassErr_sysmc_pre_fsr.at(i)[it->first], 2);
+                 it++;
+            }
+
         }
+        meanMassSysErr_data.push_back(sqrt(totalSys));
+        meanMassTotErr_data.push_back(sqrt(totalSys + pow(meanMassStatErr_data.at(i),2)));
+
+        meanMassSysErr_mc_pre_fsr.push_back(sqrt(totalSys_mc_pre_fsr));
+
+        meanMassSysErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr));
+        meanMassTotErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanMassStatErr_data_pre_fsr.at(i),2)));
+    }
 }
 
 
@@ -3957,9 +3957,6 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
     }
 
     /////////////////////////// systematics ////////////////////////////
-
-    // TODO update for detector systematic
-    std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtFSRUnfold.begin();
     if(isFSRUnfold && systematic )
     {
         //initialize errors
@@ -3972,6 +3969,8 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
             ratio_sys_err_mc->SetBinError(ibin, 0.);
         }
 
+        // TODO update for detector systematic
+        std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it = sysPtFSRUnfold.begin();
         while(it != sysPtFSRUnfold.end())
         {
             if(!fullSys && it->first != sysName)
@@ -3980,181 +3979,183 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
                 continue;
             }
 
-            if(it->first != "Closure")
+            TH1 * hdatasys0_temp = NULL;
+            TH1 * hdatasys1_temp = NULL;
+
+            TH1 * hmcsys0_temp = NULL;
+            TH1 * hmcsys1_temp = NULL;
+
+            int systematic_variation_index = 0;
+            int systematic_variation_index_mc = 0;
+
+            // get distribution which gives the maximum variation on mean value 
+            if(var == "Pt")
             {
-
-                TH1 * hdatasys0_temp = NULL;
-                TH1 * hdatasys1_temp = NULL;
-
-                TH1 * hmcsys0_temp = NULL;
-                TH1 * hmcsys1_temp = NULL;
-
-                int systematic_variation_index = 0;
-                int systematic_variation_index_mc = 0;
-
-                // read histogram giving maximum variation on mean value
-                if(var == "Pt")
+                // note except QED_FSR, use the systematic histogram giving maximum variation on mean value
+                // to calculate systematic error on each bin.
+                // this is not correct for some systematic sources, for example PDF error.
+                if(it->first != "QED_FSR")
                 {
+                    systematic_variation_index = meanPtErrIdx_sysdata_pre_fsr.at(nthMassBin)[it->first];
+                    hdatasys0_temp = sysPtFSRUnfold[it->first].at(systematic_variation_index)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
-                    // note except QED_FSR, use the systematic histogram giving maximum variation on mean value
-                    // to calculate systematic error on each bin.
-                    // this is not correct for some systematic sources, for example PDF error.
-                    if(it->first != "QED_FSR")
-                    {
-                        systematic_variation_index = meanPtErrIdx_sysdata_pre_fsr.at(nthMassBin)[it->first];
-                        hdatasys0_temp = sysPtFSRUnfold[it->first].at(systematic_variation_index)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-
-                        systematic_variation_index_mc = meanPtErrIdx_sysmc_pre_fsr.at(nthMassBin)[it->first];
-                        hmcsys0_temp = sysPtFSRUnfold[it->first].at(systematic_variation_index_mc)->GetBias("hmc_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                    }
-                    else
-                    {
-                        hdatasys0_temp = sysPtFSRUnfold[it->first].at(0)->GetOutput("hunfolded_pt_systemp_fsr0",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                        hdatasys1_temp = sysPtFSRUnfold[it->first].at(1)->GetOutput("hunfolded_pt_systemp_fsr1",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-
-                        hmcsys0_temp = sysPtFSRUnfold[it->first].at(0)->GetBias("hmc_pt_systemp_fsr0",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                        hmcsys1_temp = sysPtFSRUnfold[it->first].at(1)->GetBias("hmc_pt_systemp_fsr1",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                    }
+                    systematic_variation_index_mc = meanPtErrIdx_sysmc_pre_fsr.at(nthMassBin)[it->first];
+                    hmcsys0_temp = sysPtFSRUnfold[it->first].at(systematic_variation_index_mc)->GetBias("hmc_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
                 }
-
-                if(var == "Mass")
+                else
                 {
-                    if(it->first != "QED_FSR")
-                    {
-                        systematic_variation_index = meanMassErrIdx_sysdata_pre_fsr.at(nthMassBin)[it->first];
-                        hdatasys0_temp = sysMassFSRUnfold[it->first].at(systematic_variation_index)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                        hdatasys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    hdatasys0_temp = sysPtFSRUnfold[it->first].at(0)->GetOutput("hunfolded_pt_systemp_fsr0",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                    hdatasys1_temp = sysPtFSRUnfold[it->first].at(1)->GetOutput("hunfolded_pt_systemp_fsr1",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
-                        systematic_variation_index_mc = meanMassErrIdx_sysmc_pre_fsr.at(nthMassBin)[it->first];
-                        hmcsys0_temp = sysMassFSRUnfold[it->first].at(systematic_variation_index_mc)->GetBias("hmc_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                        hmcsys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                    }
-                    else
-                    {
-                        hdatasys0_temp = sysMassFSRUnfold[it->first].at(0)->GetOutput("hunfolded_mass_systemp_fsr0",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                        hdatasys1_temp = sysMassFSRUnfold[it->first].at(1)->GetOutput("hunfolded_mass_systemp_fsr1",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                        hdatasys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                        hdatasys1_temp->GetXaxis()->SetRange(hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-
-                        hmcsys0_temp = sysMassFSRUnfold[it->first].at(0)->GetBias("hmc_mass_systemp_fsr0",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                        hmcsys1_temp = sysMassFSRUnfold[it->first].at(1)->GetBias("hmc_mass_systemp_fsr1",0,0,"mass[UO];pt[UOC0]",kTRUE);
-                        hmcsys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                        hmcsys1_temp->GetXaxis()->SetRange(hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
-                    }
+                    hmcsys0_temp = sysPtFSRUnfold[it->first].at(0)->GetBias("hmc_pt_systemp_fsr0",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                    hmcsys1_temp = sysPtFSRUnfold[it->first].at(1)->GetBias("hmc_pt_systemp_fsr1",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
                 }
+            }
 
-                TH1F * ratio0_temp = NULL;
-                TH1F * ratio1_temp = NULL;
+            if(var == "Mass")
+            {
+                if(it->first != "QED_FSR")
+                {
+                    systematic_variation_index = meanMassErrIdx_sysdata_pre_fsr.at(nthMassBin)[it->first];
+                    hdatasys0_temp = sysMassFSRUnfold[it->first].at(systematic_variation_index)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    hdatasys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 
-                TH1F * ratio0_temp_mc = NULL;
-                TH1F * ratio1_temp_mc = NULL;
+                    systematic_variation_index_mc = meanMassErrIdx_sysmc_pre_fsr.at(nthMassBin)[it->first];
+                    hmcsys0_temp = sysMassFSRUnfold[it->first].at(systematic_variation_index_mc)->GetBias("hmc_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    hmcsys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                }
+                else
+                {
+                    hdatasys0_temp = sysMassFSRUnfold[it->first].at(0)->GetOutput("hunfolded_mass_systemp_fsr0",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    hdatasys1_temp = sysMassFSRUnfold[it->first].at(1)->GetOutput("hunfolded_mass_systemp_fsr1",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    hdatasys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    hdatasys1_temp->GetXaxis()->SetRange(hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+
+                    hmcsys0_temp = sysMassFSRUnfold[it->first].at(0)->GetBias("hmc_mass_systemp_fsr0",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    hmcsys1_temp = sysMassFSRUnfold[it->first].at(1)->GetBias("hmc_mass_systemp_fsr1",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    hmcsys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                    hmcsys1_temp->GetXaxis()->SetRange(hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+                }
+            }
+
+            TH1F * ratio0_temp = NULL;
+            TH1F * ratio1_temp = NULL;
+
+            TH1F * ratio0_temp_mc = NULL;
+            TH1F * ratio1_temp_mc = NULL;
+
+            if(it->first != "QED_FSR")
+            {
+                if(data_over_mc)
+                {
+                    ratio0_temp = (TH1F*)hdatasys0_temp->Clone("ratio");
+                    ratio0_temp->Divide(hunfolded_mc);
+
+                    ratio0_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
+                    ratio0_temp_mc->Divide(hmcsys0_temp);
+                }
+                else
+                {
+                    ratio0_temp = (TH1F*)hunfolded_mc->Clone("ratio");
+                    ratio0_temp->Divide(hdatasys0_temp);
+
+                    ratio0_temp_mc = (TH1F*)hmcsys0_temp->Clone("ratio_mc");
+                    ratio0_temp_mc->Divide(hunfolded_data);
+                }
+            }
+            else
+            {
+                if(data_over_mc)        
+                {
+                    ratio0_temp = (TH1F*)hdatasys0_temp->Clone("ratio");
+                    ratio0_temp->Divide(hunfolded_mc);
+
+                    ratio1_temp = (TH1F*)hdatasys1_temp->Clone("ratio");
+                    ratio1_temp->Divide(hunfolded_mc);
+
+                    ratio0_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
+                    ratio0_temp_mc->Divide(hmcsys0_temp);
+
+                    ratio1_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
+                    ratio1_temp_mc->Divide(hmcsys1_temp);
+                }
+                else
+                {
+                    ratio0_temp = (TH1F*)hunfolded_mc->Clone("ratio");
+                    ratio0_temp->Divide(hdatasys0_temp);
+
+                    ratio1_temp = (TH1F*)hunfolded_mc->Clone("ratio");
+                    ratio1_temp->Divide(hdatasys1_temp);
+
+                    ratio0_temp_mc = (TH1F*)hmcsys0_temp->Clone("ratio");
+                    ratio0_temp_mc->Divide(hunfolded_data);
+
+                    ratio1_temp_mc = (TH1F*)hmcsys1_temp->Clone("ratio");
+                    ratio1_temp_mc->Divide(hunfolded_data);
+
+                }
+            }
+
+            // loop over each bin of unfolded histogram and set error due to the systematic source
+            // note errors of hunfolded_sys_err initialized as zero before looping over all systematic sources
+            //
+            for(int ibin = 1; ibin<hunfolded_sys_err->GetNbinsX()+1;ibin++){
+                Double_t temp_err = 0.;
+                Double_t temp_err_mc = 0.;
+                Double_t temp_ratio_err = 0.;
+                Double_t temp_ratio_err_mc = 0.;
+
+                Double_t previous_err = hunfolded_sys_err->GetBinError(ibin);
+                Double_t previous_err_mc = hunfolded_mc_sys_err->GetBinError(ibin);
+                Double_t previous_ratio_err = ratio_sys_err->GetBinError(ibin);
+                Double_t previous_ratio_err_mc = ratio_sys_err_mc->GetBinError(ibin);
 
                 if(it->first != "QED_FSR"){
-                    if(data_over_mc){
-                        ratio0_temp = (TH1F*)hdatasys0_temp->Clone("ratio");
-                        ratio0_temp->Divide(hunfolded_mc);
+                    temp_err =  fabs(hunfolded_data->GetBinContent(ibin) - hdatasys0_temp->GetBinContent(ibin));
+                    temp_ratio_err = fabs(ratio->GetBinContent(ibin) - ratio0_temp->GetBinContent(ibin));
 
-                        ratio0_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
-                        ratio0_temp_mc->Divide(hmcsys0_temp);
-                    }
-                    else{
-                        ratio0_temp = (TH1F*)hunfolded_mc->Clone("ratio");
-                        ratio0_temp->Divide(hdatasys0_temp);
-
-                        ratio0_temp_mc = (TH1F*)hmcsys0_temp->Clone("ratio_mc");
-                        ratio0_temp_mc->Divide(hunfolded_data);
-                    }
+                    temp_err_mc =  fabs(hunfolded_mc->GetBinContent(ibin) - hmcsys0_temp->GetBinContent(ibin));
+                    temp_ratio_err_mc = fabs(ratio->GetBinContent(ibin) - ratio0_temp_mc->GetBinContent(ibin));
                 }
                 else{
-                    if(data_over_mc){
-                        ratio0_temp = (TH1F*)hdatasys0_temp->Clone("ratio");
-                        ratio0_temp->Divide(hunfolded_mc);
+                    temp_err =  fabs(hdatasys0_temp->GetBinContent(ibin) - hdatasys1_temp->GetBinContent(ibin));
+                    temp_ratio_err = fabs(ratio0_temp->GetBinContent(ibin) - ratio1_temp->GetBinContent(ibin));
 
-                        ratio1_temp = (TH1F*)hdatasys1_temp->Clone("ratio");
-                        ratio1_temp->Divide(hunfolded_mc);
-
-                        ratio0_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
-                        ratio0_temp_mc->Divide(hmcsys0_temp);
-
-                        ratio1_temp_mc = (TH1F*)hunfolded_data->Clone("ratio_mc");
-                        ratio1_temp_mc->Divide(hmcsys1_temp);
-                    }
-                    else{
-                        ratio0_temp = (TH1F*)hunfolded_mc->Clone("ratio");
-                        ratio0_temp->Divide(hdatasys0_temp);
-
-                        ratio1_temp = (TH1F*)hunfolded_mc->Clone("ratio");
-                        ratio1_temp->Divide(hdatasys1_temp);
-
-                        ratio0_temp_mc = (TH1F*)hmcsys0_temp->Clone("ratio");
-                        ratio0_temp_mc->Divide(hunfolded_data);
-
-                        ratio1_temp_mc = (TH1F*)hmcsys1_temp->Clone("ratio");
-                        ratio1_temp_mc->Divide(hunfolded_data);
-
-                    }
+                    temp_err_mc =  fabs(hmcsys0_temp->GetBinContent(ibin) - hmcsys1_temp->GetBinContent(ibin));
+                    temp_ratio_err_mc = fabs(ratio0_temp_mc->GetBinContent(ibin) - ratio1_temp_mc->GetBinContent(ibin));
                 }
 
-                // loop over each bin of unfolded histogram
-                for(int ibin = 1; ibin<hunfolded_sys_err->GetNbinsX()+1;ibin++){
-                    Double_t temp_err = 0.;
-                    Double_t temp_err_mc = 0.;
-                    Double_t temp_ratio_err = 0.;
-                    Double_t temp_ratio_err_mc = 0.;
+                hunfolded_sys_err->SetBinError(ibin, sqrt(pow(previous_err,2)+pow(temp_err,2)));
+                hunfolded_mc_sys_err->SetBinError(ibin, sqrt(pow(previous_err_mc,2)+pow(temp_err_mc,2)));
+                ratio_sys_err->SetBinContent(ibin, 1.);
+                if(temp_ratio_err < 5.e-6) temp_ratio_err = 1.e-6;
+                ratio_sys_err->SetBinError(ibin, sqrt(pow(previous_ratio_err,2)+pow(temp_ratio_err,2)));
+                if(temp_ratio_err_mc < 5.e-6) temp_ratio_err_mc = 1.e-6;
+                ratio_sys_err_mc->SetBinError(ibin, sqrt(pow(previous_ratio_err_mc,2)+pow(temp_ratio_err_mc,2)));
+            }// loop for bin contents
 
-                    Double_t previous_err = hunfolded_sys_err->GetBinError(ibin);
-                    Double_t previous_err_mc = hunfolded_mc_sys_err->GetBinError(ibin);
-                    Double_t previous_ratio_err = ratio_sys_err->GetBinError(ibin);
-                    Double_t previous_ratio_err_mc = ratio_sys_err_mc->GetBinError(ibin);
-
-                    if(it->first != "QED_FSR"){
-                        temp_err =  fabs(hunfolded_data->GetBinContent(ibin) - hdatasys0_temp->GetBinContent(ibin));
-                        temp_ratio_err = fabs(ratio->GetBinContent(ibin) - ratio0_temp->GetBinContent(ibin));
-
-                        temp_err_mc =  fabs(hunfolded_mc->GetBinContent(ibin) - hmcsys0_temp->GetBinContent(ibin));
-                        temp_ratio_err_mc = fabs(ratio->GetBinContent(ibin) - ratio0_temp_mc->GetBinContent(ibin));
-                    }
-                    else{
-                        temp_err =  fabs(hdatasys0_temp->GetBinContent(ibin) - hdatasys1_temp->GetBinContent(ibin));
-                        temp_ratio_err = fabs(ratio0_temp->GetBinContent(ibin) - ratio1_temp->GetBinContent(ibin));
-
-                        temp_err_mc =  fabs(hmcsys0_temp->GetBinContent(ibin) - hmcsys1_temp->GetBinContent(ibin));
-                        temp_ratio_err_mc = fabs(ratio0_temp_mc->GetBinContent(ibin) - ratio1_temp_mc->GetBinContent(ibin));
-                    }
-
-                    hunfolded_sys_err->SetBinError(ibin, sqrt(pow(previous_err,2)+pow(temp_err,2)));
-                    hunfolded_mc_sys_err->SetBinError(ibin, sqrt(pow(previous_err_mc,2)+pow(temp_err_mc,2)));
-                    ratio_sys_err->SetBinContent(ibin, 1.);
-                    if(temp_ratio_err < 5.e-6) temp_ratio_err = 1.e-6;
-                    ratio_sys_err->SetBinError(ibin, sqrt(pow(previous_ratio_err,2)+pow(temp_ratio_err,2)));
-                    if(temp_ratio_err_mc < 5.e-6) temp_ratio_err_mc = 1.e-6;
-                    ratio_sys_err_mc->SetBinError(ibin, sqrt(pow(previous_ratio_err_mc,2)+pow(temp_ratio_err_mc,2)));
-
-                }// loop for bin contents
-
-                    delete ratio0_temp;
-                    delete ratio1_temp;
-                    delete ratio0_temp_mc;
-                    delete ratio1_temp_mc;
-                    delete hdatasys0_temp;
-                    delete hdatasys1_temp;
-                    delete hmcsys0_temp;
-                    delete hmcsys1_temp;
-            }
+            delete ratio0_temp;
+            delete ratio1_temp;
+            delete ratio0_temp_mc;
+            delete ratio1_temp_mc;
+            delete hdatasys0_temp;
+            delete hdatasys1_temp;
+            delete hmcsys0_temp;
+            delete hmcsys1_temp;
+             
             it++;
         }// end of while
 
-        // draw systematic envelope for systematic source
+        // draw systematic envelope for a systematic source or all systematic sources
         hunfolded_sys_err->SetLineColor(12);
         hunfolded_sys_err->SetFillColor(12);
         hunfolded_sys_err->SetLineWidth(5);
         hunfolded_sys_err->SetFillStyle(3005);
         hunfolded_sys_err->SetMarkerSize(0);
         hunfolded_sys_err->Draw("E2 same");
-
     }
     //////////////////////////////// systematic /////////////////////////////////////
-    
+ 
     c1->cd();
 
     TPad *pad2 = new TPad("pad2","pad2",0,0.25,1,0.4);

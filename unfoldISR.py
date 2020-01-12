@@ -405,6 +405,9 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
                 unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, sysName, nthSys)
 
+        # QED FSR ststematic                                                                                                                                                                                                     
+        sysDict["QED_FSR"] = 2        
+
         # QED FSR ststematic
         unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_photos_matrix'], "QED_FSR", 2, 0, args.phase_space_fsr, args.FSR_dR_fsr)
         unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_photos_matrix'], "QED_FSR", 2, 0, args.phase_space_fsr, args.FSR_dR_fsr)
@@ -434,7 +437,6 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
         os.makedirs( outputDirectory + dirUnfoldHists )
 
     for massBin in range(0,5):
-
         # closure test
         unfoldClass.drawClosurePlots(outputDirectory + dirClosurePlots + "Closure_" + args.channel, "Pt", massBin)
         unfoldClass.drawClosurePlots(outputDirectory + dirClosurePlots + "Closure_" + args.channel, "Mass", massBin)
@@ -454,17 +456,11 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
             for massBin in range(0,5):
 
-                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys, True)
-                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys, True)
-                unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
-                unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, True)
-                unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, False)
-
-            for massBin in range(0,5):
-
-                unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, "QED_FSR", False)
-                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+args.channel+"QED_FSR", "Pt", massBin, "QED_FSR", args.doSys, True)
-                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+args.channel+"QED_FSR", "Mass", massBin, "QED_FSR", args.doSys, True)
+                unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys, True)
+                unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys, True)
+                #unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
+                #unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, True)
+                #unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, False)
 
     unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, False)
     unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, True)
