@@ -61,8 +61,8 @@ private:
 	vector<Double_t> meanPt_data_detector,   meanPtStatErr_data_detector,   meanPtSysErr_data_detector, meanPtTotErr_data_detector;
 
         // detector unfolded results
-	vector<Double_t> meanMass_data, meanMassStatErr_data, meanMassSysErr_data, meanMassTotErr_data;
-	vector<Double_t> meanPt_data,   meanPtStatErr_data,   meanPtSysErr_data, meanPtTotErr_data;
+	vector<Double_t> meanMass_data_det_unf, meanMassStatErr_data_det_unf, meanMassSysErr_data_det_unf, meanMassTotErr_data_det_unf;
+	vector<Double_t> meanPt_data_det_unf,   meanPtStatErr_data_det_unf,   meanPtSysErr_data_det_unf, meanPtTotErr_data_det_unf;
 
         // pre FSR unfolded results
 	vector<Double_t> meanMass_data_pre_fsr, meanMassStatErr_data_pre_fsr, meanMassSysErr_data_pre_fsr, meanMassTotErr_data_pre_fsr;
@@ -89,6 +89,9 @@ private:
 	std::vector<std::map<TString, Double_t>>  meanPtErr_sysmc_pre_fsr;
 
         // save systematic variation index result in maximum deviation from the nominal measurement
+	std::vector<std::map<TString, Int_t>>  meanMassErrIdx_sysdata;
+	std::vector<std::map<TString, Int_t>>  meanPtErrIdx_sysdata;
+
 	std::vector<std::map<TString, Int_t>>  meanMassErrIdx_sysdata_pre_fsr;
 	std::vector<std::map<TString, Int_t>>  meanPtErrIdx_sysdata_pre_fsr;
 
