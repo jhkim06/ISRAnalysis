@@ -5,7 +5,7 @@ import ROOT as rt
 
 # TODO make seperate helper module python file
 def setUnfoldBkgs(unfold_class, hfile_path, syst_name, isSys, nthSys, nTotSys):
-    
+
     unfold_class.subBkgs("Pt", hfile_path, "DYJetsToTauTau",       isSys, syst_name, nTotSys, nthSys, "detector_level")
     unfold_class.subBkgs("Pt", hfile_path, "DYJets10to50ToTauTau", isSys, syst_name, nTotSys, nthSys, "detector_level")
     unfold_class.subBkgs("Pt", hfile_path, "TTLL_powheg",          isSys, syst_name, nTotSys, nthSys, "detector_level")
@@ -13,7 +13,7 @@ def setUnfoldBkgs(unfold_class, hfile_path, syst_name, isSys, nthSys, nTotSys):
     unfold_class.subBkgs("Pt", hfile_path, "WZ_pythia",            isSys, syst_name, nTotSys, nthSys, "detector_level")
     unfold_class.subBkgs("Pt", hfile_path, "ZZ_pythia",            isSys, syst_name, nTotSys, nthSys, "detector_level")
     unfold_class.subBkgs("Pt", hfile_path, "WJets_MG",             isSys, syst_name, nTotSys, nthSys, "detector_level")
-    
+
     unfold_class.subBkgs("Mass", hfile_path, "DYJetsToTauTau",       isSys, syst_name, nTotSys, nthSys, "detector_level")
     unfold_class.subBkgs("Mass", hfile_path, "DYJets10to50ToTauTau", isSys, syst_name, nTotSys, nthSys, "detector_level")
     unfold_class.subBkgs("Mass", hfile_path, "TTLL_powheg",          isSys, syst_name, nTotSys, nthSys, "detector_level")
@@ -37,13 +37,13 @@ def doISRAnalysis(args, year, channel, doSys):
     unfoldInputList = {}
 
     for line in fOutTxtCheck:
-        
+
         modifiedLine = line.lstrip(' ').rstrip(' ').rstrip('\n')
-        
+
         # root file for response matrix for detector unfolding
         if modifiedLine.split()[1] == "matrix":
             unfoldInputList['matrix'] = modifiedLine.split()[2]
-        
+
         if modifiedLine.split()[1] == "closure_matrix":
             unfoldInputList['closure_matrix'] = modifiedLine.split()[2]
 
@@ -110,7 +110,7 @@ def doISRAnalysis(args, year, channel, doSys):
 
         for sysName, nSys in sysDict.items():
             for nthSys in range(0,nSys):
-                
+
                 #print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
                 # set systematic response matrix
                 unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
@@ -126,7 +126,7 @@ def doISRAnalysis(args, year, channel, doSys):
                 # set systematic background histograms
                 setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys, nSys)
 
-    # unfold for detector 
+    # unfold for detector
     unfoldClass.doISRUnfold(doSys)
 
     if doSys == True:
@@ -171,25 +171,25 @@ def doISRAnalysis(args, year, channel, doSys):
 
     # now, draw plots
     # make output directory for closure test
-    dirClosurePlots = "ClosurePlots/" 
+    dirClosurePlots = "ClosurePlots/"
 
     for massBin in range(0,5):
 
         if doSys:
-            if not os.path.exists( outputDirectory + dirClosurePlots ):       
-                os.makedirs( outputDirectory + dirClosurePlots ) 
+            if not os.path.exists( outputDirectory + dirClosurePlots ):
+                os.makedirs( outputDirectory + dirClosurePlots )
             unfoldClass.drawClosurePlots(outputDirectory + dirClosurePlots + "Closure_"+channel, "Pt", massBin)
             unfoldClass.drawClosurePlots(outputDirectory + dirClosurePlots + "Closure_"+channel, "Mass", massBin)
 
         # detector unfolding
-        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel, "Pt",   massBin)
-        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel, "Mass", massBin)
+        unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+channel, "Pt",   massBin)
+        unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+channel, "Mass", massBin)
 
         # FSR unfolding
-        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel, "Pt",   massBin, "", False, True)
-        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel, "Mass", massBin, "", False, True)
+        unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+channel, "Pt",   massBin, "", False, True)
+        unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+channel, "Mass", massBin, "", False, True)
 
-    # draw plots including systematic 
+    # draw plots including systematic
     if doSys == True:
         # make output directory for systematic plots
         dirSysPlots = "SysPlots/"
@@ -197,14 +197,14 @@ def doISRAnalysis(args, year, channel, doSys):
             os.makedirs( outputDirectory + dirSysPlots )
 
         for sysName, nSys in sysDict.items():
-            
+
             if sysName is "Closure" : continue
 
             for massBin in range(0,5):
                 unfoldClass.drawInputPlots(outputDirectory + channel + sysName, "Pt", massBin, sysName)
 
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel+sysName, "Pt", massBin, sysName, doSys, True)
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel+sysName, "Mass", massBin, sysName, doSys, True)
+                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+channel+sysName, "Pt", massBin, sysName, doSys, True)
+                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+channel+sysName, "Mass", massBin, sysName, doSys, True)
 
                 if sysName is not "QED_FSR":
 
@@ -218,13 +218,13 @@ def doISRAnalysis(args, year, channel, doSys):
 
         # draw with full systematic error
         for massBin in range(0,5):
-       
+
             # draw all systematic points in one plot
             unfoldClass.drawSysPlots(outputDirectory + dirSysPlots + "Sys_" + channel , massBin, "full", True)
             unfoldClass.drawSysPlots(outputDirectory + dirSysPlots + "Sys_" + channel , massBin, "full", False)
- 
-            unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel+"fullSys", "Pt", massBin, "full", doSys, True, True)
-            unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+channel+"fullSys", "Mass", massBin, "full", doSys, True, True)
+
+            unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+channel+"fullSys", "Pt", massBin, "full", doSys, True, True)
+            unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+channel+"fullSys", "Mass", massBin, "full", doSys, True, True)
 
     #unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, False)
 
@@ -276,7 +276,7 @@ if args.doISRAnalysis:
     if not os.path.exists( outputDirectory ):
         os.makedirs( outputDirectory )
 
-    print "use ISR function"    
+    print "use ISR function"
     result_electron_2016 = doISRAnalysis(args, "2016", "electron", True)
     result_electron_2017 = doISRAnalysis(args, "2017", "electron", True)
     result_electron_2018 = doISRAnalysis(args, "2018", "electron", True)
@@ -296,15 +296,15 @@ if args.doISRAnalysis:
     canvas_muon_2016 = result_muon_2016.drawISRresult(outputDirectory + "ISRfit_", False, False)
     canvas_muon_2017 = result_muon_2017.drawISRresult(outputDirectory + "ISRfit_", False, False)
     canvas_muon_2018 = result_muon_2018.drawISRresult(outputDirectory + "ISRfit_", False, False)
-   
-    result_electron_2016.drawISRRun2results(outputDirectory + "ISRfit_", canvas_electron_2017, canvas_electron_2018, canvas_muon_2016, canvas_muon_2017, canvas_muon_2018) 
+
+    result_electron_2016.drawISRRun2results(outputDirectory + "ISRfit_", canvas_electron_2017, canvas_electron_2018, canvas_muon_2016, canvas_muon_2017, canvas_muon_2018)
 
 if args.getUnfoldResults and args.doISRAnalysis == False:
 
     # set output directory
     outputDirectory = 'output/'+args.year+'/' + args.channel + "/"
     inputfhisttxtName = outputDirectory + "fhist.txt"
-    
+
     # make output directory
     if not os.path.exists( outputDirectory ):
         os.makedirs( outputDirectory )
@@ -312,34 +312,34 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     # read text file including root file path for unfolding
     fOutTxtCheck = open( inputfhisttxtName,'r')
     unfoldInputList = {}
-    
+
     for line in fOutTxtCheck:
             modifiedLine = line.lstrip(' ').rstrip(' ').rstrip('\n')
             if modifiedLine.split()[1] == "matrix":
                     unfoldInputList['matrix'] = modifiedLine.split()[2]
-    
+
             if modifiedLine.split()[1] == "fsr_matrix":
                     unfoldInputList['fsr_matrix'] = modifiedLine.split()[2]
-    
+
             if modifiedLine.split()[1] == "fsr_photos_matrix":
                     unfoldInputList['fsr_photos_matrix'] = modifiedLine.split()[2]
-    
+
             if modifiedLine.split()[1] == "fsr_pythia_matrix":
                     unfoldInputList['fsr_pythia_matrix'] = modifiedLine.split()[2]
-    
+
             if modifiedLine.split()[1] == "hist":
                     unfoldInputList['hist'] = modifiedLine.split()[2]
-    
+
     print unfoldInputList
-    
+
     import pyScripts.unfoldUtil as unfoldutil
     import pyScripts.drawUtil as drawutil
 
     DetectorUnfold = 0;
     FSRUnfold = 1;
 
-    bias = 0.9
-    
+    bias = 1.0
+
     # create unfold class                                                                    # regularization mode
     unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'], False, int(args.year), int(1))
     unfoldClass.setOutputBaseDir(outputDirectory)
@@ -349,124 +349,137 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     unfoldClass.SetNomTUnfoldDensity("Mass",unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
 
     unfoldClass.doClosureTest(DetectorUnfold, unfoldInputList['matrix'], args.phase_space_detector)
-    
+
     # set unfolding input histogram
     unfoldClass.setInput("Pt",   unfoldInputList['hist'], False, "nominal", 0, bias, "detector_level")
     unfoldClass.setInput("Mass", unfoldInputList['hist'], False, "nominal", 0, bias, "detector_level")
-    setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "nominal", False, 0, -1) 
-    
+    setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "nominal", False, 0, -1)
+
     # set systematic response matrix and input histograms
     #if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 101, "unfoldBias": 1, "unfoldScan": 1}
     if args.channel == "electron" : sysDict = {"PU": 2, "recoSF": 2, "IdSF": 2, "Scale": 6, "unfoldBias": 1, "unfoldScan": 1}
     if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 101, "unfoldBias": 1, "unfoldScan": 1}
     if args.doSys == True:
         #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1}
-        
+
         for sysName, nSys in sysDict.items():
             for nthSys in range(0,nSys):
-                      
+
                 print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
-                
+
                 # set systematic response matrix
                 unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
                 unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
-                
-                if sysName == "unfoldBias": bias = 0.95 
-                
+
+                if sysName == "unfoldBias": bias = 0.95
+
                 # set systematic input histograms
                 unfoldClass.setInput("Pt",   unfoldInputList['hist'], True, sysName, nthSys, bias, "detector_level")
                 unfoldClass.setInput("Mass", unfoldInputList['hist'], True, sysName, nthSys, bias, "detector_level")
-                
+
                 # set systematic background histograms
                 setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys, nSys)
-                 
 
-    # unfold 
+
+    # unfold
     unfoldClass.doISRUnfold(DetectorUnfold, args.doSys)
-    
+
     if args.doSys == True:
         unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
         unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
-    
+
         unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
         unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
-    
+
     # set QED FSR unfolding response matrix and input
     unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], args.phase_space_fsr, args.FSR_dR_fsr)
     unfoldClass.setNomFSRTUnfoldDensity("Mass",  unfoldInputList['fsr_matrix'], args.phase_space_fsr, args.FSR_dR_fsr)
     unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], False, "", -1, args.phase_space_fsr)
-    
+
     if args.doSys == True:
         # systematic from detector unfolding
         for sysName, nSys in sysDict.items():
             for nthSys in range(0,nSys):
-                unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr) 
-                unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr) 
-    
+                unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
+                unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
+
                 unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, sysName, nthSys)
-    
+
         # QED FSR ststematic
         unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_photos_matrix'], "QED_FSR", 2, 0, args.phase_space_fsr, args.FSR_dR_fsr)
         unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_photos_matrix'], "QED_FSR", 2, 0, args.phase_space_fsr, args.FSR_dR_fsr)
-        
+
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 0)
-        
+
         unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_pythia_matrix'], "QED_FSR", 2, 1, args.phase_space_fsr, args.FSR_dR_fsr)
         unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_pythia_matrix'], "QED_FSR", 2, 1, args.phase_space_fsr, args.FSR_dR_fsr)
-        
+
         unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, "QED_FSR", 1)
-    
+
     # unfolding for QED FSR
     unfoldClass.doISRUnfold(FSRUnfold, args.doSys)
-    
+
     # set nominal value and also systematic values
     unfoldClass.setMeanPt(args.doSys, False, args.doSys)
     unfoldClass.setMeanMass(args.doSys, False, args.doSys)
-    
+
+    # NOW DRAW PLOTS
+
+    dirClosurePlots = "ClosurePlots/"
+    if not os.path.exists( outputDirectory + dirClosurePlots ):
+        os.makedirs( outputDirectory + dirClosurePlots )
+
+    dirUnfoldHists = "UnfoldHist/"
+    if not os.path.exists( outputDirectory + dirUnfoldHists ):
+        os.makedirs( outputDirectory + dirUnfoldHists )
+
     for massBin in range(0,5):
-         
-        unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Pt", massBin)
-        unfoldClass.drawClosurePlots(outputDirectory + "Closure_"+args.channel, "Mass", massBin)
-    
-        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt", massBin)
-        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin)
-    
-        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Pt",   massBin, "", False, True)
-        unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel, "Mass", massBin, "", False, True)
-    
-    # draw plots including systematic 
+
+        # closure test
+        unfoldClass.drawClosurePlots(outputDirectory + dirClosurePlots + "Closure_" + args.channel, "Pt", massBin)
+        unfoldClass.drawClosurePlots(outputDirectory + dirClosurePlots + "Closure_" + args.channel, "Mass", massBin)
+
+        if not args.doSys:
+            # detector unfold
+            unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel, "Pt", massBin)
+            unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel, "Mass", massBin)
+
+            # FSR unfold
+            unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel, "Pt",   massBin, "", False, True)
+            unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel, "Mass", massBin, "", False, True)
+
+    # draw plots including systematic
     if args.doSys == True:
         for sysName, nSys in sysDict.items():
-        
+
             for massBin in range(0,5):
-                
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys, True)
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys, True)
+
+                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys, True)
+                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys, True)
                 unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, True)
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, False)
-    
+
             for massBin in range(0,5):
-    
+
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, "QED_FSR", False)
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+"QED_FSR", "Pt", massBin, "QED_FSR", args.doSys, True)
-                unfoldClass.drawNominalPlots(outputDirectory + "Unfolded_"+args.channel+"QED_FSR", "Mass", massBin, "QED_FSR", args.doSys, True)
-         
-    
+                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+args.channel+"QED_FSR", "Pt", massBin, "QED_FSR", args.doSys, True)
+                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+args.channel+"QED_FSR", "Mass", massBin, "QED_FSR", args.doSys, True)
+
     unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, False)
     unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, True)
     unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, False)
-    
+
     unfoldClass.drawISRMatrixInfo("Mass", outputDirectory, True)
     unfoldClass.drawISRMatrixInfo("Mass", outputDirectory, False)
-    
+
     #unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, False, True)
     #unfoldClass.drawISRMatrixInfo("Mass", outputDirectory, False, True)
-    
+
     del unfoldClass
 
 def makeRecoPlots():
         pass
-# test 
-if __name__ == "__main__": 
+# test
+if __name__ == "__main__":
 	makeRecoPlots()
