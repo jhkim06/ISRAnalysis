@@ -69,7 +69,7 @@ private:
 	vector<Double_t> meanPt_data_pre_fsr,   meanPtStatErr_data_pre_fsr,   meanPtSysErr_data_pre_fsr, meanPtTotErr_data_pre_fsr;
 
 	// nominal mean mass and pt for MC at pre FSR
-	vector<Double_t> meanMass_mc, meanMassErr_mc;
+	vector<Double_t> meanMass_mc_det_unf, meanMassErr_mc_det_unf, meanMassStatErr_mc_det_unf, meanMassSysErr_mc_det_unf;;
 	vector<Double_t> meanPt_mc,   meanPtErr_mc;
 
 	vector<Double_t> meanMass_mc_pre_fsr, meanMassStatErr_mc_pre_fsr, meanMassSysErr_mc_pre_fsr;
@@ -79,8 +79,11 @@ private:
 	vector<Double_t> meanPt_mcAlt,   meanPtErr_mcAlt;
 
 	// map to save systematic uncertainties on mass and pt for each source 
-	std::vector<std::map<TString, Double_t>>  meanMassErr_sysdata;
+	std::vector<std::map<TString, Double_t>>  meanMassErr_sysdata_det_unf;
 	std::vector<std::map<TString, Double_t>>  meanPtErr_sysdata;
+
+	std::vector<std::map<TString, Double_t>>  meanMassErr_sysmc_det_unf;
+	std::vector<std::map<TString, Double_t>>  meanPtErr_sysmc;
 
 	std::vector<std::map<TString, Double_t>>  meanMassErr_sysdata_pre_fsr;
 	std::vector<std::map<TString, Double_t>>  meanPtErr_sysdata_pre_fsr;
@@ -89,8 +92,11 @@ private:
 	std::vector<std::map<TString, Double_t>>  meanPtErr_sysmc_pre_fsr;
 
         // save systematic variation index result in maximum deviation from the nominal measurement
-	std::vector<std::map<TString, Int_t>>  meanMassErrIdx_sysdata;
-	std::vector<std::map<TString, Int_t>>  meanPtErrIdx_sysdata;
+	std::vector<std::map<TString, Int_t>>  meanMassErrIdx_sysdata_det_unf;
+	std::vector<std::map<TString, Int_t>>  meanPtErrIdx_sysdata_det_unf;
+
+	std::vector<std::map<TString, Int_t>>  meanMassErrIdx_sysmc_det_unf;
+	std::vector<std::map<TString, Int_t>>  meanPtErrIdx_sysmc_det_unf;
 
 	std::vector<std::map<TString, Int_t>>  meanMassErrIdx_sysdata_pre_fsr;
 	std::vector<std::map<TString, Int_t>>  meanPtErrIdx_sysdata_pre_fsr;
@@ -99,8 +105,11 @@ private:
 	std::vector<std::map<TString, Int_t>>  meanPtErrIdx_sysmc_pre_fsr;
 
 	// map to save systematic variation of mean mass and pt for each source
-	std::vector<std::map<TString, std::vector<Double_t>>>  meanMass_sysdata;
+	std::vector<std::map<TString, std::vector<Double_t>>>  meanMass_sysdata_det_unf;
 	std::vector<std::map<TString, std::vector<Double_t>>>  meanPt_sysdata;
+
+	std::vector<std::map<TString, std::vector<Double_t>>>  meanMass_sysmc_det_unf;
+	std::vector<std::map<TString, std::vector<Double_t>>>  meanPt_sysmc;
 
 	std::vector<std::map<TString, std::vector<Double_t>>>  meanMass_sysdata_pre_fsr;
 	std::vector<std::map<TString, std::vector<Double_t>>>  meanPt_sysdata_pre_fsr;

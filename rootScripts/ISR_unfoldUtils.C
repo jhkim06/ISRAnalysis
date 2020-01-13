@@ -1356,8 +1356,9 @@ double ISRUnfold::DoFit(TString var, int nthMassBin, bool isFSRUnfold){
     return chi2/ndf;
 }
 
-void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
-            
+void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold)
+{
+
     int nMassBin = -1;
 
     // get mass bin definition for post FSR level from TUnfoldDensity object
@@ -1379,7 +1380,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
     // loop over mass bins
     for(int ibin = 0; ibin < nMassBin; ibin++)
     {
-        // set x-axis range  
+        // set x-axis range
         hdetector_mass->GetXaxis()->  SetRange(hdetector_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),hdetector_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
         hunfolded_mass->GetXaxis()->  SetRange(hunfolded_mass->GetXaxis()->  FindBin(massBins[ibin]+0.01),hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
         histMC_mass->GetXaxis()->SetRange(histMC_mass->GetXaxis()->FindBin(massBins[ibin]+0.01),histMC_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
@@ -1396,8 +1397,8 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
         meanMass_data_pre_fsr.   push_back(hFSRunfolded_mass->GetMean());
         meanMassStatErr_data_pre_fsr.push_back(hFSRunfolded_mass->GetMeanError());
 
-        meanMass_mc.   push_back(histMC_mass->GetMean());
-        meanMassErr_mc.push_back(histMC_mass->GetMeanError());
+        meanMass_mc_det_unf.   push_back(histMC_mass->GetMean());
+        meanMassErr_mc_det_unf.push_back(histMC_mass->GetMeanError()); //FIXME change to meanMassStatErr_mc_det_unf
 
         meanMass_mc_pre_fsr.   push_back(histMC_pre_fsr_mass->GetMean());
 
@@ -1421,22 +1422,30 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
 
        	    while(it != sysMassUnfold.end())
             {
-                
+
        	        int nSys = it->second.size();
        	        TH1* hdatasys_temp;
        	        for(int i = 0; i < nSys; i++)
                 {
-                    
+
        	             hdatasys_temp = sysMassUnfold[it->first].at(i)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
     	             hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[ibin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
        	             temp_map[it->first].push_back(hdatasys_temp->GetMean());
 
        	             delete hdatasys_temp;
+
+                    hdatasys_temp = sysMassUnfold[it->first].at(i)->GetBias("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                    hdatasys_temp->GetXaxis()->SetRange(hdatasys_temp->GetXaxis()->FindBin(massBins[ibin]+0.01), hdatasys_temp->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+                    temp_map_mc[it->first].push_back(hdatasys_temp->GetMean());
+
+                    delete hdatasys_temp;
        	        }
        	        it++;
        	    }
-       	    meanMass_sysdata.push_back(temp_map);
+       	    meanMass_sysdata_det_unf.push_back(temp_map);
+       	    meanMass_sysmc_det_unf.push_back(temp_map_mc);
        	    temp_map.clear();
+       	    temp_map_mc.clear();
 
             // QED FSR unfolding systematics
             it = sysMassFSRUnfold.begin();
@@ -1478,60 +1487,91 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
     // calculate systematic uncertainty
     if(doSys)
     {
-        
+
         for(int i = 0; i < nMassBin; i++){
-            
+
             // detector unfolding
             std::map<TString, Double_t> temp_map_;
             std::map<TString, Double_t> temp_map_mc_;
             std::map<TString, Int_t> temp_map_sysname_index;
             std::map<TString, Int_t> temp_map_mc_sysname_index;
 
-            std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata.at(i).begin();
-            while(it != meanMass_sysdata.at(i).end())
+            std::map<TString, std::vector<Double_t>>::iterator it = meanMass_sysdata_det_unf.at(i).begin();
+            while(it != meanMass_sysdata_det_unf.at(i).end())
             {
-                
+
                 int size_ = it->second.size();
 
                 TH1F *hpdfsys = NULL;
-                if((it->first)=="PDFerror") 
+                TH1F *hpdfsys_mc = NULL;
+                if((it->first)=="PDFerror")
+                {
                     hpdfsys = new TH1F("pdfsys", "pdfsys", 100, meanMass_data_det_unf.at(i)-0.2, meanMass_data_det_unf.at(i)+0.2); // temp histogram to contain PDF variations
-                    
+                    hpdfsys_mc = new TH1F("pdfsys_mc", "pdfsys_mc", 100, meanMass_data_det_unf.at(i)-0.2, meanMass_data_det_unf.at(i)+0.2); // temp histogram to contain PDF variations
+                }
+
                 Double_t err = -999.; //
+                Double_t err_mc = -999.; //
+                Int_t index_to_save = -1;
+                Int_t index_to_save_mc = -1;
+
                 // use maximum variation as systematic
                 for(int j = 0; j < size_; j++){
-                       
+
                     //if( (i==5 || i==7) && (it->first)=="Scale") continue;
                     if((it->first)=="PDFerror")
                     {
                         hpdfsys->Fill(it->second.at(j));
+                        hpdfsys_mc->Fill(meanMass_sysmc_det_unf.at(i)[it->first].at(j));
                     }
 
                     Double_t temp_err =  fabs(meanMass_data_det_unf.at(i) - it->second.at(j));
+                    Double_t temp_err_mc = fabs(meanMass_mc_det_unf.at(i) - (meanMass_sysmc_det_unf.at(i)[it->first]).at(j));
+
                     if( temp_err > err)
                     {
                         // update error
                         err = temp_err;
+                        index_to_save = j;
+                    }
+                    if( temp_err_mc > err_mc)
+                    {
+                        err_mc = temp_err_mc;
+                        index_to_save_mc = j;
                     }
                 }
-                
+
                 if((it->first)=="PDFerror")
                 {
                     err = hpdfsys->GetRMS();
+                    err_mc = hpdfsys_mc->GetRMS();
                     delete hpdfsys;
+                    delete hpdfsys_mc;
                 }
-                
+
                 temp_map_[it->first] = err;
+                temp_map_mc_[it->first] = err_mc;
+
+                temp_map_sysname_index[it->first] = index_to_save;
+                temp_map_mc_sysname_index[it->first] = index_to_save_mc;
                 it++;
             }
-            meanMassErr_sysdata.push_back(temp_map_);
+            meanMassErr_sysdata_det_unf.push_back(temp_map_);
+            meanMassErrIdx_sysdata_det_unf.push_back(temp_map_sysname_index);
+
+            meanMassErr_sysmc_det_unf.push_back(temp_map_mc_);
+            meanMassErrIdx_sysmc_det_unf.push_back(temp_map_mc_sysname_index);
+
             temp_map_.clear();
+            temp_map_mc_.clear();
+            temp_map_sysname_index.clear();
+            temp_map_mc_sysname_index.clear();
 
             // FSR unfolding
             it = meanMass_sysdata_pre_fsr.at(i).begin();
             while(it != meanMass_sysdata_pre_fsr.at(i).end())
             {
-                
+
                 int size_ = it->second.size();
 
                 TH1F *hpdfsys = NULL;
@@ -1551,7 +1591,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
                 for(int j = 0; j < size_; j++)
                 {
                         //if( (i==5 || i==7) && (it->first)=="Scale") continue;
-                    
+
                     if((it->first)=="PDFerror")
                     {
                             hpdfsys->Fill(it->second.at(j));
@@ -1618,35 +1658,36 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold){
     for(int i = 0; i < nMassBin; i++)
     {
         Double_t totalSys = 0.;
+        Double_t totalSys_mc = 0.;
         Double_t totalSys_pre_fsr = 0.;
         Double_t totalSys_mc_pre_fsr = 0.;
-        
-        //cout << i << " th mass bin... " << endl;
-        if(doSys){
-            std::map<TString, Double_t>::iterator it = meanMassErr_sysdata.at(i).begin();
-            while(it != meanMassErr_sysdata.at(i).end()){
 
-                 //cout << i << " th mass bin, mass" << it->first << " " << it->second << endl;
-                 totalSys += pow(it->second, 2);
-                 it++;
+        if(doSys){
+            std::map<TString, Double_t>::iterator it = meanMassErr_sysdata_det_unf.at(i).begin();
+            while(it != meanMassErr_sysdata_det_unf.at(i).end())
+            {
+                
+                totalSys += pow(it->second, 2);
+                totalSys_mc += pow(meanMassErr_sysmc_det_unf.at(i)[it->first], 2);
+                it++;
             }
-            //cout << i << " th mass bin, total mass systematic uncertainty: " << sqrt(totalSys) << " statistical error: " << meanMassStatErr_data.at(i) << endl;
 
             it = meanMassErr_sysdata_pre_fsr.at(i).begin();
-            while(it != meanMassErr_sysdata_pre_fsr.at(i).end()){
+            while(it != meanMassErr_sysdata_pre_fsr.at(i).end())
+            {
 
-                 //cout << "mass systematic: " << it->first << " " << it->second/ meanMass_data_pre_fsr.at(i) * 100.<< endl;
-                 //cout << i << " th mass bin, mass" << it->first << " " << it->second << endl;
-                 totalSys_pre_fsr += pow(it->second, 2);
-                 totalSys_mc_pre_fsr += pow(meanMassErr_sysmc_pre_fsr.at(i)[it->first], 2);
-                 it++;
+                //cout << "mass systematic: " << it->first << " " << it->second/ meanMass_data_pre_fsr.at(i) * 100.<< endl;
+                //cout << i << " th mass bin, mass" << it->first << " " << it->second << endl;
+                totalSys_pre_fsr += pow(it->second, 2);
+                totalSys_mc_pre_fsr += pow(meanMassErr_sysmc_pre_fsr.at(i)[it->first], 2);
+                it++;
             }
         }
+        meanMassSysErr_mc_det_unf.push_back(sqrt(totalSys_mc));
         meanMassSysErr_data_det_unf.push_back(sqrt(totalSys));
         meanMassTotErr_data_det_unf.push_back(sqrt(totalSys + pow(meanMassStatErr_data_det_unf.at(i),2)));
 
-        meanMassSysErr_mc_pre_fsr.push_back(sqrt(totalSys_mc_pre_fsr));
-
+        meanMassSysErr_mc_pre_fsr.push_back(sqrt(totalSys_mc_pre_fsr)); 
         meanMassSysErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr));
         meanMassTotErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanMassStatErr_data_pre_fsr.at(i),2)));
     }
@@ -2741,7 +2782,7 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool altMC, bool doFit){
     grUnfolded->GetXaxis()->SetTitle("Average Mass (GeV)");
     grUnfolded->SetName("postFSRUnfoldedData_"+channel_name+"_"+year_string);
 
-    TGraphErrors *grMC = new TGraphErrors(5, &meanMass_mc[0], &meanPt_mc[0], &meanMassErr_mc[0], &meanPtErr_mc[0]);
+    TGraphErrors *grMC = new TGraphErrors(5, &meanMass_mc_det_unf[0], &meanPt_mc[0], &meanMassErr_mc_det_unf[0], &meanPtErr_mc[0]);
     grMC->SetLineColor(kRed);
     grMC->SetMarkerColor(kRed);
     grMC->SetMarkerStyle(marker_);
@@ -3105,8 +3146,8 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName, bo
                 double temp_amaxPt = amaxPt;
                 double temp_aminPt = aminPt;
 
-                amaxMass=TMath::Max(amaxMass, (meanMass_sysdata.at(nthMassBin)[it->first])[i]);
-                aminMass=TMath::Min(aminMass, (meanMass_sysdata.at(nthMassBin)[it->first])[i]);
+                amaxMass=TMath::Max(amaxMass, (meanMass_sysdata_det_unf.at(nthMassBin)[it->first])[i]);
+                aminMass=TMath::Min(aminMass, (meanMass_sysdata_det_unf.at(nthMassBin)[it->first])[i]);
 
                 amaxPt=TMath::Max(amaxPt, (meanPt_sysdata.at(nthMassBin)[it->first])[i]);
                 aminPt=TMath::Min(aminPt, (meanPt_sysdata.at(nthMassBin)[it->first])[i]);
@@ -3119,7 +3160,7 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName, bo
             }
 
             // TODO make option to draw all systematic points here
-            pv_grSys.push_back(new TGraph(sysSize, &(meanMass_sysdata.at(nthMassBin)[it->first])[0], &(meanPt_sysdata.at(nthMassBin)[it->first])[0]));
+            pv_grSys.push_back(new TGraph(sysSize, &(meanMass_sysdata_det_unf.at(nthMassBin)[it->first])[0], &(meanPt_sysdata.at(nthMassBin)[it->first])[0]));
             pv_grSys[p_index]->SetLineColor(marker_color_sys);
             pv_grSys[p_index]->SetMarkerColor(marker_color_sys);
             pv_grSys[p_index]->SetMarkerStyle(marker_style_sys++);
@@ -4008,7 +4049,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
             int systematic_variation_index = 0;
             int systematic_variation_index_mc = 0;
 
-            // get distribution which gives the maximum variation on mean value 
+            // get distribution which gives the maximum variation on mean value
             if(var == "Pt")
             {
                 // note except QED_FSR, use the systematic histogram giving maximum variation on mean value
@@ -4085,7 +4126,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
             }
             else
             {
-                if(data_over_mc)        
+                if(data_over_mc)
                 {
                     ratio0_temp = (TH1F*)hdatasys0_temp->Clone("ratio");
                     ratio0_temp->Divide(hunfolded_mc);
@@ -4162,7 +4203,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
             delete hdatasys1_temp;
             delete hmcsys0_temp;
             delete hmcsys1_temp;
-             
+
             it++;
         }// end of while
 
@@ -4175,7 +4216,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
         hunfolded_sys_err->Draw("E2 same");
     }
     //////////////////////////////// systematic /////////////////////////////////////
- 
+
     c1->cd();
 
     TPad *pad2 = new TPad("pad2","pad2",0,0.25,1,0.4);
