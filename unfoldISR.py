@@ -347,7 +347,7 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     bias = 1.0
 
     # create unfold class                                                                    # regularization mode
-    unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'], False, int(args.year), int(1))
+    unfoldClass = rt.ISRUnfold(args.channel, unfoldInputList['hist'], False, int(args.year), int(0))
     unfoldClass.setOutputBaseDir(outputDirectory)
     unfoldClass.setBias(bias)
     # set response matrix
@@ -363,7 +363,7 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
     # set systematic response matrix and input histograms
     #if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 101, "unfoldBias": 1, "unfoldScan": 1}
-    if args.channel == "electron" : sysDict = {"PU": 2, "recoSF": 2, "IdSF": 2, "Scale": 6, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
+    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 100, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
     if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 101, "unfoldBias": 1, "unfoldScan": 1}
     if args.doSys == True:
         #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1}

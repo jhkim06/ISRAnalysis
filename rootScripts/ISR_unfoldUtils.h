@@ -203,6 +203,9 @@ public:
 
 	// 
 	void drawUnfoldedHists(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false, bool isFSRUnfold = false, bool fullSys = false);
+        void makeSystBand(const TString var, const int nthMassBin, const TString sysName, const bool fullSys, const bool data_over_mc, 
+                          const TH1* hunfolded_data, const TH1* hunfolded_mc, const TH1* hunfolded_ratio, 
+                          TH1* hunfolded_sys_err, TH1* hunfolded_mc_sys_err, TH1* hunfolded_ratio_sys_err, TH1* hunfolded_ratio_sys_err_mc, bool isFoldedSys = false);
 
 	// draw input histograms using GetInput	
 	void drawInputPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
