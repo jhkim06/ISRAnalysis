@@ -318,8 +318,14 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
             if modifiedLine.split()[1] == "matrix":
                     unfoldInputList['matrix'] = modifiedLine.split()[2]
 
+            if modifiedLine.split()[1] == "matrix_alt":
+                    unfoldInputList['matrix_alt'] = modifiedLine.split()[2]
+
             if modifiedLine.split()[1] == "fsr_matrix":
                     unfoldInputList['fsr_matrix'] = modifiedLine.split()[2]
+
+            if modifiedLine.split()[1] == "fsr_matrix_alt":
+                    unfoldInputList['fsr_matrix_alt'] = modifiedLine.split()[2]
 
             if modifiedLine.split()[1] == "fsr_photos_matrix":
                     unfoldInputList['fsr_photos_matrix'] = modifiedLine.split()[2]
@@ -357,7 +363,7 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
     # set systematic response matrix and input histograms
     #if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 101, "unfoldBias": 1, "unfoldScan": 1}
-    if args.channel == "electron" : sysDict = {"PU": 2, "recoSF": 2, "IdSF": 2, "Scale": 6, "unfoldBias": 1, "unfoldScan": 1}
+    if args.channel == "electron" : sysDict = {"PU": 2, "recoSF": 2, "IdSF": 2, "Scale": 6, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
     if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 101, "unfoldBias": 1, "unfoldScan": 1}
     if args.doSys == True:
         #sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "IsoSF": 2, "unfoldsys": 1, "AlphaS": 2, "Scale": 9, "PDFerror": 100, "Alt": 1, "L1Prefire": 2, "LepScale": 2, "LepRes": 2, "FSRDR": 30, "unfoldBias": 1, "unfoldScan": 1}
@@ -367,9 +373,13 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
                 print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
 
-                # set systematic response matrix
-                unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
-                unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                if sysName == "Alt":
+                    unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix_alt'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                    unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix_alt'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                else :    
+                    # set systematic response matrix
+                    unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                    unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
 
                 if sysName == "unfoldBias": bias = 0.95
 
@@ -400,8 +410,14 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
         # systematic from detector unfolding
         for sysName, nSys in sysDict.items():
             for nthSys in range(0,nSys):
-                unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
-                unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
+
+                if sysName == "Alt":
+                    unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix_alt'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
+                    unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix_alt'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
+
+                else :
+                    unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
+                    unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
 
                 unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], True, sysName, nthSys)
 
@@ -427,7 +443,6 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     unfoldClass.setMeanMass(args.doSys, False, args.doSys)
 
     # NOW DRAW PLOTS
-
     dirClosurePlots = "ClosurePlots/"
     if not os.path.exists( outputDirectory + dirClosurePlots ):
         os.makedirs( outputDirectory + dirClosurePlots )
@@ -455,12 +470,12 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
         for sysName, nSys in sysDict.items():
 
             for massBin in range(0,5):
-
+                
                 unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys, True)
                 unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys, True)
                 #unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
-                #unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, True)
-                #unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, False)
+                unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, True)
+                unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, False)
 
     unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, False)
     unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, True)
