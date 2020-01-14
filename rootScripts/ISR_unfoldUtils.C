@@ -475,11 +475,14 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
     TH2 *histProb = NULL;
     TH1 *histEfficiency = NULL;
 
-    if(var=="Pt"){
-        if(detector_unfold){
+    if(var=="Pt"
+    ){
+        if(detector_unfold)
+        {
             histProb = nomPtUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(Rec)");
         }
-        else{
+        else
+        {
             if(!fsr_systematic) histProb = nomPtFSRUnfold->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(Rec)");
             else histProb = sysPtFSRUnfold["QED_FSR"].at(0)->GetProbabilityMatrix("Migration prob. for pt mass bin",";p_T(gen);p_T(Rec)");
         }
@@ -501,11 +504,13 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
     histEfficiency=histProb->ProjectionX("histEfficiency");
     histProb->Draw("COLZ");
 
-    if(var=="Pt"){
+    if(var=="Pt")
+    {
         if(detector_unfold) histProb->SetTitle("migration probabilities;p_{T} mass bin index (post FSR) ;p_{T} mass bin index (Rec)");
         else histProb->SetTitle("migration probabilities;p_{T} mass bin index (pre FSR) ;p_{T} mass bin index (post FSR)");
     }
-    else if(var=="Mass"){
+    else if(var=="Mass")
+    {
         if(detector_unfold) histProb->SetTitle("migration probabilities;mass bin index (post FSR) ;mass bin index (Rec)");
         else histProb->SetTitle("migration probabilities;mass bin index (pre FSR) ;mass bin index (post FSR)");
     }
@@ -612,20 +617,25 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
         Double_t binEdge = histProb->GetXaxis()->GetBinUpEdge(i_bin);
         grid_.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(0), binEdge, histProb->GetYaxis()->GetBinUpEdge(histProb->GetYaxis()->GetNbins()) );
 
-        if(boundarybin_x == i_bin && i_bin != histProb->GetXaxis()->GetNbins()){
-            if(count_drawn_boundary == 0){
+        if(boundarybin_x == i_bin && i_bin != histProb->GetXaxis()->GetNbins())
+        {
+            if(count_drawn_boundary == 0)
+            {
                 grid_bin_boundary.DrawLine(histProb->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), histProb->GetYaxis()->GetBinUpEdge(boundarybin_y - yaxis1_nbin), histProb->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), histProb->GetYaxis()->GetBinUpEdge(boundarybin_y) );
             }
 
-            if(add_UO){
+            if(add_UO)
+            {
                 if(xaxis_binning->HasUnderflow(0)) boundarybin_x++;
                 if(xaxis_binning->HasOverflow(0)) boundarybin_x++;
                 add_UO = false;
             }
-            else{
+            else
+            {
                 boundarybin_x += xaxis1_nbin;
                 add_UO = true;
             }
+
             grid_bin_boundary.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(boundarybin_y - yaxis1_nbin), binEdge, histProb->GetYaxis()->GetBinUpEdge(boundarybin_y) );
             if(count_drawn_boundary%2 == 0){
                 if(yaxis_binning->HasUnderflow(0)) boundarybin_y++;
@@ -716,7 +726,55 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
     if(var=="Pt") histEfficiency->SetTitle("efficiency;p_{T} mass bin (gen) ;A #times #epsilon");
     if(var=="Mass") histEfficiency->SetTitle("efficiency;mass bin (gen) ;A #times #epsilon");
     histEfficiency->GetYaxis()->SetTitleOffset(1.5);
+    histEfficiency->GetYaxis()->SetRangeUser(0., 0.8);
     histEfficiency->Draw();
+
+    TLine grid_bin_boundary_;
+    grid_bin_boundary_.SetLineColorAlpha(kRed, 1.);;
+    grid_bin_boundary_.SetLineStyle(kSolid);
+
+    boundarybin_x = xaxis1_nbin;
+    if(xaxis_binning->HasUnderflow(0)) boundarybin_x++;
+    boundarybin_y = yaxis1_nbin;
+    if(yaxis_binning->HasUnderflow(0)) boundarybin_y++;
+    add_UO = true;
+    count_drawn_boundary = 0;
+
+    // draw y lines
+    for( int ii=0; ii<histEfficiency->GetXaxis()->GetNbins(); ii++ )
+    {
+        Int_t i_bin = ii+1;
+        Double_t binEdge = histEfficiency->GetXaxis()->GetBinUpEdge(i_bin);
+        //grid_.DrawLine(binEdge, histEfficiency->GetYaxis()->GetBinUpEdge(0), binEdge, histEfficiency->GetYaxis()->GetBinUpEdge(histEfficiency->GetYaxis()->GetNbins()) );
+
+        if(boundarybin_x == i_bin && i_bin != histEfficiency->GetXaxis()->GetNbins())
+        {
+            if(count_drawn_boundary == 0)
+            {
+                grid_bin_boundary_.DrawLine(histEfficiency->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), 0., histEfficiency->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), 0.8 );
+            }
+
+            if(add_UO)
+            {
+                if(xaxis_binning->HasUnderflow(0)) boundarybin_x++;
+                if(xaxis_binning->HasOverflow(0)) boundarybin_x++;
+                add_UO = false;
+            }
+            else
+            {
+                boundarybin_x += xaxis1_nbin;
+                add_UO = true;
+            }
+
+            grid_bin_boundary_.DrawLine(binEdge, 0., binEdge, 0.8 );
+            if(count_drawn_boundary%2 == 0){
+                if(yaxis_binning->HasUnderflow(0)) boundarybin_y++;
+                if(yaxis_binning->HasOverflow(0)) boundarybin_y++;
+                boundarybin_y += yaxis1_nbin;
+            }
+            count_drawn_boundary++;
+        }
+    }
 
     if(var=="Pt"){
         if(detector_unfold) c1->SaveAs(outpdf + "/detector_pt_accxeff.pdf");
@@ -3271,15 +3329,15 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName, bo
         std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it;
         if(!isFullSys)
         {
-            it = sysPtUnfold.find(sysName);
+            it = sysPtFSRUnfold.find(sysName);
         }
         else
         {
-            it = sysPtUnfold.begin();
+            it = sysPtFSRUnfold.begin();
         }
 
         int p_index = 0;
-        while(it != sysPtUnfold.end())
+        while(it != sysPtFSRUnfold.end())
         {
             sysSize = it->second.size();
 
