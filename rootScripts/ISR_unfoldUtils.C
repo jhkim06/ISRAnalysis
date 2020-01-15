@@ -723,10 +723,16 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
     c1->cd()->SetTicks(1);
     c1->cd()->SetGridy();
 
-    if(var=="Pt") histEfficiency->SetTitle("efficiency;p_{T} mass bin (gen) ;A #times #epsilon");
-    if(var=="Mass") histEfficiency->SetTitle("efficiency;mass bin (gen) ;A #times #epsilon");
+    if(var=="Pt")
+    {    
+        histEfficiency->SetTitle("efficiency;p_{T} mass bin (gen) ;A #times #epsilon");
+    }
+    if(var=="Mass")
+    {
+        histEfficiency->SetTitle("efficiency;mass bin (gen) ;A #times #epsilon");
+    }
     histEfficiency->GetYaxis()->SetTitleOffset(1.5);
-    histEfficiency->GetYaxis()->SetRangeUser(0., 0.8);
+    histEfficiency->GetYaxis()->SetRangeUser(0., 1.2);
     histEfficiency->Draw();
 
     TLine grid_bin_boundary_;
@@ -751,7 +757,7 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
         {
             if(count_drawn_boundary == 0)
             {
-                grid_bin_boundary_.DrawLine(histEfficiency->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), 0., histEfficiency->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), 0.8 );
+                grid_bin_boundary_.DrawLine(histEfficiency->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), 0., histEfficiency->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), 1.2 );
             }
 
             if(add_UO)
@@ -766,7 +772,7 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
                 add_UO = true;
             }
 
-            grid_bin_boundary_.DrawLine(binEdge, 0., binEdge, 0.8 );
+            grid_bin_boundary_.DrawLine(binEdge, 0., binEdge, 1.2 );
             if(count_drawn_boundary%2 == 0){
                 if(yaxis_binning->HasUnderflow(0)) boundarybin_y++;
                 if(yaxis_binning->HasOverflow(0)) boundarybin_y++;
@@ -2039,9 +2045,11 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
 
         if(doSys)
         {
+            cout << i << " th mass bin... " << endl;
             std::map<TString, Double_t>::iterator it = meanPtErr_sysdata.at(i).begin();
             while(it != meanPtErr_sysdata.at(i).end())
             {
+                cout << "systematic detector unfold: " << it->first << " " << it->second/ meanPt_data_det_unf.at(i) * 100.<< endl;
                 totalSys += pow(it->second, 2);	
                 totalSys_mc += pow(meanPtErr_sysmc_det_unf.at(i)[it->first], 2);	
                 it++;
@@ -2050,6 +2058,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
             it = meanPtErr_sysdata_pre_fsr.at(i).begin();
             while(it != meanPtErr_sysdata_pre_fsr.at(i).end())
             {
+                cout << "systematic FSR unfold: " << it->first << " " << it->second/ meanPt_data_pre_fsr.at(i) * 100.<< endl;
                 totalSys_pre_fsr += pow(it->second, 2);	
                 totalSys_mc_pre_fsr += pow(meanPtErr_sysmc_pre_fsr.at(i)[it->first], 2);
                 it++;
@@ -3204,7 +3213,7 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName, bo
         p_grNominal = new TGraphErrors(1, &meanMass_data_det_unf[nthMassBin], &meanPt_data_det_unf[nthMassBin], &meanMassTotErr_data_det_unf[nthMassBin], &meanPtTotErr_data_det_unf[nthMassBin]);
         p_grNominal->SetLineColor(1);
         p_grNominal->SetFillColor(12);
-        p_grNominal->SetFillStyle(3005);
+        p_grNominal->SetFillStyle(3003);
         p_grNominal->SetMarkerStyle(20);
         p_grNominal->SetMarkerSize(1.2);
         p_grNominal->Draw("a2");
@@ -3303,7 +3312,7 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName, bo
         p_grNominal = new TGraphErrors(1, &meanMass_data_pre_fsr[nthMassBin], &meanPt_data_pre_fsr[nthMassBin], &meanMassTotErr_data_pre_fsr[nthMassBin], &meanPtTotErr_data_pre_fsr[nthMassBin]);
         p_grNominal->SetLineColor(1);
         p_grNominal->SetFillColor(12);
-        p_grNominal->SetFillStyle(3005);
+        p_grNominal->SetFillStyle(3003);
         p_grNominal->SetMarkerStyle(20);
         p_grNominal->SetMarkerSize(1.2);
         p_grNominal->Draw("a2");
@@ -4035,31 +4044,35 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
     pad1->cd();
 
     hunfolded_data->SetTitle("");
-    hunfolded_data->Draw("p9histe");
-    hfolded_data->Draw("p9histesame");
-    hunfolded_mc->Draw("histsame");
-    hfolded_mc->Draw("histsame");
+    hunfolded_data->Draw("p9e");
+    hfolded_data->Draw("p9samee");
+    hunfolded_mc->Draw("psamee");
+    hfolded_mc->Draw("psamee");
 
-    hunfolded_data->SetMarkerStyle(20);
-    hunfolded_data->SetMarkerSize(1.);
+    hunfolded_data->SetMarkerStyle(24);
+    hunfolded_data->SetMarkerSize(1.5);
     hunfolded_data->SetLineColor(kBlack);
     hfolded_data->SetMarkerColor(kBlack);
     hfolded_data->SetLineColor(kBlack);
-    hfolded_data->SetMarkerSize(1.);
-    hfolded_data->SetMarkerStyle(22);
+    hfolded_data->SetMarkerSize(1.5);
+    hfolded_data->SetMarkerStyle(25);
     hunfolded_data->GetYaxis()->SetTitle("Events/bin");
     hunfolded_data->SetMinimum(5.);
     hunfolded_data->SetMaximum(1e10);
 
+    hunfolded_mc->SetMarkerStyle(20);
+    hunfolded_mc->SetMarkerSize(1.);
     hunfolded_mc->SetLineColor(kRed);
+    hfolded_mc->SetMarkerStyle(21);
+    hfolded_mc->SetMarkerSize(1.);
     hfolded_mc->SetLineColor(kMagenta);
 
     TString mean_nom;
     mean_nom.Form("%.5f", hunfolded_data->GetMean());
 
-    TLegend* leg_nom = new TLegend(0.6, 0.65, 0.9, 0.85,"","brNDC");
+    TLegend* leg_nom = new TLegend(0.55, 0.65, 0.9, 0.85,"","brNDC");
     leg_nom->SetTextFont(63);
-    leg_nom->SetTextSize(18);
+    leg_nom->SetTextSize(23);
     //leg_nom->SetTextSize(0.04);
     leg_nom->SetFillStyle(0);
     leg_nom->SetBorderSize(0);
@@ -4067,19 +4080,19 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
     //leg_nom->AddEntry(hunfolded_data, "#splitline{Unfolded data}{(mean: " + mean_nom + ")}", "pl");
     if(!isFSRUnfold)
     {
-        leg_nom->AddEntry(hunfolded_data, "Detector unfolded data", "pl");
-        leg_nom->AddEntry(hunfolded_mc, "MC at post FSR", "l");
+        leg_nom->AddEntry(hunfolded_data, "Unfolded data ()", "pl");
+        leg_nom->AddEntry(hunfolded_mc, "MC", "p");
 
-        leg_nom->AddEntry(hfolded_data, "Detector level data", "pl");
-        leg_nom->AddEntry(hfolded_mc, "MC at detector", "l");
+        leg_nom->AddEntry(hfolded_data, " data", "pl");
+        leg_nom->AddEntry(hfolded_mc, "MC at detector", "p");
     }
     else
     {
-        leg_nom->AddEntry(hunfolded_data, "QED FSR unfolded data", "pl");
-        leg_nom->AddEntry(hunfolded_mc, "MC at pre FSR", "l");
+        leg_nom->AddEntry(hunfolded_data, "FSR unfolded data", "pl");
+        leg_nom->AddEntry(hunfolded_mc, "MC", "p");
 
-        leg_nom->AddEntry(hfolded_data, "Detector unfolded data", "pl");
-        leg_nom->AddEntry(hfolded_mc, "MC at post FSR", "l");
+        leg_nom->AddEntry(hfolded_data, "Detector unfolded data ", "pl");
+        leg_nom->AddEntry(hfolded_mc, "MC", "p");
     }
     leg_nom->Draw();
 
@@ -4180,14 +4193,22 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
         hunfolded_sys_err->SetLineColor(12);
         hunfolded_sys_err->SetFillColor(12);
         hunfolded_sys_err->SetLineWidth(5);
-        hunfolded_sys_err->SetFillStyle(3005);
+        hunfolded_sys_err->SetFillStyle(3003);
         hunfolded_sys_err->SetMarkerSize(0);
         hunfolded_sys_err->Draw("E2 same");
+
+        hfolded_sys_err->SetLineColor(12);
+        hfolded_sys_err->SetFillColor(12);
+        hfolded_sys_err->SetLineWidth(5);
+        hfolded_sys_err->SetFillStyle(3003);
+        hfolded_sys_err->SetMarkerSize(0);
+        hfolded_sys_err->Draw("E2 same");
     }
     //////////////////////////////// systematic /////////////////////////////////////
 
     c1->cd();
 
+    // measurement distribution
     TPad *pad2 = new TPad("pad2","pad2",0,0.25,1,0.4);
     pad2->SetTopMargin(0.05);
     pad2->SetBottomMargin(0.05);
@@ -4200,13 +4221,13 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
     if(data_over_mc)
     {
         hfolded_ratio->Draw("pe");
-        hfolded_ratio->SetLineColor(kMagenta);
+        hfolded_ratio->SetLineColor(kBlack);
         hfolded_ratio->GetYaxis()->SetTitle("Data/ MC");
     }
     else
     {
-        hfolded_ratio->Draw("hist");
-        hfolded_ratio->SetLineColor(kMagenta);
+        hfolded_ratio->Draw("pe");
+        hfolded_ratio->SetLineColor(kBlack);
         hfolded_ratio->GetYaxis()->SetTitle("#splitline{  MC/Data}{(post FSR)}");
         hfolded_ratio->GetYaxis()->CenterTitle();
     }
@@ -4222,22 +4243,24 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
         hfolded_ratio_sys_err->SetLineColor(12);
         hfolded_ratio_sys_err->SetFillColor(12);
         hfolded_ratio_sys_err->SetLineWidth(5);
-        hfolded_ratio_sys_err->SetFillStyle(3005);
+        hfolded_ratio_sys_err->SetFillStyle(3003);
         hfolded_ratio_sys_err->SetMarkerSize(0);
         hfolded_ratio_sys_err->Draw("E2 same");
-        hfolded_ratio_sys_err_mc->SetFillColorAlpha(kMagenta,0.3);
-        hfolded_ratio_sys_err_mc->SetMarkerSize(0);
-        hfolded_ratio_sys_err_mc->Draw("E2 same");
+        //hfolded_ratio_sys_err_mc->SetFillColorAlpha(kMagenta,0.3);
+        //hfolded_ratio_sys_err_mc->SetMarkerSize(0);
+        //hfolded_ratio_sys_err_mc->Draw("E2 same");
     }
 
     TLine *l_;
     l_ = new TLine(hunfolded_ratio->GetXaxis()->GetXmin(),1,hunfolded_ratio->GetXaxis()->GetXmax(),1);
     if(var=="Mass") l_ = new TLine(massBins[nthMassBin],1,massBins[nthMassBin+1],1);
     l_->Draw("same");
-    l_->SetLineStyle(1);
+    l_->SetLineStyle(2);
     if(data_over_mc) l_->SetLineColor(kRed);
     else l_->SetLineColor(kBlack);
 
+
+    // unfolded distribution
     c1->cd();
 
     TPad *pad3 = new TPad("pad3","pad3",0,0.0,1,0.25);
@@ -4255,8 +4278,8 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
     }
     else
     {
-        hunfolded_ratio->Draw("hist");
-        hunfolded_ratio->SetLineColor(kRed);
+        hunfolded_ratio->Draw("pe");
+        hunfolded_ratio->SetLineColor(kBlack);
         hunfolded_ratio->GetYaxis()->SetTitle("#splitline{ MC/Data}{(pre FSR)}");
         hunfolded_ratio->GetYaxis()->CenterTitle();
     }
@@ -4266,13 +4289,13 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
         hunfolded_ratio_sys_err->SetLineColor(12);
         hunfolded_ratio_sys_err->SetFillColor(12);
         hunfolded_ratio_sys_err->SetLineWidth(5);
-        hunfolded_ratio_sys_err->SetFillStyle(3005);
+        hunfolded_ratio_sys_err->SetFillStyle(3003);
         hunfolded_ratio_sys_err->SetMarkerSize(0);
         hunfolded_ratio_sys_err->Draw("E2 same");
         //hunfolded_ratio_sys_err->SetFillColorAlpha(kBlack,0.3);
-        hunfolded_ratio_sys_err_mc->SetFillColorAlpha(kRed,0.3);
-        hunfolded_ratio_sys_err_mc->SetMarkerSize(0);
-        hunfolded_ratio_sys_err_mc->Draw("E2 same");
+        //hunfolded_ratio_sys_err_mc->SetFillColorAlpha(kRed,0.3);
+        //hunfolded_ratio_sys_err_mc->SetMarkerSize(0);
+        //hunfolded_ratio_sys_err_mc->Draw("E2 same");
     }
 
     if(var=="Pt") hunfolded_ratio->GetXaxis()->SetTitle("p_{T}(" + lepton_type + ") (GeV)");
@@ -4285,7 +4308,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
     hunfolded_ratio->GetYaxis()->SetRangeUser(0.61, 1.39);
 
     l_->Draw("same");
-    l_->SetLineStyle(1);
+    l_->SetLineStyle(2);
     if(data_over_mc) l_->SetLineColor(kRed);
     else l_->SetLineColor(kBlack);
 
