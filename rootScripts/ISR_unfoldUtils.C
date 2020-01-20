@@ -323,32 +323,31 @@ void ISRUnfold::setSysFSRTUnfoldDensity(TString var, TString filepath, TString s
 void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name, TString fsr_correction_name)
 {
 
-    cout << "sysName: " << sysName << endl;
     TFile* filein = new TFile(filepath);
 
     TString systematic_postfix = sysName;
 
     if(totSysN == 2)
     {
-        if(nth == 0 ) systematic_postfix+="Up";
-        if(nth == 1 ) systematic_postfix+="Down";
+        if(nth == 0 ) systematic_postfix = "_" + systematic_postfix + "Up";
+        if(nth == 1 ) systematic_postfix = "_" + systematic_postfix + "Down";
     }
 
     if(totSysN == 6 && (sysName =="Scale" || sysName =="pdfScale"))
     {
-        if(nth == 0 ) systematic_postfix+="AUp";
-        if(nth == 1 ) systematic_postfix+="ADown";
-        if(nth == 2 ) systematic_postfix+="BUp";
-        if(nth == 3 ) systematic_postfix+="BDown";
-        if(nth == 4 ) systematic_postfix+="ABUp";
-        if(nth == 5 ) systematic_postfix+="ABDown";
+        if(nth == 0 ) systematic_postfix = "_" + systematic_postfix + "AUp";
+        if(nth == 1 ) systematic_postfix = "_" + systematic_postfix + "ADown";
+        if(nth == 2 ) systematic_postfix = "_" + systematic_postfix + "BUp";
+        if(nth == 3 ) systematic_postfix = "_" + systematic_postfix + "BDown";
+        if(nth == 4 ) systematic_postfix = "_" + systematic_postfix + "ABUp";
+        if(nth == 5 ) systematic_postfix = "_" + systematic_postfix + "ABDown";
     }
 
     if(totSysN == 100 && sysName == "PDFerror")
     {
         TString nth_;
         nth_.Form ("%03d", nth);
-        systematic_postfix+=nth_;
+        systematic_postfix = "_" + systematic_postfix + nth_;
     }
 
     // set migration matrix
@@ -366,13 +365,36 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
     }
     else
     {
+
+        TString histDirPostfix = "";
+        if(sysName == "lepMom"){
+            
+            if(nth == 0)
+            {
+                phase_name += "_lepMomUp";
+                histDirPostfix = "_lepMomUp";
+                systematic_postfix = "nominal";
+            }
+            else if(nth == 1)
+            {
+                phase_name += "_lepMomDown";
+                histDirPostfix = "_lepMomDown";
+                systematic_postfix = "nominal";
+            }
+            else
+            {
+                exit(EXIT_FAILURE);
+            }
+        }
+
         if(var == "Pt")
         {
-            hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRec_" + systematic_postfix);
+            hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix" + histDirPostfix + "/hmc" + var + "GenRec" + systematic_postfix);
+            cout << "check: " << phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix" + histDirPostfix + "/hmc" + var + "GenRec" + systematic_postfix << endl;
         }
         else if(var == "Mass")
         {
-            hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRec_" + systematic_postfix);
+            hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix" + histDirPostfix + "/hmc" + var + "GenRec" + systematic_postfix);
         }
         else
         {
@@ -875,25 +897,66 @@ void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysN
             // use DY MC histograms as unfolding input
             // input histogram(data) for each systematic source
 
-            // for systematic, using the same input histogram as nominal
-            if(var == "Pt")
-            {
-                if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleMuonnominal");
-                if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleEGnominal");
-                if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_EGammanominal");
-                sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   bias);
-            }
-            else if(var == "Mass")
-            {
-                if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleMuonnominal");
-                if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleEGnominal");
-                if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_EGammanominal");
-                sysMassUnfold[sysName].at(nth)->SetInput(hRec,   bias);
+            // for systematic, using the same input histogram as nominal, unless data changed in a systematic change
+            if(sysName != "lepMom"){
+                if(var == "Pt")
+                {
+                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleMuonnominal");
+                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleEGnominal");
+                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_EGammanominal");
+                    sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   bias);
+                }
+                else if(var == "Mass")
+                {
+                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleMuonnominal");
+                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleEGnominal");
+                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_EGammanominal");
+                    sysMassUnfold[sysName].at(nth)->SetInput(hRec,   bias);
+                }
+                else
+                {
+                    cout << "ISRUnfold::setInput, only Pt and Mass available for var" << endl;
+                    exit (EXIT_FAILURE);
+                }
             }
             else
             {
-                cout << "ISRUnfold::setInput, only Pt and Mass available for var" << endl;
-                exit (EXIT_FAILURE);
+                //FIXME currently only consider lepton momentum systematic here
+                TString histDirPostfix = "";
+                if(nth == 0)
+                {
+                    phase_name += "_lepMomUp";
+                    histDirPostfix = "_lepMomUp";
+                }
+                else if(nth == 1)
+                {
+                    phase_name += "_lepMomDown";
+                    histDirPostfix = "_lepMomDown";
+                }
+                else
+                {
+                    exit(EXIT_FAILURE);
+                }
+            
+                if(var == "Pt")
+                {
+                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_DoubleMuonnominal");
+                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_DoubleEGnominal");
+                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_EGammanominal");
+                    sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   bias);
+                }
+                else if(var == "Mass")
+                {
+                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_mll" + histDirPostfix + "/histo_DoubleMuonnominal");
+                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll" + histDirPostfix + "/histo_DoubleEGnominal");
+                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll" + histDirPostfix + "/histo_EGammanominal");
+                    sysMassUnfold[sysName].at(nth)->SetInput(hRec,   bias);
+                }
+                else
+                {
+                    cout << "ISRUnfold::setInput, only Pt and Mass available for var" << endl;
+                    exit (EXIT_FAILURE);
+                }
             }
 
 	}
@@ -977,31 +1040,31 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
         TString systematic_postfix = sysName;
         if(year == 2017 ){
             if(sysName == "Scale"){
-                systematic_postfix = "pdfScale";
+                systematic_postfix = "_pdfScale";
             }
             if(sysName == "AlphaS"){
-                systematic_postfix = "alphaS";
+                systematic_postfix = "_alphaS";
             }
         }
 
         if(totSysN == 2){
-            if(nth == 0 ) systematic_postfix+="Up";
-            if(nth == 1 ) systematic_postfix+="Down";
+            if(nth == 0 ) systematic_postfix="_"+systematic_postfix+"Up";
+            if(nth == 1 ) systematic_postfix="_"+systematic_postfix+"Down";
         }
 
         if(totSysN == 6 && (sysName == "Scale" || sysName =="pdfScale")){
-            if(nth == 0 ) systematic_postfix+="AUp";
-            if(nth == 1 ) systematic_postfix+="ADown";
-            if(nth == 2 ) systematic_postfix+="BUp";
-            if(nth == 3 ) systematic_postfix+="BDown";
-            if(nth == 4 ) systematic_postfix+="ABUp";
-            if(nth == 5 ) systematic_postfix+="ABDown";
+            if(nth == 0 ) systematic_postfix="_"+systematic_postfix+"AUp";
+            if(nth == 1 ) systematic_postfix="_"+systematic_postfix+"ADown";
+            if(nth == 2 ) systematic_postfix="_"+systematic_postfix+"BUp";
+            if(nth == 3 ) systematic_postfix="_"+systematic_postfix+"BDown";
+            if(nth == 4 ) systematic_postfix="_"+systematic_postfix+"ABUp";
+            if(nth == 5 ) systematic_postfix="_"+systematic_postfix+"ABDown";
         }
 
         if(totSysN == 100 && sysName == "PDFerror"){
             TString nth_;
             nth_.Form ("%03d", nth);
-            systematic_postfix+=nth_;
+            systematic_postfix="_"+systematic_postfix+nth_;
         }
 
         // nominal histograms
@@ -1009,6 +1072,7 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
         {
                 if(var == "Pt")
                 {
+                    cout << "histo: " << phase_name + "/hist_ptll/histo_" + bkgName + "nominal" << endl;
                     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "nominal");
                 }
                 if(var == "Mass")
@@ -1037,6 +1101,7 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
             }
             else
             {
+                // WW WZ ZZ have no PDF systematics
                 if( (bkgName=="WW_pythia" || bkgName=="WZ_pythia" || bkgName=="ZZ_pythia") && (sysName=="pdfScale"||sysName=="Scale" || sysName=="AlphaS"||sysName=="alphaS"))
                 {
                     if(var == "Pt")
@@ -1050,18 +1115,39 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
                 }
                 else
                 {
+
+                    TString histDirPostfix = "";
+                    if(sysName == "lepMom"){
+                        if(nth == 0)
+                        {
+                            phase_name += "_lepMomUp";
+                            histDirPostfix = "_lepMomUp";
+                            systematic_postfix = "nominal";
+                        }
+                        else if(nth == 1)
+                        {
+                            phase_name += "_lepMomDown";
+                            histDirPostfix = "_lepMomDown";
+                            systematic_postfix = "nominal";
+                        }
+                        else
+                        {
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+                    
                     if(var == "Pt")
                     {
-                        hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "_" + systematic_postfix);
+                        hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix);
                     }
                     if(var == "Mass")
                     {
-                        hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "_" + systematic_postfix);
+                        hRec = (TH1*)filein->Get(phase_name + "/hist_mll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix);
                     }
                 }
             }
 
-            //cout << "bkg: " << bkgName << " " << phase_name + "/hist_ptll/histo_" + bkgName + "_" + systematic_postfix << endl;
+            cout << "bkg: " << bkgName << " " << phase_name + "/hist_ptll/histo_" + bkgName + "_" + systematic_postfix << endl;
             if( var == "Pt" )   sysPtUnfold[sysName].at(nth)  ->SubtractBackground(hRec, bkgName, bkg_scale);
             if( var == "Mass" ) sysMassUnfold[sysName].at(nth)->SubtractBackground(hRec, bkgName, bkg_scale);
 	}
@@ -1250,7 +1336,11 @@ void ISRUnfold::doISRUnfold(int detOrFSR_unfold, bool doSys){
   	    			                           0,0,
   	    			                           &lCurve);
 	    		}
-	    		else it->second.at(i)->DoUnfold(0);
+	    		else
+                        {
+                            cout << "it->first: " << it->first << endl;
+                            it->second.at(i)->DoUnfold(0);
+                        }
 
 	    	}
 	    	it++;

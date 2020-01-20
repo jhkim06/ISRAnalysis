@@ -362,8 +362,9 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "nominal", False, 0, -1)
 
     # set systematic response matrix and input histograms
-    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 100, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
-    if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 100, "unfoldBias": 1, "unfoldScan": 1}
+    #if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 100, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
+    if args.channel == "electron" : sysDict = {"lepMom": 2, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
+    if args.channel == "muon" :     sysDict = {"lepMom": 2, "unfoldBias": 1, "unfoldScan": 1}
     if args.doSys == True:
 
         for sysName, nSys in sysDict.items():
