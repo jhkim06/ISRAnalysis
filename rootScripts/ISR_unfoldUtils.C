@@ -390,7 +390,6 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         if(var == "Pt")
         {
             hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix" + histDirPostfix + "/hmc" + var + "GenRec" + systematic_postfix);
-            cout << "check: " << phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix" + histDirPostfix + "/hmc" + var + "GenRec" + systematic_postfix << endl;
         }
         else if(var == "Mass")
         {
@@ -1147,7 +1146,6 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
                 }
             }
 
-            cout << "bkg: " << bkgName << " " << phase_name + "/hist_ptll/histo_" + bkgName + "_" + systematic_postfix << endl;
             if( var == "Pt" )   sysPtUnfold[sysName].at(nth)  ->SubtractBackground(hRec, bkgName, bkg_scale);
             if( var == "Mass" ) sysMassUnfold[sysName].at(nth)->SubtractBackground(hRec, bkgName, bkg_scale);
 	}
@@ -1338,7 +1336,6 @@ void ISRUnfold::doISRUnfold(int detOrFSR_unfold, bool doSys){
 	    		}
 	    		else
                         {
-                            cout << "it->first: " << it->first << endl;
                             it->second.at(i)->DoUnfold(0);
                         }
 
@@ -4215,34 +4212,22 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
 
     // this chi2 calculation don't consider correlation between bins
     double chi2_without_correlation = Chi2Test(hfolded_data, hfolded_mc);
+    bool printChi2 = false;
 
-    if(!isFSRUnfold)
+    if(printChi2)
     {
-        if(var == "Pt" )
+        if(!isFSRUnfold)
         {
-            after_unfolding_chi2.Form("%.2f", DoFit("Pt", nthMassBin));
+            
+            after_unfolding_chi2.Form("%.2f", DoFit(var, nthMassBin));
             before_unfolding_chi2.Form("%.2f", chi2_without_correlation);
             chi2_.DrawLatexNDC(0.2, 0.15, "#splitline{Norm. #chi_{Detector unfolded}^{2}: " + after_unfolding_chi2 + " (only diagonal corr.)}{Norm. #chi^{2}: " + before_unfolding_chi2 + "}");
         }
         else
         {
-            after_unfolding_chi2.Form("%.2f", DoFit("Mass", nthMassBin));
-            before_unfolding_chi2.Form("%.2f", chi2_without_correlation);
-            chi2_.DrawLatexNDC(0.2, 0.15, "#splitline{Norm. #chi_{Detector unfolded}^{2}: " + after_unfolding_chi2 + " (only diagonal corr.)}{Norm. #chi^{2}: " + before_unfolding_chi2 + "}");
-        }
-    }
-    else
-    {
-        if(var == "Pt" )
-        {
-            after_unfolding_chi2.Form("%.2f", DoFit("Pt", nthMassBin, isFSRUnfold));
-            before_unfolding_chi2.Form("%.2f", DoFit("Pt", nthMassBin));
-            chi2_.DrawLatexNDC(0.2, 0.15, "#splitline{Norm. #chi_{FSR unfolded}^{2}: " + after_unfolding_chi2 + "}{Norm. #chi_{detector unfolded}^{2}: " + before_unfolding_chi2 + "}");
-        }
-        else
-        {
-            after_unfolding_chi2.Form("%.2f", DoFit("Mass", nthMassBin, isFSRUnfold));
-            before_unfolding_chi2.Form("%.2f", DoFit("Mass", nthMassBin));
+            
+            after_unfolding_chi2.Form("%.2f", DoFit(var, nthMassBin, isFSRUnfold));
+            before_unfolding_chi2.Form("%.2f", DoFit(var, nthMassBin));
             chi2_.DrawLatexNDC(0.2, 0.15, "#splitline{Norm. #chi_{FSR unfolded}^{2}: " + after_unfolding_chi2 + "}{Norm. #chi_{detector unfolded}^{2}: " + before_unfolding_chi2 + "}");
         }
     }
@@ -4251,7 +4236,8 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
     if(isFSRUnfold && systematic )
     {
         //initialize errors
-        for(int ibin = 1; ibin<hunfolded_sys_err->GetNbinsX()+1;ibin++){
+        for(int ibin = 1; ibin<hunfolded_sys_err->GetNbinsX()+1;ibin++)
+        {
 
             hunfolded_sys_err->SetBinError(ibin, 0.);
             hunfolded_mc_sys_err->SetBinError(ibin, 0.);
@@ -4266,6 +4252,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
             hfolded_ratio_sys_err_mc->SetBinError(ibin, 1e-7);
         }
 
+        //
         makeSystBand(var, nthMassBin, sysName, fullSys, data_over_mc,
                   hunfolded_data, hunfolded_mc, hunfolded_ratio,
                   hunfolded_sys_err, hunfolded_mc_sys_err, hunfolded_ratio_sys_err, hunfolded_ratio_sys_err_mc);
@@ -4477,11 +4464,6 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
         std::vector<std::map<TString, Int_t>>* p_meanPtErrIdx_data;
         std::vector<std::map<TString, Int_t>>* p_meanPtErrIdx_mc;
         std::map<TString, std::vector<TUnfoldDensityV17*>> temp_sysTUnfDensity;
-        //p_meanPtErrIdx_sysdata_pre_fsr = &meanPtErrIdx_sysdata_pre_fsr;
-        //p_meanPtErrIdx_sysdata_pre_fsr->at(0)["Alt"];
-        //temp_sysPtFSRUnfold = sysPtFSRUnfold;
-        //temp_sysPtFSRUnfold["Alt"].at(0);
-
 
         // get distribution which gives the maximum variation on mean value
         if(var == "Pt")
