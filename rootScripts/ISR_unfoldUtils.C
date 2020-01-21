@@ -368,7 +368,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
 
         TString histDirPostfix = "";
         if(sysName == "lepMom"){
-            
+
             if(nth == 0)
             {
                 phase_name += "_lepMomUp";
@@ -745,7 +745,7 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
     c1->cd()->SetGridy();
 
     if(var=="Pt")
-    {    
+    {
         histEfficiency->SetTitle("efficiency;p_{T} mass bin (gen) ;A #times #epsilon");
     }
     if(var=="Mass")
@@ -936,7 +936,7 @@ void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysN
                 {
                     exit(EXIT_FAILURE);
                 }
-            
+
                 if(var == "Pt")
                 {
                     if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_DoubleMuonnominal");
@@ -1134,7 +1134,7 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
                             exit(EXIT_FAILURE);
                         }
                     }
-                    
+
                     if(var == "Pt")
                     {
                         hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix);
@@ -3251,15 +3251,32 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName, bo
 
     gROOT->SetBatch();
 
+    const TUnfoldBinningV17* temp_binning_gen_pt = nomPtUnfold->GetOutputBinning("Gen_Pt");
+    const TUnfoldBinningV17* temp_binning_rec_pt = nomPtUnfold->GetInputBinning("Rec_Pt");
+    const TUnfoldBinningV17* temp_binning_gen_mass = nomMassUnfold->GetOutputBinning("Gen_Mass");
+    const TUnfoldBinningV17* temp_binning_rec_mass = nomMassUnfold->GetInputBinning("Rec_Mass");
+
+    // get mass bin definition from (pt, mass) bin definition
+    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    const Double_t* massBins = temp_tvecd->GetMatrixArray();
+
     TString ibinMass;
     ibinMass.Form("%d", nthMassBin);
 
-    c1 = new TCanvas("c1","c1", 50, 50, 750, 700);
+    c1 = new TCanvas("c1","c1", 50, 50, 800, 800);
     c1->cd();
+
+    TPad *pad1 = new TPad("pad1","pad1",0,0.0,1,1);
+    pad1->SetBottomMargin(0.12);
+    pad1->SetTopMargin(0.1);
+    pad1->SetTicks(1);
+    pad1->Draw();
+    pad1->cd();
+
     gStyle->SetOptFit(0);
-    c1->SetBottomMargin(0.12);
-    c1->SetTopMargin(0.08);
-    c1->SetTicks(1);
+    //c1->SetBottomMargin(0.12);
+    //c1->SetTopMargin(0.1);
+    //c1->SetTicks(1);
 
     int sysSize = 0;
     double amaxMass = 0.;
@@ -3497,7 +3514,30 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName, bo
 
     }
 
-    CMS_lumi( c1, 4, 11 );
+    TString mass_cut_info;
+    TString pt_cut_info;
+    TString lepton_type;
+    if(channel_name=="electron") lepton_type = "ee";
+    else lepton_type = "#mu#mu";
+
+    TString low_bound_, upper_bound_;
+    low_bound_.Form("%d", (int)massBins[nthMassBin]);
+    upper_bound_.Form("%d", (int)massBins[nthMassBin+1]);
+    mass_cut_info = low_bound_ + " < M(" + lepton_type + ") < " + upper_bound_ + " (GeV)";
+    pt_cut_info = "p_{T}(" + lepton_type + ") < 100 (GeV) ";
+
+    TLatex mass_cut_info_;
+    mass_cut_info_.SetTextFont(63);
+    mass_cut_info_.SetTextSize(23);
+    mass_cut_info_.DrawLatexNDC(0.2, 0.8, mass_cut_info);
+
+    TLatex pt_cut_info_;
+    pt_cut_info_.SetTextFont(63);
+    pt_cut_info_.SetTextSize(23);
+    pt_cut_info_.DrawLatexNDC(0.2, 0.75, pt_cut_info);
+
+    CMS_lumi( pad1, 4, 0 );
+    c1->cd();
     if (detector_unfold) c1->SaveAs(outpdf+"_"+ibinMass+"_"+sysName+".pdf");
     else c1->SaveAs(outpdf+"_"+ibinMass+"_pre_fsr_"+sysName+".pdf");
 
@@ -4218,14 +4258,14 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
     {
         if(!isFSRUnfold)
         {
-            
+
             after_unfolding_chi2.Form("%.2f", DoFit(var, nthMassBin));
             before_unfolding_chi2.Form("%.2f", chi2_without_correlation);
             chi2_.DrawLatexNDC(0.2, 0.15, "#splitline{Norm. #chi_{Detector unfolded}^{2}: " + after_unfolding_chi2 + " (only diagonal corr.)}{Norm. #chi^{2}: " + before_unfolding_chi2 + "}");
         }
         else
         {
-            
+
             after_unfolding_chi2.Form("%.2f", DoFit(var, nthMassBin, isFSRUnfold));
             before_unfolding_chi2.Form("%.2f", DoFit(var, nthMassBin));
             chi2_.DrawLatexNDC(0.2, 0.15, "#splitline{Norm. #chi_{FSR unfolded}^{2}: " + after_unfolding_chi2 + "}{Norm. #chi_{detector unfolded}^{2}: " + before_unfolding_chi2 + "}");
@@ -4389,7 +4429,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
     if(data_over_mc) l_->SetLineColor(kRed);
     else l_->SetLineColor(kBlack);
 
-    CMS_lumi( c1, 4, 0 );
+    CMS_lumi( pad1, 4, 0 );
     c1->cd();
     if(!isFSRUnfold) c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+".pdf");
     else c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+"_FSRUnfold.pdf");
