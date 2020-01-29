@@ -59,6 +59,10 @@ CMS_lumi( TPad* pad, int iPeriod, int iPosX )
       lumiText += full_Run2_lumi_13TeV;
       lumiText += " (13 TeV)";
     }
+  else if ( iPeriod==5 )                                                                                                                                                                                            
+    {                                                                                                                                                                                                               
+      lumiText = " (13 TeV)";                                                                                                                                                                                      
+    } 
   else if ( iPeriod==7 )
     { 
       if( outOfFrame ) lumiText += "#scale[0.85]{";
@@ -146,14 +150,14 @@ CMS_lumi( TPad* pad, int iPeriod, int iPosX )
 	  //latex.SetTextSize(cmsTextSize*t);
 	  latex.SetTextSize(cmsTextSize);
 	  latex.SetTextAlign(align_);
-	  latex.DrawLatex(posX_, posY_, cmsText);
+	  latex.DrawLatex(0.9*posX_, posY_, cmsText);
 	  if( writeExtraText ) 
 	    {
 	      latex.SetTextFont(extraTextFont);
 	      latex.SetTextAlign(align_);
 	      //latex.SetTextSize(extraTextSize*t);
 	      latex.SetTextSize(extraTextSize);
-	      latex.DrawLatex(posX_, posY_- relExtraDY*cmsTextSize*t, extraText);
+	      latex.DrawLatex(0.9*posX_, posY_- 0.5*t, extraText);
 	    }
 	}
     }

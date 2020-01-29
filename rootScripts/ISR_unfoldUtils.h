@@ -136,6 +136,8 @@ private:
         double nominal_bias;
         
         TString hist_file_path;
+        TString hist_file_path_DYDetResM;
+        TString hist_file_path_DYFSRResM;
         TString output_baseDir;
         TString channel_name;
         bool do_normalization;
@@ -144,11 +146,13 @@ private:
 public:
 
         // constructor
-	ISRUnfold(TString channel, TString filepath, bool norm = true, int year_ = 2016, 
+	ISRUnfold(TString channel, TString filepath, TString filepath_DYDetResM = "", TString filepath_DYFSRResM = "", bool norm = true, int year_ = 2016, 
                 int regMode_detector_ = 0, int regMode_FSR_ = 0)
         {
             channel_name = channel;
             hist_file_path = filepath;
+            hist_file_path_DYDetResM = filepath_DYDetResM;
+            hist_file_path_DYFSRResM = filepath_DYFSRResM;
             do_normalization = norm;
             year = year_;
 
