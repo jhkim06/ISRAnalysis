@@ -4165,8 +4165,8 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
             hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr"));
 
             // fix the path name cause it confusing....
-            genHistPath = "fiducial_phase_pre_FSR_dRp1_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/ptll/";
-            filein = new TFile(hist_file_path_DYDetResM);
+            genHistPath = channel_name + "_fiducial_phase_post_FSR_dRp1_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/ptll/";
+            filein = new TFile(hist_file_path_DYHists);
             hunfolded_mc = (TH1*)filein->Get(genHistPath + "histo_DYJets");
             hunfolded_mc->SetDirectory(0);
             hunfolded_mc->Add((TH1*)filein->Get(genHistPath + "histo_DYJets10to50"));
@@ -4186,16 +4186,16 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
             hfolded_sys_err= ((TH1F*)hfolded_data->Clone("sysErr_folded"));
 
             // get truth MC distribution
-            genHistPath = "full_phase_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/ptll/";
-            filein = new TFile(hist_file_path_DYFSRResM);
+            genHistPath = channel_name + "_full_phase_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/ptll_preFSR/";
+            filein = new TFile(hist_file_path_DYHists);
             hunfolded_mc = (TH1*)filein->Get(genHistPath + "histo_DYJets");
             hunfolded_mc->SetDirectory(0);
             hunfolded_mc->Add((TH1*)filein->Get(genHistPath + "histo_DYJets10to50"));
 
             filein->Close();
 
-            genHistPath = "fiducial_phase_pre_FSR_dRp1_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/ptll/";
-            filein = new TFile(hist_file_path_DYDetResM);
+            genHistPath = channel_name + "_fiducial_phase_post_FSR_dRp1_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/ptll/";
+            filein = new TFile(hist_file_path_DYHists);
             hfolded_mc = (TH1*)filein->Get(genHistPath + "histo_DYJets");
             hfolded_mc->SetDirectory(0);
             hfolded_mc->Add((TH1*)filein->Get(genHistPath + "histo_DYJets10to50"));
@@ -4218,8 +4218,8 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
     	    hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
     	    hfolded_data->GetXaxis()->SetRange(hfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 
-            genHistPath = "fiducial_phase_pre_FSR_dRp1_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/mll/";
-            filein = new TFile(hist_file_path_DYDetResM);
+            genHistPath = channel_name + "_fiducial_phase_post_FSR_dRp1_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/mll_" + channel_name + "/";
+            filein = new TFile(hist_file_path_DYHists);
             hunfolded_mc = (TH1*)filein->Get(genHistPath + "histo_DYJets");
             hunfolded_mc->SetDirectory(0);
             hunfolded_mc->Add((TH1*)filein->Get(genHistPath + "histo_DYJets10to50"));
@@ -4243,16 +4243,16 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
             hfolded_sys_err= ((TH1F*)hfolded_data->Clone("sysErr_folded"));
 
             // get truth MC distribution
-            genHistPath = "full_phase_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/mll/";
-            filein = new TFile(hist_file_path_DYFSRResM);
+            genHistPath = channel_name + "_full_phase_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/mll_preFSR_" + channel_name + "/";
+            filein = new TFile(hist_file_path_DYHists);
             hunfolded_mc = (TH1*)filein->Get(genHistPath + "histo_DYJets");
             hunfolded_mc->SetDirectory(0);
             hunfolded_mc->Add((TH1*)filein->Get(genHistPath + "histo_DYJets10to50"));
 
             filein->Close();
 
-            genHistPath = "fiducial_phase_pre_FSR_dRp1_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/mll/";
-            filein = new TFile(hist_file_path_DYDetResM);
+            genHistPath = channel_name + "_fiducial_phase_post_FSR_dRp1_m" + massLowEdge[nthMassBin] + "to" + massHighEdge[nthMassBin] + "/mll_" + channel_name + "/";
+            filein = new TFile(hist_file_path_DYHists);
             hfolded_mc = (TH1*)filein->Get(genHistPath + "histo_DYJets");
             hfolded_mc->SetDirectory(0);
             hfolded_mc->Add((TH1*)filein->Get(genHistPath + "histo_DYJets10to50"));
