@@ -203,7 +203,7 @@ public:
 	// do unfold 
 	void doISRUnfold(int detOrFSR_unfold = 0, bool doSys = false);
 
-        void drawClosurePlots(TString outpdf, TString var, int nthMassBin);
+        void drawClosurePlots(int detOrFSR_unfold, TString filepath, TString outpdf, TString var, int nthMassBin);
 
 	// 
 	void drawUnfoldedHists(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false, bool isFSRUnfold = false, bool fullSys = false);

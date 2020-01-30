@@ -173,11 +173,28 @@ void ISRUnfold::setNomFSRTUnfoldDensity(TString var, TString filepath, TString p
                                                TUnfold::kEConstraintArea,
                                                TUnfoldDensityV17::kDensityModeBinWidth,
                                                binning_Gen,binning_Gen);
+
+                // for closure test
+                nomPtFSRUnfold_closure = new TUnfoldDensityV17(hmcGenGen,
+                                               TUnfold::kHistMapOutputHoriz,
+                                               regMode_FSR,
+                                               TUnfold::kEConstraintArea,
+                                               TUnfoldDensityV17::kDensityModeBinWidth,
+                                               binning_Gen,binning_Gen);
         }
-        else if( var == "Mass" ){
+        else if( var == "Mass" )
+        {
                 nomMassFSRUnfold = new TUnfoldDensityV17(hmcGenGen,
                                                TUnfold::kHistMapOutputHoriz,
-                                               regMode_FSR, // fixed to use no regularisation temporary
+                                               regMode_FSR, 
+                                               TUnfold::kEConstraintArea,
+                                               TUnfoldDensityV17::kDensityModeBinWidth,
+                                               binning_Gen,binning_Gen);
+
+                // for closure test
+                nomMassFSRUnfold_closure = new TUnfoldDensityV17(hmcGenGen,
+                                               TUnfold::kHistMapOutputHoriz,
+                                               regMode_FSR,
                                                TUnfold::kEConstraintArea,
                                                TUnfoldDensityV17::kDensityModeBinWidth,
                                                binning_Gen,binning_Gen);
@@ -983,30 +1000,34 @@ void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysN
 	delete filein;
 }
 
-void ISRUnfold::doClosureTest(int detOrFSR_unfold, TString filepath, TString phase_name)
+void ISRUnfold::doClosureTest(int detOrFSR_unfold, TString filepath, TString dir_name)
 {
 
     nScan = 50;
     nScan_mass = 50;
     TFile* filein = new TFile(filepath);
-    TH1* hRec_pt = NULL;
-    TH1* hRec_mass = NULL;
+    TH1* hpt_DYMC = NULL;
+    TH1* hmass_DYMC = NULL;
 
     // use DY MC as input for closure test
     // TODO subtract fake DY events i.e., not selected in fiducial space in the dressed level but selected in the detector level, from the DY detector distribution
     // for FSR closure test, use dressed level distribution as unfolding input 
 
-    hRec_pt = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DYJetsToEEnominal");
-    hRec_pt->Add((TH1*)filein->Get(phase_name + "/hist_ptll/histo_DYJets10to50ToEEnominal"));
-    nomPtUnfold_closure->SetInput(hRec_pt,   nominal_bias);
-
-    hRec_mass = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DYJetsToEEnominal");
-    hRec_mass->Add((TH1*)filein->Get(phase_name + "/hist_mll/histo_DYJets10to50ToEEnominal"));
-    nomMassUnfold_closure->SetInput(hRec_mass,   nominal_bias);
-
-    // unfold
+    // detector unfold
     if(detOrFSR_unfold == 0)
     {
+        hpt_DYMC = (TH1*)filein->Get(dir_name + "/hist_ptll/histo_DYJetsnominal");
+        hpt_DYMC->Add((TH1*)filein->Get(dir_name + "/hist_ptll/histo_DYJets10to50nominal"));
+        hpt_DYMC->Add((TH1*)filein->Get(dir_name + "_DY_Fake/hist_ptll/histo_DYJetsnominal"), -1);
+        hpt_DYMC->Add((TH1*)filein->Get(dir_name + "_DY_Fake/hist_ptll/histo_DYJets10to50nominal"), -1);
+        nomPtUnfold_closure->SetInput(hpt_DYMC,   nominal_bias);
+
+        hmass_DYMC = (TH1*)filein->Get(dir_name + "/hist_mll/histo_DYJetsnominal");
+        hmass_DYMC->Add((TH1*)filein->Get(dir_name + "/hist_mll/histo_DYJets10to50nominal"));
+        hmass_DYMC->Add((TH1*)filein->Get(dir_name + "_DY_Fake/hist_mll/histo_DYJetsnominal"), -1);
+        hmass_DYMC->Add((TH1*)filein->Get(dir_name + "_DY_Fake/hist_mll/histo_DYJets10to50nominal"), -1);
+        nomMassUnfold_closure->SetInput(hmass_DYMC,   nominal_bias);
+
         if(regMode_detector == TUnfold::kRegModeNone)
         {
             // no regularisation, set tau as zero
@@ -1030,6 +1051,14 @@ void ISRUnfold::doClosureTest(int detOrFSR_unfold, TString filepath, TString pha
     else if(detOrFSR_unfold == 1)
     // FSR unfolding
     {
+        hpt_DYMC = (TH1*)filein->Get(dir_name + "/hist_ptll/histo_DYJetsnominal");
+        hpt_DYMC->Add((TH1*)filein->Get(dir_name + "/hist_ptll/histo_DYJets10to50nominal"));
+        nomPtFSRUnfold_closure->SetInput(hpt_DYMC,   nominal_bias);
+
+        hmass_DYMC = (TH1*)filein->Get(dir_name + "/hist_mll/histo_DYJetsnominal");
+        hmass_DYMC->Add((TH1*)filein->Get(dir_name + "/hist_mll/histo_DYJets10to50nominal"));
+        nomMassFSRUnfold_closure->SetInput(hmass_DYMC,   nominal_bias);
+
         if(regMode_FSR == TUnfold::kRegModeNone)
         {
             // no regularisation, set tau as zero
@@ -1162,6 +1191,7 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
                     if(var == "Pt")
                     {
                         hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix);
+                        cout << "path: " << phase_name + "/hist_ptll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix << endl;
                     }
                     if(var == "Mass")
                     {
@@ -1873,7 +1903,6 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold)
 // set mean pt from mass and DY mc
 void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
 {
-
     int nMassBin = -1;
 
     const TUnfoldBinningV17* temp_binning_gen_pt = nomPtUnfold->GetOutputBinning("Gen_Pt");
@@ -1938,6 +1967,12 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
                 for(int isys = 0; isys < nSys; isys++)
                 {
                     hdatasys_temp = sysPtUnfold[it->first].at(isys)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                    if(it->first == "Alt" && ibinMass == "0")
+                    {
+                        hdatasys_temp->GetXaxis()->SetRangeUser(28., 100.);
+                        hdatasys_temp->Smooth(1, "R");
+                        hdatasys_temp->GetXaxis()->SetRangeUser(0., 100.);
+                    }
                     temp_map[it->first].push_back(hdatasys_temp->GetMean());
 
                     delete hdatasys_temp;
@@ -1965,6 +2000,12 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
                 for(int isys = 0; isys < nSys; isys++)
                 {
                     hdatasys_temp = sysPtFSRUnfold[it->first].at(isys)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                    if(it->first == "Alt" && ibinMass == "0")
+                    {
+                        hdatasys_temp->GetXaxis()->SetRangeUser(28., 100.);
+                        hdatasys_temp->Smooth(1, "R");
+                        hdatasys_temp->GetXaxis()->SetRangeUser(0., 100.);
+                    }
                     temp_map[it->first].push_back(hdatasys_temp->GetMean());
                     delete hdatasys_temp;
 
@@ -3578,110 +3619,111 @@ void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName, bo
     //    delete grSys;
 }
 
-void ISRUnfold::drawNominalRecoPlots(TString outpdf, TString filepath, TString var, int nthMassBin, TString sysName){
+void ISRUnfold::drawNominalRecoPlots(TString outpdf, TString filepath, TString var, int nthMassBin, TString sysName)
+{
+    
+    TString ibinMass;
+    ibinMass.Form("%d", nthMassBin);
 
-        TString ibinMass;
-        ibinMass.Form("%d", nthMassBin);
+    gROOT->SetBatch();
 
-        gROOT->SetBatch();
+    setTDRStyle();
+    writeExtraText = true;
+    extraText  = "work in progress";
 
-        setTDRStyle();
-        writeExtraText = true;
-        extraText  = "work in progress";
+    // get binning definition
+    const TUnfoldBinning* temp_binning = nomPtUnfold->GetInputBinning("Rec_Pt");
 
-	// get binning definition
-        const TUnfoldBinning* temp_binning = nomPtUnfold->GetInputBinning("Rec_Pt");
+    TFile* filein = new TFile(filepath);
+    TH1* hdysig = (TH1*)filein->Get("hPtRecnominal"); // get DY
+    TH1* hdysigNoUO = temp_binning->ExtractHistogram("hdysig", hdysig, 0, kTRUE, "pt[UO];mass[UOC"+ibinMass+"]");
 
-	TFile* filein = new TFile(filepath);
-        TH1* hdysig = (TH1*)filein->Get("hPtRecnominal"); // get DY
-        TH1* hdysigNoUO = temp_binning->ExtractHistogram("hdysig", hdysig, 0, kTRUE, "pt[UO];mass[UOC"+ibinMass+"]");
+    TH1* hpt_temp_data;
+    TH1F *ratio;
 
-        TH1* hpt_temp_data;
-        TH1F *ratio;
+    // bkg subracted data
+    hpt_temp_data   = nomPtUnfold->GetInput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
-	// bkg subracted data
-        hpt_temp_data   = nomPtUnfold->GetInput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+    c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
+    c1->cd();
+    gStyle->SetOptStat(0);
 
-        c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
-        c1->cd();
-        gStyle->SetOptStat(0);
+    TPad *pad1 = new TPad("pad1","pad1",0,0.4,1,1);
+    pad1->SetBottomMargin(0.01);
+    pad1->SetTopMargin(0.1);
+    pad1->SetTicks(1);
+    pad1->SetLogy();
+    pad1->Draw();
+    pad1->cd();
 
-        TPad *pad1 = new TPad("pad1","pad1",0,0.4,1,1);
-        pad1->SetBottomMargin(0.01);
-        pad1->SetTopMargin(0.1);
-        pad1->SetTicks(1);
-        pad1->SetLogy();
-        pad1->Draw();
-        pad1->cd();
-
-        hpt_temp_data->SetTitle("");
-        hpt_temp_data->Draw("p9histe");
-        hpt_temp_data->SetMarkerStyle(20);
-        hpt_temp_data->SetMarkerSize(.7);
-        hpt_temp_data->SetLineColor(kBlack);
-        hpt_temp_data->GetYaxis()->SetTitle("Events/bin");
-        hdysigNoUO->Draw("hist same");
-        hdysigNoUO->SetLineColor(kRed);
+    hpt_temp_data->SetTitle("");
+    hpt_temp_data->Draw("p9histe");
+    hpt_temp_data->SetMarkerStyle(20);
+    hpt_temp_data->SetMarkerSize(.7);
+    hpt_temp_data->SetLineColor(kBlack);
+    hpt_temp_data->GetYaxis()->SetTitle("Events/bin");
+    hdysigNoUO->Draw("hist same");
+    hdysigNoUO->SetLineColor(kRed);
 
 
-        TString mean_nom;
-        mean_nom.Form("%.5f", hpt_temp_data->GetMean());
+    TString mean_nom;
+    mean_nom.Form("%.5f", hpt_temp_data->GetMean());
 
-        TLegend* leg_nom = new TLegend(0.45, 0.70, 0.75, 0.9,"","brNDC");
-        leg_nom->SetNColumns(2);
-        leg_nom->SetTextSize(0.055);
-        leg_nom->SetFillStyle(0);
-        leg_nom->SetBorderSize(0);
+    TLegend* leg_nom = new TLegend(0.45, 0.70, 0.75, 0.9,"","brNDC");
+    leg_nom->SetNColumns(2);
+    leg_nom->SetTextSize(0.055);
+    leg_nom->SetFillStyle(0);
+    leg_nom->SetBorderSize(0);
 
-        leg_nom->AddEntry(hpt_temp_data, "Bkg subtracted data (mean: " + mean_nom + ")", "pl");
-        leg_nom->Draw();
+    leg_nom->AddEntry(hpt_temp_data, "Bkg subtracted data (mean: " + mean_nom + ")", "pl");
+    leg_nom->Draw();
 
-        TLatex chi2_norm;
-        TString chi2_;
+    TLatex chi2_norm;
+    TString chi2_;
 
-        // TODO add Mass option
-        if(var == "Pt" ){
-                chi2_.Form("%f", Chi2Test(hpt_temp_data, hdysigNoUO));
-                chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
-        }
+    // TODO add Mass option
+    if(var == "Pt" ){
+            chi2_.Form("%f", Chi2Test(hpt_temp_data, hdysigNoUO));
+            chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
+    }
 
-        c1->cd();
+    c1->cd();
 
-        TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.4);
-        pad2->SetTopMargin(0.05);
-        pad2->SetBottomMargin(0.2);
-        pad2->SetTicks(1);
-        pad2->SetGridy(1);
-        pad2->Draw();
+    TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.4);
+    pad2->SetTopMargin(0.05);
+    pad2->SetBottomMargin(0.2);
+    pad2->SetTicks(1);
+    pad2->SetGridy(1);
+    pad2->Draw();
 
-        pad2->cd();
+    pad2->cd();
 
-	ratio = ((TH1F*)hpt_temp_data->Clone("pt_temp"));
-	ratio->Divide(hdysigNoUO);
-        ratio->Draw("hist");
-        ratio->GetYaxis()->SetTitle("Data (bkg sub)/ DY MC");
-        ratio->GetXaxis()->SetTitle("p_{T} (GeV)");
-        ratio->SetMinimum(0.8);
-        ratio->SetMaximum(1.2);
-        ratio->SetTitle("");
-        ratio->GetXaxis()->SetTitleOffset(1.5);
-        ratio->GetYaxis()->SetNdivisions(515);
-        ratio->SetLineColor(kBlack);
-        //ratio->SetLineStyle(2);
+    ratio = ((TH1F*)hpt_temp_data->Clone("pt_temp"));
+    ratio->Divide(hdysigNoUO);
+    ratio->Draw("hist");
+    ratio->GetYaxis()->SetTitle("Data (bkg sub)/ DY MC");
+    ratio->GetXaxis()->SetTitle("p_{T} (GeV)");
+    ratio->SetMinimum(0.8);
+    ratio->SetMaximum(1.2);
+    ratio->SetTitle("");
+    ratio->GetXaxis()->SetTitleOffset(1.5);
+    ratio->GetYaxis()->SetNdivisions(515);
+    ratio->SetLineColor(kBlack);
+    //ratio->SetLineStyle(2);
 
-        CMS_lumi( c1, 4, 0 );
-        c1->cd();
-        c1->SaveAs(outpdf+"_input_"+ibinMass+".pdf");
+    CMS_lumi( c1, 4, 0 );
+    c1->cd();
+    c1->SaveAs(outpdf+"_input_"+ibinMass+".pdf");
 
-        delete hpt_temp_data;
-	delete hdysigNoUO;
-        delete ratio;
-        delete pad1;
-        delete pad2;
-        delete c1;
+    delete hpt_temp_data;
+    delete hdysigNoUO;
+    delete ratio;
+    delete pad1;
+    delete pad2;
+    delete c1;
 }
 
-void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin)
+void ISRUnfold::drawClosurePlots(int detOrFSR_unfold, TString filepath, TString outpdf, TString var, int nthMassBin)
 {
     gROOT->SetBatch();
 
@@ -3704,39 +3746,73 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin)
     TH1* hpreFSR_mc = NULL;
     TH1F *ratio = NULL;
 
+    TUnfoldDensityV17* temp_tunfoldDensity = NULL;
+
     // get nominal unfoled result
     if(var == "Pt" )
     {
-        hunfolded_data  = nomPtUnfold_closure->GetOutput("hunfolded_pt_closure",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-        // hpreFSR_mc   =    sysPtUnfold["Closure"].at(0)->GetBias("histMC_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        TFile* filein = new TFile(filepath);
+        TString dir_path;
 
-        TFile* filein = new TFile("/home/jhkim/temp/ISR_response.root");
-        if(channel_name == "electron")
+        if(detOrFSR_unfold == 0)
         {
-            hpreFSR_mc = (TH1*)filein->Get("fiducial_phase_pre_FSR_dRp1_m"+ low_mass_edge[nthMassBin] + "to" + high_mass_edge[nthMassBin] + "/ptll/histo_DYJets"); // get DY
-            hpreFSR_mc->Add((TH1*)filein->Get("fiducial_phase_pre_FSR_dRp1_m"+ low_mass_edge[nthMassBin] + "to" + high_mass_edge[nthMassBin] + "/ptll/histo_DYJets10to50"));
+            temp_tunfoldDensity = nomPtUnfold_closure;
+            dir_path = channel_name + "_fiducial_phase_post_FSR_dRp1_m"+ low_mass_edge[nthMassBin] + "to" + high_mass_edge[nthMassBin] + "/ptll/";
+        }
+        else if(detOrFSR_unfold == 1)
+        {
+            temp_tunfoldDensity = nomPtFSRUnfold_closure;
+            dir_path = channel_name + "_full_phase_m"+ low_mass_edge[nthMassBin] + "to" + high_mass_edge[nthMassBin] + "/ptll_preFSR/";
         }
         else
         {
-            hpreFSR_mc   =    nomPtUnfold_closure->GetBias("histMC_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+            exit(EXIT_FAILURE);            
         }
+
+        hunfolded_data  = temp_tunfoldDensity->GetOutput("hunfolded_pt_closure",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        // hpreFSR_mc   =    sysPtUnfold["Closure"].at(0)->GetBias("histMC_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        hpreFSR_mc = (TH1*)filein->Get(dir_path + "histo_DYJets"); // get DY
+        hpreFSR_mc->Add((TH1*)filein->Get(dir_path + "histo_DYJets10to50"));
+
+        ratio= ((TH1F*)hunfolded_data->Clone("ratio"));
+        ratio->Divide(hpreFSR_mc);
     }
 
     if(var == "Mass" )
     {
-        TFile* filein = new TFile("/home/jhkim/temp/ISR_response.root");
 
-        hunfolded_data  = nomMassUnfold_closure->GetOutput("hunfolded_mass_closure",0,0,"mass[UO];pt[UOC0]",kTRUE);
+        TFile* filein = new TFile(filepath);
+        TString dir_path;
+
+        if(detOrFSR_unfold == 0)
+        {
+            temp_tunfoldDensity = nomMassUnfold_closure;
+            dir_path = channel_name + "_fiducial_phase_post_FSR_dRp1_m"+ low_mass_edge[nthMassBin] + "to" + high_mass_edge[nthMassBin] + "/mll_" + channel_name + "/";
+        }
+        else if(detOrFSR_unfold == 1)
+        {
+            temp_tunfoldDensity = nomMassFSRUnfold_closure;
+            dir_path = channel_name + "_full_phase_m"+ low_mass_edge[nthMassBin] + "to" + high_mass_edge[nthMassBin] + "/mll_preFSR_" + channel_name + "/";
+            cout << "dir_path: " << dir_path << endl;
+        }
+        else
+        {
+            exit(EXIT_FAILURE);            
+        }
+
+        hunfolded_data  = temp_tunfoldDensity->GetOutput("hunfolded_mass_closure",0,0,"mass[UO];pt[UOC0]",kTRUE);
         hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+        
+        hpreFSR_mc   = (TH1*)filein->Get(dir_path + "histo_DYJets");
+        hpreFSR_mc->Add((TH1*)filein->Get(dir_path + "histo_DYJets10to50"));
+        hpreFSR_mc->GetXaxis()->SetRange(hpreFSR_mc->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hpreFSR_mc->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 
-        hpreFSR_mc   = (TH1*)filein->Get("fiducial_phase_pre_FSR_dRp1_m"+ low_mass_edge[nthMassBin] + "to" + high_mass_edge[nthMassBin] + "/mll/histo_DYJets");
-        hpreFSR_mc->Add((TH1*)filein->Get("fiducial_phase_pre_FSR_dRp1_m"+ low_mass_edge[nthMassBin] + "to" + high_mass_edge[nthMassBin] + "/mll/histo_DYJets10to50"));
-        hpreFSR_mc->GetXaxis()->SetRange(massBins[nthMassBin], massBins[nthMassBin+1]);
+        ratio= ((TH1F*)hunfolded_data->Clone("ratio"));
+        ratio->Divide(hpreFSR_mc);
+        ratio->GetXaxis()->SetRange(hpreFSR_mc->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hpreFSR_mc->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));   
     }
 
-    ratio= ((TH1F*)hunfolded_data->Clone("ratio"));
-    ratio->Divide(hpreFSR_mc);
-
+    cout << var << " bin content: " << ratio->GetBinContent(1) << endl; 
     c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
     c1->cd();
     gStyle->SetOptStat(0);
@@ -3753,13 +3829,6 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin)
     hunfolded_data->Draw("p9histe");
     hpreFSR_mc->Draw("histsame");
 
-    cout << "check sumw2..." << endl;
-    cout << "unfolded data: " << hunfolded_data->GetSumw2()->GetSum() << endl;
-    cout << "bias from matrix: " << hpreFSR_mc->GetSumw2()->GetSum() << endl;
-    cout << "check integral..." << endl;
-    cout << "unfolded data: " << hunfolded_data->Integral() << endl;
-    cout << "bias from matrix: " << hpreFSR_mc->Integral() << endl;
-
     hunfolded_data->SetMarkerStyle(20);
     hunfolded_data->SetMarkerSize(.7);
     hunfolded_data->SetLineColor(kBlack);
@@ -3773,8 +3842,6 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin)
     TString meanMC_nom;
     mean_nom.Form("%.2f", hunfolded_data->GetMean());
     meanMC_nom.Form("%.2f", hpreFSR_mc->GetMean());
-    cout << "mass mean: " << hunfolded_data->GetMean() << endl;
-    cout << "mass mean: " << hpreFSR_mc->GetMean() << endl;
 
     TLegend* leg_nom = new TLegend(0.45, 0.7, 0.75, 0.9,"","brNDC");
     //leg_nom->SetNColumns(2);
@@ -3783,16 +3850,6 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin)
     leg_nom->SetBorderSize(0);
     leg_nom->AddEntry(hunfolded_data, "Unfolded MC (" + mean_nom + ")", "pl");
     leg_nom->AddEntry(hpreFSR_mc, "Gen MC (" + meanMC_nom + ")", "l");
-
-    TLatex chi2_norm;
-    TString chi2_;
-
-    // TODO add Mass option
-    //if(var == "Pt" ){
-    //        chi2_.Form("%f",DoFit("Pt", nthMassBin));
-    //        chi2_norm.DrawLatexNDC(0.2, 0.3, "#chi^{2}/NDOF= " + chi2_);
-    //}
-
     leg_nom->Draw();
 
     c1->cd();
@@ -3824,7 +3881,6 @@ void ISRUnfold::drawClosurePlots(TString outpdf, TString var, int nthMassBin)
     delete pad1;
     delete pad2;
     delete c1;
-
 }
 
 void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBin, TString sysName, bool isDetector)
@@ -4153,7 +4209,6 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin, T
 
     if(var == "Mass" )
     {
-
         if(!isFSRUnfold)
         {
             hunfolded_data  = nomMassUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
@@ -4628,6 +4683,12 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
             {
                 systematic_variation_index = p_meanPtErrIdx_data->at(nthMassBin)[it->first];
                 hdatasys0_temp = temp_sysTUnfDensity[it->first].at(systematic_variation_index)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                if(it->first == "Alt" && ibinMass == "0")
+                {
+                    hdatasys0_temp->GetXaxis()->SetRangeUser(28., 100.);
+                    hdatasys0_temp->Smooth(1, "R");
+                    hdatasys0_temp->GetXaxis()->SetRangeUser(0., 100.);
+                }
 
                 systematic_variation_index_mc = p_meanPtErrIdx_data->at(nthMassBin)[it->first];
                 hmcsys0_temp = temp_sysTUnfDensity[it->first].at(systematic_variation_index_mc)->GetBias("hmc_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
@@ -4661,6 +4722,12 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
                 systematic_variation_index = p_meanPtErrIdx_data->at(nthMassBin)[it->first];
                 hdatasys0_temp = temp_sysTUnfDensity[it->first].at(systematic_variation_index)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
                 hdatasys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+
+                // NEED FURTHER STUDY
+                //if(it->first == "Alt")
+                //{
+                //    hdatasys0_temp->Smooth();
+                //}
 
                 systematic_variation_index_mc = p_meanPtErrIdx_mc->at(nthMassBin)[it->first];
                 hmcsys0_temp = temp_sysTUnfDensity[it->first].at(systematic_variation_index_mc)->GetBias("hmc_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
