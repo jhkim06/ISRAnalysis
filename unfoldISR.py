@@ -295,13 +295,13 @@ if args.doISRAnalysis:
     result_muon_2017 = doISRAnalysis(args, "2017", "muon", True)
     result_muon_2018 = doISRAnalysis(args, "2018", "muon", True)
 
-    result_electron_2016.drawISRresult(outputDirectory + "ISRfit_", False, False)
-    canvas_electron_2017 = result_electron_2017.drawISRresult(outputDirectory + "ISRfit_", False, False)
-    canvas_electron_2018 = result_electron_2018.drawISRresult(outputDirectory + "ISRfit_", False, False)
+    result_electron_2016.drawISRresult(outputDirectory + "ISRfit_", False)
+    canvas_electron_2017 = result_electron_2017.drawISRresult(outputDirectory + "ISRfit_",  False)
+    canvas_electron_2018 = result_electron_2018.drawISRresult(outputDirectory + "ISRfit_",  False)
 
-    canvas_muon_2016 = result_muon_2016.drawISRresult(outputDirectory + "ISRfit_", False, False)
-    canvas_muon_2017 = result_muon_2017.drawISRresult(outputDirectory + "ISRfit_", False, False)
-    canvas_muon_2018 = result_muon_2018.drawISRresult(outputDirectory + "ISRfit_", False, False)
+    canvas_muon_2016 = result_muon_2016.drawISRresult(outputDirectory + "ISRfit_", False)
+    canvas_muon_2017 = result_muon_2017.drawISRresult(outputDirectory + "ISRfit_", False)
+    canvas_muon_2018 = result_muon_2018.drawISRresult(outputDirectory + "ISRfit_", False)
 
     result_electron_2016.drawISRRun2results(outputDirectory + "ISRfit_", canvas_electron_2017, canvas_electron_2018, canvas_muon_2016, canvas_muon_2017, canvas_muon_2018)
 
@@ -374,8 +374,8 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
     # set systematic response matrix and input histograms
     #if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 100, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
-    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
-    if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
+    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1}
+    if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1}
     if args.doSys == True:
 
         for sysName, nSys in sysDict.items():
@@ -405,12 +405,12 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     # unfold
     unfoldClass.doISRUnfold(DetectorUnfold, args.doSys)
 
-    if args.doSys == True:
-        unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
-        unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
+    #if args.doSys == True:
+        #unfoldClass.drawLCurve(outputDirectory + "LCurve_" + args.channel + ".pdf", "Pt")
+        #unfoldClass.drawLCurve(outputDirectory + "LCurveMass_" + args.channel + ".pdf", "Mass")
 
-        unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
-        unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
+        #unfoldClass.drawRhoLog(outputDirectory + "RhoLog_" + args.channel + ".pdf", "Pt")
+        #unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
     # set QED FSR unfolding response matrix and input
     unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], args.phase_space_fsr, args.FSR_dR_fsr)
@@ -499,13 +499,15 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Mass", massBin, "full", args.doSys, True, True)
 
 
-    unfoldClass.drawISRresult(outputDirectory + "ISRfit_", False, False)
 
     unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, True)
     unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, False)
 
     unfoldClass.drawISRMatrixInfo("Mass", outputDirectory, True)
     unfoldClass.drawISRMatrixInfo("Mass", outputDirectory, False)
+
+    unfoldClass.drawSysSummaryPlots(outputDirectory + "ISRSysSummary_", False)
+    unfoldClass.drawISRresult(outputDirectory + "ISRfit_", True, "output/2016/" + args.channel + "/")
 
     #unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, False, True)
     #unfoldClass.drawISRMatrixInfo("Mass", outputDirectory, False, True)
