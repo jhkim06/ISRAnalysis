@@ -3054,7 +3054,7 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool doFit, TString genISRFile
             mean_mass_stat_error_mg.push_back(hmcMass_mg->GetMeanError());
 
             TString channel_ = "EE";
-            if(channel_name = "muon")
+            if(channel_name == "muon")
             {
                 channel_ = "MuMu";
             }
@@ -3966,7 +3966,7 @@ void ISRUnfold::drawClosurePlots(int detOrFSR_unfold, TString filepath, TString 
 
     TUnfoldDensityV17* temp_tunfoldDensity = NULL;
 
-    if(channel_name = "muon")
+    if(channel_name == "muon")
     {
         low_mass_edge[0] = "40.";
         low_mass_edge[1] = "60."; 
