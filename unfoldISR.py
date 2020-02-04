@@ -22,6 +22,7 @@ def setUnfoldBkgs(unfold_class, hfile_path, syst_name, isSys, nthSys, nTotSys, D
         unfold_class.subBkgs("Mass", hfile_path, "WZ_pythia",            isSys, syst_name, nTotSys, nthSys, "detector_level")
         unfold_class.subBkgs("Mass", hfile_path, "ZZ_pythia",            isSys, syst_name, nTotSys, nthSys, "detector_level")
         unfold_class.subBkgs("Mass", hfile_path, "WJets_MG",             isSys, syst_name, nTotSys, nthSys, "detector_level")
+        
     else:
         unfold_class.subBkgs("Pt", hfile_path, "DYJets",       isSys, syst_name, nTotSys, nthSys, "detector_level_DY_Fake")
         unfold_class.subBkgs("Pt", hfile_path, "DYJets10to50", isSys, syst_name, nTotSys, nthSys, "detector_level_DY_Fake")
@@ -483,12 +484,12 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     # draw plots including systematic
     if args.doSys == True:
         for sysName, nSys in sysDict.items():
-            
+
             for massBin in range(0,5):
-                
+
                 unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys, True)
                 unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys, True)
-                #unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
+                # unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, True)
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, False)
 
@@ -497,6 +498,17 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
                 unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Pt", massBin, "full", args.doSys, True, True)
                 unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Mass", massBin, "full", args.doSys, True, True)
+
+                if sysName is not "QED_FSR":
+                    # no QED_FSR systematic variabtion on detector unfolding
+                    unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + args.channel , "Pt", massBin, sysName, True)
+
+                unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + args.channel , "Pt", massBin, sysName, False)
+
+            if sysName is not "QED_FSR":
+                unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + args.channel , "Mass", massBin, sysName, True)
+            unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + args.channel , "Mass", massBin, sysName, False)
+
 
 
 

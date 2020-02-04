@@ -1943,8 +1943,12 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
                     hdatasys_temp = sysPtUnfold[it->first].at(isys)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
                     if(it->first == "Alt" && ibinMass == "0")
                     {
-                        hdatasys_temp->GetXaxis()->SetRangeUser(28., 100.);
-                        hdatasys_temp->Smooth(1, "R");
+                        //hdatasys_temp->GetXaxis()->SetRangeUser(28., 100.);
+                        //hdatasys_temp->Smooth(1, "R");
+                        //hdatasys_temp->GetXaxis()->SetRangeUser(0., 100.);
+
+                        hdatasys_temp->GetXaxis()->SetRangeUser(8., 100.);
+                        //hdatasys_temp->Smooth(3, "R");
                         hdatasys_temp->GetXaxis()->SetRangeUser(0., 100.);
                     }
                     temp_map[it->first].push_back(hdatasys_temp->GetMean());
@@ -1976,7 +1980,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
                     if(it->first == "Alt" && ibinMass == "0")
                     {
                         hdatasys_temp->GetXaxis()->SetRangeUser(28., 100.);
-                        hdatasys_temp->Smooth(1, "R");
+                        //hdatasys_temp->Smooth(1, "R");
                         hdatasys_temp->GetXaxis()->SetRangeUser(0., 100.);
                     }
                     temp_map[it->first].push_back(hdatasys_temp->GetMean());
@@ -3099,28 +3103,38 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool doFit, TString genISRFile
     //c1->SetGridy();
     //c1->SetGridx();
 
+    TString lepton_type;
+    if(channel_name=="electron") lepton_type = "ee";
+    else lepton_type = "#mu#mu";
+
+    // unfolded data
     TGraphErrors *grUnfolded_pre_fsr = new TGraphErrors(5, &meanMass_data_pre_fsr[0], &meanPt_data_pre_fsr[0], &meanMassTotErr_data_pre_fsr[0], &meanPtTotErr_data_pre_fsr[0]);
     grUnfolded_pre_fsr->SetLineColor(kBlack);
     grUnfolded_pre_fsr->SetMarkerColor(kBlack);
     grUnfolded_pre_fsr->SetMarkerStyle(marker_);
     grUnfolded_pre_fsr->SetMarkerSize(1.2);
     grUnfolded_pre_fsr->SetLineStyle(1);
-    grUnfolded_pre_fsr->GetYaxis()->SetRangeUser(5.,40.);
-    grUnfolded_pre_fsr->GetXaxis()->SetLimits(10.,700.);
+    grUnfolded_pre_fsr->GetYaxis()->SetRangeUser(10.,30.);
+    grUnfolded_pre_fsr->GetXaxis()->SetLimits(20.,500.);
     grUnfolded_pre_fsr->GetXaxis()->SetMoreLogLabels(true);
-    grUnfolded_pre_fsr->GetYaxis()->SetTitle("Average p_{T} (GeV)");
-    grUnfolded_pre_fsr->GetYaxis()->SetTitleSize(25);
-    grUnfolded_pre_fsr->GetXaxis()->SetTitle("Average Mass (GeV)");
+    grUnfolded_pre_fsr->GetYaxis()->SetTitle("Average p_{T} (" + lepton_type + ") (GeV)");
+    grUnfolded_pre_fsr->GetYaxis()->SetTitleSize(40);
+    grUnfolded_pre_fsr->GetYaxis()->SetTitleOffset(1.2);
+    grUnfolded_pre_fsr->GetYaxis()->SetLabelSize(40);
+    grUnfolded_pre_fsr->GetXaxis()->SetLabelSize(40);
+    grUnfolded_pre_fsr->GetXaxis()->SetTitle("Average Mass (" + lepton_type + ") (GeV)");
+    grUnfolded_pre_fsr->GetXaxis()->SetTitleSize(40);
+    grUnfolded_pre_fsr->GetXaxis()->SetTitleOffset(1.5);
     grUnfolded_pre_fsr->Draw("ap");
     grUnfolded_pre_fsr->SetName("preFSRUnfoldedData_"+channel_name+"_"+year_string);
 
     TGraphErrors *grMC_preFSR = new TGraphErrors(points, &mean_mass[0], &mean_pt[0], &mean_mass_stat_error[0], &mean_pt_stat_error[0]);
-    grMC_preFSR->SetMarkerColor(kGray);
-    grMC_preFSR->SetMarkerStyle(marker_ + 4);
+    grMC_preFSR->SetMarkerColor(kAzure + 10);
+    grMC_preFSR->SetMarkerStyle(marker_ + 2);
     grMC_preFSR->SetMarkerSize(0.8);
     grMC_preFSR->SetLineStyle(1);
-    grMC_preFSR->SetLineColor(kGray);
-    grMC_preFSR->Draw("p same");
+    grMC_preFSR->SetLineColor(kAzure + 10);
+    //grMC_preFSR->Draw("p same");
     //
     //grMC_preFSR->SetFillColor(kBlack);
     //grMC_preFSR->SetFillStyle(3001);
@@ -3130,11 +3144,11 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool doFit, TString genISRFile
 
     TGraphErrors *grMC_preFSR_MG = new TGraphErrors(points, &mean_mass_mg[0], &mean_pt_mg[0], &mean_mass_stat_error_mg[0], &mean_pt_stat_error_mg[0]);
     grMC_preFSR_MG->SetMarkerColor(kRed);
-    grMC_preFSR_MG->SetMarkerStyle(marker_+4);
+    grMC_preFSR_MG->SetMarkerStyle(marker_+1);
     grMC_preFSR_MG->SetMarkerSize(0.8);
     grMC_preFSR_MG->SetLineStyle(1);
     grMC_preFSR_MG->SetLineColor(kRed);
-    grMC_preFSR_MG->Draw("p same");
+    //grMC_preFSR_MG->Draw("p same");
 
     TGraphErrors *grMC_preFSR_Powheg = new TGraphErrors(points-2, &mean_mass_powheg[2], &mean_pt_powheg[2], &mean_mass_stat_error_powheg[2], &mean_pt_stat_error_powheg[2]);
     grMC_preFSR_Powheg->SetMarkerColor(kBlue);
@@ -3142,7 +3156,7 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool doFit, TString genISRFile
     grMC_preFSR_Powheg->SetMarkerSize(0.8);
     grMC_preFSR_Powheg->SetLineStyle(1);
     grMC_preFSR_Powheg->SetLineColor(kBlue);
-    grMC_preFSR_Powheg->Draw("p same");
+    //grMC_preFSR_Powheg->Draw("p same");
 
     // detector unfolded data
     TGraphErrors *grUnfolded = new TGraphErrors(5, &meanMass_data_det_unf[0], &meanPt_data_det_unf[0], &meanMassTotErr_data_det_unf[0], &meanPtTotErr_data_det_unf[0]);
@@ -3175,28 +3189,21 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool doFit, TString genISRFile
     //grDetector->Draw("pZ same");
     grDetector->SetName("detectorData_"+channel_name+"_"+year_string);
 
-    TLegend* leg_ = new TLegend(0.53, 0.7, 0.9, 0.9,"","brNDC");
-    leg_->SetTextSize(0.035);
-    leg_->SetFillStyle(0); // transparent
-    leg_->SetBorderSize(0);
-    leg_->AddEntry(grUnfolded_pre_fsr, "Unfolded data ", "pe");
-    leg_->AddEntry(grMC_preFSR, "MC (aMC@NLO)", "pe");
-    leg_->AddEntry(grMC_preFSR_MG, "MC (Madgraph)", "pe");
-    leg_->AddEntry(grMC_preFSR_Powheg, "MC (Powheg)", "pe");
-    leg_->Draw();
 
     TF1 *f1 = NULL;
     TF1 *f2 = NULL;
+    double chi2_nom_data = 0.;
     if(doFit)
     {
 
-        f1 = new TF1("f1", "[0]+[1]*log(x)", 20., 400.);
+        f1 = new TF1("f1", "[0]+[1]*log(x)", 40., 400.);
         f1->GetXaxis()->SetRangeUser(30., 400.);
         f1->SetLineColor(kBlack);
         f1->SetLineWidth(1);
         //grUnfolded->Fit(f1, "R0"); // R: fitting sub range
         grUnfolded_pre_fsr->Fit(f1, "R0"); // R: fitting sub range
         f1->Draw("same");
+        chi2_nom_data = f1->GetChisquare()/ f1->GetNDF();
 
         f2 = new TF1("f2", "[0]+[1]*log(x)", 20., 500.);
         f2->GetXaxis()->SetRangeUser(20., 500.);
@@ -3209,7 +3216,18 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool doFit, TString genISRFile
     }
     grUnfolded_pre_fsr->Draw("p same");
 
-    CMS_lumi( c1, 4, 11 );
+    TLegend* leg_ = new TLegend(0.2, 0.5, 0.5, 0.9,"","brNDC");
+    leg_->SetTextSize(0.035);
+    leg_->SetFillStyle(0); // transparent
+    leg_->SetBorderSize(0);
+    leg_->AddEntry(grUnfolded_pre_fsr, "Unfolded data ", "pe");
+    leg_->AddEntry(f1, Form("\\mbox{Linear fit } (\\chi^{2}/NDF=%.2f)", chi2_nom_data), "l");
+    leg_->AddEntry(grMC_preFSR, "MC (aMC@NLO)", "pe");
+    leg_->AddEntry(grMC_preFSR_MG, "MC (Madgraph)", "pe");
+    leg_->AddEntry(grMC_preFSR_Powheg, "MC (Powheg)", "pe");
+    leg_->Draw();
+
+    CMS_lumi( c1, 4, 0 );
     c1->SaveAs(outpdf + channel_name + "_" + year_string + ".pdf");
     //delete grUnfolded;
     delete grMC;
@@ -3458,6 +3476,32 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
     leg->SetFillStyle(0);
     leg->SetBorderSize(0);
 
+    TGraph* total_uncert = new TGraph(5, massBin, &meanPtTotErr_data_pre_fsr[0]);
+    TGraph* stat_uncert = new TGraph(5, massBin, &meanPtStatErr_data_pre_fsr[0]);
+
+    total_uncert->SetLineColor(kBlack);
+    total_uncert->SetMarkerColor(kBlack);
+    total_uncert->SetMarkerStyle(20);
+    total_uncert->SetMarkerSize(2);
+    total_uncert->SetLineStyle(1);
+    total_uncert->Draw("apl");
+    total_uncert->GetYaxis()->SetRangeUser(0.,2.);
+    total_uncert->GetYaxis()->SetTitle("Absolute systematic uncertainty (GeV)");
+    total_uncert->GetXaxis()->SetTitle("Mass bin");
+    total_uncert->GetXaxis()->SetTitleSize(35);
+    total_uncert->GetXaxis()->SetTitleOffset(1.2);
+    total_uncert->GetYaxis()->SetTitleSize(35);
+    total_uncert->GetYaxis()->SetTitleOffset(1.2);
+    leg->AddEntry(total_uncert, "Total uncertainty", "pl");
+
+    stat_uncert->Draw("pl same");
+    stat_uncert->SetLineColor(kGray+2);
+    stat_uncert->SetMarkerColor(kGray+2);
+    stat_uncert->SetMarkerStyle(21);
+    stat_uncert->SetMarkerSize(2);
+    stat_uncert->SetLineStyle(1);
+    leg->AddEntry(stat_uncert, "Stat uncertainty", "pl");
+
     while(it_for_sysName != end_for_sysName)
     {
         systematicValues.push_back(new double[5]);
@@ -3474,13 +3518,9 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
             }
             systematicValues.at(nth_systematicValues)[i] = (*p_map)[it_for_sysName->first];
         }
-        // draw
 
-        TString draw_option = "apl";
-        if(nth_systematicValues != 0)
-        {
-            draw_option = "pl same";
-        }
+        // draw
+        TString draw_option = "pl same";
 
         double temp_marker_color = marker_color_sys;
         if(it_for_sysName->first == "PDFerror")
@@ -3499,13 +3539,7 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
         pv_graphs.at(nth_systematicValues)->SetMarkerSize(2);
         pv_graphs.at(nth_systematicValues)->SetLineStyle(1);
         pv_graphs.at(nth_systematicValues)->Draw(draw_option);
-        pv_graphs.at(nth_systematicValues)->GetYaxis()->SetRangeUser(0.,2.);
-        //pv_graphs.at(nth_systematicValues)->GetXaxis()->SetLimits(30.,500.);
-        //pv_graphs.at(nth_systematicValues)->GetXaxis()->SetMoreLogLabels(true);
-        pv_graphs.at(nth_systematicValues)->GetYaxis()->SetTitle("Absolute systematic uncertainty GeV");
-        pv_graphs.at(nth_systematicValues)->GetXaxis()->SetTitle("Mass bin");
-        //pv_graphs.at(nth_systematicValues)->SetName("postFSRUnfoldedData_"+channel_name+"_"+year_string);
-        leg->AddEntry(pv_graphs.at(nth_systematicValues), it_for_sysName->first, "pl");
+        leg->AddEntry(pv_graphs.at(nth_systematicValues), it_for_sysName->first=="Alt" ? "Unfold":it_for_sysName->first, "pl");
 
         it_for_sysName++;
         nth_systematicValues++;
@@ -3969,10 +4003,10 @@ void ISRUnfold::drawClosurePlots(int detOrFSR_unfold, TString filepath, TString 
     if(channel_name == "muon")
     {
         low_mass_edge[0] = "40.";
-        low_mass_edge[1] = "60."; 
+        low_mass_edge[1] = "60.";
 
         high_mass_edge[0] = "60.";
-        high_mass_edge[1] = "80."; 
+        high_mass_edge[1] = "80.";
 
     }
 
@@ -4911,8 +4945,12 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
                 hdatasys0_temp = temp_sysTUnfDensity[it->first].at(systematic_variation_index)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
                 if(it->first == "Alt" && ibinMass == "0")
                 {
-                    hdatasys0_temp->GetXaxis()->SetRangeUser(28., 100.);
-                    hdatasys0_temp->Smooth(1, "R");
+                    //hdatasys0_temp->GetXaxis()->SetRangeUser(28., 100.);
+                    //hdatasys0_temp->Smooth(1, "R");
+                    //hdatasys0_temp->Smooth(3);
+
+                    hdatasys0_temp->GetXaxis()->SetRangeUser(20., 100.);
+                    //hdatasys0_temp->Smooth(1, "R");
                     hdatasys0_temp->GetXaxis()->SetRangeUser(0., 100.);
                 }
 
