@@ -385,8 +385,8 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
 
                 if sysName == "Alt":
-                    unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix_alt'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
-                    unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix_alt'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                    unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                    unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
                 else :
                     # set systematic response matrix
                     unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
@@ -426,8 +426,8 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
             for nthSys in range(0,nSys):
 
                 if sysName == "Alt":
-                    unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix_alt'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
-                    unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_matrix_alt'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
+                    unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_pythia_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
+                    unfoldClass.setSysFSRTUnfoldDensity("Mass", unfoldInputList['fsr_pythia_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)
 
                 else :
                     unfoldClass.setSysFSRTUnfoldDensity("Pt",   unfoldInputList['fsr_matrix'], sysName, nSys, nthSys, args.phase_space_fsr, args.FSR_dR_fsr)

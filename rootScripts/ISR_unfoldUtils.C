@@ -1576,6 +1576,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold)
 
         meanMass_data_pre_fsr.   push_back(hFSRunfolded_mass->GetMean());
         meanMassStatErr_data_pre_fsr.push_back(hFSRunfolded_mass->GetMeanError());
+        meanMassStatRelErr_data_pre_fsr.push_back(hFSRunfolded_mass->GetMeanError()/ hFSRunfolded_mass->GetMean() * 100.);
 
         meanMass_mc_det_unf.   push_back(histMC_mass->GetMean());
         meanMassErr_mc_det_unf.push_back(histMC_mass->GetMeanError()); //FIXME change to meanMassStatErr_mc_det_unf
@@ -1870,6 +1871,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold)
         meanMassSysErr_mc_pre_fsr.push_back(sqrt(totalSys_mc_pre_fsr));
         meanMassSysErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr));
         meanMassTotErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanMassStatErr_data_pre_fsr.at(i),2)));
+        meanMassTotRelErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanMassStatErr_data_pre_fsr.at(i),2))/ meanMass_data_pre_fsr.at(i) * 100.);
     }
 }
 
@@ -1911,6 +1913,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
 
         meanPt_data_pre_fsr.   push_back(h_pre_fsr_pt_temp_data->GetMean());
         meanPtStatErr_data_pre_fsr.push_back(h_pre_fsr_pt_temp_data->GetMeanError());
+        meanPtStatRelErr_data_pre_fsr.push_back(h_pre_fsr_pt_temp_data->GetMeanError()/ h_pre_fsr_pt_temp_data->GetMean() * 100.);
 
         meanPt_mc_det_unf.   push_back(hpt_temp_mc->GetMean());
         meanPtErr_mc_det_unf.push_back(hpt_temp_mc->GetMeanError());
@@ -2202,6 +2205,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
         meanPtSysErr_mc_pre_fsr.push_back(sqrt(totalSys_mc_pre_fsr));
         meanPtSysErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr));
         meanPtTotErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanPtStatErr_data_pre_fsr.at(i),2)));
+        meanPtTotRelErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanPtStatErr_data_pre_fsr.at(i),2))/ meanPt_data_pre_fsr.at(i) * 100.);
     }// loop for mass bins
 }
 
@@ -3423,6 +3427,8 @@ void ISRUnfold::drawtext(TGraph *g)
 
 void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
 {
+
+    bool relative = true;
     typedef std::map<TString, Double_t> mapdata;
     const TUnfoldBinningV17* temp_binning_gen_pt = nomPtUnfold->GetOutputBinning("Gen_Pt");
     const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
@@ -3458,15 +3464,19 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
     std::vector<double*> systematicValues;
     std::vector<TGraph*> pv_graphs;
 
+    std::vector<double> default_values;
+
     if(detector_unfold)
     {
         it_for_sysName = meanPtErr_sysdata.at(0).begin();
         end_for_sysName = meanPtErr_sysdata.at(0).end();
+        default_values = meanPt_data_det_unf;
     }
     else
     {
         it_for_sysName = meanPtErr_sysdata_pre_fsr.at(0).begin();
         end_for_sysName = meanPtErr_sysdata_pre_fsr.at(0).end();
+        default_values = meanPt_data_pre_fsr;
     }
 
     int nth_systematicValues = 0;
@@ -3476,8 +3486,11 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
     leg->SetFillStyle(0);
     leg->SetBorderSize(0);
 
-    TGraph* total_uncert = new TGraph(5, massBin, &meanPtTotErr_data_pre_fsr[0]);
-    TGraph* stat_uncert = new TGraph(5, massBin, &meanPtStatErr_data_pre_fsr[0]);
+    //TGraph* total_uncert = new TGraph(5, massBin, &meanPtTotErr_data_pre_fsr[0]);
+    //TGraph* stat_uncert = new TGraph(5, massBin, &meanPtStatErr_data_pre_fsr[0]);
+
+    TGraph* total_uncert = new TGraph(5, massBin, &meanPtTotRelErr_data_pre_fsr[0]);
+    TGraph* stat_uncert = new TGraph(5, massBin, &meanPtStatRelErr_data_pre_fsr[0]);
 
     total_uncert->SetLineColor(kBlack);
     total_uncert->SetMarkerColor(kBlack);
@@ -3485,8 +3498,8 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
     total_uncert->SetMarkerSize(2);
     total_uncert->SetLineStyle(1);
     total_uncert->Draw("apl");
-    total_uncert->GetYaxis()->SetRangeUser(0.,2.);
-    total_uncert->GetYaxis()->SetTitle("Absolute systematic uncertainty (GeV)");
+    total_uncert->GetYaxis()->SetRangeUser(0.,10.);
+    total_uncert->GetYaxis()->SetTitle("Relative systematic uncertainty %");
     total_uncert->GetXaxis()->SetTitle("Mass bin");
     total_uncert->GetXaxis()->SetTitleSize(35);
     total_uncert->GetXaxis()->SetTitleOffset(1.2);
@@ -3507,6 +3520,12 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
         systematicValues.push_back(new double[5]);
         for(int i = 0; i < nMassBin; i++)
         {
+            double default_value = 1.;
+
+            if(relative)
+            {
+                default_value = default_value/ default_values.at(i) * 100.; 
+            }
             mapdata* p_map;
             if(detector_unfold)
             {
@@ -3516,7 +3535,7 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
             {
                 p_map = &meanPtErr_sysdata_pre_fsr.at(i);
             }
-            systematicValues.at(nth_systematicValues)[i] = (*p_map)[it_for_sysName->first];
+            systematicValues.at(nth_systematicValues)[i] = (*p_map)[it_for_sysName->first] * default_value;
         }
 
         // draw
