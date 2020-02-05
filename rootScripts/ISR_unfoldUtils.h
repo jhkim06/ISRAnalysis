@@ -26,6 +26,7 @@
 #include "TUnfoldBinningXML.h"
 #include "TUnfoldBinning.h"
 #include "TUnfoldDensity.h"
+#include "TRandom.h"
 
 #include "TVectorD.h"
 #include "TUnfoldBinningXML.h"

@@ -364,7 +364,6 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     unfoldClass.SetNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
     unfoldClass.SetNomTUnfoldDensity("Mass",unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
 
-    # FIXME
     unfoldClass.doClosureTest(DetectorUnfold, unfoldInputList['matrix'], "detector_level")
 
     # set unfolding input histogram
@@ -375,18 +374,18 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
     # set systematic response matrix and input histograms
     #if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 100, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
-    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1}
-    if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1}
+    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500} # "Stat"
+    if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500}
     if args.doSys == True:
-
+         
         for sysName, nSys in sysDict.items():
             for nthSys in range(0,nSys):
 
                 print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
 
                 if sysName == "Alt":
-                    unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
-                    unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                    unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix_alt'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                    unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix_alt'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
                 else :
                     # set systematic response matrix
                     unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
@@ -399,10 +398,10 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 unfoldClass.setInput("Mass", unfoldInputList['hist'], True, sysName, nthSys, bias, "detector_level")
 
                 # set systematic background histograms
-                setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys, nSys)
-                setUnfoldBkgs(unfoldClass, unfoldInputList['matrix'], sysName, True, nthSys, nSys, True)
-
-
+                if sysName is not "Stat":
+                    setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys, nSys)
+                    setUnfoldBkgs(unfoldClass, unfoldInputList['matrix'], sysName, True, nthSys, nSys, True)
+    
     # unfold
     unfoldClass.doISRUnfold(DetectorUnfold, args.doSys)
 
@@ -489,7 +488,6 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
                 unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys, True)
                 unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys, True)
-                # unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, True)
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, False)
 
@@ -502,6 +500,7 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 if sysName is not "QED_FSR":
                     # no QED_FSR systematic variabtion on detector unfolding
                     unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + args.channel , "Pt", massBin, sysName, True)
+                    unfoldClass.drawInputPlots(outputDirectory + args.channel + sysName, "Pt", massBin, sysName)
 
                 unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + args.channel , "Pt", massBin, sysName, False)
 
