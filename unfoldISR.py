@@ -486,16 +486,16 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
             for massBin in range(0,5):
 
-                unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys, True)
-                unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys, True)
+                unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Pt", massBin, sysName, args.doSys)
+                unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel+sysName, "Mass", massBin, sysName, args.doSys)
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, True)
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, sysName, False)
 
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, "full", True)
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, "full", False)
 
-                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Pt", massBin, "full", args.doSys, True, True)
-                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Mass", massBin, "full", args.doSys, True, True)
+                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Pt", massBin, "full", args.doSys, True)
+                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Mass", massBin, "full", args.doSys, True)
 
                 if sysName is not "QED_FSR":
                     # no QED_FSR systematic variabtion on detector unfolding
@@ -508,7 +508,8 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + args.channel , "Mass", massBin, sysName, True)
             unfoldClass.drawSysComparionPlots(outputDirectory + "Sys_" + args.channel , "Mass", massBin, sysName, False)
         
-        unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Mass", 5, "full", args.doSys, True, True)
+        unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Mass", 5, "full", args.doSys, True)
+        unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Pt", 5, "full", args.doSys, True)
 
 
 
