@@ -1578,7 +1578,6 @@ double ISRUnfold::DoFit(TString var, int nthMassBin, bool isFSRUnfold){
        ndf+=1.0;
     }
 
-
     delete g_fcnHist;
     delete g_fcnMatrix;
 
@@ -1824,7 +1823,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold)
                 // use maximum variation as systematic
                 for(int j = 0; j < size_; j++)
                 {
-                        //if( (i==5 || i==7) && (it->first)=="Scale") continue;
+                    //if( (i==5 || i==7) && (it->first)=="Scale") continue;
 
                     if((it->first)=="PDFerror" || (it->first)=="Stat")
                     {
@@ -1910,8 +1909,6 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold)
             while(it != meanMassErr_sysdata_pre_fsr.at(i).end())
             {
 
-                //cout << "mass systematic: " << it->first << " " << it->second/ meanMass_data_pre_fsr.at(i) * 100.<< endl;
-                //cout << i << " th mass bin, mass" << it->first << " " << it->second << endl;
                 totalSys_pre_fsr += pow(it->second, 2);
                 totalSys_mc_pre_fsr += pow(meanMassErr_sysmc_pre_fsr.at(i)[it->first], 2);
                 it++;
@@ -1919,14 +1916,11 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold)
         }
         meanMassSysErr_mc_det_unf.push_back(sqrt(totalSys_mc));
         meanMassSysErr_data_det_unf.push_back(sqrt(totalSys));
-        //meanMassTotErr_data_det_unf.push_back(sqrt(totalSys + pow(meanMassStatErr_data_det_unf.at(i),2)));
         meanMassTotErr_data_det_unf.push_back(sqrt(totalSys + pow(meanMassErr_sysdata_det_unf.at(i)["Stat"],2)));
 
         meanMassSysErr_mc_pre_fsr.push_back(sqrt(totalSys_mc_pre_fsr));
         meanMassSysErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr));
-        //meanMassTotErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanMassStatErr_data_pre_fsr.at(i),2)));
         meanMassTotErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanMassErr_sysdata_pre_fsr.at(i)["Stat"],2)));
-        //meanMassTotRelErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanMassStatErr_data_pre_fsr.at(i),2))/ meanMass_data_pre_fsr.at(i) * 100.);
         meanMassTotRelErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanMassErr_sysdata_pre_fsr.at(i)["Stat"],2))/ meanMass_data_pre_fsr.at(i) * 100.);
     }
 }
@@ -1962,14 +1956,14 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
         TH1* h_pre_fsr_pt_temp_mc   = nomPtFSRUnfold->GetBias("histMC_pt_fsr_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
 
         meanPt_data_detector.   push_back(hdetector_data->GetMean());
-        meanPtStatErr_data_detector.push_back(hdetector_data->GetMeanError()); // TODO check this is ok for statistical error
+        meanPtStatErr_data_detector.push_back(hdetector_data->GetMeanError()); 
 
         meanPt_data_det_unf.   push_back(hpt_temp_data->GetMean());
         meanPtStatErr_data_det_unf.push_back(hpt_temp_data->GetMeanError());
 
         meanPt_data_pre_fsr.   push_back(h_pre_fsr_pt_temp_data->GetMean());
         meanPtStatErr_data_pre_fsr.push_back(h_pre_fsr_pt_temp_data->GetMeanError());
-        // TODO use toy result
+
         meanPtStatRelErr_data_pre_fsr.push_back(h_pre_fsr_pt_temp_data->GetMeanError()/ h_pre_fsr_pt_temp_data->GetMean() * 100.);
 
         meanPt_mc_det_unf.   push_back(hpt_temp_mc->GetMean());
@@ -2241,14 +2235,11 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
         }
         meanPtSysErr_mc_det_unf.push_back(sqrt(totalSys_mc));
         meanPtSysErr_data_det_unf.push_back(sqrt(totalSys));
-        //meanPtTotErr_data_det_unf.push_back(sqrt(totalSys + pow(meanPtStatErr_data_det_unf.at(i),2)));
         meanPtTotErr_data_det_unf.push_back(sqrt(totalSys + pow(meanPtErr_sysdata_det_unf.at(i)["Stat"],2)));
 
         meanPtSysErr_mc_pre_fsr.push_back(sqrt(totalSys_mc_pre_fsr));
         meanPtSysErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr));
-        //meanPtTotErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanPtStatErr_data_pre_fsr.at(i),2)));
         meanPtTotErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanPtErr_sysdata_pre_fsr.at(i)["Stat"],2)));
-        //meanPtTotRelErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanPtStatErr_data_pre_fsr.at(i),2))/ meanPt_data_pre_fsr.at(i) * 100.);
         meanPtTotRelErr_data_pre_fsr.push_back(sqrt(totalSys_pre_fsr + pow(meanPtErr_sysdata_pre_fsr.at(i)["Stat"],2))/ meanPt_data_pre_fsr.at(i) * 100.);
     }// loop for mass bins
 }
