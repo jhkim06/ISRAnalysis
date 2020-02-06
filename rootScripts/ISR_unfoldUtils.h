@@ -82,7 +82,7 @@ private:
     
     // map to save systematic uncertainties on mass and pt for each source 
     std::vector<std::map<TString, Double_t>>  meanMassErr_sysdata_det_unf;
-    std::vector<std::map<TString, Double_t>>  meanPtErr_sysdata;
+    std::vector<std::map<TString, Double_t>>  meanPtErr_sysdata_det_unf;
     
     std::vector<std::map<TString, Double_t>>  meanMassErr_sysmc_det_unf;
     std::vector<std::map<TString, Double_t>>  meanPtErr_sysmc_det_unf;
