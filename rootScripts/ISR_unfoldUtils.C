@@ -4394,10 +4394,24 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
    delete c1;
 }
 
-void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, TString sysName, bool systematic, bool fullSys)
+void ISRUnfold::doNorm(TH1* hist)
 {
+    for(int ibin = 1; ibin < hist->GetXaxis()->GetNbins()+1; ibin++)
+    {
+        double binWidth = hist->GetBinWidth(ibin);
+        hist->SetBinContent(ibin, hist->GetBinContent(ibin)/ binWidth);
+        hist->SetBinError(ibin, hist->GetBinError(ibin)/ binWidth);
+    }
+    hist->Scale(1./ hist->Integral());
+
+}
+
+void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, TString sysName, bool systematic, bool fullSys, bool doNormalisation)
+{
+
     cout << "ISRUnfold::drawUnfoldedHists called" << endl;
     gROOT->SetBatch();
+    gStyle->SetOptFit(0);
 
     setTDRStyle();
     writeExtraText = true;
@@ -4499,14 +4513,19 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
                         ibinMass = "";
                         collapse = "";
                         useAxis = kFALSE;
-                        
+
                     }
 
+                    // get data distribution
                     hunfolded_data  = nomPtFSRUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UO"+collapse+ibinMass+"]",useAxis);
                     hfolded_data  = nomPtFSRUnfold->GetInput("hdata_pt_temp",0,0,"pt[UO];mass[UO"+collapse+ibinMass+"]",useAxis);
+                    if(!combineMassBins && doNormalisation)
+                    {
+                        doNorm(hunfolded_data);
+                        doNorm(hfolded_data);
+                    }
                     hunfolded_sys_err= ((TH1F*)hunfolded_data->Clone("sysErr"));
                     hfolded_sys_err= ((TH1F*)hfolded_data->Clone("sysErr_folded"));
-                    cout << "useAxis: " << useAxis << " nbin: " << hunfolded_data->GetNbinsX() << endl;
 
                     // get truth MC distribution
                     if(!combineMassBins)
@@ -4516,6 +4535,8 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
                         hunfolded_mc = (TH1*)filein->Get(genHistPath + "histo_DYJets");
                         hunfolded_mc->SetDirectory(0);
                         hunfolded_mc->Add((TH1*)filein->Get(genHistPath + "histo_DYJets10to50"));
+                        if(doNormalisation)
+                            doNorm(hunfolded_mc);
 
                         filein->Close();
 
@@ -4524,6 +4545,8 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
                         hfolded_mc = (TH1*)filein->Get(genHistPath + "histo_DYJets");
                         hfolded_mc->SetDirectory(0);
                         hfolded_mc->Add((TH1*)filein->Get(genHistPath + "histo_DYJets10to50"));
+                        if(doNormalisation)
+                            doNorm(hfolded_mc);
 
                         filein->Close();
                     }
@@ -4578,6 +4601,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             if(var == "Mass" )
             {
                 {
+                    // get data distribution
                     hunfolded_data  = nomMassFSRUnfold->GetOutput("hunfolded_mass_temp",0,0,"mass[UO];pt[UOC0]",kTRUE);
                     if(!combineMassBins)
                         hunfolded_data->GetXaxis()->SetRange(hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin]+0.01),hunfolded_data->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
@@ -4681,6 +4705,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
             c1->cd();
             gStyle->SetOptStat(0);
+            gStyle->SetOptFit(0);
 
             pad1 = new TPad("pad1","pad1",0,0.4,1,1);
             pad1->SetBottomMargin(0.);
@@ -4695,6 +4720,32 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             hfolded_data->Draw("p9samee");
             hunfolded_mc->Draw("psamee");
             hfolded_mc->Draw("psamee");
+            if(var == "Pt" && doNormalisation)
+            {
+                TF1* landau = new TF1("landau","[0]*TMath::Landau(x,[1],[2]) + [3] * expo(x * [4])", 0., 100);
+                landau->SetParameters(2., 6., 2., 0.05, -0.01);
+                landau->SetParLimits(0, 0.0, 5.);
+                landau->SetParLimits(1, 2.0, 9.);
+                landau->SetParLimits(2, 1., 4.0);
+                landau->SetParLimits(3, -0.05, 0.12);
+                landau->SetParLimits(4, -0.2, -0.001);
+
+                landau->SetLineColor(kBlack);
+                landau->SetLineStyle(1);
+                hunfolded_data->Fit(landau);
+
+                TH1* h = landau->GetHistogram();
+
+                TString mean_fit;
+                TString mean_hist;
+                mean_fit.Form("%.2f", h->GetMean());
+                mean_hist.Form("%.2f", hunfolded_data->GetMean());
+
+                TLatex mean_values;
+                mean_values.SetTextFont(63);
+                mean_values.SetTextSize(20);
+                mean_values.DrawLatexNDC(0.2, 0.15, "#splitline{Mean (hist): " + mean_hist + "}{Mean (fit): " + mean_fit + "}");
+            }
 
             hunfolded_data->SetMarkerStyle(24);
             hunfolded_data->SetMarkerSize(1.5);
@@ -4704,8 +4755,17 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             hfolded_data->SetMarkerSize(1.5);
             hfolded_data->SetMarkerStyle(25);
             hunfolded_data->GetYaxis()->SetTitle("Events/bin");
-            hunfolded_data->SetMinimum(5.);
-            hunfolded_data->SetMaximum(1e10);
+
+            if(doNormalisation)
+            {
+                hunfolded_data->SetMinimum(1e-3);
+                hunfolded_data->SetMaximum(0.8);
+            }
+            else
+            {
+                hunfolded_data->SetMinimum(5.);
+                hunfolded_data->SetMaximum(1e10);
+            }
 
             hunfolded_mc->SetMarkerStyle(20);
             hunfolded_mc->SetMarkerSize(1.);
@@ -4799,14 +4859,14 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             bool isFoldedSys = false;
             makeSystBand(var, nthMassBin, sysName, fullSys, data_over_mc,
                       hunfolded_data, hunfolded_mc, hunfolded_ratio,
-                      hunfolded_sys_err, hunfolded_mc_sys_err, hunfolded_ratio_sys_err, hunfolded_ratio_sys_err_mc, isFoldedSys, combineMassBins);
+                      hunfolded_sys_err, hunfolded_mc_sys_err, hunfolded_ratio_sys_err, hunfolded_ratio_sys_err_mc, isFoldedSys, combineMassBins, doNormalisation);
 
             isFoldedSys = true;
             if(sysName != "QED_FSR")
             {
                 makeSystBand(var, nthMassBin, sysName, fullSys, data_over_mc,
                           hfolded_data, hfolded_mc, hfolded_ratio,
-                          hfolded_sys_err, hfolded_mc_sys_err, hfolded_ratio_sys_err, hfolded_ratio_sys_err_mc, isFoldedSys, combineMassBins);
+                          hfolded_sys_err, hfolded_mc_sys_err, hfolded_ratio_sys_err, hfolded_ratio_sys_err_mc, isFoldedSys, combineMassBins, doNormalisation);
             }
 
             // draw systematic envelope for a systematic source or all systematic sources
@@ -4970,7 +5030,10 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
         if((firstIter && !combineMassBins) || (combineMassBins && nthMassBin + 1 == lastBin))
         {
             // create pdf if every things are done
-            c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+"_FSRUnfold.pdf");
+            if(doNormalisation)
+                c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+"_FSRUnfold_Norm.pdf");
+            else
+                c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+"_FSRUnfold.pdf");
 
             //filein->Close();
             delete hfolded_mc;
@@ -4997,7 +5060,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
 
 void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TString sysName, const bool fullSys, const bool data_over_mc,
                   const TH1* hunfolded_data, const TH1* hunfolded_mc, const TH1* hunfolded_ratio,
-                  TH1* hunfolded_sys_err, TH1* hunfolded_mc_sys_err, TH1* hunfolded_ratio_sys_err, TH1* hunfolded_ratio_sys_err_mc, bool isFoldedSys, bool isMassCombined)
+                  TH1* hunfolded_sys_err, TH1* hunfolded_mc_sys_err, TH1* hunfolded_ratio_sys_err, TH1* hunfolded_ratio_sys_err_mc, bool isFoldedSys, bool isMassCombined, bool doNormalisation)
 {
     const TUnfoldBinningV17* temp_binning_gen_pt = nomPtUnfold->GetOutputBinning("Gen_Pt");
     const TUnfoldBinningV17* temp_binning_rec_pt = nomPtUnfold->GetInputBinning("Rec_Pt");
@@ -5078,6 +5141,11 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
                 {
                     hdatasys0_temp = temp_sysTUnfDensity[it->first].at(systematic_variation_index)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
                     hmcsys0_temp = temp_sysTUnfDensity[it->first].at(systematic_variation_index_mc)->GetBias("hmc_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                    if(doNormalisation)
+                    {
+                        doNorm(hdatasys0_temp);
+                        doNorm(hmcsys0_temp);
+                    }
                 }
                 else
                 {
@@ -5095,6 +5163,15 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
 
                     hmcsys0_temp = temp_sysTUnfDensity[it->first].at(0)->GetBias("hmc_pt_systemp_fsr0",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
                     hmcsys1_temp = temp_sysTUnfDensity[it->first].at(1)->GetBias("hmc_pt_systemp_fsr1",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+
+
+                    if(doNormalisation)
+                    {
+                        doNorm(hdatasys0_temp);
+                        doNorm(hmcsys0_temp);
+                        doNorm(hdatasys1_temp);
+                        doNorm(hmcsys1_temp);
+                    }
                 }
                 else
                 {
@@ -5103,6 +5180,7 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
 
                     hmcsys0_temp = temp_sysTUnfDensity[it->first].at(0)->GetBias("hmc_pt_systemp_fsr0",0,0,"pt[UO];mass[UO]",kFALSE);
                     hmcsys1_temp = temp_sysTUnfDensity[it->first].at(1)->GetBias("hmc_pt_systemp_fsr1",0,0,"pt[UO];mass[UO]",kFALSE);
+
                 }
             }
         }
@@ -5127,15 +5205,10 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
                 hdatasys0_temp = temp_sysTUnfDensity[it->first].at(systematic_variation_index)->GetOutput("hunfolded_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
                 hdatasys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
 
-                // NEED FURTHER STUDY
-                //if(it->first == "Alt")
-                //{
-                //    hdatasys0_temp->Smooth();
-                //}
-
                 systematic_variation_index_mc = p_meanPtErrIdx_mc->at(nthMassBin)[it->first];
                 hmcsys0_temp = temp_sysTUnfDensity[it->first].at(systematic_variation_index_mc)->GetBias("hmc_mass_systemp",0,0,"mass[UO];pt[UOC0]",kTRUE);
                 hmcsys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+
             }
             else
             {
@@ -5148,6 +5221,7 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
                 hmcsys1_temp = temp_sysTUnfDensity[it->first].at(1)->GetBias("hmc_mass_systemp_fsr1",0,0,"mass[UO];pt[UOC0]",kTRUE);
                 hmcsys0_temp->GetXaxis()->SetRange(hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
                 hmcsys1_temp->GetXaxis()->SetRange(hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01), hdatasys1_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01));
+
             }
         }
 
@@ -5222,7 +5296,7 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
         }
         if(var == "Pt" && isMassCombined)
         {
-            firstBin = firstBin + nPtBin * nthMassBin; 
+            firstBin = firstBin + nPtBin * nthMassBin;
             lastBin = firstBin + nPtBin;
         }
 

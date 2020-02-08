@@ -205,11 +205,12 @@ public:
 
     void drawClosurePlots(int detOrFSR_unfold, TString filepath, TString outpdf, TString var, int nthMassBin);
 
+    void doNorm(TH1* hist); 
     // draw unfolded distributions 
-    void drawUnfoldedHists(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false, bool fullSys = false);
+    void drawUnfoldedHists(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false, bool fullSys = false, bool doNormalisation = false);
     void makeSystBand(const TString var, const int nthMassBin, const TString sysName, const bool fullSys, const bool data_over_mc, 
                       const TH1* hunfolded_data, const TH1* hunfolded_mc, const TH1* hunfolded_ratio, 
-                      TH1* hunfolded_sys_err, TH1* hunfolded_mc_sys_err, TH1* hunfolded_ratio_sys_err, TH1* hunfolded_ratio_sys_err_mc, bool isFoldedSys = false, bool isMassCombined = false);
+                      TH1* hunfolded_sys_err, TH1* hunfolded_mc_sys_err, TH1* hunfolded_ratio_sys_err, TH1* hunfolded_ratio_sys_err_mc, bool isFoldedSys = false, bool isMassCombined = false, bool doNormalisation = false);
 
     // draw input histograms using GetInput	
     void drawInputPlots(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "");
