@@ -1751,7 +1751,8 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold)
                 // use maximum variation as systematic
                 for(int j = 0; j < size_; j++){
 
-                    //if( (i==5 || i==7) && (it->first)=="Scale") continue;
+                    if( (i==5 || i==7) && (it->first)=="Scale") continue;
+
                     if((it->first)=="PDFerror" || (it->first)=="Stat")
                     {
                         hpdfsys->Fill(it->second.at(j));
@@ -1823,7 +1824,7 @@ void ISRUnfold::setMeanMass(bool doSys, bool altMC, bool detector_unfold)
                 // use maximum variation as systematic
                 for(int j = 0; j < size_; j++)
                 {
-                    //if( (i==5 || i==7) && (it->first)=="Scale") continue;
+                    if( (i==5 || i==7) && (it->first)=="Scale") continue;
 
                     if((it->first)=="PDFerror" || (it->first)=="Stat")
                     {
@@ -2074,7 +2075,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
                 Int_t index_to_save_mc = -1;
 	    	for(int j = 0; j < size_; j++)
                 {
-	    	    //if( (i==5 || i==7) && (it->first)=="Scale") continue;
+	    	    if( (i==5 || i==7) && (it->first)=="Scale") continue;
 
 	    	    if((it->first)=="PDFerror" || (it->first)=="Stat")
                     {
@@ -2141,6 +2142,7 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
                 Int_t index_to_save_mc = -1;
                 for(int j = 0; j < size_; j++)
                 {
+	    	    if( (i==5 || i==7) && (it->first)=="Scale") continue;
 
                     if((it->first)=="PDFerror" || (it->first)=="Stat")
                     {
