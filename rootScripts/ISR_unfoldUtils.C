@@ -4730,21 +4730,44 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
                 landau->SetParLimits(3, -0.05, 0.12);
                 landau->SetParLimits(4, -0.2, -0.001);
 
+                TF1* landau_mc = new TF1("landau_mc","[0]*TMath::Landau(x,[1],[2]) + [3] * expo(x * [4])", 0., 100);
+                landau_mc->SetParameters(2., 6., 2., 0.05, -0.01);
+                landau_mc->SetParLimits(0, 0.0, 5.);
+                landau_mc->SetParLimits(1, 2.0, 9.);
+                landau_mc->SetParLimits(2, 1., 4.0);
+                landau_mc->SetParLimits(3, -0.05, 0.12);
+                landau_mc->SetParLimits(4, -0.2, -0.001);
+
                 landau->SetLineColor(kBlack);
                 landau->SetLineStyle(1);
                 hunfolded_data->Fit(landau);
 
+                landau_mc->SetLineColor(kRed);
+                landau_mc->SetLineStyle(2);
+                hunfolded_mc->Fit(landau_mc);
+
                 TH1* h = landau->GetHistogram();
+                TH1* h_mc = landau_mc->GetHistogram();
 
                 TString mean_fit;
                 TString mean_hist;
                 mean_fit.Form("%.2f", h->GetMean());
-                mean_hist.Form("%.2f", hunfolded_data->GetMean());
+                mean_hist.Form("%.2f", meanPt_data_pre_fsr.at(nthMassBin_));
+
+                TString mean_fit_mc;
+                TString mean_hist_mc;
+                mean_fit_mc.Form("%.2f", h_mc->GetMean());
+                mean_hist_mc.Form("%.2f", meanPt_mc_pre_fsr.at(nthMassBin_));
 
                 TLatex mean_values;
                 mean_values.SetTextFont(63);
                 mean_values.SetTextSize(20);
                 mean_values.DrawLatexNDC(0.2, 0.15, "#splitline{Mean (hist): " + mean_hist + "}{Mean (fit): " + mean_fit + "}");
+
+                TLatex mean_values_mc;
+                mean_values_mc.SetTextFont(63);
+                mean_values_mc.SetTextSize(20);
+                mean_values_mc.DrawLatexNDC(0.2, 0.35, "#splitline{Mean (hist): " + mean_hist_mc+ "}{Mean (fit): " + mean_fit_mc + "}");
             }
 
             hunfolded_data->SetMarkerStyle(24);
@@ -5074,7 +5097,6 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
     // get number of pT bins
     const TVectorD* temp_tvecd_ = temp_binning_gen_pt->GetDistributionBinning(0);
     int nPtBin = temp_tvecd_->GetNrows() - 1;
-    cout << "nPtBin: " << nPtBin << endl;
 
     TString ibinMass;
     ibinMass.Form("%d", nthMassBin);
