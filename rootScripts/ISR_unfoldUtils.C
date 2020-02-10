@@ -3536,7 +3536,7 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
     total_uncert->SetMarkerSize(2);
     total_uncert->SetLineStyle(1);
     total_uncert->Draw("apl");
-    total_uncert->GetYaxis()->SetRangeUser(0.,10.);
+    total_uncert->GetYaxis()->SetRangeUser(0.,5.);
     total_uncert->GetYaxis()->SetTitle("Relative systematic uncertainty %");
     total_uncert->GetXaxis()->SetTitle("Mass bin");
     total_uncert->GetXaxis()->SetTitleSize(35);
@@ -3589,8 +3589,60 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
             marker_color_sys = 601; //kBlue + 1
         }
 
+        // marker style
+        if(it_for_sysName->first == "AlphaS")
+        {
+            marker_style_sys = 24;
+        }
+        if(it_for_sysName->first == "Alt")
+        {
+            marker_style_sys = 25;
+        }
+        if(it_for_sysName->first == "IdSF")
+        {
+            marker_style_sys = 26;
+        }
+        if(it_for_sysName->first == "IsoSF")
+        {
+            marker_style_sys = 3;
+        }
+        if(it_for_sysName->first == "L1Prefire")
+        {
+            marker_style_sys = 27;
+        }
+        if(it_for_sysName->first == "PU")
+        {
+            marker_style_sys = 28;
+        }
+        if(it_for_sysName->first == "QED_FSR")
+        {
+            marker_style_sys = 29;
+        }
+        if(it_for_sysName->first == "Scale")
+        {
+            marker_style_sys = 30;
+        }
+        if(it_for_sysName->first == "Stat")
+        {
+            marker_style_sys = 31;
+        }
+        if(it_for_sysName->first == "lepMom")
+        {
+            marker_style_sys = 32;
+        }
+        if(it_for_sysName->first == "recoSF")
+        {
+            marker_style_sys = 33;
+        }
+        if(it_for_sysName->first == "trgSF")
+        {
+            marker_style_sys = 34;
+        }
+
+        
         pv_graphs.push_back(new TGraph(5, massBin, systematicValues.at(nth_systematicValues)));
-        pv_graphs.at(nth_systematicValues)->SetLineColor(marker_color_sys);
+        // use consistent color and marker style
+        pv_graphs.at(nth_systematicValues)->SetLineColor(marker_color_sys); 
         pv_graphs.at(nth_systematicValues)->SetMarkerColor(marker_color_sys);
         pv_graphs.at(nth_systematicValues)->SetMarkerStyle(marker_style_sys);
         pv_graphs.at(nth_systematicValues)->SetMarkerSize(2);
@@ -4432,11 +4484,19 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
 
     int lastBin = nthMassBin_ + 1;
     // if nthMassBin_ is larger than the number of mass bins, then draw one mass distribution including all mass bins
-    if( nthMassBin_ >= nMassBin )
+    if( nthMassBin_ >= nMassBin  && !doNormalisation)
     {
         lastBin = nMassBin;
         nthMassBin_ = 0;
         combineMassBins = true;
+    }
+
+    bool dilepPtShapeComparison = false;
+    if(nthMassBin_ >= nMassBin  && doNormalisation)
+    {
+        lastBin = nMassBin;
+        nthMassBin_ = 0;
+        dilepPtShapeComparison = true;
     }
 
     TH1* hunfolded_data = NULL;
@@ -4473,6 +4533,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
     TString lepton_type;
 
     TLine *l_;
+    double true_mc_mean = 1.;
 
     bool data_over_mc = false;
     for(int nthMassBin = nthMassBin_; nthMassBin < lastBin; nthMassBin++)
@@ -4486,7 +4547,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             ibinMass = "full_range";
         }
 
-        if(firstIter)
+        if(firstIter || dilepPtShapeComparison)
         {
 
             TString massLowEdge[5] = {"50.", "65.", "80.", "100.", "200."};
@@ -4535,6 +4596,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
                         hunfolded_mc = (TH1*)filein->Get(genHistPath + "histo_DYJets");
                         hunfolded_mc->SetDirectory(0);
                         hunfolded_mc->Add((TH1*)filein->Get(genHistPath + "histo_DYJets10to50"));
+                        true_mc_mean = hunfolded_mc->GetMean();
                         if(doNormalisation)
                             doNorm(hunfolded_mc);
 
@@ -4700,12 +4762,15 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             }
         }
 
-        if(firstIter)
+        if(firstIter || dilepPtShapeComparison)
         {
+
+            if(firstIter)
+            {
             c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
-            c1->cd();
             gStyle->SetOptStat(0);
             gStyle->SetOptFit(0);
+            c1->cd();
 
             pad1 = new TPad("pad1","pad1",0,0.4,1,1);
             pad1->SetBottomMargin(0.);
@@ -4714,12 +4779,55 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             pad1->SetLogy();
             pad1->Draw();
             pad1->cd();
+            }
+            else
+            {
+                c1->cd();
+                pad1->cd();
+            }
+
+            TString draw_option = "p9e";
+            int color = 1;
+            if(dilepPtShapeComparison)
+            {
+                draw_option = "p9samee";
+                if(nthMassBin==1)
+                    color = 632;
+                if(nthMassBin==2)
+                    color = 600;
+                if(nthMassBin==3)
+                    color = 616;
+                if(nthMassBin==4)
+                    color = 800;
+            }
 
             hunfolded_data->SetTitle("");
-            hunfolded_data->Draw("p9e");
-            hfolded_data->Draw("p9samee");
-            hunfolded_mc->Draw("psamee");
-            hfolded_mc->Draw("psamee");
+            hunfolded_data->Draw(draw_option);
+            hunfolded_mc->Draw("p9samee");
+
+            hunfolded_mc->SetMarkerStyle(20);
+            hunfolded_mc->SetMarkerSize(1.);
+            hunfolded_mc->SetLineColor(color);
+            hunfolded_mc->SetMarkerColor(color);
+
+            if(!dilepPtShapeComparison)
+            {
+                hfolded_data->Draw("p9samee");
+                hfolded_mc->Draw("psamee");
+                hfolded_mc->SetMarkerStyle(21);
+                hfolded_mc->SetMarkerSize(1.);
+                hfolded_mc->SetLineColor(kBlack);
+
+                hfolded_data->SetMarkerColor(kBlack);
+                hfolded_data->SetLineColor(kBlack);
+                hfolded_data->SetMarkerSize(1.5);
+                hfolded_data->SetMarkerStyle(25);
+            }
+            hunfolded_data->SetMarkerStyle(24);
+            hunfolded_data->SetMarkerSize(1.5);
+            hunfolded_data->SetLineColor(kBlack);
+            hunfolded_data->GetYaxis()->SetTitle("Events/bin");
+
             if(var == "Pt" && doNormalisation)
             {
                 TF1* landau = new TF1("landau","[0]*TMath::Landau(x,[1],[2]) + [3] * expo(x * [4])", 0., 100);
@@ -4742,7 +4850,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
                 landau->SetLineStyle(1);
                 hunfolded_data->Fit(landau);
 
-                landau_mc->SetLineColor(kRed);
+                landau_mc->SetLineColor(kBlack);
                 landau_mc->SetLineStyle(2);
                 hunfolded_mc->Fit(landau_mc);
 
@@ -4756,8 +4864,25 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
 
                 TString mean_fit_mc;
                 TString mean_hist_mc;
+                TString mean_true_mc;
+
+                TString err_fit_mc;
+                TString err_hist_mc;
+
                 mean_fit_mc.Form("%.2f", h_mc->GetMean());
                 mean_hist_mc.Form("%.2f", meanPt_mc_pre_fsr.at(nthMassBin_));
+                mean_true_mc.Form("%.2f", true_mc_mean);
+
+                err_fit_mc.Form("%.2f", fabs(h_mc->GetMean()-true_mc_mean)/ true_mc_mean * 100.);
+                err_hist_mc.Form("%.2f",fabs(meanPt_mc_pre_fsr.at(nthMassBin_)-true_mc_mean)/ true_mc_mean * 100.);
+
+                if(!dilepPtShapeComparison)
+                {
+                TLatex mean_true;
+                mean_true.SetTextFont(63);
+                mean_true.SetTextSize(20);
+                mean_true.SetTextColor(kRed);
+                mean_true.DrawLatexNDC(0.2, 0.45, "True Mean MC: " + mean_true_mc);
 
                 TLatex mean_values;
                 mean_values.SetTextFont(63);
@@ -4767,22 +4892,15 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
                 TLatex mean_values_mc;
                 mean_values_mc.SetTextFont(63);
                 mean_values_mc.SetTextSize(20);
-                mean_values_mc.DrawLatexNDC(0.2, 0.35, "#splitline{Mean (hist): " + mean_hist_mc+ "}{Mean (fit): " + mean_fit_mc + "}");
+                mean_values_mc.DrawLatexNDC(0.2, 0.35, "#splitline{Mean (hist): " + mean_hist_mc+ "(" + err_hist_mc +"%)}{Mean (fit): " + mean_fit_mc + "(" + err_fit_mc +"%)}");
+                }
             }
 
-            hunfolded_data->SetMarkerStyle(24);
-            hunfolded_data->SetMarkerSize(1.5);
-            hunfolded_data->SetLineColor(kBlack);
-            hfolded_data->SetMarkerColor(kBlack);
-            hfolded_data->SetLineColor(kBlack);
-            hfolded_data->SetMarkerSize(1.5);
-            hfolded_data->SetMarkerStyle(25);
-            hunfolded_data->GetYaxis()->SetTitle("Events/bin");
 
             if(doNormalisation)
             {
-                hunfolded_data->SetMinimum(1e-3);
-                hunfolded_data->SetMaximum(0.8);
+                hunfolded_data->SetMinimum(5e-4);
+                hunfolded_data->SetMaximum(0.9);
             }
             else
             {
@@ -4790,12 +4908,6 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
                 hunfolded_data->SetMaximum(1e10);
             }
 
-            hunfolded_mc->SetMarkerStyle(20);
-            hunfolded_mc->SetMarkerSize(1.);
-            hunfolded_mc->SetLineColor(kRed);
-            hfolded_mc->SetMarkerStyle(21);
-            hfolded_mc->SetMarkerSize(1.);
-            hfolded_mc->SetLineColor(kMagenta);
 
             TString mean_nom;
             mean_nom.Form("%.5f", hunfolded_data->GetMean());
@@ -4810,17 +4922,20 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             //leg_nom->AddEntry(hunfolded_data, "#splitline{Unfolded data}{(mean: " + mean_nom + ")}", "pl");
             {
                 leg_nom->AddEntry(hunfolded_data, "FSR unfolded data", "pl");
-                leg_nom->AddEntry(hunfolded_mc, "MC", "p");
+                leg_nom->AddEntry(hunfolded_mc, "MC", "pl");
 
-                leg_nom->AddEntry(hfolded_data, "Detector unfolded data ", "pl");
-                leg_nom->AddEntry(hfolded_mc, "MC", "p");
+                if(!dilepPtShapeComparison)
+                {
+                    leg_nom->AddEntry(hfolded_data, "Detector unfolded data ", "pl");
+                    leg_nom->AddEntry(hfolded_mc, "MC", "pl");
+                }
             }
             leg_nom->Draw();
 
             if(channel_name=="electron") lepton_type = "ee";
             else lepton_type = "#mu#mu";
 
-            if(var=="Pt")
+            if(var=="Pt" && !dilepPtShapeComparison)
             {
                 TString low_bound_, upper_bound_;
                 low_bound_.Form("%d", (int)massBins[nthMassBin]);
@@ -4900,19 +5015,22 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             hunfolded_sys_err->SetMarkerSize(0);
             hunfolded_sys_err->Draw("E2 same");
 
-            hfolded_sys_err->SetLineColor(12);
-            hfolded_sys_err->SetFillColor(12);
-            hfolded_sys_err->SetLineWidth(5);
-            hfolded_sys_err->SetFillStyle(3003);
-            hfolded_sys_err->SetMarkerSize(0);
-            hfolded_sys_err->Draw("E2 same");
+            if(!dilepPtShapeComparison)
+            {
+                hfolded_sys_err->SetLineColor(12);
+                hfolded_sys_err->SetFillColor(12);
+                hfolded_sys_err->SetLineWidth(5);
+                hfolded_sys_err->SetFillStyle(3003);
+                hfolded_sys_err->SetMarkerSize(0);
+                hfolded_sys_err->Draw("E2 same");
+            }
         }
         //////////////////////////////// systematic /////////////////////////////////////
 
         c1->cd();
 
         // measurement distribution
-        if(firstIter)
+        if(firstIter && !dilepPtShapeComparison)
         {
             pad2 = new TPad("pad2","pad2",0,0.25,1,0.4);
             pad2->SetTopMargin(0.05);
@@ -4983,26 +5101,54 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
         // unfolded distribution
         c1->cd();
 
-        if(firstIter)
+        if(firstIter || dilepPtShapeComparison)
         {
-            pad3 = new TPad("pad3","pad3",0,0.0,1,0.25);
-            pad3->SetTopMargin(0.);
-            pad3->SetBottomMargin(0.46); // 1. - 0.15 * 0.9 / 0.25
-            pad3->SetTicks(1);
-            //pad3->SetGridy(1);
-            pad3->Draw();
-
-            pad3->cd();
-
-            if(data_over_mc)
+            if(firstIter)
             {
-                hunfolded_ratio->Draw("pe");
+                double y = 0.25;
+                if(dilepPtShapeComparison)
+                    y = 0.35;
+
+                pad3 = new TPad("pad3","pad3",0,0.0,1, y);
+                pad3->SetTopMargin(0.);
+                pad3->SetBottomMargin(0.46); // 1. - 0.15 * 0.9 / 0.25
+                pad3->SetTicks(1);
+                //pad3->SetGridy(1);
+                pad3->Draw();
+                pad3->cd();
             }
             else
             {
-                hunfolded_ratio->Draw("pe");
-                hunfolded_ratio->SetMarkerColor(kBlack);
-                hunfolded_ratio->SetLineColor(kBlack);
+                pad3->cd();
+            }
+
+            TString draw_option = "pe";
+            if(dilepPtShapeComparison)
+                draw_option = "pesame";
+
+            int color = 1;
+            if(dilepPtShapeComparison)
+            {
+                draw_option = "p9samee";
+                if(nthMassBin==1)
+                    color = 632;
+                if(nthMassBin==2)
+                    color = 600;
+                if(nthMassBin==3)
+                    color = 616;
+                if(nthMassBin==4)
+                    color = 800;
+            }
+
+            if(data_over_mc)
+            {
+                hunfolded_ratio->Draw(draw_option);
+            }
+            else
+            {
+                hunfolded_ratio->Draw(draw_option);
+                hunfolded_ratio->SetMarkerColor(color);
+                hunfolded_ratio->SetLineColor(color);
                 hunfolded_ratio->SetMarkerSize(1.2);
                 hunfolded_ratio->SetMarkerStyle(20);
                 hunfolded_ratio->GetYaxis()->SetTitle("#splitline{ MC/Data}{(pre FSR)}");
@@ -5011,8 +5157,8 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
 
             if(systematic)
             {
-                hunfolded_ratio_sys_err->SetLineColor(12);
-                hunfolded_ratio_sys_err->SetFillColor(12);
+                hunfolded_ratio_sys_err->SetLineColor(color);
+                hunfolded_ratio_sys_err->SetFillColor(color);
                 hunfolded_ratio_sys_err->SetLineWidth(5);
                 hunfolded_ratio_sys_err->SetFillStyle(3003);
                 hunfolded_ratio_sys_err->SetMarkerSize(0);
@@ -5045,16 +5191,20 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             l_->SetLineStyle(2);
             if(data_over_mc) l_->SetLineColor(kRed);
             else l_->SetLineColor(kBlack);
-            CMS_lumi( pad1, 4, 0 );
+            if(firstIter)
+                CMS_lumi( pad1, 4, 0 );
         }
 
         c1->cd();
 
-        if((firstIter && !combineMassBins) || (combineMassBins && nthMassBin + 1 == lastBin))
+        if((firstIter && !combineMassBins && !dilepPtShapeComparison) || (combineMassBins && nthMassBin + 1 == lastBin) || 
+            (dilepPtShapeComparison && nthMassBin + 1 == lastBin))
         {
             // create pdf if every things are done
-            if(doNormalisation)
+            if(doNormalisation && !dilepPtShapeComparison)
                 c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+"_FSRUnfold_Norm.pdf");
+            else if(doNormalisation && dilepPtShapeComparison)
+                c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+"_FSRUnfold_PtComparison.pdf");
             else
                 c1->SaveAs(outpdf+"_"+ibinMass+"_"+var+"_FSRUnfold.pdf");
 

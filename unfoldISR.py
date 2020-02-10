@@ -384,8 +384,8 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
 
                 if sysName == "Alt":
-                    unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix_alt'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
-                    unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix_alt'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                    unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                    unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
                 else :
                     # set systematic response matrix
                     unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
@@ -495,7 +495,7 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 unfoldClass.drawSysPlots(outputDirectory + "Sys_" + args.channel , massBin, "full", False)
 
                 unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Pt", massBin, "full", args.doSys, True)
-                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Pt", massBin, "full", args.doSys, True, True)
+                unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Pt", massBin, "full", args.doSys, True, True) # normalized with area
                 unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Mass", massBin, "full", args.doSys, True)
 
                 if sysName is not "QED_FSR":
@@ -511,6 +511,7 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
         
         unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Mass", 5, "full", args.doSys, True)
         unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Pt", 5, "full", args.doSys, True)
+        unfoldClass.drawUnfoldedHists(outputDirectory + "Unfolded_"+ args.channel+"fullSys", "Pt", 5, "full", args.doSys, True, True)
 
 
     unfoldClass.drawISRMatrixInfo("Pt", outputDirectory, True)
