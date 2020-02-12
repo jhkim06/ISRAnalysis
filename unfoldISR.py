@@ -325,6 +325,9 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
             if modifiedLine.split()[1] == "matrix":
                     unfoldInputList['matrix'] = modifiedLine.split()[2]
 
+            if modifiedLine.split()[1] == "matrix_pdferr":
+                    unfoldInputList['matrix_pdferr'] = modifiedLine.split()[2]
+
             if modifiedLine.split()[1] == "matrix_alt":
                     unfoldInputList['matrix_alt'] = modifiedLine.split()[2]
 
@@ -374,7 +377,7 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
     # set systematic response matrix and input histograms
     #if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 100, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
-    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500} # "Stat"
+    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "trgSFDZ": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500, "PDFerror": 100} # "Stat"
     if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500}
     if args.doSys == True:
          
@@ -386,6 +389,9 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 if sysName == "Alt":
                     unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
                     unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                elif sysName == "PDFerror":
+                    unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix_pdferr'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
+                    unfoldClass.setSysTUnfoldDensity("Mass",unfoldInputList['matrix_pdferr'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
                 else :
                     # set systematic response matrix
                     unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
@@ -399,8 +405,13 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
                 # set systematic background histograms
                 if sysName is not "Stat":
-                    setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys, nSys)
-                    setUnfoldBkgs(unfoldClass, unfoldInputList['matrix'], sysName, True, nthSys, nSys, True)
+                    if sysName == "PDFerror":
+                        setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys, nSys)
+                        setUnfoldBkgs(unfoldClass, unfoldInputList['matrix_pdferr'], sysName, True, nthSys, nSys, True)
+                    else:
+                        setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys, nSys)
+                        setUnfoldBkgs(unfoldClass, unfoldInputList['matrix'], sysName, True, nthSys, nSys, True)
+
     
     # unfold
     unfoldClass.doISRUnfold(DetectorUnfold, args.doSys)
@@ -470,6 +481,8 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
         unfoldClass.drawClosurePlots(DetectorUnfold, unfoldInputList['gen_hist'], outputDirectory + dirClosurePlots + "DetClosure_" + args.channel, "Mass", massBin)
         unfoldClass.drawClosurePlots(FSRUnfold, unfoldInputList['gen_hist'], outputDirectory + dirClosurePlots + "FSRClosure_" + args.channel, "Pt", massBin)
         unfoldClass.drawClosurePlots(FSRUnfold, unfoldInputList['gen_hist'], outputDirectory + dirClosurePlots + "FSRClosure_" + args.channel, "Mass", massBin)
+
+        unfoldClass.drawNominalRecoPlots(outputDirectory + "Reco_" + args.channel , unfoldInputList['hist'], "Pt", massBin)
 
         if not args.doSys:
             # detector unfold

@@ -206,7 +206,7 @@ public:
 
     void drawClosurePlots(int detOrFSR_unfold, TString filepath, TString outpdf, TString var, int nthMassBin);
 
-    void doNorm(TH1* hist); 
+    void doNorm(TH1* hist, bool norm = true); 
     // draw unfolded distributions 
     void drawUnfoldedHists(TString outpdf, TString var = "Pt", int nthMassBin = 0, TString sysName = "", bool systematic = false, bool fullSys = false, bool doNormalisation = false);
     void makeSystBand(const TString var, const int nthMassBin, const TString sysName, const bool fullSys, const bool data_over_mc, 
