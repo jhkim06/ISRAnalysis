@@ -551,13 +551,82 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
     }
 
     histEfficiency=histProb->ProjectionX("histEfficiency");
-    histProb->Draw("COLZ");
+
+    TH2D* ticks_;
+    TString draw_option = "COLZ";
+
+    if(var == "Pt")
+    {
+        ticks_ = new TH2D("tick", "tick", histProb->GetNbinsX(), histProb->GetXaxis()->GetXmin(), histProb->GetXaxis()->GetXmax(),
+                                          histProb->GetNbinsY(), histProb->GetYaxis()->GetXmin(), histProb->GetYaxis()->GetXmax());
+
+        ticks_->GetXaxis()->SetBinLabel(histProb->GetXaxis()->FindBin(5), "Underflow");   
+        ticks_->GetXaxis()->SetBinLabel(histProb->GetXaxis()->FindBin(15), "50<M<65 GeV");  // TODO option to set mass region 
+        ticks_->GetXaxis()->SetBinLabel(histProb->GetXaxis()->FindBin(25), "65<M<80 GeV");   
+        ticks_->GetXaxis()->SetBinLabel(histProb->GetXaxis()->FindBin(35), "80<M<100 GeV");   
+        ticks_->GetXaxis()->SetBinLabel(histProb->GetXaxis()->FindBin(45), "100<M<200 GeV");   
+        ticks_->GetXaxis()->SetBinLabel(histProb->GetXaxis()->FindBin(55), "200<M<350 GeV");   
+        ticks_->GetXaxis()->SetBinLabel(histProb->GetXaxis()->FindBin(65), "Overflow");   
+
+        if(detector_unfold)
+        {
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(9), "Underflow");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(27), "50<M<65 GeV");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(45), "65<M<80 GeV");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(63), "80<M<100 GeV");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(81), "100<M<200 GeV");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(99), "200<M<350 GeV");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(117), "Overflow");   
+        }
+        else
+        {
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(5), "Underflow");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(15), "50<M<65 GeV");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(25), "65<M<80 GeV");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(35), "80<M<100 GeV");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(45), "100<M<200 GeV");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(55), "200<M<350 GeV");   
+        ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(65), "Overflow");   
+        }
+        if(detector_unfold) ticks_->GetYaxis()->SetTitle("Detector level bin");
+        else ticks_->GetYaxis()->SetTitle("Dressed level bin");
+
+        ticks_->GetYaxis()->SetTitleFont(43);
+        ticks_->GetYaxis()->SetTitleSize(40);
+        ticks_->GetYaxis()->SetTitleOffset(1.2);
+        if(detector_unfold) ticks_->GetXaxis()->SetTitle("Dressed level bin");
+        else ticks_->GetXaxis()->SetTitle("Pre FSR level bin");
+        ticks_->GetXaxis()->SetTitleFont(43);
+        ticks_->GetXaxis()->SetTitleSize(40);
+        ticks_->GetXaxis()->SetTitleOffset(1.2);
+
+        ticks_->GetXaxis()->SetLabelColor(kGray+2);
+        ticks_->GetYaxis()->SetLabelColor(kGray+2);
+        ticks_->GetXaxis()->SetLabelSize(15);
+        ticks_->GetYaxis()->SetLabelSize(15);
+        ticks_->GetXaxis()->LabelsOption("v");
+        ticks_->GetXaxis()->SetTickSize(0);
+        ticks_->GetYaxis()->SetTickSize(0);
+        ticks_->GetZaxis()->SetRangeUser(1e-3, 0.9);
+        ticks_->Draw("colz"); // 
+        histProb->Draw("same axis COLZ"); // "colz same" not working
+        draw_option = "same COLZ";
+    }
+    histProb->Draw(draw_option); // "colz same" not working
+    histProb->GetZaxis()->SetRangeUser(1e-3, 0.9);
+    histProb->GetYaxis()->SetTitle("Detector bin");
     histProb->GetYaxis()->SetTitleFont(43);
     histProb->GetYaxis()->SetTitleSize(40);
     histProb->GetYaxis()->SetTitleOffset(1.2);
+    histProb->GetXaxis()->SetTitle("Generator bin");
     histProb->GetXaxis()->SetTitleFont(43);
     histProb->GetXaxis()->SetTitleSize(40);
     histProb->GetXaxis()->SetTitleOffset(1.2);
+
+    c1->RedrawAxis();
+    
+    //histProb->GetXaxis()->SetBinLabel(histProb->GetXaxis()->FindBin(5), "Underflow");
+    //histProb->GetXaxis()->SetNdivisions(0);
 
     if(var=="Pt")
     {
@@ -638,11 +707,12 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
 
     TLine grid_;
     TLine grid_bin_boundary;
-    //grid_.SetLineColor(kGray+2);
-    grid_.SetLineColorAlpha(kGray+2, 0.35);;
-    grid_.SetLineStyle(kSolid);
+    grid_.SetLineColor(kGray+2);
+    //grid_.SetLineColorAlpha(kGray+2, 0.35);;
+    grid_.SetLineStyle(2);
     grid_bin_boundary.SetLineColorAlpha(kRed, 1.);;
     grid_bin_boundary.SetLineStyle(kSolid);
+
 
     int boundarybin_x = xaxis1_nbin;
     if(xaxis_binning->HasUnderflow(0)) boundarybin_x++;
@@ -655,13 +725,16 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
     {
         Int_t i_bin = ii+1;
         Double_t binEdge = histProb->GetXaxis()->GetBinUpEdge(i_bin);
-        grid_.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(0), binEdge, histProb->GetYaxis()->GetBinUpEdge(histProb->GetYaxis()->GetNbins()) );
+        //grid_.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(0), binEdge, histProb->GetYaxis()->GetBinUpEdge(histProb->GetYaxis()->GetNbins()) );
 
         if(boundarybin_x == i_bin && i_bin != histProb->GetXaxis()->GetNbins())
         {
+            //grid_.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(0), binEdge, histProb->GetYaxis()->GetBinUpEdge(histProb->GetYaxis()->GetNbins()) );
             if(count_drawn_boundary == 0)
             {
-                grid_bin_boundary.DrawLine(histProb->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), histProb->GetYaxis()->GetBinUpEdge(boundarybin_y - yaxis1_nbin), histProb->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), histProb->GetYaxis()->GetBinUpEdge(boundarybin_y) );
+                //grid_bin_boundary.DrawLine(histProb->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), histProb->GetYaxis()->GetBinUpEdge(boundarybin_y - yaxis1_nbin), 
+                //                            histProb->GetXaxis()->GetBinUpEdge(i_bin-xaxis1_nbin), histProb->GetYaxis()->GetBinUpEdge(boundarybin_y) );
+                //grid_.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(0), binEdge, histProb->GetYaxis()->GetBinUpEdge(histProb->GetYaxis()->GetNbins()) );
             }
 
             if(add_UO)
@@ -677,10 +750,15 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
             }
 
             grid_bin_boundary.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(boundarybin_y - yaxis1_nbin), binEdge, histProb->GetYaxis()->GetBinUpEdge(boundarybin_y) );
-            if(count_drawn_boundary%2 == 0){
+            if(count_drawn_boundary%2 == 0)
+            {
                 if(yaxis_binning->HasUnderflow(0)) boundarybin_y++;
                 if(yaxis_binning->HasOverflow(0)) boundarybin_y++;
                 boundarybin_y += yaxis1_nbin;
+            }
+            else
+            {
+                grid_.DrawLine(binEdge, histProb->GetYaxis()->GetBinUpEdge(0), binEdge, histProb->GetYaxis()->GetBinUpEdge(histProb->GetYaxis()->GetNbins()) );
             }
             count_drawn_boundary++;
         }
@@ -697,26 +775,37 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
     {
         Int_t i_bin = ii+1;
         Double_t binEdge = histProb->GetYaxis()->GetBinUpEdge(i_bin);
-        grid_.DrawLine(histProb->GetXaxis()->GetBinUpEdge(0), binEdge, histProb->GetXaxis()->GetBinUpEdge(histProb->GetXaxis()->GetNbins()),binEdge );
+        //grid_.DrawLine(histProb->GetXaxis()->GetBinUpEdge(0), binEdge, histProb->GetXaxis()->GetBinUpEdge(histProb->GetXaxis()->GetNbins()),binEdge );
 
-        if(boundarybin_y == i_bin && i_bin != histProb->GetYaxis()->GetNbins()){
-            if(count_drawn_boundary == 0){
-                grid_bin_boundary.DrawLine(histProb->GetXaxis()->GetBinUpEdge(boundarybin_x - xaxis1_nbin), histProb->GetYaxis()->GetBinUpEdge(i_bin-yaxis1_nbin), histProb->GetXaxis()->GetBinUpEdge(boundarybin_x), histProb->GetYaxis()->GetBinUpEdge(i_bin-yaxis1_nbin));
+        if(boundarybin_y == i_bin && i_bin != histProb->GetYaxis()->GetNbins())
+        {
+            //grid_.DrawLine(histProb->GetXaxis()->GetBinUpEdge(0), binEdge, histProb->GetXaxis()->GetBinUpEdge(histProb->GetXaxis()->GetNbins()),binEdge );
+            
+            if(count_drawn_boundary == 0)
+            {
+                //grid_bin_boundary.DrawLine(histProb->GetXaxis()->GetBinUpEdge(boundarybin_x - xaxis1_nbin), histProb->GetYaxis()->GetBinUpEdge(i_bin-yaxis1_nbin), histProb->GetXaxis()->GetBinUpEdge(boundarybin_x), histProb->GetYaxis()->GetBinUpEdge(i_bin-yaxis1_nbin));
             }
-            if(add_UO){
+            if(add_UO)
+            {
                 if(yaxis_binning->HasUnderflow(0)) boundarybin_y++;
                 if(yaxis_binning->HasOverflow(0)) boundarybin_y++;
                 add_UO = false;
             }
-            else{
+            else
+            {
                 boundarybin_y += yaxis1_nbin;
                 add_UO = true;
             }
             grid_bin_boundary.DrawLine(histProb->GetXaxis()->GetBinUpEdge(boundarybin_x - xaxis1_nbin), binEdge, histProb->GetXaxis()->GetBinUpEdge(boundarybin_x),binEdge);
-            if(count_drawn_boundary%2 == 0){
+            if(count_drawn_boundary%2 == 0)
+            {
                 if(xaxis_binning->HasUnderflow(0)) boundarybin_x++;
                 if(xaxis_binning->HasOverflow(0)) boundarybin_x++;
                 boundarybin_x += xaxis1_nbin;
+            }
+            else
+            {
+                grid_.DrawLine(histProb->GetXaxis()->GetBinUpEdge(0), binEdge, histProb->GetXaxis()->GetBinUpEdge(histProb->GetXaxis()->GetNbins()),binEdge );
             }
             count_drawn_boundary++;
         }
@@ -954,7 +1043,7 @@ void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysN
                             temp_ptHist->SetBinContent(ibin, temp_ptHist->GetBinContent(ibin) + gRandom->Gaus(0,err));
                         }
                     }
-                    sysPtUnfold[sysName].at(nth)->SetInput(temp_ptHist, 0.);
+                    sysPtUnfold[sysName].at(nth)->SetInput(temp_ptHist, bias);
                 }
                 else if(var == "Mass")
                 {
@@ -973,7 +1062,7 @@ void ISRUnfold::setInput(TString var, TString filepath, bool isSys, TString sysN
                             temp_massHist->SetBinContent(ibin, temp_massHist->GetBinContent(ibin) + gRandom->Gaus(0,err));
                         }
                     }
-                    sysMassUnfold[sysName].at(nth)->SetInput(temp_massHist, 0.);
+                    sysMassUnfold[sysName].at(nth)->SetInput(temp_massHist, bias);
                 }
                 else
                 {
@@ -1323,141 +1412,149 @@ void ISRUnfold::drawRhoLog(TString outpdf, TString var)
 }
 
 void ISRUnfold::doISRUnfold(int detOrFSR_unfold, bool doSys){
+        
+    double tauMin=1.e-4;
+    double tauMax=1.e-3;
 
-	double tauMin=1.e-4;
-	double tauMax=1.e-3;
-
-  	nScan=50;
-  	rhoLogTau=0;
-  	lCurve=0;
-	iBest = 0;
-
-        nScan_mass=50;
-        rhoLogTau_mass=0;
-        lCurve_mass=0;
-        iBest_mass = 0;
-
-
+    nScan=50;
+    rhoLogTau=0;
+    lCurve=0;
+    iBest = 0;
+    
+    nScan_mass=50;
+    rhoLogTau_mass=0;
+    lCurve_mass=0;
+    iBest_mass = 0;
+    
+    
+    if(detOrFSR_unfold == 0)
+    {
+        if(regMode_detector == TUnfold::kRegModeNone)
+        {
+            // no regularisation, set tau as zero
+            const TUnfoldBinningV17* bin=nomPtUnfold->GetOutputBinning();
+            int istart=bin->GetGlobalBinNumber(0.1, 200.1);
+            int iend=bin->GetGlobalBinNumber(100-0.01,200.1);
+            nomPtUnfold->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
+            //nomPtUnfold->DoUnfold(1e-3);
+            iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau,
+                                       TUnfoldDensity::kEScanTauRhoAvgSys,
+                                       0,0,
+                                       &lCurve);
+            nomMassUnfold->DoUnfold(0);
+        }
+        else
+        {
+            // regularization, use ScanTau() as a default method to find tau
+            iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau,
+                                       TUnfoldDensity::kEScanTauRhoAvgSys,
+                                       0,0,
+                                       &lCurve);
+    
+            iBest_mass=nomMassUnfold->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
+                                       TUnfoldDensity::kEScanTauRhoAvgSys,
+                                       0,0,
+                                       &lCurve_mass);
+        }
+    }
+    else if(detOrFSR_unfold == 1)
+    // FSR unfolding
+    {
+        if(regMode_FSR == TUnfold::kRegModeNone)
+        {
+            // no regularisation, set tau as zero
+            nomPtFSRUnfold->DoUnfold(0);
+            nomMassFSRUnfold->DoUnfold(0);
+        }
+        else
+        {
+            // regularization option not ready yet
+        }
+    }
+    else{
+    
+        cout << " invalid unfolding step..." << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    // for systematic
+    if(doSys)
+    {
+        std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it;
+        std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it_end;
+    
+        // unfolding for pt distribution
         if(detOrFSR_unfold == 0)
         {
-            if(regMode_detector == TUnfold::kRegModeNone)
-            {
-                // no regularisation, set tau as zero
-	        nomPtUnfold->DoUnfold(0);
-	        nomMassUnfold->DoUnfold(0);
-            }
-            else
-            {
-                // regularization, use ScanTau() as a default method to find tau
-                iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau,
-                                           TUnfoldDensity::kEScanTauRhoAvgSys,
-                                           0,0,
-                                           &lCurve);
-
-                iBest_mass=nomMassUnfold->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
-                                           TUnfoldDensity::kEScanTauRhoAvgSys,
-                                           0,0,
-                                           &lCurve_mass);
-            }
+            it = sysPtUnfold.begin();
+            it_end = sysPtUnfold.end();
         }
         else if(detOrFSR_unfold == 1)
-        // FSR unfolding
         {
-            if(regMode_FSR == TUnfold::kRegModeNone)
-            {
-                // no regularisation, set tau as zero
-                nomPtFSRUnfold->DoUnfold(0);
-                nomMassFSRUnfold->DoUnfold(0);
-            }
-            else
-            {
-                // regularization option not ready yet
-            }
+            it = sysPtFSRUnfold.begin();
+            it_end = sysPtFSRUnfold.end();
         }
-        else{
-
+        else
+        {
             cout << " invalid unfolding step..." << endl;
             exit(EXIT_FAILURE);
         }
-
-        // for systematic
-        if(doSys)
-        {
-	    std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it;
-	    std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it_end;
-
-            // unfolding for pt distribution
-            if(detOrFSR_unfold == 0)
-            {
-	        it = sysPtUnfold.begin();
-	        it_end = sysPtUnfold.end();
-            }
-            else if(detOrFSR_unfold == 1)
-            {
-	        it = sysPtFSRUnfold.begin();
-	        it_end = sysPtFSRUnfold.end();
-            }
-            else
-            {
-                cout << " invalid unfolding step..." << endl;
-                exit(EXIT_FAILURE);
-            }
-
-	    while(it != it_end){
-	    	int nSys = it->second.size();
-	    	for(int i = 0; i < nSys; i++){
-
-	    		if((it->first)=="unfoldScan" || (it->first)=="unfoldBias" )
-                        {
-	    			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
-  	    			iBest=it->second.at(i)->ScanTau(nScan,0.,0.,&rhoLogTau,
-  	    			                           TUnfoldDensity::kEScanTauRhoAvgSys,
-  	    			                           0,0,
-  	    			                           &lCurve);
-	    		}
-	    		else
-                        {
-                            it->second.at(i)->DoUnfold(0);
-                        }
-
-	    	}
-	    	it++;
-	    }
-
-            // unfolding for mass distribution
-            if(detOrFSR_unfold == 0)
-            {
-	        it = sysMassUnfold.begin();
-	        it_end = sysMassUnfold.end();
-            }
-            else if(detOrFSR_unfold == 1)
-            {
-	        it = sysMassFSRUnfold.begin();
-	        it_end = sysMassFSRUnfold.end();
-            }
-            else
-            {
-                cout << " invalid unfolding step..." << endl;
-                exit(EXIT_FAILURE);
-            }
-
-            while(it != it_end){
-                    int nSys = it->second.size();
-                    for(int i = 0; i < nSys; i++){
-                            if((it->first)=="unfoldScan" || (it->first)=="unfoldBias"){
-	    			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
-
-                                    iBest_mass=it->second.at(i)->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
-                                                               TUnfoldDensity::kEScanTauRhoAvgSys,
-                                                               0,0,
-                                                               &lCurve_mass);
-	    		}
-	    		else it->second.at(i)->DoUnfold(0);
-
+    
+        while(it != it_end){
+        	int nSys = it->second.size();
+        	for(int i = 0; i < nSys; i++){
+    
+        		if((it->first)=="unfoldScan" || (it->first)=="unfoldBias" )
+                    {
+        			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
+        			iBest=it->second.at(i)->ScanTau(nScan,0.,0.,&rhoLogTau,
+        			                           TUnfoldDensity::kEScanTauRhoAvgSys,
+        			                           0,0,
+        			                           &lCurve);
+        		}
+        		else
+                    {
+                        it->second.at(i)->DoUnfold(0);
                     }
-                    it++;
-            }
+    
+        	}
+        	it++;
         }
+    
+        // unfolding for mass distribution
+        if(detOrFSR_unfold == 0)
+        {
+            it = sysMassUnfold.begin();
+            it_end = sysMassUnfold.end();
+        }
+        else if(detOrFSR_unfold == 1)
+        {
+            it = sysMassFSRUnfold.begin();
+            it_end = sysMassFSRUnfold.end();
+        }
+        else
+        {
+            cout << " invalid unfolding step..." << endl;
+            exit(EXIT_FAILURE);
+        }
+    
+        while(it != it_end){
+                int nSys = it->second.size();
+                for(int i = 0; i < nSys; i++){
+                        if((it->first)=="unfoldScan" || (it->first)=="unfoldBias"){
+        			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
+    
+                                iBest_mass=it->second.at(i)->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
+                                                           TUnfoldDensity::kEScanTauRhoAvgSys,
+                                                           0,0,
+                                                           &lCurve_mass);
+        		}
+        		else it->second.at(i)->DoUnfold(0);
+    
+                }
+                it++;
+        }
+    }
 
 }
 
@@ -1484,7 +1581,8 @@ double ISRUnfold::Chi2Test(TH1 *data, TH1 *mc){ // check if this is right way to
 }
 
 // need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
-double ISRUnfold::DoFit(TString var, int nthMassBin, bool isFSRUnfold){
+double ISRUnfold::DoFit(TString var, int nthMassBin, bool isFSRUnfold)
+{
 
     TH1 *g_fcnHist=0;
     TMatrixD *g_fcnMatrix=0;
@@ -2015,20 +2113,21 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
         meanPt_data_det_unf.   push_back(hpt_temp_data->GetMean());
         meanPtStatErr_data_det_unf.push_back(hpt_temp_data->GetMeanError());
 
-        //meanPt_data_pre_fsr.   push_back(h_pre_fsr_pt_temp_data->GetMean());
+        meanPt_data_pre_fsr.   push_back(h_pre_fsr_pt_temp_data->GetMean());
         meanPtStatErr_data_pre_fsr.push_back(h_pre_fsr_pt_temp_data->GetMeanError());
-        doNorm(h_pre_fsr_pt_temp_data);
-        TF1* landau_nom = new TF1("landau_nom","[0]*TMath::Landau(x,[1],[2]) + [3] * expo(x * [4])", 0., 100);
-        landau_nom->SetParameters(2., 6., 2., 0.05, -0.01);
-        landau_nom->SetParLimits(0, 0.0, 5.);
-        landau_nom->SetParLimits(1, 2.0, 9.);
-        landau_nom->SetParLimits(2, 1., 10.0);
-        landau_nom->SetParLimits(3, -0.05, 0.12);
-        landau_nom->SetParLimits(4, -0.2, -0.001);
-        h_pre_fsr_pt_temp_data->Fit(landau_nom);
-        TH1* h_ = landau_nom->GetHistogram();
-        meanPt_data_pre_fsr.push_back(h_->GetMean());
-        delete landau_nom;
+
+        //doNorm(h_pre_fsr_pt_temp_data);
+        //TF1* landau_nom = new TF1("landau_nom","[0]*TMath::Landau(x,[1],[2]) + [3] * expo(x * [4])", 0., 100);
+        //landau_nom->SetParameters(2., 6., 2., 0.05, -0.01);
+        //landau_nom->SetParLimits(0, 0.0, 5.);
+        //landau_nom->SetParLimits(1, 2.0, 9.);
+        //landau_nom->SetParLimits(2, 1., 10.0);
+        //landau_nom->SetParLimits(3, -0.05, 0.12);
+        //landau_nom->SetParLimits(4, -0.2, -0.001);
+        //h_pre_fsr_pt_temp_data->Fit(landau_nom);
+        //TH1* h_ = landau_nom->GetHistogram();
+        //meanPt_data_pre_fsr.push_back(h_->GetMean());
+        //delete landau_nom;
 
         meanPtStatRelErr_data_pre_fsr.push_back(h_pre_fsr_pt_temp_data->GetMeanError()/ h_pre_fsr_pt_temp_data->GetMean() * 100.);
 
@@ -2061,21 +2160,22 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
                 for(int isys = 0; isys < nSys; isys++)
                 {
                     hdatasys_temp = sysPtUnfold[it->first].at(isys)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                    doNorm(hdatasys_temp);
-                    TF1* landau = new TF1("landau","[0]*TMath::Landau(x,[1],[2]) + [3] * expo(x * [4])", 0., 100);
-                    landau->SetParameters(2., 6., 2., 0.05, -0.01);
-                    landau->SetParLimits(0, 0.0, 5.);
-                    landau->SetParLimits(1, 2.0, 9.);
-                    landau->SetParLimits(2, 1., 10.0);
-                    landau->SetParLimits(3, -0.05, 0.12);
-                    landau->SetParLimits(4, -0.2, -0.001);
-                    hdatasys_temp->Fit(landau);
-                    TH1* h = landau->GetHistogram();
-                    temp_map[it->first].push_back(h->GetMean());
-                    
-                    //temp_map[it->first].push_back(hdatasys_temp->GetMean());
+                    temp_map[it->first].push_back(hdatasys_temp->GetMean());
 
-                    delete landau;
+                    //doNorm(hdatasys_temp);
+                    //TF1* landau = new TF1("landau","[0]*TMath::Landau(x,[1],[2]) + [3] * expo(x * [4])", 0., 100);
+                    //landau->SetParameters(2., 6., 2., 0.05, -0.01);
+                    //landau->SetParLimits(0, 0.0, 5.);
+                    //landau->SetParLimits(1, 2.0, 9.);
+                    //landau->SetParLimits(2, 1., 10.0);
+                    //landau->SetParLimits(3, -0.05, 0.12);
+                    //landau->SetParLimits(4, -0.2, -0.001);
+                    //hdatasys_temp->Fit(landau);
+                    //TH1* h = landau->GetHistogram();
+                    //temp_map[it->first].push_back(h->GetMean());
+                    
+
+                    //delete landau;
                     delete hdatasys_temp;
 
                     hdatasys_temp = sysPtUnfold[it->first].at(isys)->GetBias("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
@@ -2100,21 +2200,21 @@ void ISRUnfold::setMeanPt(bool doSys, bool altMC, bool detector_unfold)
                 for(int isys = 0; isys < nSys; isys++)
                 {
                     hdatasys_temp = sysPtFSRUnfold[it->first].at(isys)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
-                    doNorm(hdatasys_temp);
-                    TF1* landau = new TF1("landau","[0]*TMath::Landau(x,[1],[2]) + [3] * expo(x * [4])", 0., 100);
-                    landau->SetParameters(2., 6., 2., 0.05, -0.01);
-                    landau->SetParLimits(0, 0.0, 5.);
-                    landau->SetParLimits(1, 2.0, 9.);
-                    landau->SetParLimits(2, 1., 10.0);
-                    landau->SetParLimits(3, -0.05, 0.12);
-                    landau->SetParLimits(4, -0.2, -0.001);
-                    hdatasys_temp->Fit(landau);
-                    TH1* h = landau->GetHistogram();
-                    temp_map[it->first].push_back(h->GetMean());
-                    //temp_map[it->first].push_back(hdatasys_temp->GetMean());
+                    temp_map[it->first].push_back(hdatasys_temp->GetMean());
+
+                    //doNorm(hdatasys_temp);
+                    //TF1* landau = new TF1("landau","[0]*TMath::Landau(x,[1],[2]) + [3] * expo(x * [4])", 0., 100);
+                    //landau->SetParameters(2., 6., 2., 0.05, -0.01);
+                    //landau->SetParLimits(0, 0.0, 5.);
+                    //landau->SetParLimits(1, 2.0, 9.);
+                    //landau->SetParLimits(2, 1., 10.0);
+                    //landau->SetParLimits(3, -0.05, 0.12);
+                    //landau->SetParLimits(4, -0.2, -0.001);
+                    //hdatasys_temp->Fit(landau);
+                    //TH1* h = landau->GetHistogram();
+                    //temp_map[it->first].push_back(h->GetMean());
                     
-                    
-                    delete landau;
+                    //delete landau;
                     delete hdatasys_temp;
 
                     hdatasys_temp = sysPtFSRUnfold[it->first].at(isys)->GetBias("hunfolded_pt_systemp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
@@ -3326,7 +3426,7 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool doFit, TString genISRFile
     TString year_string;
     year_string.Form ("%d", year);
 
-    c1 = new TCanvas("c_"+channel_name+"_"+year_string, "c_"+channel_name+"_"+year_string, 50, 50, 900, 700);
+    c1 = new TCanvas("c_"+channel_name+"_"+year_string, "c_"+channel_name+"_"+year_string, 50, 50, 900, 850);
     c1->cd();
     gStyle->SetOptFit(0);
 
@@ -3348,8 +3448,8 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool doFit, TString genISRFile
     grUnfolded_pre_fsr->SetMarkerStyle(marker_);
     grUnfolded_pre_fsr->SetMarkerSize(1.2);
     grUnfolded_pre_fsr->SetLineStyle(1);
-    grUnfolded_pre_fsr->GetYaxis()->SetRangeUser(10.,30.);
-    grUnfolded_pre_fsr->GetXaxis()->SetLimits(20.,500.);
+    grUnfolded_pre_fsr->GetYaxis()->SetRangeUser(12.,28.);
+    grUnfolded_pre_fsr->GetXaxis()->SetLimits(40.,400.);
     grUnfolded_pre_fsr->GetXaxis()->SetMoreLogLabels(true);
     grUnfolded_pre_fsr->GetYaxis()->SetTitle("Average p_{T} (" + lepton_type + ") (GeV)");
     grUnfolded_pre_fsr->GetYaxis()->SetTitleSize(40);
@@ -3359,16 +3459,17 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool doFit, TString genISRFile
     grUnfolded_pre_fsr->GetXaxis()->SetTitle("Average Mass (" + lepton_type + ") (GeV)");
     grUnfolded_pre_fsr->GetXaxis()->SetTitleSize(40);
     grUnfolded_pre_fsr->GetXaxis()->SetTitleOffset(1.5);
+    grUnfolded_pre_fsr->GetYaxis()->SetNdivisions(510);
     grUnfolded_pre_fsr->Draw("ap");
     grUnfolded_pre_fsr->SetName("preFSRUnfoldedData_"+channel_name+"_"+year_string);
 
     //TGraphErrors *grMC_preFSR = new TGraphErrors(points, &mean_mass[0], &mean_pt[0], &mean_mass_stat_error[0], &mean_pt_stat_error[0]);
-    TGraphErrors *grMC_preFSR = new TGraphErrors(5, &meanMass_mc_pre_fsr[0], &meanPt_mc_pre_fsr[0], &mean_mass_sys_error[0], &mean_pt_sys_error[0]);
-    grMC_preFSR->SetMarkerColor(kBlack);
-    grMC_preFSR->SetMarkerStyle(marker_+12);
-    grMC_preFSR->SetMarkerSize(1.2);
+    TGraphErrors *grMC_preFSR = new TGraphErrors(5, &meanMass_mc_pre_fsr[0], &meanPt_mc_pre_fsr[0], &mean_mass_stat_error[0], &mean_pt_stat_error[0]);
+    grMC_preFSR->SetMarkerColor(kRed);
+    grMC_preFSR->SetMarkerStyle(marker_+4);
+    grMC_preFSR->SetMarkerSize(1.5);
     grMC_preFSR->SetLineStyle(1);
-    grMC_preFSR->SetLineColor(kBlack);
+    grMC_preFSR->SetLineColor(kRed);
     grMC_preFSR->Draw("p same");
     //
     //grMC_preFSR->SetFillColor(kBlack);
@@ -3378,17 +3479,17 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool doFit, TString genISRFile
     grMC_preFSR->SetName("preFSRMC_"+channel_name+"_"+year_string);
 
     TGraphErrors *grMC_preFSR_MG = new TGraphErrors(points, &mean_mass_mg[0], &mean_pt_mg[0], &mean_mass_stat_error_mg[0], &mean_pt_stat_error_mg[0]);
-    grMC_preFSR_MG->SetMarkerColor(kRed);
-    grMC_preFSR_MG->SetMarkerStyle(marker_+1);
-    grMC_preFSR_MG->SetMarkerSize(1.2);
+    grMC_preFSR_MG->SetMarkerColor(kMagenta);
+    grMC_preFSR_MG->SetMarkerStyle(marker_+5);
+    grMC_preFSR_MG->SetMarkerSize(1.5);
     grMC_preFSR_MG->SetLineStyle(1);
-    grMC_preFSR_MG->SetLineColor(kRed);
+    grMC_preFSR_MG->SetLineColor(kMagenta);
     grMC_preFSR_MG->Draw("p same");
 
     TGraphErrors *grMC_preFSR_Powheg = new TGraphErrors(points, &mean_mass_powheg[0], &mean_pt_powheg[0], &mean_mass_stat_error_powheg[0], &mean_pt_stat_error_powheg[0]);
     grMC_preFSR_Powheg->SetMarkerColor(kBlue);
-    grMC_preFSR_Powheg->SetMarkerStyle(marker_+2);
-    grMC_preFSR_Powheg->SetMarkerSize(1.2);
+    grMC_preFSR_Powheg->SetMarkerStyle(marker_+6);
+    grMC_preFSR_Powheg->SetMarkerSize(1.5);
     grMC_preFSR_Powheg->SetLineStyle(1);
     grMC_preFSR_Powheg->SetLineColor(kBlue);
     grMC_preFSR_Powheg->Draw("p same");
@@ -3451,16 +3552,21 @@ TCanvas* ISRUnfold::drawISRresult(TString outpdf, bool doFit, TString genISRFile
     }
     grUnfolded_pre_fsr->Draw("p same");
 
-    TLegend* leg_ = new TLegend(0.2, 0.5, 0.5, 0.9,"","brNDC");
+    TLegend* leg_ = new TLegend(0.15, 0.5, 0.5, 0.9,"","brNDC");
     leg_->SetTextSize(0.035);
     leg_->SetFillStyle(0); // transparent
     leg_->SetBorderSize(0);
     leg_->AddEntry(grUnfolded_pre_fsr, "Unfolded data ", "pe");
     leg_->AddEntry(f1, Form("\\mbox{Linear fit } (\\chi^{2}/NDF=%.2f)", chi2_nom_data), "l");
-    leg_->AddEntry(grMC_preFSR, "Drell-Yan(DY) aMC@NLO", "pe");
-    leg_->AddEntry(grMC_preFSR_MG, "DY Madgraph", "pe");
-    leg_->AddEntry(grMC_preFSR_Powheg, "DY Powheg", "pe");
     leg_->Draw();
+    TLegend* leg_mc = new TLegend(0.6, 0.25, 0.8, 0.55,"","brNDC");
+    leg_mc->SetTextSize(0.035);
+    leg_mc->SetFillStyle(0); // transparent
+    leg_mc->SetBorderSize(0);
+    leg_mc->AddEntry(grMC_preFSR, "Drell-Yan(DY) aMC@NLO", "pe");
+    leg_mc->AddEntry(grMC_preFSR_MG, "DY Madgraph", "pe");
+    leg_mc->AddEntry(grMC_preFSR_Powheg, "DY Powheg", "pe");
+    leg_mc->Draw();
 
     CMS_lumi( c1, 4, 0 );
     c1->SaveAs(outpdf + channel_name + "_" + year_string + ".pdf");
@@ -3722,7 +3828,6 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
     //TGraph* stat_uncert = new TGraph(5, massBin, &meanPtStatErr_data_pre_fsr[0]);
 
     TGraph* total_uncert = new TGraph(5, massBin, &meanPtTotRelErr_data_pre_fsr[0]);
-    //TGraph* stat_uncert = new TGraph(5, massBin, &meanPtStatRelErr_data_pre_fsr[0]);
 
     total_uncert->SetLineColor(kBlack);
     total_uncert->SetMarkerColor(kBlack);
@@ -3739,6 +3844,7 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
     total_uncert->GetYaxis()->SetTitleOffset(1.2);
     leg->AddEntry(total_uncert, "Total uncertainty", "pl");
 
+    //TGraph* stat_uncert = new TGraph(5, massBin, &meanPtStatRelErr_data_pre_fsr[0]);
     //stat_uncert->Draw("pl same");
     //stat_uncert->SetLineColor(kGray+2);
     //stat_uncert->SetMarkerColor(kGray+2);
@@ -3746,10 +3852,15 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
     //stat_uncert->SetMarkerSize(2);
     //stat_uncert->SetLineStyle(1);
     //leg->AddEntry(stat_uncert, "Stat uncertainty", "pl");
+    //
+    
+    double stat_uncert[5] = {0., 0., 0., 0., 0.};
 
     while(it_for_sysName != end_for_sysName)
     {
-        systematicValues.push_back(new double[5]);
+        if(it_for_sysName->first != "Stat")
+            systematicValues.push_back(new double[5]);
+
         for(int i = 0; i < nMassBin; i++)
         {
             double default_value = 1.;
@@ -3767,7 +3878,19 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
             {
                 p_map = &meanPtErr_sysdata_pre_fsr.at(i);
             }
-            systematicValues.at(nth_systematicValues)[i] = (*p_map)[it_for_sysName->first] * default_value;
+            if(it_for_sysName->first == "Stat")
+            {
+                stat_uncert[i] = (*p_map)[it_for_sysName->first] * default_value; 
+            }
+            else{
+                systematicValues.at(nth_systematicValues)[i] = (*p_map)[it_for_sysName->first] * default_value;
+            }
+        }
+        if(it_for_sysName->first == "Stat")
+        {
+            it_for_sysName++;
+            //nth_systematicValues++;
+            continue;
         }
 
         // draw
@@ -3811,6 +3934,7 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
         if(it_for_sysName->first == "QED_FSR")
         {
             marker_style_sys = 29;
+            marker_color_sys = kRed; 
         }
         if(it_for_sysName->first == "Scale")
         {
@@ -3852,6 +3976,15 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
         marker_style_sys++;
         marker_color_sys++;
     }
+    TGraph* gr_stat_uncert = new TGraph(5, massBin, stat_uncert);
+    gr_stat_uncert->Draw("pl same");
+    gr_stat_uncert->SetLineColor(kGray+2);
+    gr_stat_uncert->SetMarkerColor(kGray+2);
+    gr_stat_uncert->SetMarkerStyle(21);
+    gr_stat_uncert->SetMarkerSize(2);
+    gr_stat_uncert->SetLineStyle(1);
+    leg->AddEntry(gr_stat_uncert, "Stat. uncertainty", "pl");
+
     leg->Draw();
 
     CMS_lumi( c1, 4, 11 );
@@ -3864,6 +3997,7 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
         delete pv_graphs[i];
     }
 
+    delete gr_stat_uncert;
     delete c1;
 }
 
@@ -4180,6 +4314,16 @@ void ISRUnfold::drawNominalRecoPlots(TString outpdf, TString filepath, TString v
     TString ibinMass;
     ibinMass.Form("%d", nthMassBin);
 
+    const TUnfoldBinningV17* temp_binning_gen_pt = nomPtUnfold->GetOutputBinning("Gen_Pt");
+    const TUnfoldBinningV17* temp_binning_rec_pt = nomPtUnfold->GetInputBinning("Rec_Pt");
+    const TUnfoldBinningV17* temp_binning_gen_mass = nomMassUnfold->GetOutputBinning("Gen_Mass");
+    const TUnfoldBinningV17* temp_binning_rec_mass = nomMassUnfold->GetInputBinning("Rec_Mass");
+
+    // get mass bin definition from (pt, mass) bin definition
+    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    const Double_t* massBins = temp_tvecd->GetMatrixArray();
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+
     gROOT->SetBatch();
 
     setTDRStyle();
@@ -4277,13 +4421,39 @@ void ISRUnfold::drawNominalRecoPlots(TString outpdf, TString filepath, TString v
     hdata_NoUO->Draw("p9samee");
     pad1->RedrawAxis();
 
-    TLegend* leg_nom = new TLegend(0.45, 0.70, 0.75, 0.9,"","brNDC");
-    leg_nom->SetNColumns(2);
+
+    TString lepton_type;
+    TString cut_info;
+    if(channel_name=="electron") lepton_type = "ee";
+    else lepton_type = "#mu#mu";
+
+    if(var=="Pt")
+    {
+        TString low_bound_, upper_bound_;
+        low_bound_.Form("%d", (int)massBins[nthMassBin]);
+        upper_bound_.Form("%d", (int)massBins[nthMassBin+1]);
+        cut_info = low_bound_ + " < M(" + lepton_type + ") < " + upper_bound_ + " (GeV)";
+    }
+    else
+    {
+        cut_info = "p_{T}(" + lepton_type + ") < 100 (GeV) ";
+    }
+
+    TLatex cut_info_;
+    cut_info_.SetTextFont(63);
+    cut_info_.SetTextSize(20);
+    cut_info_.DrawLatexNDC(0.2, 0.8, cut_info);
+
+    TLegend* leg_nom = new TLegend(0.7, 0.45, 0.95, 0.85,"","brNDC");
+    //leg_nom->SetNColumns(2);
     leg_nom->SetTextSize(0.055);
     leg_nom->SetFillStyle(0);
     leg_nom->SetBorderSize(0);
 
     leg_nom->AddEntry(hdata_NoUO, "Data", "pl");
+    leg_nom->AddEntry(hdy_m50_NoUO, "Drell-Yan", "F");
+    leg_nom->AddEntry(hZZ_NoUO, "EWK", "F");
+    leg_nom->AddEntry(hTT_NoUO, "TT", "F");
     leg_nom->Draw();
 
     TLatex chi2_norm;
@@ -4569,7 +4739,7 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
         {
             h_nominal_unfolded_data  = sysPtFSRUnfold[sysName].at(1)->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
             doNorm(h_nominal_unfolded_data);
-            cout << "fit QED FSR systematic..." << endl;
+
             //TF1* landau_nom = new TF1("landau_nom","[0]*TMath::Landau(x,[1],[2]) + [3] * expo(x * [4])", 0., 100);
             //landau_nom->SetParameters(2., 6., 2., 0.05, -0.01);
             //landau_nom->SetParLimits(0, 0.0, 5.);
@@ -4608,25 +4778,26 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
     h_nominal_unfolded_data->SetLineColor(kBlack);
     h_nominal_unfolded_data->SetMarkerSize(.7);
     h_nominal_unfolded_data->GetYaxis()->SetTitle("Events/bin");
+
     //h_nominal_unfolded_data->SetMinimum(10.);
     //h_nominal_unfolded_data->SetMaximum(9e9);
     //
-    if(sysName=="QED_FSR" && var=="Pt")
-    {
-    cout << "fit QED FSR systematic..." << endl;
-    landau_nom->SetParameters(2., 6., 2., 0.05, -0.01);
-    landau_nom->SetParLimits(0, 0.0, 5.);
-    landau_nom->SetParLimits(1, 2.0, 9.);
-    landau_nom->SetParLimits(2, 1., 10.0);
-    landau_nom->SetParLimits(3, -0.05, 0.12);
-    landau_nom->SetParLimits(4, -0.2, -0.001);
-    h_nominal_unfolded_data->Fit(landau_nom);
-    landau_nom->SetLineColor(kBlack);
-    landau_nom->SetLineStyle(1);
-    landau_nom->Draw("same");
-    TH1* h_ = landau_nom->GetHistogram();
-    cout << "mean: " << h_->GetMean() << endl;
-    }
+    //if(sysName=="QED_FSR" && var=="Pt")
+    //{
+        //cout << "fit QED FSR systematic..." << endl;
+        //landau_nom->SetParameters(2., 6., 2., 0.05, -0.01);
+        //landau_nom->SetParLimits(0, 0.0, 5.);
+        //landau_nom->SetParLimits(1, 2.0, 9.);
+        //landau_nom->SetParLimits(2, 1., 10.0);
+        //landau_nom->SetParLimits(3, -0.05, 0.12);
+        //landau_nom->SetParLimits(4, -0.2, -0.001);
+        //h_nominal_unfolded_data->Fit(landau_nom);
+        //landau_nom->SetLineColor(kBlack);
+        //landau_nom->SetLineStyle(1);
+        //landau_nom->Draw("same");
+        //TH1* h_ = landau_nom->GetHistogram();
+        //cout << "mean: " << h_->GetMean() << endl;
+    //}
 
     TH1* h_data_sys_temp;
     int sysSize;
@@ -4654,6 +4825,7 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
             
             hsys_temp  = sysPtFSRUnfold[sysName].at(i)->GetOutput("hunfolded_pt_temp_",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
             doNorm(hsys_temp);
+
             //cout << "fit QED FSR systematic..." << endl;
             //TF1* landau_nom = new TF1("landau_nom","[0]*TMath::Landau(x,[1],[2]) + [3] * expo(x * [4])", 0., 100);
             //landau_nom->SetParameters(2., 6., 2., 0.05, -0.01);
@@ -4675,22 +4847,23 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
      //h_data_sys_temp->SetLineColor(kBlack);
      h_data_sys_temp->SetLineColor(2+i);
      h_data_sys_temp->SetLineStyle(2);
-    if(sysName=="QED_FSR")
-    {
-    cout << "fit QED FSR systematic..." << endl;
-    landau_nom_->SetParameters(2., 6., 2., 0.05, -0.01);
-    landau_nom_->SetParLimits(0, 0.0, 5.);
-    landau_nom_->SetParLimits(1, 2.0, 9.);
-    landau_nom_->SetParLimits(2, 1., 10.0);
-    landau_nom_->SetParLimits(3, -0.05, 0.12);
-    landau_nom_->SetParLimits(4, -0.2, -0.001);
-    h_data_sys_temp->Fit(landau_nom_);
-    landau_nom->SetLineColor(kRed);
-    landau_nom_->SetLineStyle(2);
-    landau_nom_->Draw("same");
-    TH1* h_ = landau_nom_->GetHistogram();
-    cout << "mean: " << h_->GetMean() << endl;
-    }
+        
+    //if(sysName=="QED_FSR")
+    //{
+    //cout << "fit QED FSR systematic..." << endl;
+    //landau_nom_->SetParameters(2., 6., 2., 0.05, -0.01);
+    //landau_nom_->SetParLimits(0, 0.0, 5.);
+    //landau_nom_->SetParLimits(1, 2.0, 9.);
+    //landau_nom_->SetParLimits(2, 1., 10.0);
+    //landau_nom_->SetParLimits(3, -0.05, 0.12);
+    //landau_nom_->SetParLimits(4, -0.2, -0.001);
+    //h_data_sys_temp->Fit(landau_nom_);
+    //landau_nom->SetLineColor(kRed);
+    //landau_nom_->SetLineStyle(2);
+    //landau_nom_->Draw("same");
+    //TH1* h_ = landau_nom_->GetHistogram();
+    //cout << "mean: " << h_->GetMean() << endl;
+    //}
 
      delete hsys_temp;
     }
@@ -4706,7 +4879,7 @@ void ISRUnfold::drawSysComparionPlots(TString outpdf, TString var, int nthMassBi
 
     for(int i = 0; i < sysSize; i++){
 
-    if (sysName == "QED_FSR" && i == 1) break;
+    if(sysName == "QED_FSR" && i == 1) break;
 
     TString isys;
     isys.Form("%d", i);
@@ -5108,7 +5281,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             }
 
             TString draw_option = "p9e";
-            int color = 1;
+            int color = kRed;
             if(dilepPtShapeComparison)
             {
                 draw_option = "p9samee";
@@ -5137,7 +5310,8 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
                 hfolded_mc->Draw("psamee");
                 hfolded_mc->SetMarkerStyle(21);
                 hfolded_mc->SetMarkerSize(1.);
-                hfolded_mc->SetLineColor(kBlack);
+                hfolded_mc->SetLineColor(kBlue);
+                hfolded_mc->SetMarkerColor(kBlue);
 
                 hfolded_data->SetMarkerColor(kBlack);
                 hfolded_data->SetLineColor(kBlack);
@@ -5370,8 +5544,8 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             else
             {
                 hfolded_ratio->Draw("pe");
-                hfolded_ratio->SetMarkerColor(kBlack);
-                hfolded_ratio->SetLineColor(kBlack);
+                hfolded_ratio->SetMarkerColor(kBlue);
+                hfolded_ratio->SetLineColor(kBlue);
                 hfolded_ratio->SetMarkerSize(1.2);
                 hfolded_ratio->SetMarkerStyle(21);
                 hfolded_ratio->GetYaxis()->SetTitle("#splitline{  MC/Data}{(post FSR)}");
@@ -5393,13 +5567,13 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             {
                 hfolded_ratio_sys_err->SetLineColor(12);
                 hfolded_ratio_sys_err->SetFillColor(12);
-                hfolded_ratio_sys_err->SetLineWidth(5);
-                hfolded_ratio_sys_err->SetFillStyle(3003);
+                hfolded_ratio_sys_err->SetLineWidth(10);
+                hfolded_ratio_sys_err->SetFillStyle(3004);
                 hfolded_ratio_sys_err->SetMarkerSize(0);
                 hfolded_ratio_sys_err->Draw("E2 same");
-                //hfolded_ratio_sys_err_mc->SetFillColorAlpha(kMagenta,0.3);
-                //hfolded_ratio_sys_err_mc->SetMarkerSize(0);
-                //hfolded_ratio_sys_err_mc->Draw("E2 same");
+                hfolded_ratio_sys_err_mc->SetFillColorAlpha(kBlue,0.3);
+                hfolded_ratio_sys_err_mc->SetMarkerSize(0);
+                hfolded_ratio_sys_err_mc->Draw("E2 same");
             }
 
             l_ = new TLine(hunfolded_ratio->GetXaxis()->GetXmin(),1,hunfolded_ratio->GetXaxis()->GetXmax(),1);
@@ -5468,8 +5642,8 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             else
             {
                 hunfolded_ratio->Draw(draw_option);
-                hunfolded_ratio->SetMarkerColor(color);
-                hunfolded_ratio->SetLineColor(color);
+                hunfolded_ratio->SetMarkerColor(kRed);
+                hunfolded_ratio->SetLineColor(kRed);
                 hunfolded_ratio->SetMarkerSize(1.2);
                 hunfolded_ratio->SetMarkerStyle(20);
                 hunfolded_ratio->GetYaxis()->SetTitle("#splitline{ MC/Data}{(pre FSR)}");
@@ -5481,13 +5655,13 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
                 hunfolded_ratio_sys_err->SetLineColor(color);
                 hunfolded_ratio_sys_err->SetFillColor(color);
                 hunfolded_ratio_sys_err->SetLineWidth(5);
-                hunfolded_ratio_sys_err->SetFillStyle(3003);
+                hunfolded_ratio_sys_err->SetFillStyle(3004);
                 hunfolded_ratio_sys_err->SetMarkerSize(0);
                 hunfolded_ratio_sys_err->Draw("E2 same");
                 //hunfolded_ratio_sys_err->SetFillColorAlpha(kBlack,0.3);
-                //hunfolded_ratio_sys_err_mc->SetFillColorAlpha(kRed,0.3);
-                //hunfolded_ratio_sys_err_mc->SetMarkerSize(0);
-                //hunfolded_ratio_sys_err_mc->Draw("E2 same");
+                hunfolded_ratio_sys_err_mc->SetFillColorAlpha(kRed,0.3);
+                hunfolded_ratio_sys_err_mc->SetMarkerSize(0);
+                hunfolded_ratio_sys_err_mc->Draw("E2 same");
             }
 
             if(var=="Pt") hunfolded_ratio->GetXaxis()->SetTitle("p_{T}(" + lepton_type + ") (GeV)");
