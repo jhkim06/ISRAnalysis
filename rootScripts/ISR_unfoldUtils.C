@@ -610,7 +610,7 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
 
     histEfficiency=histProb->ProjectionX("histEfficiency");
 
-    TH2D* ticks_;
+    TH2D* ticks_ = NULL;
     TString draw_option = "COLZ";
 
     //if(var == "Pt")
@@ -920,6 +920,8 @@ void ISRUnfold::drawISRMatrixInfo(TString var, TString outpdf, bool detector_unf
             else c1->SaveAs(outpdf + "/fsr_mass_photos_accxeff.pdf");
         }
     }
+    if(ticks_ != NULL);
+        delete ticks_;
     delete histProb;
     delete histEfficiency;
     delete c1;
@@ -3755,6 +3757,7 @@ void ISRUnfold::drawtext(TGraph *g)
 
 void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
 {
+    TString var = "Pt";
 
     bool relative = true;
     typedef std::map<TString, Double_t> mapdata;
@@ -3765,18 +3768,24 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
     gROOT->SetBatch();
 
     setTDRStyle();
-    writeExtraText = true;       // if extra text
+    writeExtraText = true; 
     extraText  = "work in progress";
 
     TString year_string;
     year_string.Form ("%d", year);
 
-    c1 = new TCanvas("c_SysSummary_"+channel_name+"_"+year_string, "c_"+channel_name+"_"+year_string, 50, 50, 900, 700);
+    c1 = new TCanvas("c_SysSummary_"+channel_name+"_"+year_string, "c_"+channel_name+"_"+year_string, 50, 50, 950, 900);
     c1->cd();
-    gStyle->SetOptFit(0);
 
-    c1->SetBottomMargin(0.2);
-    c1->SetTopMargin(0.08);
+    TPad* pad1 = new TPad("pad1","pad1",0,0.4,1,1);
+    pad1->SetBottomMargin(0.05);
+    pad1->SetTopMargin(0.1);
+    pad1->SetTicks(1);
+    pad1->Draw();
+    pad1->cd();
+
+    //c1->SetBottomMargin(0.2);
+    //c1->SetTopMargin(0.08);
     //c1->SetTicks();
     //c1->SetLogx();
     //c1->SetGridy();
@@ -3790,7 +3799,7 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
     std::map<TString, Double_t>::iterator end_for_sysName;
 
     std::vector<double*> systematicValues;
-    std::vector<TGraph*> pv_graphs;
+    std::vector<TH1*> pv_hists;
 
     std::vector<double> default_values;
 
@@ -3814,36 +3823,29 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
     leg->SetFillStyle(0);
     leg->SetBorderSize(0);
 
-    //TGraph* total_uncert = new TGraph(5, massBin, &meanPtTotErr_data_pre_fsr[0]);
-    //TGraph* stat_uncert = new TGraph(5, massBin, &meanPtStatErr_data_pre_fsr[0]);
+    TH1* hTotal_uncert = new TH1D("hTotalUncert","hTotalUncert", nMassBin, 0, nMassBin);
+    for(int imass = 0; imass < nMassBin; imass++)
+    {
+        hTotal_uncert->Fill(imass, meanPtTotRelErr_data_pre_fsr[imass]);
+    }
+    hTotal_uncert->SetLineColor(kBlack);
+    hTotal_uncert->SetMarkerColor(kBlack);
+    hTotal_uncert->SetMarkerSize(0);
+    hTotal_uncert->SetLineStyle(2);
+    hTotal_uncert->SetLineWidth(2);
+    hTotal_uncert->SetMinimum(0);
+    hTotal_uncert->SetMaximum(3);
+    hTotal_uncert->GetYaxis()->SetTitle("Relative systematic uncertainty %");
+    //hTotal_uncert->GetXaxis()->SetTitle("Mass bin");
+    hTotal_uncert->GetXaxis()->SetTitleSize(35);
+    hTotal_uncert->GetXaxis()->SetTitleOffset(1.2);
+    hTotal_uncert->GetYaxis()->SetTitleSize(35);
+    hTotal_uncert->GetYaxis()->SetTitleOffset(1.2);
+    hTotal_uncert->Draw("p9histl");
 
-    TGraph* total_uncert = new TGraph(5, massBin, &meanPtTotRelErr_data_pre_fsr[0]);
-
-    total_uncert->SetLineColor(kBlack);
-    total_uncert->SetMarkerColor(kBlack);
-    total_uncert->SetMarkerStyle(20);
-    total_uncert->SetMarkerSize(2);
-    total_uncert->SetLineStyle(1);
-    total_uncert->Draw("apl");
-    total_uncert->GetYaxis()->SetRangeUser(0.,5.);
-    total_uncert->GetYaxis()->SetTitle("Relative systematic uncertainty %");
-    total_uncert->GetXaxis()->SetTitle("Mass bin");
-    total_uncert->GetXaxis()->SetTitleSize(35);
-    total_uncert->GetXaxis()->SetTitleOffset(1.2);
-    total_uncert->GetYaxis()->SetTitleSize(35);
-    total_uncert->GetYaxis()->SetTitleOffset(1.2);
-    leg->AddEntry(total_uncert, "Total uncertainty", "pl");
-
-    //TGraph* stat_uncert = new TGraph(5, massBin, &meanPtStatRelErr_data_pre_fsr[0]);
-    //stat_uncert->Draw("pl same");
-    //stat_uncert->SetLineColor(kGray+2);
-    //stat_uncert->SetMarkerColor(kGray+2);
-    //stat_uncert->SetMarkerStyle(21);
-    //stat_uncert->SetMarkerSize(2);
-    //stat_uncert->SetLineStyle(1);
-    //leg->AddEntry(stat_uncert, "Stat uncertainty", "pl");
-    //
-    
+    hTotal_uncert->GetXaxis()->SetBinLabel(hTotal_uncert->GetXaxis()->FindBin(0.), "");
+    leg->AddEntry(hTotal_uncert, "Total uncertainty", "pl");
+        
     double stat_uncert[5] = {0., 0., 0., 0., 0.};
 
     while(it_for_sysName != end_for_sysName)
@@ -3884,7 +3886,7 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
         }
 
         // draw
-        TString draw_option = "pl same";
+        TString draw_option = "p9hist same";
 
         double temp_marker_color = marker_color_sys;
         if(it_for_sysName->first == "PDFerror")
@@ -3947,16 +3949,18 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
             marker_style_sys = 34;
         }
 
-
-        pv_graphs.push_back(new TGraph(5, massBin, systematicValues.at(nth_systematicValues)));
-        // use consistent color and marker style
-        pv_graphs.at(nth_systematicValues)->SetLineColor(marker_color_sys);
-        pv_graphs.at(nth_systematicValues)->SetMarkerColor(marker_color_sys);
-        pv_graphs.at(nth_systematicValues)->SetMarkerStyle(marker_style_sys);
-        pv_graphs.at(nth_systematicValues)->SetMarkerSize(2);
-        pv_graphs.at(nth_systematicValues)->SetLineStyle(1);
-        pv_graphs.at(nth_systematicValues)->Draw(draw_option);
-        leg->AddEntry(pv_graphs.at(nth_systematicValues), it_for_sysName->first=="Alt" ? "Unfold":it_for_sysName->first, "pl");
+        pv_hists.push_back(new TH1D(it_for_sysName->first, it_for_sysName->first, nMassBin, 0, nMassBin));
+        for(int imass = 0; imass < nMassBin; imass++)
+        {
+            pv_hists.at(nth_systematicValues)->Fill(imass, systematicValues.at(nth_systematicValues)[imass]);
+        }
+        pv_hists.at(nth_systematicValues)->SetLineColor(marker_color_sys);
+        pv_hists.at(nth_systematicValues)->SetMarkerColor(marker_color_sys);
+        pv_hists.at(nth_systematicValues)->SetMarkerStyle(marker_style_sys);
+        pv_hists.at(nth_systematicValues)->SetMarkerSize(1.2);
+        pv_hists.at(nth_systematicValues)->SetLineStyle(1);
+        pv_hists.at(nth_systematicValues)->Draw(draw_option);
+        leg->AddEntry(pv_hists.at(nth_systematicValues), it_for_sysName->first=="Alt" ? "Unfold":it_for_sysName->first, "pl");
 
         it_for_sysName++;
         nth_systematicValues++;
@@ -3966,29 +3970,338 @@ void ISRUnfold::drawSysSummaryPlots(TString outpdf, bool detector_unfold)
         marker_style_sys++;
         marker_color_sys++;
     }
-    TGraph* gr_stat_uncert = new TGraph(5, massBin, stat_uncert);
-    gr_stat_uncert->Draw("pl same");
-    gr_stat_uncert->SetLineColor(kGray+2);
-    gr_stat_uncert->SetMarkerColor(kGray+2);
-    gr_stat_uncert->SetMarkerStyle(21);
-    gr_stat_uncert->SetMarkerSize(2);
-    gr_stat_uncert->SetLineStyle(1);
-    leg->AddEntry(gr_stat_uncert, "Stat. uncertainty", "pl");
+
+    TH1* hstat_uncert = new TH1D("stat", "stat", nMassBin, 0, nMassBin);
+    for(int imass = 0; imass < nMassBin; imass++)
+    {
+        hstat_uncert->Fill(imass, stat_uncert[imass]);
+    }
+    hstat_uncert->Draw("p9histl same");
+    hstat_uncert->SetLineColor(kGray+2);
+    hstat_uncert->SetMarkerColor(kGray+2);
+    hstat_uncert->SetMarkerSize(0);
+    hstat_uncert->SetLineStyle(3);
+    hstat_uncert->SetLineWidth(2);
+    leg->AddEntry(hstat_uncert, "Stat. uncertainty", "pl");
 
     leg->Draw();
 
-    CMS_lumi( c1, 4, 11 );
+    CMS_lumi( pad1, 4, 0);
+    c1->cd();
+
+    TPad* pad2 = new TPad("pad2","pad2",0,0,1,0.4);
+    pad2->SetBottomMargin(0.25);
+    pad2->SetTopMargin(0.);
+    pad2->SetTicks(1);
+    pad2->SetLogy();
+    pad2->Draw();
+    pad2->cd();
+
+    if(detector_unfold)
+    {
+        it_for_sysName = meanPtErr_sysdata_det_unf.at(0).begin();
+        end_for_sysName = meanPtErr_sysdata_det_unf.at(0).end();
+    }
+    else
+    {
+        it_for_sysName = meanPtErr_sysdata_pre_fsr.at(0).begin();
+        end_for_sysName = meanPtErr_sysdata_pre_fsr.at(0).end();
+    }
+
+    std::vector<TH1*> pv_syshists;
+    TH1* hunfolded_data = NULL;
+    hunfolded_data  = nomPtFSRUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UO]",kFALSE);
+    nth_systematicValues = 0;
+
+    while(it_for_sysName != end_for_sysName)
+    {
+
+
+    if(it_for_sysName->first == "Stat" || it_for_sysName->first == "PDEerror")
+    { 
+        it_for_sysName++;
+        continue;
+    }
+
+    // lets draw systematic in each bins...
+    pv_syshists.push_back((TH1F*)hunfolded_data->Clone(it_for_sysName->first));
+
+    bool firstIter = true;
+    bool fullSys = false;
+    for(int imass = 0; imass < nMassBin; imass++)
+    {
+        // initialize errors the first iteration
+        if(firstIter)
+        {
+            for(int ibin = 1; ibin<pv_syshists[nth_systematicValues]->GetNbinsX()+1;ibin++)
+            {
+
+                pv_syshists[nth_systematicValues]->SetBinContent(ibin, 0.);
+                pv_syshists[nth_systematicValues]->SetBinError(ibin, 0.);
+            }
+        }
+        // update hunfolded_sys_err
+        makeSystBand(var, imass, it_for_sysName->first, fullSys, hunfolded_data, pv_syshists[nth_systematicValues]);   
+        firstIter = false;
+    }
+
+    TString draw_option = "p9hist same";
+
+    double temp_marker_color = marker_color_sys;
+    if(it_for_sysName->first == "PDFerror")
+    {
+        marker_color_sys = 870; //kAzure + 10
+    }
+    if(it_for_sysName->first == "Scale")
+    {
+        marker_color_sys = 601; //kBlue + 1
+    }
+
+    // marker style
+    if(it_for_sysName->first == "AlphaS")
+    {
+        marker_style_sys = 24;
+    }
+    if(it_for_sysName->first == "Alt")
+    {
+        marker_style_sys = 25;
+    }
+    if(it_for_sysName->first == "IdSF")
+    {
+        marker_style_sys = 26;
+    }
+    if(it_for_sysName->first == "IsoSF")
+    {
+        marker_style_sys = 3;
+    }
+    if(it_for_sysName->first == "L1Prefire")
+    {
+        marker_style_sys = 27;
+    }
+    if(it_for_sysName->first == "PU")
+    {
+        marker_style_sys = 28;
+    }
+    if(it_for_sysName->first == "QED_FSR")
+    {
+        marker_style_sys = 29;
+        marker_color_sys = kRed; 
+    }
+    if(it_for_sysName->first == "Scale")
+    {
+        marker_style_sys = 30;
+    }
+    if(it_for_sysName->first == "Stat")
+    {
+        marker_style_sys = 31;
+    }
+    if(it_for_sysName->first == "lepMom")
+    {
+        marker_style_sys = 32;
+    }
+    if(it_for_sysName->first == "recoSF")
+    {
+        marker_style_sys = 33;
+    }
+    if(it_for_sysName->first == "trgSF")
+    {
+        marker_style_sys = 34;
+    }
+
+    TString option = "histe";
+    if(nth_systematicValues != 0)
+        option = "histsamee";
+
+    pv_syshists[nth_systematicValues]->SetMaximum(30.);
+    pv_syshists[nth_systematicValues]->SetMinimum(1e-3);
+    pv_syshists[nth_systematicValues]->SetLineColor(marker_color_sys);
+    pv_syshists[nth_systematicValues]->SetMarkerColor(marker_color_sys);
+    pv_syshists[nth_systematicValues]->SetMarkerStyle(marker_style_sys);
+    pv_syshists[nth_systematicValues]->SetMarkerSize(1.);
+    pv_syshists[nth_systematicValues]->SetLineStyle(1);
+    pv_syshists[nth_systematicValues]->SetLineWidth(1);
+    pv_syshists[nth_systematicValues]->Draw(option);
+
+    it_for_sysName++;
+    nth_systematicValues++;
+    }
+
+    c1->cd();
     c1->SaveAs(outpdf + channel_name + "_" + year_string + ".pdf");
 
     int pv_size = systematicValues.size();
     for(int i = 0; i < pv_size; i++)
     {
         delete [] systematicValues[i];
-        delete pv_graphs[i];
+        delete pv_hists[i];
+    }
+    int pv_sysSize = pv_syshists.size();
+    for(int i = 0; i < pv_sysSize; i++)
+    {
+        delete pv_syshists[i];
     }
 
-    delete gr_stat_uncert;
+    delete hstat_uncert;
+    delete pad1;
     delete c1;
+}
+
+void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TString sysName, const bool fullSys, const TH1* hunfolded_data, TH1* hunfolded_sys_err)
+{
+    cout << "makeSystBanc called" << endl;
+
+    bool isFoldedSys = false;
+    const TUnfoldBinningV17* temp_binning_gen_pt = nomPtUnfold->GetOutputBinning("Gen_Pt");
+    const TUnfoldBinningV17* temp_binning_rec_pt = nomPtUnfold->GetInputBinning("Rec_Pt");
+    const TUnfoldBinningV17* temp_binning_gen_mass = nomMassUnfold->GetOutputBinning("Gen_Mass");
+    const TUnfoldBinningV17* temp_binning_rec_mass = nomMassUnfold->GetInputBinning("Rec_Mass");
+
+    // get mass bin definition from (pt, mass) bin definition
+    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    const Double_t* massBins = temp_tvecd->GetMatrixArray();
+
+    // get number of pT bins
+    const TVectorD* temp_tvecd_ = temp_binning_gen_pt->GetDistributionBinning(0);
+    int nPtBin = temp_tvecd_->GetNrows() - 1;
+
+    TString ibinMass;
+    ibinMass.Form("%d", nthMassBin);
+
+    std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it;
+    std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it_end;
+
+    if(!isFoldedSys)
+    {
+        it = sysPtFSRUnfold.begin();
+        it_end = sysPtFSRUnfold.end();
+    }
+    else
+    {
+        it = sysPtUnfold.begin();
+        it_end = sysPtUnfold.end();
+    }
+
+    while(it != it_end)
+    {
+        if(!fullSys && it->first != sysName)
+        {
+            it++;
+            continue;
+        }
+
+        TH1 * hdatasys0_temp = NULL;
+        TH1 * hdatasys1_temp = NULL;
+
+        int systematic_variation_index = 0;
+        int systematic_variation_index_mc = 0;
+
+        std::vector<std::map<TString, Int_t>>* p_meanPtErrIdx_data;
+        std::vector<std::map<TString, Int_t>>* p_meanPtErrIdx_mc;
+        std::map<TString, std::vector<TUnfoldDensityV17*>> temp_sysTUnfDensity;
+
+        // get distribution which gives the maximum variation on mean value
+        if(var == "Pt")
+        {
+            if(!isFoldedSys)
+            {
+                p_meanPtErrIdx_data = &meanPtErrIdx_sysdata_pre_fsr;
+                p_meanPtErrIdx_mc = &meanPtErrIdx_sysmc_pre_fsr;
+                temp_sysTUnfDensity = sysPtFSRUnfold;
+            }
+            else
+            {
+                p_meanPtErrIdx_data = &meanPtErrIdx_sysdata_det_unf;
+                p_meanPtErrIdx_mc = &meanPtErrIdx_sysmc_det_unf;
+                temp_sysTUnfDensity = sysPtUnfold;
+            }
+            // note except QED_FSR, use the systematic histogram giving maximum variation on mean value
+            // to calculate systematic error on each bin.
+            // this is not correct for some systematic sources, for example PDF error.
+            if(it->first != "QED_FSR")
+            {
+                systematic_variation_index = p_meanPtErrIdx_data->at(nthMassBin)[it->first];
+                {
+                    hdatasys0_temp = temp_sysTUnfDensity[it->first].at(systematic_variation_index)->GetOutput("hunfolded_pt_systemp",0,0,"pt[UO];mass[UO]",kFALSE);
+                }
+
+            }
+            else
+            {
+                {
+                    hdatasys0_temp = temp_sysTUnfDensity[it->first].at(0)->GetOutput("hunfolded_pt_systemp_fsr0",0,0,"pt[UO];mass[UO]",kFALSE);
+                    hdatasys1_temp = temp_sysTUnfDensity[it->first].at(1)->GetOutput("hunfolded_pt_systemp_fsr1",0,0,"pt[UO];mass[UO]",kFALSE);
+                }
+            }
+        }
+
+        TH1F* ratio0_temp = NULL;
+        TH1F* ratio1_temp = NULL;
+
+        if(it->first != "QED_FSR")
+        {
+            {
+                ratio0_temp = (TH1F*)hunfolded_data->Clone("ratio");
+                ratio0_temp->Divide(hdatasys0_temp);
+            }
+        }
+        else
+        {
+            {
+                ratio0_temp = (TH1F*)hunfolded_data->Clone("ratio");
+                ratio0_temp->Divide(hdatasys0_temp);
+
+                ratio1_temp = (TH1F*)hunfolded_data->Clone("ratio");
+                ratio1_temp->Divide(hdatasys1_temp);
+            }
+        }
+
+        // loop over each bin of unfolded histogram and set error due to the systematic source
+        // note errors of hunfolded_sys_err initialized as zero before looping over all systematic sources
+        // for mass, update only the specific bins in the the current mass range
+
+        int firstBin = 1;
+        int lastBin = hunfolded_sys_err->GetNbinsX()+1;
+        if(var == "Mass")
+        {
+            firstBin = hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin]+0.01);
+            lastBin = hdatasys0_temp->GetXaxis()->FindBin(massBins[nthMassBin+1]-0.01)+1;
+        }
+        if(var == "Pt")
+        {
+            firstBin = firstBin + nPtBin * nthMassBin;
+            lastBin = firstBin + nPtBin;
+        }
+
+        cout << "ibin: " << firstBin << " lastBin: " << lastBin << endl;
+        for(int ibin = firstBin; ibin < lastBin; ibin++)
+        {
+
+            Double_t temp_ratio_err = 0.;
+            Double_t previous_ratio_err = hunfolded_sys_err->GetBinContent(ibin);
+
+            if(it->first != "QED_FSR")
+            {
+                temp_ratio_err = fabs(1. - ratio0_temp->GetBinContent(ibin)) * 100.;
+            }
+            else
+            {
+                temp_ratio_err = fabs(ratio0_temp->GetBinContent(ibin) - ratio1_temp->GetBinContent(ibin)) * 100;
+            }
+
+            cout << "uncertainty: " << sqrt(pow(previous_ratio_err, 2) + pow(temp_ratio_err, 2)) << endl;
+            hunfolded_sys_err->SetBinContent(ibin, sqrt(pow(previous_ratio_err, 2) + pow(temp_ratio_err, 2)));
+            hunfolded_sys_err->SetBinError(ibin, 1e-6);
+            
+        }// loop for bin contents
+
+        delete ratio0_temp;
+        delete ratio1_temp;
+        delete hdatasys0_temp;
+        delete hdatasys1_temp;
+
+        it++;
+    }// end of while
+
 }
 
 void ISRUnfold::drawSysPlots(TString outpdf, int nthMassBin, TString sysName, bool detector_unfold)
@@ -5251,18 +5564,18 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
 
             if(firstIter)
             {
-            c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
-            gStyle->SetOptStat(0);
-            gStyle->SetOptFit(0);
-            c1->cd();
+                c1=new TCanvas("c1", "c1", 50, 50, 800, 800);
+                gStyle->SetOptStat(0);
+                gStyle->SetOptFit(0);
+                c1->cd();
 
-            pad1 = new TPad("pad1","pad1",0,0.4,1,1);
-            pad1->SetBottomMargin(0.);
-            pad1->SetTopMargin(0.1);
-            pad1->SetTicks(1);
-            pad1->SetLogy();
-            pad1->Draw();
-            pad1->cd();
+                pad1 = new TPad("pad1","pad1",0,0.4,1,1);
+                pad1->SetBottomMargin(0.);
+                pad1->SetTopMargin(0.1);
+                pad1->SetTicks(1);
+                pad1->SetLogy();
+                pad1->Draw();
+                pad1->cd();
             }
             else
             {
@@ -5287,7 +5600,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
 
             hunfolded_data->SetTitle("");
             hunfolded_data->Draw(draw_option);
-            hunfolded_mc->Draw("p9samee");
+            hunfolded_mc->Draw("histsamee");
 
             hunfolded_mc->SetMarkerStyle(20);
             hunfolded_mc->SetMarkerSize(1.);
@@ -5297,7 +5610,7 @@ void ISRUnfold::drawUnfoldedHists(TString outpdf, TString var, int nthMassBin_, 
             if(!dilepPtShapeComparison)
             {
                 hfolded_data->Draw("p9samee");
-                hfolded_mc->Draw("psamee");
+                hfolded_mc->Draw("histsamee");
                 hfolded_mc->SetMarkerStyle(21);
                 hfolded_mc->SetMarkerSize(1.);
                 hfolded_mc->SetLineColor(kBlue);
