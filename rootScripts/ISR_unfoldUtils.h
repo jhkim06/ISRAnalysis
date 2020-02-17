@@ -43,14 +43,14 @@ private:
     TUnfoldDensityV17* nomPtUnfold;
     TUnfoldDensityV17* nomMassUnfold;
     
-    TUnfoldDensityV17* nomPtUnfold_closure;
-    TUnfoldDensityV17* nomMassUnfold_closure;
+    TUnfoldDensityV17* nomPtUnfold_closure[3];
+    TUnfoldDensityV17* nomMassUnfold_closure[3];
     
     TUnfoldDensityV17* nomPtFSRUnfold;
     TUnfoldDensityV17* nomMassFSRUnfold;
     
-    TUnfoldDensityV17* nomPtFSRUnfold_closure;
-    TUnfoldDensityV17* nomMassFSRUnfold_closure;
+    TUnfoldDensityV17* nomPtFSRUnfold_closure[3];
+    TUnfoldDensityV17* nomMassFSRUnfold_closure[3];
     
     std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtUnfold;
     std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassUnfold;
