@@ -176,10 +176,10 @@ public:
     void setBias(double bias);
 
     // set nominal TUnfoldDensity 
-    void SetNomTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
+    void SetNomTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1", TString filepath_closure = "");
 
     // set nominal TUnfoldDensity 
-    void setNomFSRTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
+    void setNomFSRTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1", TString filepath_closure = "");
 
     // do closure test: use the nominal probability matrix 
     void doClosureTest(int detOrFSR_unfold, TString filepath, TString phase_name = "full_phase");

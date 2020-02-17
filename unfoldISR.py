@@ -4,7 +4,7 @@ import sys
 import ROOT as rt
 
 # TODO make seperate helper module python file
-def setUnfoldBkgs(unfold_class, hfile_path, syst_name, isSys, nthSys, nTotSys, DYFake = False):
+def setUnfoldBkgs(unfold_class, hfile_path, syst_name, isSys, nthSys, nTotSys, year, DYFake = False):
 
     if DYFake is False:
         unfold_class.subBkgs("Pt", hfile_path, "DYJetsToTauTau",       isSys, syst_name, nTotSys, nthSys, "detector_level")
@@ -25,9 +25,13 @@ def setUnfoldBkgs(unfold_class, hfile_path, syst_name, isSys, nthSys, nTotSys, D
         
     else:
         unfold_class.subBkgs("Pt", hfile_path, "DYJets",       isSys, syst_name, nTotSys, nthSys, "detector_level_DY_Fake")
-        unfold_class.subBkgs("Pt", hfile_path, "DYJets10to50", isSys, syst_name, nTotSys, nthSys, "detector_level_DY_Fake")
         unfold_class.subBkgs("Mass", hfile_path, "DYJets",       isSys, syst_name, nTotSys, nthSys, "detector_level_DY_Fake")
-        unfold_class.subBkgs("Mass", hfile_path, "DYJets10to50", isSys, syst_name, nTotSys, nthSys, "detector_level_DY_Fake")
+        if year == "2016":
+            unfold_class.subBkgs("Pt", hfile_path, "DYJets10to50", isSys, syst_name, nTotSys, nthSys, "detector_level_DY_Fake")
+            unfold_class.subBkgs("Mass", hfile_path, "DYJets10to50", isSys, syst_name, nTotSys, nthSys, "detector_level_DY_Fake")
+        else:
+            unfold_class.subBkgs("Pt", hfile_path, "DYJets10to50_MG", isSys, syst_name, nTotSys, nthSys, "detector_level_DY_Fake")
+            unfold_class.subBkgs("Mass", hfile_path, "DYJets10to50_MG", isSys, syst_name, nTotSys, nthSys, "detector_level_DY_Fake")
 
 def doISRAnalysis(args, year, channel, doSys):
 
@@ -328,6 +332,12 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
             if modifiedLine.split()[1] == "matrix_pdferr":
                     unfoldInputList['matrix_pdferr'] = modifiedLine.split()[2]
 
+            if modifiedLine.split()[1] == "matrix_closure":
+                    unfoldInputList['matrix_closure'] = modifiedLine.split()[2]
+
+            if modifiedLine.split()[1] == "fsr_matrix_closure":
+                    unfoldInputList['fsr_matrix_closure'] = modifiedLine.split()[2]
+
             if modifiedLine.split()[1] == "matrix_alt":
                     unfoldInputList['matrix_alt'] = modifiedLine.split()[2]
 
@@ -345,6 +355,9 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
             if modifiedLine.split()[1] == "gen_hist":
                     unfoldInputList['gen_hist'] = modifiedLine.split()[2]
+
+            if modifiedLine.split()[1] == "gen_hist_closure":
+                    unfoldInputList['gen_hist_closure'] = modifiedLine.split()[2]
 
             if modifiedLine.split()[1] == "hist":
                     unfoldInputList['hist'] = modifiedLine.split()[2]
@@ -364,21 +377,21 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     unfoldClass.setOutputBaseDir(outputDirectory)
     unfoldClass.setBias(bias)
     # set response matrix
-    unfoldClass.SetNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
-    unfoldClass.SetNomTUnfoldDensity("Mass",unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector)
+    unfoldClass.SetNomTUnfoldDensity("Pt",  unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector, unfoldInputList['matrix_closure'])
+    unfoldClass.SetNomTUnfoldDensity("Mass",unfoldInputList['matrix'], args.phase_space_detector, args.FSR_dR_detector, unfoldInputList['matrix_closure'])
 
-    unfoldClass.doClosureTest(DetectorUnfold, unfoldInputList['matrix'], "detector_level")
+    unfoldClass.doClosureTest(DetectorUnfold, unfoldInputList['matrix_closure'], "detector_level")
 
     # set unfolding input histogram
     unfoldClass.setInput("Pt",   unfoldInputList['hist'], False, "nominal", 0, bias, "detector_level")
     unfoldClass.setInput("Mass", unfoldInputList['hist'], False, "nominal", 0, bias, "detector_level")
-    setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], "nominal", False, 0, -1)
-    setUnfoldBkgs(unfoldClass, unfoldInputList['matrix'], "nominal", False, 0, -1, True)
+    setUnfoldBkgs(unfoldClass, unfoldInputList['hist'],   "nominal", False, 0, -1, args.year)
+    setUnfoldBkgs(unfoldClass, unfoldInputList['matrix'], "nominal", False, 0, -1, args.year, True)
 
     # set systematic response matrix and input histograms
-    #if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "PDFerror": 100, "unfoldBias": 1, "unfoldScan": 1, "Alt": 1}
-    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "trgSFDZ": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500, "PDFerror": 100} # "Stat"
-    if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500}
+    #if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "trgSFDZ": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500, "PDFerror": 100} # "Stat"
+    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500} # "Stat"
+    if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500, "PDFerror": 100}
     if args.doSys == True:
          
         for sysName, nSys in sysDict.items():
@@ -406,11 +419,11 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
                 # set systematic background histograms
                 if sysName is not "Stat":
                     if sysName == "PDFerror":
-                        setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys, nSys)
-                        setUnfoldBkgs(unfoldClass, unfoldInputList['matrix_pdferr'], sysName, True, nthSys, nSys, True)
+                        setUnfoldBkgs(unfoldClass, unfoldInputList['hist'],          sysName, True, nthSys, nSys, args.year)
+                        setUnfoldBkgs(unfoldClass, unfoldInputList['matrix_pdferr'], sysName, True, nthSys, nSys, args.year, True)
                     else:
-                        setUnfoldBkgs(unfoldClass, unfoldInputList['hist'], sysName, True, nthSys, nSys)
-                        setUnfoldBkgs(unfoldClass, unfoldInputList['matrix'], sysName, True, nthSys, nSys, True)
+                        setUnfoldBkgs(unfoldClass, unfoldInputList['hist'],   sysName, True, nthSys, nSys, args.year)
+                        setUnfoldBkgs(unfoldClass, unfoldInputList['matrix'], sysName, True, nthSys, nSys, args.year, True)
 
     
     # unfold
@@ -424,11 +437,11 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
         #unfoldClass.drawRhoLog(outputDirectory + "RhoLogMass_" + args.channel + ".pdf", "Mass")
 
     # set QED FSR unfolding response matrix and input
-    unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], args.phase_space_fsr, args.FSR_dR_fsr)
-    unfoldClass.setNomFSRTUnfoldDensity("Mass",  unfoldInputList['fsr_matrix'], args.phase_space_fsr, args.FSR_dR_fsr)
+    unfoldClass.setNomFSRTUnfoldDensity("Pt",    unfoldInputList['fsr_matrix'], args.phase_space_fsr, args.FSR_dR_fsr, unfoldInputList['fsr_matrix_closure'])
+    unfoldClass.setNomFSRTUnfoldDensity("Mass",  unfoldInputList['fsr_matrix'], args.phase_space_fsr, args.FSR_dR_fsr, unfoldInputList['fsr_matrix_closure'])
     unfoldClass.setFSRUnfoldInput(unfoldInputList['fsr_matrix'], False, "", -1, args.phase_space_fsr)
 
-    unfoldClass.doClosureTest(FSRUnfold, unfoldInputList['fsr_matrix'], "fiducial_phase_dRp1")
+    unfoldClass.doClosureTest(FSRUnfold, unfoldInputList['fsr_matrix_closure'], "fiducial_phase_dRp1")
 
     if args.doSys == True:
         # systematic from detector unfolding
@@ -477,10 +490,10 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
     for massBin in range(0,5):
         # closure test
-        unfoldClass.drawClosurePlots(DetectorUnfold, unfoldInputList['gen_hist'], outputDirectory + dirClosurePlots + "DetClosure_" + args.channel, "Pt", massBin)
-        unfoldClass.drawClosurePlots(DetectorUnfold, unfoldInputList['gen_hist'], outputDirectory + dirClosurePlots + "DetClosure_" + args.channel, "Mass", massBin)
-        unfoldClass.drawClosurePlots(FSRUnfold, unfoldInputList['gen_hist'], outputDirectory + dirClosurePlots + "FSRClosure_" + args.channel, "Pt", massBin)
-        unfoldClass.drawClosurePlots(FSRUnfold, unfoldInputList['gen_hist'], outputDirectory + dirClosurePlots + "FSRClosure_" + args.channel, "Mass", massBin)
+        unfoldClass.drawClosurePlots(DetectorUnfold, unfoldInputList['gen_hist_closure'], outputDirectory + dirClosurePlots + "DetClosure_" + args.channel, "Pt", massBin)
+        unfoldClass.drawClosurePlots(DetectorUnfold, unfoldInputList['gen_hist_closure'], outputDirectory + dirClosurePlots + "DetClosure_" + args.channel, "Mass", massBin)
+        unfoldClass.drawClosurePlots(FSRUnfold, unfoldInputList['gen_hist_closure'], outputDirectory + dirClosurePlots + "FSRClosure_" + args.channel, "Pt", massBin)
+        unfoldClass.drawClosurePlots(FSRUnfold, unfoldInputList['gen_hist_closure'], outputDirectory + dirClosurePlots + "FSRClosure_" + args.channel, "Mass", massBin)
 
         unfoldClass.drawNominalRecoPlots(outputDirectory + "Reco_" + args.channel , unfoldInputList['hist'], "Pt", massBin)
 
@@ -492,6 +505,9 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
             # FSR unfold
             unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel, "Pt",   massBin, "", False, True)
             unfoldClass.drawUnfoldedHists(outputDirectory + dirUnfoldHists + "Unfolded_"+args.channel, "Mass", massBin, "", False, True)
+
+    unfoldClass.drawClosurePlots(DetectorUnfold, unfoldInputList['gen_hist_closure'], outputDirectory + dirClosurePlots + "DetClosure_" + args.channel, "Pt", 5)
+    unfoldClass.drawClosurePlots(FSRUnfold, unfoldInputList['gen_hist_closure'], outputDirectory + dirClosurePlots + "FSRClosure_" + args.channel, "Pt", 5)
 
     # draw plots including systematic
     if args.doSys == True:
