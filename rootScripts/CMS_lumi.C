@@ -56,14 +56,19 @@ CMS_lumi( TPad* pad, int iPeriod, int iPosX )
     }
   else if ( iPeriod==5 )
     {
-      lumiText += full_Run2_lumi_13TeV;
+      lumiText += lumi_13TeV_2017;
       lumiText += " (13 TeV)";
     }
-  else if ( iPeriod==5 )                                                                                                                                                                                            
+  else if ( iPeriod==6 )
+    {
+      lumiText += lumi_13TeV_2018;
+      lumiText += " (13 TeV)";
+    }
+  else if ( iPeriod==7 )                                                                                                                                                                                            
     {                                                                                                                                                                                                               
       lumiText = " (13 TeV)";                                                                                                                                                                                      
     } 
-  else if ( iPeriod==7 )
+  else if ( iPeriod==8 )
     { 
       if( outOfFrame ) lumiText += "#scale[0.85]{";
       lumiText += lumi_13TeV; 

@@ -390,8 +390,11 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
 
     # set systematic response matrix and input histograms
     #if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "trgSFDZ": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500, "PDFerror": 100} # "Stat"
-    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500} # "Stat"
-    if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500, "PDFerror": 100}
+    #if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500} # "Stat"
+    if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500} # "Stat"
+
+    #if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "PDFerror": 100, "Stat": 500}
+    if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500}
     if args.doSys == True:
          
         for sysName, nSys in sysDict.items():
@@ -488,6 +491,8 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     if not os.path.exists( outputDirectory + dirUnfoldHists ):
         os.makedirs( outputDirectory + dirUnfoldHists )
 
+    unfoldClass.drawNominalRecoPlots(outputDirectory + "Reco_" + args.channel , unfoldInputList['hist'], "Mass", 5)
+
     for massBin in range(0,5):
         # closure test
         unfoldClass.drawClosurePlots(DetectorUnfold, unfoldInputList['gen_hist_closure'], outputDirectory + dirClosurePlots + "DetClosure_" + args.channel, "Pt", massBin)
@@ -496,6 +501,7 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
         unfoldClass.drawClosurePlots(FSRUnfold, unfoldInputList['gen_hist_closure'], outputDirectory + dirClosurePlots + "FSRClosure_" + args.channel, "Mass", massBin)
 
         unfoldClass.drawNominalRecoPlots(outputDirectory + "Reco_" + args.channel , unfoldInputList['hist'], "Pt", massBin)
+
 
         if not args.doSys:
             # detector unfold
