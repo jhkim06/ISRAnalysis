@@ -3,25 +3,26 @@ import os
 
 class isrSample:
 	def __init__(self, sName, path, isMC = False, isSig = False, isInc = False, isAlt = False): # isInc is true if the signal sample contains tau events
-        	self.path = []
-                self.path.append(path)
-        	self.name = sName
-		self.isMC = isMC
- 		self.isSig = isSig
- 		self.isAlt = isAlt
- 		self.isInc = isInc
 
-    	def dump(self):
-    	    print '**** name: %-*s ' % (100, self.name)
-    	    print '  path    : ', self.path
-    	    print '  is MC    : ', self.isMC
-    	    print '  is Signal    : ', self.isSig
+            self.path = []
+            self.path.append(path)
+            self.name = sName
+            self.isMC = isMC
+            self.isSig = isSig
+            self.isAlt = isAlt
+            self.isInc = isInc
+
+        def dump(self):
+    	    print ('**** name: %-*s ' % (100, self.name))
+    	    print ('  path    : ', self.path)
+    	    print ('  is MC    : ', self.isMC)
+    	    print ('  is Signal    : ', self.isSig)
 
     	def add_sample(self, sample):
-        	self.path.extend( sample.path )
+            self.path.extend( sample.path )
 
     	def clone(self):
-        	return copy.deepcopy(self)
+            return copy.deepcopy(self)
 
 myinputDir_2016Legacy = '/home/jhkim/data/Data/Legacy/2016/'
 myinputDir_2017Legacy = '/home/jhkim/data/Data/Legacy/2017/'
@@ -53,7 +54,7 @@ ISR2017Legacy = {
 
 
 # electron channel
-samplesDef_electron2016Legacy = { 
+samplesDef_electron2016Legacy = {
     'data'       :   ISR2016Legacy['DATA_electron'].clone(),
     'mcSig'      :   ISR2016Legacy['DY'].clone(),
     'mcSig_alt'  :   ISR2016Legacy['DY_MG'].clone(),
@@ -79,7 +80,7 @@ samplesDef_muon2016Legacy = {
 samplesDef_muon2016Legacy['mcSig_alt'].add_sample(ISR2016Legacy['DY10to50_MG'])
 
 # electron channel
-samplesDef_electron2017Legacy = { 
+samplesDef_electron2017Legacy = {
     'data'   : ISR2017Legacy['DATA_electron'].clone(),
     'mcSig'  : ISR2017Legacy['DY'].clone(),
     'mcBkg1'  : ISR2017Legacy['TTbar'].clone(),

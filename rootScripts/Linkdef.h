@@ -4,8 +4,8 @@
 #pragma link off all functions;
 #pragma link C++ nestedclasses;
 
-#pragma link C++ defined_in "/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScripts/ISR_unfoldUtils.h";
-#pragma link C++ defined_in "/home/jhkim/ISR2016/unfolding/TUnfoldISR2016/rootScripts/CMS_lumi.h";
+#pragma link C++ defined_in "/home/jhkim/ISR_Run2/unfolding/TUnfoldISR2016/rootScripts/ISR_unfoldUtils.h";
+#pragma link C++ defined_in "/home/jhkim/ISR_Run2/unfolding/TUnfoldISR2016/rootScripts/CMS_lumi.h";
 
 
 #endif

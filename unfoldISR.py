@@ -71,7 +71,7 @@ def doISRAnalysis(args, year, channel, doSys):
         if modifiedLine.split()[1] == "hist":
             unfoldInputList['hist'] = modifiedLine.split()[2]
 
-    print unfoldInputList
+    print(unfoldInputList)
 
     import pyScripts.unfoldUtil as unfoldutil
     import pyScripts.drawUtil as drawutil
@@ -254,8 +254,8 @@ def doISRAnalysis(args, year, channel, doSys):
 ###
 parser = argparse.ArgumentParser(description='Unfolding for ISR analysis')
 
-parser.add_argument('--channel' , dest = 'channel', default = 'electron', help = 'select channel electron or muon')
-parser.add_argument('--year' , dest = 'year', default = '2016', help = 'select year')
+parser.add_argument('--channel', dest = 'channel', default = 'electron', help = 'select channel electron or muon')
+parser.add_argument('--year', dest = 'year', default = '2016', help = 'select year')
 parser.add_argument('--phase_space_detector' , dest = 'phase_space_detector', default = 'fiducial_phase_pre_FSR_dRp1', help = 'select unfolded phase space')
 parser.add_argument('--FSR_dR_detector' , dest = 'FSR_dR_detector', default = 'dressed_dRp1', help = 'select size of dR for dressed lepton')
 parser.add_argument('--FSR_dR_fsr' , dest = 'FSR_dR_fsr', default = 'dRp1_pre_fsr', help = 'select size of dR for dressed lepton')
@@ -272,10 +272,10 @@ parser.add_argument('--getEMuCombinedResults'  , action='store_true'  , help = '
 args = parser.parse_args()
 
 # get input root files information using sampleDef.py
-import etc.sampleDef as isrSamples
+#import etc.sampleDef as isrSamples
 import pyScripts.unfoldInputUtil as histUtil
 
-print "channel to run: " + args.channel
+print("channel to run: " + args.channel)
 
 # for full Run2 result
 if args.doISRAnalysis:
@@ -287,7 +287,7 @@ if args.doISRAnalysis:
     if not os.path.exists( outputDirectory ):
         os.makedirs( outputDirectory )
 
-    print "use ISR function"
+    print("use ISR function")
     result_electron_2016 = doISRAnalysis(args, "2016", "electron", True)
     result_electron_2017 = doISRAnalysis(args, "2017", "electron", True)
     result_electron_2018 = doISRAnalysis(args, "2018", "electron", True)
@@ -362,7 +362,7 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
             if modifiedLine.split()[1] == "hist":
                     unfoldInputList['hist'] = modifiedLine.split()[2]
 
-    print unfoldInputList
+    print(unfoldInputList)
 
     import pyScripts.unfoldUtil as unfoldutil
     import pyScripts.drawUtil as drawutil
@@ -394,13 +394,13 @@ if args.getUnfoldResults and args.doISRAnalysis == False:
     if args.channel == "electron" : sysDict = {"PU": 2, "trgSF": 2, "recoSF": 2, "IdSF": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500} # "Stat"
 
     #if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "L1Prefire": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "PDFerror": 100, "Stat": 500}
-    if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "AlphaS": 2, "Scale": 6, "lepMom": 2, "Alt": 1, "Stat": 500}
+    if args.channel == "muon" :     sysDict = {"PU": 2, "trgSF": 2, "IsoSF": 2, "IdSF": 2, "AlphaS": 2, "Scale": 6, "Alt": 1, "Stat": 500}
     if args.doSys == True:
          
         for sysName, nSys in sysDict.items():
             for nthSys in range(0,nSys):
 
-                print "sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################"
+                print("sysName: " + sysName + " nthSys: " + str(nthSys) + " #####################################################")
 
                 if sysName == "Alt":
                     unfoldClass.setSysTUnfoldDensity("Pt",  unfoldInputList['matrix'],  sysName, nSys, nthSys, args.phase_space_detector, args.FSR_dR_detector)
@@ -567,4 +567,4 @@ def makeRecoPlots():
         pass
 # test
 if __name__ == "__main__":
-	makeRecoPlots()
+    makeRecoPlots()

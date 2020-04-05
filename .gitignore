@@ -8,3 +8,4 @@
 *.pyc
 output/
 *.swp
+*ipynb_checkpoints/

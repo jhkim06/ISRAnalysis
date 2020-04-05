@@ -74,9 +74,13 @@ private:
     // nominal mean mass and pt for MC at pre FSR
     vector<Double_t> meanMass_mc_det_unf, meanMassErr_mc_det_unf, meanMassStatErr_mc_det_unf, meanMassSysErr_mc_det_unf;
     vector<Double_t> meanPt_mc_det_unf,   meanPtErr_mc_det_unf, meanPtStatErr_mc_det_unf, meanPtSysErr_mc_det_unf;
+    vector<Double_t> meanMass_mc_det_unf_binCenter;
+    vector<Double_t> meanPt_mc_det_unf_binCenter;
     
     vector<Double_t> meanMass_mc_pre_fsr, meanMassStatErr_mc_pre_fsr, meanMassSysErr_mc_pre_fsr;
     vector<Double_t> meanPt_mc_pre_fsr,   meanPtStatErr_mc_pre_fsr, meanPtSysErr_mc_pre_fsr;
+    vector<Double_t> meanMass_mc_pre_fsr_binCenter;
+    vector<Double_t> meanPt_mc_pre_fsr_binCenter;
     
     vector<Double_t> meanMass_mcAlt, meanMassErr_mcAlt;
     vector<Double_t> meanPt_mcAlt,   meanPtErr_mcAlt;
