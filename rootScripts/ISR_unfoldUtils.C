@@ -6697,3 +6697,19 @@ void ISRUnfold::makeSystBand(const TString var, const int nthMassBin, const TStr
         it++;
     }// end of while
 }
+
+TH1* ISRUnfold::getDetUnfoldedHists(TString outHistName, TString steering)
+{
+    return nomMassUnfold->GetOutput(outHistName,0,0,"mass[UO];pt[UOC0]",kTRUE);
+}
+
+TH1* ISRUnfold::getMCHists(TString outHistName, TString steering)
+{
+    return nomMassUnfold->GetBias(outHistName,0,0,"mass[UO];pt[UOC0]",kTRUE);
+}
+
+TH1* ISRUnfold::getDetHists(TString outHistName, TString steering)
+{
+    
+    return nomMassUnfold->GetInput(outHistName,0,0,"mass[UO];pt[UOC0]",kTRUE);
+}

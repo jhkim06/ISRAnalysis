@@ -176,6 +176,11 @@ public:
     }
     ~ISRUnfold(){}
 
+    // test function for Jupyter
+    TH1* getDetUnfoldedHists(TString outHistName = "", TString steering = "");
+    TH1* getMCHists(TString outHistName, TString steering);
+    TH1* getDetHists(TString outHistName = "", TString steering = "");
+
     void setOutputBaseDir(TString outPath);
     void setBias(double bias);
 
