@@ -40,14 +40,20 @@ class ISRUnfold{
 
 private:
 
+    TUnfoldBinning* pt_binning_Rec = NULL;
+    TUnfoldBinning* pt_binning_Gen = NULL;
+    TUnfoldBinning* mass_binning_Rec = NULL;
+    TUnfoldBinning* mass_binning_Gen = NULL;
+
     TUnfoldDensityV17* nomPtUnfold;
     TUnfoldDensityV17* nomMassUnfold;
-    
-    TUnfoldDensityV17* nomPtUnfold_closure[3];
-    TUnfoldDensityV17* nomMassUnfold_closure[3];
-    
+
     TUnfoldDensityV17* nomPtFSRUnfold;
     TUnfoldDensityV17* nomMassFSRUnfold;
+   
+    // 
+    TUnfoldDensityV17* nomPtUnfold_closure[3];
+    TUnfoldDensityV17* nomMassUnfold_closure[3];
     
     TUnfoldDensityV17* nomPtFSRUnfold_closure[3];
     TUnfoldDensityV17* nomMassFSRUnfold_closure[3];
@@ -152,12 +158,11 @@ private:
 public:
     
     // constructor
-    ISRUnfold(TString channel, TString filepath, TString filepath_DYHists = "", bool norm = true, int year_ = 2016, 
+    ISRUnfold(TString channel, TString filepath, bool norm = true, int year_ = 2016, 
             int regMode_detector_ = 0, int regMode_FSR_ = 0)
     {
         channel_name = channel;
         hist_file_path = filepath;
-        hist_file_path_DYHists = filepath_DYHists;
         do_normalization = norm;
         year = year_;
 
@@ -176,21 +181,23 @@ public:
     }
     ~ISRUnfold(){}
 
-    // test function for Jupyter
-    TH1* getDetUnfoldedHists(TString outHistName = "", TString steering = "");
-    TH1* getMCHists(TString outHistName, TString steering);
-    TH1* getDetHists(TString outHistName = "", TString steering = "");
+    // Get histogram
+    TH1* getDetUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
+    TH1* getFSRUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
+    TH1* getMCHists(TString var, TString outHistName, TString steering, bool useAxis = true);
+    TH1* getDetHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
+    TH1* getRawHist(TString filePath, TString histName, TString outHistName, TString steering);
 
     void setOutputBaseDir(TString outPath);
     void setBias(double bias);
 
-    // set nominal TUnfoldDensity 
-    void SetNomTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1", TString filepath_closure = "");
+    // Set nominal TUnfoldDensity 
+    void setNomResMatrix(TString var, TString filepath, TString matrixName);
 
-    // set nominal TUnfoldDensity 
-    void setNomFSRTUnfoldDensity(TString var, TString filepath, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1", TString filepath_closure = "");
+    // Set nominal TUnfoldDensity 
+    void setNomFSRResMatrix(TString var, TString filepath, TString migrationName, TString phaseSpace);
 
-    // do closure test: use the nominal probability matrix 
+    // Do closure test: use the nominal probability matrix 
     void doClosureTest(int detOrFSR_unfold, TString filepath, TString phase_name = "full_phase");
 
     // set systematic TUnfoldDensity
@@ -198,8 +205,8 @@ public:
     void setSysFSRTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
     // set input histogram
-    void setFSRUnfoldInput(TString filepath, bool isSys = false, TString sysName = "", int nth = 0, TString phase_name = "full_phase");
-    void setInput(TString var, TString filepath, bool isSys = false, TString sysName = "", int nth = 0, double bias = 1., TString phase_name = "full_phase");
+    void setFSRUnfInput(bool isSys = false, TString sysName = "", int nth = 0);
+    void setUnfInput(TString var, TString filepath, bool isSys = false, TString sysName = "", int nth = 0, double bias = 1., TString phase_name = "full_phase");
 
     // set background histograms
     void subBkgs(TString var, TString filepath, TString bkgName, bool isSys = false, TString sysName = "", int totSysN = -1, int nth = 0, TString phase_name = "full_phase");
@@ -236,8 +243,22 @@ public:
 
     void drawtext(TGraph* g);
 
-    void setMeanPt(bool doSys = false, bool altMC = false, bool detector_unfold = false);
-    void setMeanMass(bool doSys = false, bool altMC = false, bool detector_unfold = false);
+    int setMeanPt(bool isDet = true);
+    int setMeanMass(bool isDet = true);
+    
+    double getDetMeanPt(int ibin);
+    double getDetMeanMass(int ibin);
+    double getUnfMeanPt(int ibin);
+    double getUnfMeanMass(int ibin);
+    double getUnfMeanPtError(int ibin);
+    double getUnfMeanMassError(int ibin);
+    double getFSRUnfMeanPt(int ibin);
+    double getFSRUnfMeanMass(int ibin);
+    double getFSRUnfMeanPtError(int ibin);
+    double getFSRUnfMeanMassError(int ibin);
+
+    double getMCGenMeanMass(int ibin);
+    double getMCGenMeanPt(int ibin);
 
     // need unfolded hist, rho matrix (GetRhoIJtotal), MC truth
     double DoFit(TString var = "Pt", int nthMassBin = 0, bool isFSRUnfold = false); // chi2 fit for unfolded distribution
