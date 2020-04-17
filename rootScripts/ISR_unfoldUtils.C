@@ -346,7 +346,7 @@ void ISRUnfold::setFSRUnfInput(bool isSys, TString sysName, int nth)
 }
 
 
-void ISRUnfold::setUnfInput(TString var, TString filepath, bool isSys, TString sysName, int nth, double bias, TString phase_name)
+void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, bool isSys, TString sysName, int nth)
 {
 
     TFile* filein = new TFile(filepath);
@@ -360,18 +360,18 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, bool isSys, TString s
     {
         if(var == "Pt")
         {
-            if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/"+var+"/histo_DoubleMuonnominal");
-            if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleEGnominal");
-            if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_EGammanominal");
+            if(channel_name == "muon")     hRec = (TH1*)filein->Get(dirName + "/"+var+"/histo_DoubleMuonnominal");
+            if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(dirName + "/hist_ptll/histo_DoubleEGnominal");
+            if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(dirName + "/hist_ptll/histo_EGammanominal");
 
-            nomPtUnfold->SetInput(hRec,   bias);
+            nomPtUnfold->SetInput(hRec,   nominal_bias);
         }
         else if(var == "Mass")
         {
-            if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/"+var+"/histo_DoubleMuonnominal");
-            if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleEGnominal");
-            if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_EGammanominal");
-            nomMassUnfold->SetInput(hRec, bias);
+            if(channel_name == "muon")     hRec = (TH1*)filein->Get(dirName + "/"+var+"/histo_DoubleMuonnominal");
+            if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(dirName + "/hist_mll/histo_DoubleEGnominal");
+            if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(dirName + "/hist_mll/histo_EGammanominal");
+            nomMassUnfold->SetInput(hRec, nominal_bias);
         }
         else{
             cout << "ISRUnfold::setUnfInput, only Pt and Mass available for var" << endl;
@@ -389,17 +389,17 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, bool isSys, TString s
             {
                 if(var == "Pt")
                 {
-                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleMuonnominal");
-                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_DoubleEGnominal");
-                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_EGammanominal");
-                    sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   bias);
+                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(dirName + "/hist_ptll/histo_DoubleMuonnominal");
+                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(dirName + "/hist_ptll/histo_DoubleEGnominal");
+                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(dirName + "/hist_ptll/histo_EGammanominal");
+                    sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   nominal_bias);
                 }
                 else if(var == "Mass")
                 {
-                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleMuonnominal");
-                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_DoubleEGnominal");
-                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_EGammanominal");
-                    sysMassUnfold[sysName].at(nth)->SetInput(hRec,   bias);
+                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(dirName + "/hist_mll/histo_DoubleMuonnominal");
+                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(dirName + "/hist_mll/histo_DoubleEGnominal");
+                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(dirName + "/hist_mll/histo_EGammanominal");
+                    sysMassUnfold[sysName].at(nth)->SetInput(hRec,   nominal_bias);
                 }
                 else
                 {
@@ -417,7 +417,7 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, bool isSys, TString s
                     nth_.Form("%d", nth);
                     temp_ptHist = nomPtUnfold->GetInput("ptToy_" + nth_, 0, 0, 0, false);
 
-                    // randomize histogram bins
+                    // Randomize histogram bins
                     for(int ibin = 1; ibin<temp_ptHist->GetNbinsX()+1;ibin++)
                     {
                         double err = temp_ptHist->GetBinError(ibin);
@@ -426,7 +426,7 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, bool isSys, TString s
                             temp_ptHist->SetBinContent(ibin, temp_ptHist->GetBinContent(ibin) + gRandom->Gaus(0,err));
                         }
                     }
-                    sysPtUnfold[sysName].at(nth)->SetInput(temp_ptHist, bias);
+                    sysPtUnfold[sysName].at(nth)->SetInput(temp_ptHist, nominal_bias);
                 }
                 else if(var == "Mass")
                 {
@@ -436,7 +436,7 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, bool isSys, TString s
                     nth_.Form("%d", nth);
                     temp_massHist = nomMassUnfold->GetInput("ptToy_" + nth_, 0, 0, 0, false);
 
-                    // randomize histogram bins
+                    // Randomize histogram bins
                     for(int ibin = 1; ibin<temp_massHist->GetNbinsX()+1;ibin++)
                     {
                         double err = temp_massHist->GetBinError(ibin);
@@ -445,7 +445,7 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, bool isSys, TString s
                             temp_massHist->SetBinContent(ibin, temp_massHist->GetBinContent(ibin) + gRandom->Gaus(0,err));
                         }
                     }
-                    sysMassUnfold[sysName].at(nth)->SetInput(temp_massHist, bias);
+                    sysMassUnfold[sysName].at(nth)->SetInput(temp_massHist, nominal_bias);
                 }
                 else
                 {
@@ -461,12 +461,12 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, bool isSys, TString s
             TString histDirPostfix = "";
             if(nth == 0)
             {
-                phase_name += "_lepMomUp";
+                dirName += "_lepMomUp";
                 histDirPostfix = "_lepMomUp";
             }
             else if(nth == 1)
             {
-                phase_name += "_lepMomDown";
+                dirName += "_lepMomDown";
                 histDirPostfix = "_lepMomDown";
             }
             else
@@ -476,17 +476,17 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, bool isSys, TString s
 
             if(var == "Pt")
             {
-                if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_DoubleMuonnominal");
-                if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_DoubleEGnominal");
-                if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_EGammanominal");
-                sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   bias);
+                if(channel_name == "muon")     hRec = (TH1*)filein->Get(dirName + "/hist_ptll" + histDirPostfix + "/histo_DoubleMuonnominal");
+                if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(dirName + "/hist_ptll" + histDirPostfix + "/histo_DoubleEGnominal");
+                if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(dirName + "/hist_ptll" + histDirPostfix + "/histo_EGammanominal");
+                sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   nominal_bias);
             }
             else if(var == "Mass")
             {
-                if(channel_name == "muon")     hRec = (TH1*)filein->Get(phase_name + "/hist_mll" + histDirPostfix + "/histo_DoubleMuonnominal");
-                if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll" + histDirPostfix + "/histo_DoubleEGnominal");
-                if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(phase_name + "/hist_mll" + histDirPostfix + "/histo_EGammanominal");
-                sysMassUnfold[sysName].at(nth)->SetInput(hRec,   bias);
+                if(channel_name == "muon")     hRec = (TH1*)filein->Get(dirName + "/hist_mll" + histDirPostfix + "/histo_DoubleMuonnominal");
+                if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(dirName + "/hist_mll" + histDirPostfix + "/histo_DoubleEGnominal");
+                if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(dirName + "/hist_mll" + histDirPostfix + "/histo_EGammanominal");
+                sysMassUnfold[sysName].at(nth)->SetInput(hRec,   nominal_bias);
             }
             else
             {
@@ -761,28 +761,6 @@ void ISRUnfold::doISRUnfold(int detOrFSR_unfold, bool doSys){
                 it++;
         }
     }
-
-}
-
-double ISRUnfold::Chi2Test(TH1 *data, TH1 *mc){ // check if this is right way to get chi square value
-
- gROOT->SetBatch();
-
- double chi2 = 0.;
- double ndf  = 0.;
-
- for(int i=1;i<=mc->GetNbinsX();i++) {
-    ndf += 1.;
-    if(data->GetBinError(i) == 0){
-      std::cout << "unfolded " << i << " bin: " << data->GetBinContent(i) << std::endl;
-      std::cout << "error is zero in the " << i << " bin..." << std::endl;
-      std::cout << "so skip this bin" << std::endl;
-      continue;
-    }
-    double pull=(data->GetBinContent(i)-mc->GetBinContent(i))/data->GetBinError(i);
-    chi2+= pull*pull;
- }
- return chi2/(ndf-1);
 
 }
 
