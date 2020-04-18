@@ -50,14 +50,8 @@ private:
     TUnfoldDensityV17* nomPtUnfold;
     TUnfoldDensityV17* nomMassUnfold;
 
-    TUnfoldDensityV17* nomPtFSRUnfold;
-    TUnfoldDensityV17* nomMassFSRUnfold;
-   
     std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtUnfold;
     std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassUnfold;
-    
-    std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtFSRUnfold;
-    std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassFSRUnfold;
     
     // Results: mean values 
     // Detector level 
@@ -68,16 +62,9 @@ private:
     vector<Double_t> meanMass_data_det_unf, meanMassStatErr_data_det_unf, meanMassSysErr_data_det_unf, meanMassTotErr_data_det_unf;
     vector<Double_t> meanPt_data_det_unf,   meanPtStatErr_data_det_unf,   meanPtSysErr_data_det_unf, meanPtTotErr_data_det_unf;
     
-    // Pre FSR unfolded results
-    vector<Double_t> meanMass_data_pre_fsr, meanMassStatErr_data_pre_fsr, meanMassSysErr_data_pre_fsr, meanMassTotErr_data_pre_fsr;
-    vector<Double_t> meanPt_data_pre_fsr,   meanPtStatErr_data_pre_fsr,   meanPtSysErr_data_pre_fsr, meanPtTotErr_data_pre_fsr;
-    
     // Nominal mean mass and pt for MC
     vector<Double_t> meanMass_mc_det_unf, meanMassErr_mc_det_unf, meanMassStatErr_mc_det_unf, meanMassSysErr_mc_det_unf;
     vector<Double_t> meanPt_mc_det_unf,   meanPtErr_mc_det_unf, meanPtStatErr_mc_det_unf, meanPtSysErr_mc_det_unf;
-    
-    vector<Double_t> meanMass_mc_pre_fsr, meanMassStatErr_mc_pre_fsr, meanMassSysErr_mc_pre_fsr;
-    vector<Double_t> meanPt_mc_pre_fsr,   meanPtStatErr_mc_pre_fsr, meanPtSysErr_mc_pre_fsr;
     
     TCanvas* c1;
     
@@ -121,6 +108,7 @@ public:
 
         if(regMode_FSR_ == 0)
             regMode_FSR = TUnfold::kRegModeNone;
+        cout << "ISRUnfold set!" << endl;
     }
     ~ISRUnfold(){}
 
@@ -128,37 +116,36 @@ public:
     void setBias(double bias);
 
     // Set nominal TUnfoldDensity 
-    void setNomResMatrix(TString var, TString filepath, TString matrixName);
+    void setNomResMatrix(TString var, TString filepath, TString dirName, TString histName, bool isSquareMatrix = false);
     // Set nominal TUnfoldDensity 
-    void setNomFSRResMatrix(TString var, TString filepath, TString migrationName, TString phaseSpace);
+    void setNomFSRResMatrix(TString var, TString filepath, TString dirName, TString histName);
 
     // Set input histogram
     void setFSRUnfInput(bool isSys = false, TString sysName = "", int nth = 0);
-    void setUnfInput(TString var, TString filepath, TString dirName, bool isSys = false, TString sysName = "", int nth = 0);
+    void setUnfInput(TString var, TString filepath, TString dirName, TString histName, bool isSys = false, TString sysName = "", int nth = 0);
+    void setUnfInput(ISRUnfold* unfold, TString var, bool isSys = false, TString sysName = "", int nth = 0);
 
     // Set background histograms
     void subBkgs(TString var, TString filepath, TString bkgName, bool isSys = false, TString sysName = "", int totSysN = -1, int nth = 0, TString phase_name = "full_phase");
 
     // Set systematic TUnfoldDensity
     void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
-    void setSysFSRTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
 
     // Do unfold 
-    void doISRUnfold(int detOrFSR_unfold = 0, bool doSys = false);
+    void doISRUnfold( bool doSys = false);
 
     // Get histograms
     TH1* getDetUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
-    TH1* getFSRUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
     TH1* getMCHists(TString var, TString outHistName, TString steering, bool useAxis = true);
     TH1* getDetHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
-    TH1* getRawHist(TString filePath, TString histName, TString outHistName, TString steering);
+    TH1* getRawHist(TString var, TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis);
 
     // Helper functions
     void doNorm(TH1* hist, bool norm = true); 
     void drawtext(TGraph* g);
 
-    int setMeanPt(bool isDet = true);
-    int setMeanMass(bool isDet = true);
+    int setMeanPt();
+    int setMeanMass();
    
     // Get mean values 
     double getDetMeanPt(int ibin);
@@ -167,15 +154,9 @@ public:
     double getUnfMeanMass(int ibin);
     double getUnfMeanPtError(int ibin);
     double getUnfMeanMassError(int ibin);
-    double getFSRUnfMeanPt(int ibin);
-    double getFSRUnfMeanMass(int ibin);
-    double getFSRUnfMeanPtError(int ibin);
-    double getFSRUnfMeanMassError(int ibin);
 
     double getMCGenMeanMass(int ibin);
     double getMCGenMeanPt(int ibin);
-
-    double DoFit(TString var = "Pt", int nthMassBin = 0, bool isFSRUnfold = false); // Chi2 fit for unfolded distribution
 
 };
 
