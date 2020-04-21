@@ -14,6 +14,7 @@ void ISRUnfold::setOutputBaseDir(TString outPath)
 
 void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, TString histName, bool isSquareMatrix)
 {
+    cout << "ISRUnfold::setNomResMatrix set response matrix..." << endl;
     TFile* filein = new TFile(filepath);
 
     TString Rec_binName = "Rec_"+var;
