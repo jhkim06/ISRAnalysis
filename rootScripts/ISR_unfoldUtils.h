@@ -40,6 +40,13 @@ class ISRUnfold{
 
 private:
 
+    std::vector<double> massBinEdges;
+
+    std::vector<TString> bkgNames; // Backgroud Name
+    std::vector<TString> bkgTypes; // Backgroud Type
+
+    std::map<TString, int> bkgColors;
+
     // Bin definitions
     TUnfoldBinning* pt_binning_Rec = NULL;
     TUnfoldBinning* pt_binning_Gen = NULL;
@@ -81,22 +88,26 @@ private:
     
     // Conditions for unfolding
     TUnfold::ERegMode regMode_detector;
-    TUnfold::ERegMode regMode_FSR;
     double nominal_bias;
     
     TString output_baseDir;
     TString channel_name;
     int year;
+
+    void setMassBindEdges();
         
 public:
     
     // Constructor
-    ISRUnfold(TString channel, int year_ = 2016, int regMode_detector_ = 0, int regMode_FSR_ = 0)
+    ISRUnfold(TString channel, int year_ = 2016, int regMode_detector_ = 0)
     {
+        cout << "ISRUnfold set!" << endl;
+
         channel_name = channel;
         year = year_;
 
         nominal_bias = 1.; // 
+
         if(regMode_detector_ == 0)
             regMode_detector = TUnfold::kRegModeNone;
         if(regMode_detector_ == 1)
@@ -106,9 +117,11 @@ public:
         if(regMode_detector_ == 3)
             regMode_detector = TUnfold::kRegModeCurvature; 
 
-        if(regMode_FSR_ == 0)
-            regMode_FSR = TUnfold::kRegModeNone;
-        cout << "ISRUnfold set!" << endl;
+        // Fill colors for backgrounds
+        bkgColors["WJets"] = kViolet+1;
+        bkgColors["EWK"] = kYellow+2;
+        bkgColors["Top"] = kBlue;
+
     }
     ~ISRUnfold(){}
 
@@ -117,19 +130,21 @@ public:
 
     // Set nominal TUnfoldDensity 
     void setNomResMatrix(TString var, TString filepath, TString dirName, TString histName, bool isSquareMatrix = false);
-    // Set nominal TUnfoldDensity 
-    void setNomFSRResMatrix(TString var, TString filepath, TString dirName, TString histName);
 
     // Set input histogram
-    void setFSRUnfInput(bool isSys = false, TString sysName = "", int nth = 0);
     void setUnfInput(TString var, TString filepath, TString dirName, TString histName, bool isSys = false, TString sysName = "", int nth = 0);
     void setUnfInput(ISRUnfold* unfold, TString var, bool isSys = false, TString sysName = "", int nth = 0);
 
     // Set background histograms
-    void subBkgs(TString var, TString filepath, TString bkgName, bool isSys = false, TString sysName = "", int totSysN = -1, int nth = 0, TString phase_name = "full_phase");
+    void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
+                bool isSys = false, TString sysName = "", int totSysN = -1, int nth = 0, TString dirName = "full_phase");
 
     // Set systematic TUnfoldDensity
     void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
+
+    // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
+    TCanvas* drawFoldedHists(TString var, TString filePath);
+    void setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal);
 
     // Do unfold 
     void doISRUnfold( bool doSys = false);

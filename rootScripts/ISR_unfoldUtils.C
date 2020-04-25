@@ -44,11 +44,13 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
         exit (EXIT_FAILURE);
     }
 
+    // Set mass bin edges
+    // setBassBinEdges
+    setMassBindEdges(); 
 
     // Set response matrix
     TH2* hmcGenRec;
     hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName +"/hmc" + var + "GenRecnominal");
-    
     
     if( var == "Pt" )
     {
@@ -72,9 +74,30 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
 
     filein->Close();
     delete filein;
+}
+
+void ISRUnfold::setMassBindEdges()
+{
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
+    const Double_t* massBins = temp_tvecd->GetMatrixArray();
+    int nMassBinEdges = temp_tvecd->GetNrows();
+
+    if(massBinEdges.size() == 0)
+    {
+        for(int i = 0 ; i < nMassBinEdges; i++)
+        {
+            massBinEdges.push_back(massBins[i]);
+            cout << i << " th mass bin edge: " << massBins[i] << endl;
+        }
+    }
+    else
+    {
+        cout << "ISRUnfold::setMassBindEdges massBinEdges already set." << endl;
+    }
 
 }
 
+// FIXME Update!!
 void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name, TString fsr_correction_name)
 {
 
@@ -194,26 +217,33 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
     delete filein;
 }
 
+// Set input histogram from unfolding output
 void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString var, bool isSys, TString sysName, int nth)
 {
-    // Set input histogram from unfolding output histogram
+    TH1::AddDirectory(kFALSE);
+
     if(!isSys)
     {
         if(var=="Pt")
+        {
             nomPtUnfold->SetInput(unfold->getDetUnfoldedHists("Pt", "UnfoldOut_Pt", "*[*]", false), 1.);
+        }
         else 
+        {
             nomMassUnfold->SetInput(unfold->getDetUnfoldedHists("Mass", "UnfoldOut_Mass", "*[*]", false), 1.);
+        }
     }
     else
     {
         cout << "ISRUnfold::setUnfInput not ready for systematic..." << endl;
         exit(EXIT_FAILURE);
     }
-
 }
 
+// Set input histogram from root file
 void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TString histName, bool isSys, TString sysName, int nth)
 {
+    TH1::AddDirectory(kFALSE);
 
     TFile* filein = new TFile(filepath);
     TString nth_;
@@ -226,7 +256,7 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TStr
     {
         hRec = (TH1*)filein->Get(dirName+"/"+var+"/"+histName);
 
-        // Use DY MC as unfolding input, i.e. closure test
+        // Use DY MC as unfolding input, i.e. simple closure test
         if(histName.Contains("DYJetsTo"))
         {
             histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
@@ -246,10 +276,10 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TStr
             exit (EXIT_FAILURE);
         }
     }
-    // systematic histograms
+    // Systematic histograms
     else
     {
-        // for systematic, using the same input histogram as nominal, unless data changed in a systematic change
+        // For systematic, using the same input histogram as nominal, unless data changed in a systematic change
         if(sysName != "lepMom")
         {
 
@@ -367,57 +397,71 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TStr
     delete filein;
 }
 
-void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isSys, TString sysName, int totSysN, int nth, TString phase_name)
+void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, bool isSys, TString sysName, int totSysN, int nth, TString dirName)
 {
 
-	TFile* filein = new TFile(filepath);
-        TH1* hRec = NULL;
+    TFile* filein = new TFile(filepath);
+    TH1* hPtRec = NULL;
+    TH1* hMassRec = NULL;
+    
+    double bkg_scale = 1.;
+    TString systematic_postfix = sysName;
+    
+    if(totSysN == 2){
+        if(nth == 0 ) systematic_postfix="_"+systematic_postfix+"Up";
+        if(nth == 1 ) systematic_postfix="_"+systematic_postfix+"Down";
+    }
+    
+    if(totSysN == 6 && (sysName == "Scale" || sysName =="pdfScale")){
+        if(nth == 0 ) systematic_postfix="_"+systematic_postfix+"AUp";
+        if(nth == 1 ) systematic_postfix="_"+systematic_postfix+"ADown";
+        if(nth == 2 ) systematic_postfix="_"+systematic_postfix+"BUp";
+        if(nth == 3 ) systematic_postfix="_"+systematic_postfix+"BDown";
+        if(nth == 4 ) systematic_postfix="_"+systematic_postfix+"ABUp";
+        if(nth == 5 ) systematic_postfix="_"+systematic_postfix+"ABDown";
+    }
+    
+    if(totSysN == 100 && sysName == "PDFerror"){
+        TString nth_;
+        nth_.Form ("%03d", nth);
+        systematic_postfix="_"+systematic_postfix+nth_;
+    }
+    
+    // Nominal histograms
+    if(!isSys)
+    {
 
-        double bkg_scale = 1.;
+        bkgNames.push_back(bkgInfo.first);
+        bkgTypes.push_back(bkgInfo.second);
 
-        TString systematic_postfix = sysName;
+        hPtRec = (TH1*)filein->Get(dirName + "/Pt/histo_" + bkgInfo.first + "nominal");
+        nomPtUnfold->  SubtractBackground(hPtRec, bkgInfo.first, bkg_scale);
 
-        if(totSysN == 2){
-            if(nth == 0 ) systematic_postfix="_"+systematic_postfix+"Up";
-            if(nth == 1 ) systematic_postfix="_"+systematic_postfix+"Down";
-        }
+        hMassRec = (TH1*)filein->Get(dirName + "/Mass/histo_" + bkgInfo.first + "nominal");
+        nomMassUnfold->SubtractBackground(hMassRec, bkgInfo.first, bkg_scale);
+    }
 
-        if(totSysN == 6 && (sysName == "Scale" || sysName =="pdfScale")){
-            if(nth == 0 ) systematic_postfix="_"+systematic_postfix+"AUp";
-            if(nth == 1 ) systematic_postfix="_"+systematic_postfix+"ADown";
-            if(nth == 2 ) systematic_postfix="_"+systematic_postfix+"BUp";
-            if(nth == 3 ) systematic_postfix="_"+systematic_postfix+"BDown";
-            if(nth == 4 ) systematic_postfix="_"+systematic_postfix+"ABUp";
-            if(nth == 5 ) systematic_postfix="_"+systematic_postfix+"ABDown";
-        }
-
-        if(totSysN == 100 && sysName == "PDFerror"){
-            TString nth_;
-            nth_.Form ("%03d", nth);
-            systematic_postfix="_"+systematic_postfix+nth_;
-        }
-
-        // nominal histograms
-	if(!isSys)
+/*
+    // Systematic histograms
+    else
+    {	
+    
+        // Systematics using nominal detector distributions
+        if(sysName=="Alt" || sysName=="unfoldBias" || sysName=="unfoldScan" || sysName == "Stat")
         {
-                if(var == "Pt")
-                {
-                    hRec = (TH1*)filein->Get(phase_name + "/"+var+"/histo_" + bkgName + "nominal");
-                }
-                if(var == "Mass")
-                {
-                    hRec = (TH1*)filein->Get(phase_name + "/"+var+"/histo_" + bkgName + "nominal");
-                }
-
-        	if( var == "Pt" )   nomPtUnfold->  SubtractBackground(hRec, bkgName, bkg_scale);
-        	if( var == "Mass" ) nomMassUnfold->SubtractBackground(hRec, bkgName, bkg_scale);
-	}
-        // systematic histograms
-	else
-        {	
-
-            // systematics using nominal detector distributions
-            if(sysName=="Alt" || sysName=="unfoldBias" || sysName=="unfoldScan" || sysName == "Stat")
+            if(var == "Pt")
+            {
+                hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "nominal");
+            }
+            if(var == "Mass")
+            {
+                hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "nominal");
+            }
+        }
+        else
+        {
+            // WW WZ ZZ have no PDF systematics
+            if( (bkgName=="WW_pythia" || bkgName=="WZ_pythia" || bkgName=="ZZ_pythia") && (sysName=="pdfScale"||sysName=="Scale" || sysName=="AlphaS"||sysName=="alphaS"))
             {
                 if(var == "Pt")
                 {
@@ -430,59 +474,208 @@ void ISRUnfold::subBkgs(TString var, TString filepath, TString bkgName, bool isS
             }
             else
             {
-                // WW WZ ZZ have no PDF systematics
-                if( (bkgName=="WW_pythia" || bkgName=="WZ_pythia" || bkgName=="ZZ_pythia") && (sysName=="pdfScale"||sysName=="Scale" || sysName=="AlphaS"||sysName=="alphaS"))
-                {
-                    if(var == "Pt")
+    
+                TString histDirPostfix = "";
+                if(sysName == "lepMom"){
+                    if(nth == 0)
                     {
-                        hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "nominal");
+                        phase_name += "_lepMomUp";
+                        histDirPostfix = "_lepMomUp";
+                        systematic_postfix = "nominal";
                     }
-                    if(var == "Mass")
+                    else if(nth == 1)
                     {
-                        hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "nominal");
+                        phase_name += "_lepMomDown";
+                        histDirPostfix = "_lepMomDown";
+                        systematic_postfix = "nominal";
+                    }
+                    else
+                    {
+                        exit(EXIT_FAILURE);
                     }
                 }
-                else
+    
+                if(var == "Pt")
                 {
-
-                    TString histDirPostfix = "";
-                    if(sysName == "lepMom"){
-                        if(nth == 0)
-                        {
-                            phase_name += "_lepMomUp";
-                            histDirPostfix = "_lepMomUp";
-                            systematic_postfix = "nominal";
-                        }
-                        else if(nth == 1)
-                        {
-                            phase_name += "_lepMomDown";
-                            histDirPostfix = "_lepMomDown";
-                            systematic_postfix = "nominal";
-                        }
-                        else
-                        {
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-
-                    if(var == "Pt")
-                    {
-                        hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix);
-                        cout << "path: " << phase_name + "/hist_ptll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix << endl;
-                    }
-                    if(var == "Mass")
-                    {
-                        hRec = (TH1*)filein->Get(phase_name + "/hist_mll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix);
-                    }
+                    hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix);
+                    cout << "path: " << phase_name + "/hist_ptll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix << endl;
+                }
+                if(var == "Mass")
+                {
+                    hRec = (TH1*)filein->Get(phase_name + "/hist_mll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix);
                 }
             }
+        }
+    
+        if( var == "Pt" )   sysPtUnfold[sysName].at(nth)  ->SubtractBackground(hRec, bkgName, bkg_scale);
+        if( var == "Mass" ) sysMassUnfold[sysName].at(nth)->SubtractBackground(hRec, bkgName, bkg_scale);
+    }
+ */   
+    filein->Close();
+    delete filein;
+}
 
-            if( var == "Pt" )   sysPtUnfold[sysName].at(nth)  ->SubtractBackground(hRec, bkgName, bkg_scale);
-            if( var == "Mass" ) sysMassUnfold[sysName].at(nth)->SubtractBackground(hRec, bkgName, bkg_scale);
-	}
-	
-	filein->Close();
-	delete filein;
+// Draw detector distributions using input root file
+TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath)
+{
+    TH1::AddDirectory(kFALSE);
+    cout << "ISRUnfold::drawFoldedHists, Draw plot!" << endl; 
+
+    TFile* filein = new TFile(filePath);
+
+    TH1* hData = NULL;
+    TH1* hDY = NULL;
+    TH1* hMCtotal = NULL;
+    TH1* hRatio = NULL;
+
+    TString steering = "mass[UO];pt[UOC0]";
+    bool useAxis = true; // 
+    if(var == "Pt")
+    {
+        steering = "pt[UO];mass[UO]";
+        useAxis = false;
+    }
+    hData = getRawHist(var, filePath, "Detector", "histo_DoubleMuonnominal", "Data", steering, useAxis);
+    hDY = getRawHist(var, filePath, "Detector", "histo_DYJetsToMuMunominal", "Signal", steering, useAxis);
+    hMCtotal = (TH1*) hDY->Clone("hMCtotal");
+    hRatio = (TH1*) hData->Clone("hRatio");
+
+    TCanvas* c_out = new TCanvas("detector_level", "detector_level", 50, 50, 800, 700);
+    c_out->Draw();
+    c_out->cd();
+
+    TPad *pad1 = new TPad("pad1","pad1",0,0.3,1,1);
+    pad1->SetBottomMargin(0.01);
+    pad1->SetTopMargin(0.1);
+    pad1->SetTicks(1);
+    pad1->SetLogy();
+    if(var=="Mass")
+        pad1->SetLogx();
+    pad1->Draw();
+    pad1->cd();
+
+    hData->SetTitle("");
+    hData->SetStats(false);
+    hData->Draw("p9histe");
+    hData->SetMarkerStyle(20);
+    hData->SetMarkerSize(.7);
+    hData->SetLineColor(kBlack);
+    hData->GetYaxis()->SetTitle("Events/bin");
+    hData->SetMaximum(1e8);
+    hData->SetMinimum(1e-1);
+
+    hDY->SetFillColor(kYellow);
+
+    THStack* hsMC = new THStack("hsMC", "hsMC");
+    // TODO stack function
+    setTHStack(var, filePath, *hsMC, *hMCtotal);
+    hsMC->Add(hDY);
+    
+    hsMC->Draw("hist same");
+    hData->Draw("p9histe same");
+
+    TLine massEdgeLine;
+    if(var=="Mass")
+    {
+        for(int i = 0; i < massBinEdges.size(); i++)
+        {
+            if(i==0) continue;
+            if(i==massBinEdges.size()-1) continue;
+            massEdgeLine.DrawLine(massBinEdges[i], hData->GetMinimum(), massBinEdges[i], hData->GetMaximum());
+        }
+    }
+
+    c_out->cd();
+
+    TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.3);
+    pad2->SetTopMargin(0.05);
+    pad2->SetBottomMargin(0.2);
+    if(var=="Mass")
+        pad2->SetLogx();
+    pad2->SetTicks(1);
+    pad2->SetGridy(1);
+    pad2->Draw();
+    pad2->cd();
+   
+    hRatio->SetStats(false);  
+    hRatio->Divide(hMCtotal);
+    hRatio->Draw("p9histe");
+    hRatio->SetMarkerStyle(20);
+    hRatio->SetMarkerSize(0.7);
+    hRatio->SetLineColor(kBlack);
+    hRatio->GetYaxis()->SetTitle("Data/MC");
+
+    hRatio->SetMinimum(0.7);
+    hRatio->SetMaximum(1.3);
+
+    c_out->cd();
+    c_out->SaveAs("detector_"+var+".pdf");
+
+    delete filein;
+
+    return c_out;
+}
+
+void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal)
+{
+    TH1::AddDirectory(kFALSE); 
+    int bkgSize = bkgNames.size();
+
+    // Count total number of each background type N
+    map<TString, int> bkgTypeN;
+    cout << "N bkg: " << bkgSize << endl;
+    for(int i = 0; i < bkgSize; i++)
+    {
+        map<TString, int>::iterator it = bkgTypeN.find(bkgTypes[i]);
+        if(it != bkgTypeN.end())
+        {
+            bkgTypeN[bkgTypes[i]]++;
+        }
+        else
+        {
+            cout << bkgTypes[i] << " first found" << endl;
+            bkgTypeN[bkgTypes[i]] = 1;
+        }        
+    }
+
+    TH1* htemp = NULL; 
+    bool isFirstBkg = true;
+    int nthBkg = 0;
+
+    TString steering = "mass[UO];pt[UOC0]";
+    bool useAxis = true; // 
+    if(var == "Pt")
+    {
+        steering = "pt[UO];mass[UO]";
+        useAxis = false;
+    }
+
+    for(int i = 0; i < bkgSize; i++)
+    {
+        if(isFirstBkg)
+        {
+            htemp = getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"nominal", "h"+bkgNames[i], steering, useAxis);  
+            isFirstBkg = false;
+            nthBkg++;
+        }
+        else
+        {
+            htemp->Add(getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"nominal", "h"+bkgNames[i], steering, useAxis));  
+            nthBkg++;
+        }
+
+        // This type of backgrounds all added, so add them to THStack
+        if(nthBkg == bkgTypeN[bkgTypes[i]])
+        {
+            cout << bkgTypes[i] << " " << bkgTypeN[bkgTypes[i]] << endl;
+            htemp->SetFillColor(bkgColors[bkgTypes[i]]); 
+            hs.Add(htemp);
+            hMCtotal.Add(htemp);
+
+            isFirstBkg = true;
+            nthBkg = 0;
+        }
+    }
 }
 
 void ISRUnfold::doISRUnfold(bool doSys){
@@ -525,7 +718,7 @@ void ISRUnfold::doISRUnfold(bool doSys){
             //                           0,0,
             //                           &lCurve);
 
-            nomPtUnfold->DoUnfold(5.); // Tau
+            nomPtUnfold->DoUnfold(0.); // Tau
             nomMassUnfold->DoUnfold(0);
             //iBest_mass=nomMassUnfold->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
             //                           TUnfoldDensity::kEScanTauRhoAvgSys,
@@ -534,7 +727,7 @@ void ISRUnfold::doISRUnfold(bool doSys){
         }
     }
 
-    // for systematic
+    // For systematic
     if(doSys)
     {
         std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it;
@@ -597,8 +790,6 @@ int ISRUnfold::setMeanMass()
 {
     cout << "ISRUnfold::setMeanMass()   Save mean of dilepton..." << endl;
     
-    // Get mass bin definition for post FSR level from TUnfoldDensity object
-    // Nothe currently post and pre FSR level use the same bin definition
     const TUnfoldBinningV17* temp_binning_gen_pt = pt_binning_Gen;
     const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
     int nMassBin = temp_tvecd->GetNrows() - 1;
@@ -866,9 +1057,8 @@ TH1* ISRUnfold::getRawHist(TString var, TString filePath, TString dirName, TStri
     TH1::AddDirectory(kFALSE);
     TFile* filein = new TFile(filePath);
 
-    cout << dirName+"/"+var+"/"+histName << endl;
     TH1* raw_hist = (TH1*)filein->Get(dirName+"/"+var+"/"+histName);
-    if(histName.Contains("DYJetsTo"))
+    if(histName.Contains("DYJetsTo") && !histName.Contains("Tau"))
     {
         histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
         raw_hist->Add((TH1*)filein->Get(dirName+"/"+var+"/"+histName));
