@@ -812,15 +812,15 @@ int ISRUnfold::setMeanMass()
 
         {
             // Get mean values
-            cout << "Detector, " << ibin << " th mass bin, mean: " << hdetector_mass->GetMean() << " +/- " << hdetector_mass->GetMeanError() << endl;
+            //cout << "Detector, " << ibin << " th mass bin, mean: " << hdetector_mass->GetMean() << " +/- " << hdetector_mass->GetMeanError() << endl;
             meanMass_data_detector. push_back(hdetector_mass->GetMean());
             meanMassStatErr_data_detector.push_back(hdetector_mass->GetMeanError());
 
-            cout << "Unfolded, " << ibin << " th mass bin, mean: " << hunfolded_mass->GetMean() << " +/- " << hunfolded_mass->GetMeanError() << endl;
+            //cout << "Unfolded, " << ibin << " th mass bin, mean: " << hunfolded_mass->GetMean() << " +/- " << hunfolded_mass->GetMeanError() << endl;
             meanMass_data_det_unf.   push_back(hunfolded_mass->GetMean());
             meanMassStatErr_data_det_unf.push_back(hunfolded_mass->GetMeanError());
 
-            cout << "MC, " << ibin << " th mass bin, mean: " << hMC_mass->GetMean() << " +/- " << hMC_mass->GetMeanError() << endl;
+            //cout << "MC, " << ibin << " th mass bin, mean: " << hMC_mass->GetMean() << " +/- " << hMC_mass->GetMeanError() << endl;
             meanMass_mc_det_unf.   push_back(hMC_mass->GetMean());
             meanMassStatErr_mc_det_unf.push_back(hMC_mass->GetMeanError());
         }
@@ -845,6 +845,20 @@ double ISRUnfold::getDetMeanMass(int ibin)
     else
     {
         return meanMass_data_detector.at(ibin);
+    }
+}
+
+double ISRUnfold::getDetMeanMassError(int ibin)
+{
+
+    int size = meanMass_data_detector.size();
+    if(ibin >= size)
+    {
+        exit (EXIT_FAILURE);     
+    }
+    else
+    {
+        return meanMassStatErr_data_detector.at(ibin);
     }
 }
 
@@ -919,11 +933,11 @@ int ISRUnfold::setMeanPt()
         hpt_temp_mc   = p_unfold->GetBias("histMC_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
 
         {
-            cout << "Detector, " << i << " th mass bin, mean: " << hdetector_data->GetMean() << " +/- " << hdetector_data->GetMeanError() << endl;
+            //cout << "Detector, " << i << " th mass bin, mean: " << hdetector_data->GetMean() << " +/- " << hdetector_data->GetMeanError() << endl;
             meanPt_data_detector.push_back(hdetector_data->GetMean());
             meanPtStatErr_data_detector.push_back(hdetector_data->GetMeanError());
 
-            cout << "Unfolded, " << i << " th mass bin, mean: " << hpt_temp_data->GetMean() << " +/- " << hpt_temp_data->GetMeanError() << endl;
+            //cout << "Unfolded, " << i << " th mass bin, mean: " << hpt_temp_data->GetMean() << " +/- " << hpt_temp_data->GetMeanError() << endl;
             meanPt_data_det_unf.push_back(hpt_temp_data->GetMean());
             meanPtStatErr_data_det_unf.push_back(hpt_temp_data->GetMeanError());
 
@@ -950,6 +964,20 @@ double ISRUnfold::getDetMeanPt(int ibin)
     else
     {
         return meanPt_data_detector.at(ibin);
+    }
+}
+
+double ISRUnfold::getDetMeanPtError(int ibin)
+{
+
+    int size = meanPt_data_detector.size();
+    if(ibin >= size)
+    {
+        exit (EXIT_FAILURE);     
+    }
+    else
+    {
+        return meanPtStatErr_data_detector.at(ibin);
     }
 }
 

@@ -165,6 +165,8 @@ public:
     // Get mean values 
     double getDetMeanPt(int ibin);
     double getDetMeanMass(int ibin);
+    double getDetMeanPtError(int ibin);
+    double getDetMeanMassError(int ibin);
     double getUnfMeanPt(int ibin);
     double getUnfMeanMass(int ibin);
     double getUnfMeanPtError(int ibin);
