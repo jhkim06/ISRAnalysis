@@ -8,4 +8,5 @@
 *.pyc
 output/
 *.swp
+*.pdf
 *ipynb_checkpoints/

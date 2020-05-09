@@ -35,6 +35,7 @@
 #include "TUnfoldDensity.h"
 
 using namespace std; 
+const int statSize = 1000;
 
 class ISRUnfold{
 
@@ -57,6 +58,14 @@ private:
     TUnfoldDensityV17* nomPtUnfold;
     TUnfoldDensityV17* nomMassUnfold;
 
+    // For statistical uncertainty
+    std::vector<TUnfoldDensityV17*> statPtUnfold;
+    std::vector<TUnfoldDensityV17*> statMassUnfold;
+
+    std::vector<TH1*> meanPtStatVariation; // Histogram to save statistical variation for each mass bin
+    std::vector<TH1*> meanMassStatVariation;
+
+    // For systematic uncertainty
     std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtUnfold;
     std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassUnfold;
     
@@ -87,7 +96,7 @@ private:
     Int_t iBest_mass;
     
     // Conditions for unfolding
-    TUnfold::ERegMode regMode_detector;
+    TUnfold::ERegMode regMode;
     double nominal_bias;
     
     TString output_baseDir;
@@ -99,7 +108,7 @@ private:
 public:
     
     // Constructor
-    ISRUnfold(TString channel, int year_ = 2016, int regMode_detector_ = 0)
+    ISRUnfold(TString channel, int year_ = 2016, int regMode_ = 0)
     {
         cout << "ISRUnfold set!" << endl;
 
@@ -108,14 +117,14 @@ public:
 
         nominal_bias = 1.; // 
 
-        if(regMode_detector_ == 0)
-            regMode_detector = TUnfold::kRegModeNone;
-        if(regMode_detector_ == 1)
-            regMode_detector = TUnfold::kRegModeSize;
-        if(regMode_detector_ == 2)
-            regMode_detector = TUnfold::kRegModeDerivative; 
-        if(regMode_detector_ == 3)
-            regMode_detector = TUnfold::kRegModeCurvature; 
+        if(regMode_ == 0)
+            regMode = TUnfold::kRegModeNone;
+        if(regMode_ == 1)
+            regMode = TUnfold::kRegModeSize;
+        if(regMode_ == 2)
+            regMode = TUnfold::kRegModeDerivative; 
+        if(regMode_ == 3)
+            regMode = TUnfold::kRegModeCurvature; 
 
         // Fill colors for backgrounds
         bkgColors["WJets"] = kViolet+1;
@@ -148,6 +157,9 @@ public:
 
     // Do unfold 
     void doISRUnfold( bool doSys = false);
+    void doStatUnfold(); 
+
+    void setStatError();
 
     // Get histograms
     TH1* getDetUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
@@ -161,6 +173,9 @@ public:
 
     int setMeanPt();
     int setMeanMass();
+
+    void fillPtStatVariationHist(int istat);
+    void fillMassStatVariationHist(int istat);
    
     // Get mean values 
     double getDetMeanPt(int ibin);
@@ -174,6 +189,8 @@ public:
 
     double getMCGenMeanMass(int ibin);
     double getMCGenMeanPt(int ibin);
+
+    void drawStatVariation(bool isPt = true, int massBin = 0);
 
 };
 

@@ -56,20 +56,41 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
     {
     	nomPtUnfold = new TUnfoldDensityV17(hmcGenRec,
     	                               TUnfold::kHistMapOutputHoriz,
-    	                               regMode_detector,
+    	                               regMode,
     	                               TUnfold::kEConstraintArea,
     	                               TUnfoldDensityV17::kDensityModeBinWidth,
     	                               pt_binning_Gen,pt_binning_Rec);
-    
+  
+        // For statistical uncertainty 
+        for(int i = 0; i < statSize; i++)
+        {
+            statPtUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
+    	                               TUnfold::kHistMapOutputHoriz,
+    	                               regMode,
+    	                               TUnfold::kEConstraintArea,
+    	                               TUnfoldDensityV17::kDensityModeBinWidth,
+    	                               pt_binning_Gen,pt_binning_Rec));
+        }  
     }
     else 
     {
         nomMassUnfold = new TUnfoldDensityV17(hmcGenRec,
                                         TUnfold::kHistMapOutputHoriz,
-                                        regMode_detector,
+                                        regMode,
                                         TUnfold::kEConstraintArea,
                                         TUnfoldDensityV17::kDensityModeBinWidth,
                                         mass_binning_Gen,mass_binning_Rec);
+
+        // For statistical uncertainty
+        for(int i = 0; i < statSize; i++)
+        {
+            statMassUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
+                                        TUnfold::kHistMapOutputHoriz,
+                                        regMode,
+                                        TUnfold::kEConstraintArea,
+                                        TUnfoldDensityV17::kDensityModeBinWidth,
+                                        mass_binning_Gen,mass_binning_Rec));
+        }
     }
 
     filein->Close();
@@ -181,7 +202,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysN
         }
     }
 
-    TUnfold::ERegMode mode = regMode_detector;
+    TUnfold::ERegMode mode = regMode;
     if( sysName =="unfoldScan" || sysName=="unfoldBias")
     {
         mode = TUnfold::kRegModeCurvature;
@@ -677,6 +698,66 @@ void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCt
         }
     }
 }
+void ISRUnfold::doStatUnfold()
+{
+    double tauMin=1.e-4;
+    double tauMax=1.e-3;
+
+    nScan=50;
+    rhoLogTau=0;
+    lCurve=0;
+    iBest = 0;
+
+    nScan_mass=50;
+    rhoLogTau_mass=0;
+    lCurve_mass=0;
+    iBest_mass = 0;
+
+    if(regMode == TUnfold::kRegModeNone)
+    {
+        for(int istat = 0; istat < statSize; istat++)
+        {
+            TH1* tempMassInput;
+            TH1* tempPtInput;
+
+            TString nth_;
+            nth_.Form("%d", istat);
+            tempPtInput = nomPtUnfold->GetInput("tempPtHist_" + nth_, 0, 0, 0, false);
+            tempMassInput = nomMassUnfold->GetInput("tempMassHist_" + nth_, 0, 0, 0, false);
+
+            // randomize histogram bin content
+            for(int ibin = 1; ibin<tempPtInput->GetNbinsX()+1;ibin++)
+            {
+                double err = tempPtInput->GetBinError(ibin);
+                if(err > 0.0)
+                {
+                    tempPtInput->SetBinContent(ibin, tempPtInput->GetBinContent(ibin) + gRandom->Gaus(0,err));
+                }
+            }
+            for(int ibin = 1; ibin<tempMassInput->GetNbinsX()+1;ibin++)
+            {
+                double err = tempMassInput->GetBinError(ibin);
+                if(err > 0.0)
+                {
+                    tempMassInput->SetBinContent(ibin, tempMassInput->GetBinContent(ibin) + gRandom->Gaus(0,err));
+                }
+            }
+            statPtUnfold.at(istat)->SetInput(tempPtInput, nominal_bias);
+            statMassUnfold.at(istat)->SetInput(tempMassInput, nominal_bias);
+
+            statPtUnfold.at(istat)->DoUnfold(0);
+            statMassUnfold.at(istat)->DoUnfold(0);
+
+            fillPtStatVariationHist(istat); 
+            fillMassStatVariationHist(istat); 
+
+            delete tempMassInput;
+            delete tempPtInput;
+            delete statPtUnfold.at(istat);
+            delete statMassUnfold.at(istat);
+        }
+    }
+}
 
 void ISRUnfold::doISRUnfold(bool doSys){
 
@@ -693,38 +774,35 @@ void ISRUnfold::doISRUnfold(bool doSys){
     lCurve_mass=0;
     iBest_mass = 0;
 
-
+    if(regMode == TUnfold::kRegModeNone)
     {
-        if(regMode_detector == TUnfold::kRegModeNone)
-        {
-            // No regularisation, set tau as zero
-            //const TUnfoldBinningV17* bin=nomPtUnfold->GetOutputBinning();
-            //int istart=bin->GetGlobalBinNumber(0.1, 200.1);
-            //int iend=bin->GetGlobalBinNumber(100-0.01,200.1);
-            //nomPtUnfold->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
-            //iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau,
-            //                           TUnfoldDensity::kEScanTauRhoAvgSys,
-            //                           0,0,
-            //                           &lCurve);
-            nomPtUnfold->DoUnfold(0);
-            nomMassUnfold->DoUnfold(0);
-        }
-        else
-        {
-            // Regularization, use ScanTau() as a default method to find tau
-            // ScanLcurve
-            //iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau,
-            //                           TUnfoldDensity::kEScanTauRhoAvgSys,
-            //                           0,0,
-            //                           &lCurve);
+        // No regularisation, set tau as zero
+        //const TUnfoldBinningV17* bin=nomPtUnfold->GetOutputBinning();
+        //int istart=bin->GetGlobalBinNumber(0.1, 200.1);
+        //int iend=bin->GetGlobalBinNumber(100-0.01,200.1);
+        //nomPtUnfold->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
+        //iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau,
+        //                           TUnfoldDensity::kEScanTauRhoAvgSys,
+        //                           0,0,
+        //                           &lCurve);
+        nomPtUnfold->DoUnfold(0);
+        nomMassUnfold->DoUnfold(0);
+    }
+    else
+    {
+        // Regularization, use ScanTau() as a default method to find tau
+        // ScanLcurve
+        //iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau,
+        //                           TUnfoldDensity::kEScanTauRhoAvgSys,
+        //                           0,0,
+        //                           &lCurve);
 
-            nomPtUnfold->DoUnfold(0.); // Tau
-            nomMassUnfold->DoUnfold(0);
-            //iBest_mass=nomMassUnfold->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
-            //                           TUnfoldDensity::kEScanTauRhoAvgSys,
-            //                           0,0,
-            //                           &lCurve_mass);
-        }
+        nomPtUnfold->DoUnfold(0.); // Tau
+        nomMassUnfold->DoUnfold(0);
+        //iBest_mass=nomMassUnfold->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
+        //                           TUnfoldDensity::kEScanTauRhoAvgSys,
+        //                           0,0,
+        //                           &lCurve_mass);
     }
 
     // For systematic
@@ -818,7 +896,8 @@ int ISRUnfold::setMeanMass()
 
             //cout << "Unfolded, " << ibin << " th mass bin, mean: " << hunfolded_mass->GetMean() << " +/- " << hunfolded_mass->GetMeanError() << endl;
             meanMass_data_det_unf.   push_back(hunfolded_mass->GetMean());
-            meanMassStatErr_data_det_unf.push_back(hunfolded_mass->GetMeanError());
+            //meanMassStatErr_data_det_unf.push_back(hunfolded_mass->GetMeanError());
+            //meanMassStatErr_data_det_unf.push_back(meanPtStatVariation.at(ibin)->GetRMS());
 
             //cout << "MC, " << ibin << " th mass bin, mean: " << hMC_mass->GetMean() << " +/- " << hMC_mass->GetMeanError() << endl;
             meanMass_mc_det_unf.   push_back(hMC_mass->GetMean());
@@ -832,6 +911,20 @@ int ISRUnfold::setMeanMass()
     delete hMC_mass;
 
     return nMassBin;
+}
+
+void ISRUnfold::setStatError()
+{
+    const TUnfoldBinningV17* temp_binning_gen_pt = pt_binning_Gen;
+    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+
+    // Loop over mass bins
+    for(int ibin = 0; ibin < nMassBin; ibin++)
+    {
+        meanMassStatErr_data_det_unf.push_back(meanPtStatVariation.at(ibin)->GetRMS());
+        meanPtStatErr_data_det_unf.push_back(meanPtStatVariation.at(ibin)->GetRMS());
+    } 
 }
 
 double ISRUnfold::getDetMeanMass(int ibin)
@@ -905,7 +998,68 @@ double ISRUnfold::getMCGenMeanMass(int ibin)
     }
 }
 
-// set mean pt from mass and DY mc
+void ISRUnfold::fillPtStatVariationHist(int istat)
+{
+    cout << "ISRUnfold::fillPtStatVariationHist()  " << endl;
+
+    // Find number of mass bins
+    const TUnfoldBinningV17* temp_binning_gen_pt = pt_binning_Gen;
+    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    int nMassBin = nMassBin = temp_tvecd->GetNrows() - 1;
+
+    // Save mean pt 
+    for(int i = 0; i < nMassBin; i++)
+    {
+        TString ibinMass;
+        ibinMass.Form("%d", i);
+
+        if(istat == 0)
+        {
+            meanPtStatVariation.push_back(new TH1F("MeanPtStat_bin"+ibinMass, "MeanPtStat_bin"+ibinMass, 40, meanPt_data_det_unf.at(i)-1., meanPt_data_det_unf.at(i)+1.));
+        }
+
+        TH1* hpt_temp_data;
+        TH1* hpt_temp_mc;
+
+        // Get histograms to set mean values
+        hpt_temp_data = statPtUnfold.at(istat)->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        meanPtStatVariation.at(i)->Fill(hpt_temp_data->GetMean());
+
+        delete hpt_temp_data;
+    }
+}
+
+void ISRUnfold::fillMassStatVariationHist(int istat)
+{
+
+    cout << "ISRUnfold::setMeanMass()   Save mean of dilepton..." << endl;
+    
+    const TUnfoldBinningV17* temp_binning_gen_pt = pt_binning_Gen;
+    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+    const Double_t* massBins = temp_tvecd->GetMatrixArray();
+
+    TH1* hunfolded_mass = statMassUnfold.at(istat)->GetOutput("hunfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+
+    // Loop over mass bins
+    for(int ibin = 0; ibin < nMassBin; ibin++)
+    {
+        TString ibinMass;
+        ibinMass.Form("%d", ibin);
+
+        // set x-axis range
+        hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(massBins[ibin]+0.01), hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+
+        if(istat == 0)
+        {
+            meanMassStatVariation.push_back(new TH1F("MeanMassStat_bin"+ibinMass, "MeanMassStat_bin"+ibinMass, 80, meanMass_data_det_unf.at(ibin)-2., meanMass_data_det_unf.at(ibin)+2.));
+        }
+        meanMassStatVariation.at(ibin)->Fill(hunfolded_mass->GetMean());
+    }// end of mass bin loop
+
+    delete hunfolded_mass;
+}
+// Set mean pt from mass and DY mc
 int ISRUnfold::setMeanPt()
 {
     cout << "ISRUnfold::setMeanPt()   Save mean of dilepton momentum..." << endl;
@@ -932,18 +1086,16 @@ int ISRUnfold::setMeanPt()
         hpt_temp_data = p_unfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
         hpt_temp_mc   = p_unfold->GetBias("histMC_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
 
-        {
-            //cout << "Detector, " << i << " th mass bin, mean: " << hdetector_data->GetMean() << " +/- " << hdetector_data->GetMeanError() << endl;
-            meanPt_data_detector.push_back(hdetector_data->GetMean());
-            meanPtStatErr_data_detector.push_back(hdetector_data->GetMeanError());
+        //cout << "Detector, " << i << " th mass bin, mean: " << hdetector_data->GetMean() << " +/- " << hdetector_data->GetMeanError() << endl;
+        meanPt_data_detector.push_back(hdetector_data->GetMean());
+        meanPtStatErr_data_detector.push_back(hdetector_data->GetMeanError());
 
-            //cout << "Unfolded, " << i << " th mass bin, mean: " << hpt_temp_data->GetMean() << " +/- " << hpt_temp_data->GetMeanError() << endl;
-            meanPt_data_det_unf.push_back(hpt_temp_data->GetMean());
-            meanPtStatErr_data_det_unf.push_back(hpt_temp_data->GetMeanError());
+        //cout << "Unfolded, " << i << " th mass bin, mean: " << hpt_temp_data->GetMean() << " +/- " << hpt_temp_data->GetMeanError() << endl;
+        meanPt_data_det_unf.push_back(hpt_temp_data->GetMean());
+        //meanPtStatErr_data_det_unf.push_back(hpt_temp_data->GetMeanError());
 
-            meanPt_mc_det_unf.push_back(hpt_temp_mc->GetMean());
-            meanPtErr_mc_det_unf.push_back(hpt_temp_mc->GetMeanError());
-        }
+        meanPt_mc_det_unf.push_back(hpt_temp_mc->GetMean());
+        meanPtErr_mc_det_unf.push_back(hpt_temp_mc->GetMeanError());
 
         delete hdetector_data;
         delete hpt_temp_data;
@@ -1101,4 +1253,28 @@ TH1* ISRUnfold::getRawHist(TString var, TString filePath, TString dirName, TStri
     delete filein;
     delete raw_hist;
     return hist; 
+}
+
+void ISRUnfold::drawStatVariation(bool isPt, int massBin)
+{
+    TCanvas* c = new TCanvas("c","c", 800, 800);
+    c->SetLogy();
+    c->cd();
+
+    TString nth;
+    nth.Form("%d", massBin);
+    TString year_;
+    year_.Form("%d", year);
+
+    if(isPt)
+    {
+        meanPtStatVariation.at(massBin)->Draw("pe");        
+        c->SaveAs("MeanPtStat_" + nth + year_ + ".pdf");
+    }
+    else
+    {
+        meanMassStatVariation.at(massBin)->Draw("pe");        
+        c->SaveAs("MeanMassStat_" + nth + year_ + ".pdf");
+    }
+    delete c;
 }
