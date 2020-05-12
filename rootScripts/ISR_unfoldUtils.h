@@ -104,11 +104,12 @@ private:
     int year;
 
     void setMassBindEdges();
+    bool makeStatUnfold; 
         
 public:
     
     // Constructor
-    ISRUnfold(TString channel, int year_ = 2016, int regMode_ = 0)
+    ISRUnfold(TString channel, int year_ = 2016, int regMode_ = 0, bool makeStatUnfold_ = true)
     {
         cout << "ISRUnfold set!" << endl;
 
@@ -125,6 +126,8 @@ public:
             regMode = TUnfold::kRegModeDerivative; 
         if(regMode_ == 3)
             regMode = TUnfold::kRegModeCurvature; 
+
+        makeStatUnfold = makeStatUnfold_;
 
         // Fill colors for backgrounds
         bkgColors["WJets"] = kViolet+1;

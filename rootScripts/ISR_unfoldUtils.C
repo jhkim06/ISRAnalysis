@@ -60,17 +60,20 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
     	                               TUnfold::kEConstraintArea,
     	                               TUnfoldDensityV17::kDensityModeBinWidth,
     	                               pt_binning_Gen,pt_binning_Rec);
-  
+ 
         // For statistical uncertainty 
-        for(int i = 0; i < statSize; i++)
+        if(makeStatUnfold)
         {
-            statPtUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
-    	                               TUnfold::kHistMapOutputHoriz,
-    	                               regMode,
-    	                               TUnfold::kEConstraintArea,
-    	                               TUnfoldDensityV17::kDensityModeBinWidth,
-    	                               pt_binning_Gen,pt_binning_Rec));
-        }  
+            for(int i = 0; i < statSize; i++)
+            {
+                statPtUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
+    	                                   TUnfold::kHistMapOutputHoriz,
+    	                                   regMode,
+    	                                   TUnfold::kEConstraintArea,
+    	                                   TUnfoldDensityV17::kDensityModeBinWidth,
+    	                                   pt_binning_Gen,pt_binning_Rec));
+            }  
+        }
     }
     else 
     {
@@ -82,14 +85,17 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
                                         mass_binning_Gen,mass_binning_Rec);
 
         // For statistical uncertainty
-        for(int i = 0; i < statSize; i++)
+        if(makeStatUnfold)
         {
-            statMassUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
-                                        TUnfold::kHistMapOutputHoriz,
-                                        regMode,
-                                        TUnfold::kEConstraintArea,
-                                        TUnfoldDensityV17::kDensityModeBinWidth,
-                                        mass_binning_Gen,mass_binning_Rec));
+            for(int i = 0; i < statSize; i++)
+            {
+                statMassUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
+                                            TUnfold::kHistMapOutputHoriz,
+                                            regMode,
+                                            TUnfold::kEConstraintArea,
+                                            TUnfoldDensityV17::kDensityModeBinWidth,
+                                            mass_binning_Gen,mass_binning_Rec));
+            }
         }
     }
 
@@ -896,8 +902,7 @@ int ISRUnfold::setMeanMass()
 
             //cout << "Unfolded, " << ibin << " th mass bin, mean: " << hunfolded_mass->GetMean() << " +/- " << hunfolded_mass->GetMeanError() << endl;
             meanMass_data_det_unf.   push_back(hunfolded_mass->GetMean());
-            //meanMassStatErr_data_det_unf.push_back(hunfolded_mass->GetMeanError());
-            //meanMassStatErr_data_det_unf.push_back(meanPtStatVariation.at(ibin)->GetRMS());
+            meanMassStatErr_data_det_unf.push_back(hunfolded_mass->GetMeanError());
 
             //cout << "MC, " << ibin << " th mass bin, mean: " << hMC_mass->GetMean() << " +/- " << hMC_mass->GetMeanError() << endl;
             meanMass_mc_det_unf.   push_back(hMC_mass->GetMean());
@@ -1092,7 +1097,7 @@ int ISRUnfold::setMeanPt()
 
         //cout << "Unfolded, " << i << " th mass bin, mean: " << hpt_temp_data->GetMean() << " +/- " << hpt_temp_data->GetMeanError() << endl;
         meanPt_data_det_unf.push_back(hpt_temp_data->GetMean());
-        //meanPtStatErr_data_det_unf.push_back(hpt_temp_data->GetMeanError());
+        meanPtStatErr_data_det_unf.push_back(hpt_temp_data->GetMeanError());
 
         meanPt_mc_det_unf.push_back(hpt_temp_mc->GetMean());
         meanPtErr_mc_det_unf.push_back(hpt_temp_mc->GetMeanError());
