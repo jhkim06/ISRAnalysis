@@ -55,11 +55,11 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
     if( var == "Pt" )
     {
     	nomPtUnfold = new TUnfoldDensityV17(hmcGenRec,
-    	                               TUnfold::kHistMapOutputHoriz,
-    	                               regMode,
-    	                               TUnfold::kEConstraintArea,
-    	                               TUnfoldDensityV17::kDensityModeBinWidth,
-    	                               pt_binning_Gen,pt_binning_Rec);
+    	                                    TUnfold::kHistMapOutputHoriz,
+    	                                    regMode,
+    	                                    TUnfold::kEConstraintArea,
+    	                                    TUnfoldDensityV17::kDensityModeBinWidth,
+    	                                    pt_binning_Gen,pt_binning_Rec);
  
         // For statistical uncertainty 
         if(makeStatUnfold)
@@ -67,22 +67,22 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
             for(int i = 0; i < statSize; i++)
             {
                 statPtUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
-    	                                   TUnfold::kHistMapOutputHoriz,
-    	                                   regMode,
-    	                                   TUnfold::kEConstraintArea,
-    	                                   TUnfoldDensityV17::kDensityModeBinWidth,
-    	                                   pt_binning_Gen,pt_binning_Rec));
+    	                                                    TUnfold::kHistMapOutputHoriz,
+    	                                                    regMode,
+    	                                                    TUnfold::kEConstraintArea,
+    	                                                    TUnfoldDensityV17::kDensityModeBinWidth,
+    	                                                    pt_binning_Gen,pt_binning_Rec));
             }  
         }
     }
     else 
     {
         nomMassUnfold = new TUnfoldDensityV17(hmcGenRec,
-                                        TUnfold::kHistMapOutputHoriz,
-                                        regMode,
-                                        TUnfold::kEConstraintArea,
-                                        TUnfoldDensityV17::kDensityModeBinWidth,
-                                        mass_binning_Gen,mass_binning_Rec);
+                                              TUnfold::kHistMapOutputHoriz,
+                                              regMode,
+                                              TUnfold::kEConstraintArea,
+                                              TUnfoldDensityV17::kDensityModeBinWidth,
+                                              mass_binning_Gen,mass_binning_Rec);
 
         // For statistical uncertainty
         if(makeStatUnfold)
@@ -90,11 +90,11 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
             for(int i = 0; i < statSize; i++)
             {
                 statMassUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
-                                            TUnfold::kHistMapOutputHoriz,
-                                            regMode,
-                                            TUnfold::kEConstraintArea,
-                                            TUnfoldDensityV17::kDensityModeBinWidth,
-                                            mass_binning_Gen,mass_binning_Rec));
+                                                               TUnfold::kHistMapOutputHoriz,
+                                                               regMode,
+                                                               TUnfold::kEConstraintArea,
+                                                               TUnfoldDensityV17::kDensityModeBinWidth,
+                                                               mass_binning_Gen,mass_binning_Rec));
             }
         }
     }
@@ -124,115 +124,31 @@ void ISRUnfold::setMassBindEdges()
 
 }
 
-// FIXME Update!!
-void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name, TString fsr_correction_name)
+void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, int nth)
 {
 
     TFile* filein = new TFile(filepath);
-
-    TString systematic_postfix = sysName;
-
-    if(totSysN == 2)
-    {
-        if(nth == 0 ) systematic_postfix = "_" + systematic_postfix + "Up";
-        if(nth == 1 ) systematic_postfix = "_" + systematic_postfix + "Down";
-    }
-
-    if(totSysN == 6 && (sysName =="Scale" || sysName =="pdfScale"))
-    {
-        if(nth == 0 ) systematic_postfix = "_" + systematic_postfix + "AUp";
-        if(nth == 1 ) systematic_postfix = "_" + systematic_postfix + "ADown";
-        if(nth == 2 ) systematic_postfix = "_" + systematic_postfix + "BUp";
-        if(nth == 3 ) systematic_postfix = "_" + systematic_postfix + "BDown";
-        if(nth == 4 ) systematic_postfix = "_" + systematic_postfix + "ABUp";
-        if(nth == 5 ) systematic_postfix = "_" + systematic_postfix + "ABDown";
-    }
-
-    if(totSysN == 100 && sysName == "PDFerror")
-    {
-        TString nth_;
-        nth_.Form ("%03d", nth);
-        systematic_postfix = "_" + systematic_postfix + nth_;
-    }
-
-    // Set migration matrix
-    TH2* hmcGenRec = NULL;
-    // systematic using the same response matrix
-    // may be better to use flag to use nominal response matrix or not
-    if(sysName=="Alt" || sysName=="unfoldBias" || sysName=="unfoldScan" || sysName == "Stat")
-    {
-        if(var == "Pt")   hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
-        else if(var == "Mass") hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix/hmc" + var + "GenRecnominal");
-        else
-        {
-            cout << "ISRUnfold::setSysTUnfoldDensity, only Pt and Mass available for var" << endl;
-            exit (EXIT_FAILURE);
-        }
-    }
-    else
-    {
-
-        TString histDirPostfix = "";
-        if(sysName == "lepMom"){
-
-            if(nth == 0)
-            {
-                phase_name += "_lepMomUp";
-                histDirPostfix = "_lepMomUp";
-                systematic_postfix = "nominal";
-            }
-            else if(nth == 1)
-            {
-                phase_name += "_lepMomDown";
-                histDirPostfix = "_lepMomDown";
-                systematic_postfix = "nominal";
-            }
-            else
-            {
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        if(var == "Pt")
-        {
-            hmcGenRec = (TH2*)filein->Get(phase_name + "/ptll_rec_gen_" + fsr_correction_name + "_response_matrix" + histDirPostfix + "/hmc" + var + "GenRec" + systematic_postfix);
-        }
-        else if(var == "Mass")
-        {
-            hmcGenRec = (TH2*)filein->Get(phase_name + "/mll_rec_gen_" + fsr_correction_name + "_response_matrix" + histDirPostfix + "/hmc" + var + "GenRec" + systematic_postfix);
-        }
-        else
-        {
-            cout << "ISRUnfold::setSysTUnfoldDensity, only Pt and Mass available for var" << endl;
-            exit (EXIT_FAILURE);
-        }
-    }
-
-    TUnfold::ERegMode mode = regMode;
-    if( sysName =="unfoldScan" || sysName=="unfoldBias")
-    {
-        mode = TUnfold::kRegModeCurvature;
-        //mode = TUnfold::kRegModeMixed;
-    }
+    TH2* hmcGenRec;
+    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName +"/hmc" + var + "GenRecnominal");
 
     if( var == "Pt" )
     {
-            sysPtUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
-                                           TUnfold::kHistMapOutputHoriz,
-                                           mode,
-                                           TUnfold::kEConstraintArea,
-                                           TUnfoldDensityV17::kDensityModeBinWidth,
-                                           pt_binning_Gen,pt_binning_Rec));
+        sysPtUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
+                                                              TUnfold::kHistMapOutputHoriz,
+                                                              regMode,
+                                                              TUnfold::kEConstraintArea,
+                                                              TUnfoldDensityV17::kDensityModeBinWidth,
+                                                              pt_binning_Gen,pt_binning_Rec));
     }
 
     else if( var == "Mass" )
     {
-            sysMassUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
-                                           TUnfold::kHistMapOutputHoriz,
-                                           mode,
-                                           TUnfold::kEConstraintArea,
-                                           TUnfoldDensityV17::kDensityModeBinWidth,
-                                           mass_binning_Gen,mass_binning_Rec));
+        sysMassUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
+                                                                TUnfold::kHistMapOutputHoriz,
+                                                                regMode,
+                                                                TUnfold::kEConstraintArea,
+                                                                TUnfoldDensityV17::kDensityModeBinWidth,
+                                                                mass_binning_Gen,mass_binning_Rec));
     }
     else
     {
@@ -306,118 +222,20 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TStr
     // Systematic histograms
     else
     {
+        hRec = (TH1*)filein->Get(dirName+"/"+var+"/"+histName);
         // For systematic, using the same input histogram as nominal, unless data changed in a systematic change
-        if(sysName != "lepMom")
+        if(var == "Pt")
         {
-
-            if(sysName != "Stat")
-            {
-                if(var == "Pt")
-                {
-                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(dirName + "/hist_ptll/histo_DoubleMuonnominal");
-                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(dirName + "/hist_ptll/histo_DoubleEGnominal");
-                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(dirName + "/hist_ptll/histo_EGammanominal");
-                    sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   nominal_bias);
-                }
-                else if(var == "Mass")
-                {
-                    if(channel_name == "muon")     hRec = (TH1*)filein->Get(dirName + "/hist_mll/histo_DoubleMuonnominal");
-                    if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(dirName + "/hist_mll/histo_DoubleEGnominal");
-                    if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(dirName + "/hist_mll/histo_EGammanominal");
-                    sysMassUnfold[sysName].at(nth)->SetInput(hRec,   nominal_bias);
-                }
-                else
-                {
-                    cout << "ISRUnfold::setUnfInput, only Pt and Mass available for var" << endl;
-                    exit (EXIT_FAILURE);
-                }
-            }
-            else
-            {
-                if(var == "Pt")
-                {
-                    TH1* temp_ptHist;
-
-                    TString nth_;
-                    nth_.Form("%d", nth);
-                    temp_ptHist = nomPtUnfold->GetInput("ptToy_" + nth_, 0, 0, 0, false);
-
-                    // Randomize histogram bins
-                    for(int ibin = 1; ibin<temp_ptHist->GetNbinsX()+1;ibin++)
-                    {
-                        double err = temp_ptHist->GetBinError(ibin);
-                        if(err > 0.0)
-                        {
-                            temp_ptHist->SetBinContent(ibin, temp_ptHist->GetBinContent(ibin) + gRandom->Gaus(0,err));
-                        }
-                    }
-                    sysPtUnfold[sysName].at(nth)->SetInput(temp_ptHist, nominal_bias);
-                }
-                else if(var == "Mass")
-                {
-                    TH1* temp_massHist;
-
-                    TString nth_;
-                    nth_.Form("%d", nth);
-                    temp_massHist = nomMassUnfold->GetInput("ptToy_" + nth_, 0, 0, 0, false);
-
-                    // Randomize histogram bins
-                    for(int ibin = 1; ibin<temp_massHist->GetNbinsX()+1;ibin++)
-                    {
-                        double err = temp_massHist->GetBinError(ibin);
-                        if(err > 0.0)
-                        {
-                            temp_massHist->SetBinContent(ibin, temp_massHist->GetBinContent(ibin) + gRandom->Gaus(0,err));
-                        }
-                    }
-                    sysMassUnfold[sysName].at(nth)->SetInput(temp_massHist, nominal_bias);
-                }
-                else
-                {
-                    cout << "ISRUnfold::setUnfInput, only Pt and Mass available for var" << endl;
-                    exit (EXIT_FAILURE);
-                }
-
-            }
+            sysPtUnfold[sysName].at(nth)->SetInput(hRec,   nominal_bias);
+        }
+        else if(var == "Mass")
+        {
+            sysMassUnfold[sysName].at(nth)->SetInput(hRec,   nominal_bias);
         }
         else
         {
-            //FIXME currently only consider lepton momentum systematic here
-            TString histDirPostfix = "";
-            if(nth == 0)
-            {
-                dirName += "_lepMomUp";
-                histDirPostfix = "_lepMomUp";
-            }
-            else if(nth == 1)
-            {
-                dirName += "_lepMomDown";
-                histDirPostfix = "_lepMomDown";
-            }
-            else
-            {
-                exit(EXIT_FAILURE);
-            }
-
-            if(var == "Pt")
-            {
-                if(channel_name == "muon")     hRec = (TH1*)filein->Get(dirName + "/hist_ptll" + histDirPostfix + "/histo_DoubleMuonnominal");
-                if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(dirName + "/hist_ptll" + histDirPostfix + "/histo_DoubleEGnominal");
-                if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(dirName + "/hist_ptll" + histDirPostfix + "/histo_EGammanominal");
-                sysPtUnfold[sysName].at(nth)  ->SetInput(hRec,   nominal_bias);
-            }
-            else if(var == "Mass")
-            {
-                if(channel_name == "muon")     hRec = (TH1*)filein->Get(dirName + "/hist_mll" + histDirPostfix + "/histo_DoubleMuonnominal");
-                if(channel_name == "electron" && year != 2018) hRec = (TH1*)filein->Get(dirName + "/hist_mll" + histDirPostfix + "/histo_DoubleEGnominal");
-                if(channel_name == "electron" && year == 2018) hRec = (TH1*)filein->Get(dirName + "/hist_mll" + histDirPostfix + "/histo_EGammanominal");
-                sysMassUnfold[sysName].at(nth)->SetInput(hRec,   nominal_bias);
-            }
-            else
-            {
-                cout << "ISRUnfold::setUnfInput, only Pt and Mass available for var" << endl;
-                exit (EXIT_FAILURE);
-            }
+            cout << "ISRUnfold::setUnfInput, only Pt and Mass available for var" << endl;
+            exit (EXIT_FAILURE);
         }
     }
     filein->Close();
@@ -817,57 +635,56 @@ void ISRUnfold::doISRUnfold(bool doSys){
         std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it;
         std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it_end;
 
-        // Unfolding for pt distribution
+        // Unfold for pt distribution
+        it = sysPtUnfold.begin();
+        it_end = sysPtUnfold.end();
+
+        while(it != it_end)
         {
-            it = sysPtUnfold.begin();
-            it_end = sysPtUnfold.end();
-        }
+            int nSys = it->second.size();
+            for(int i = 0; i < nSys; i++)
+            {
+            	if((it->first)=="unfoldScan" || (it->first)=="unfoldBias" )
+                {
+                    
+            	    //it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
+            	    iBest=it->second.at(i)->ScanTau(nScan,0.,0.,&rhoLogTau,
+            		                           TUnfoldDensity::kEScanTauRhoAvgSys,
+            		                           0,0,
+            		                           &lCurve);
+            	}
+            	else
+                {
+                    it->second.at(i)->DoUnfold(0);
+                }
 
-        while(it != it_end){
-        	int nSys = it->second.size();
-        	for(int i = 0; i < nSys; i++){
-
-        		if((it->first)=="unfoldScan" || (it->first)=="unfoldBias" )
-                    {
-        			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
-        			iBest=it->second.at(i)->ScanTau(nScan,0.,0.,&rhoLogTau,
-        			                           TUnfoldDensity::kEScanTauRhoAvgSys,
-        			                           0,0,
-        			                           &lCurve);
-        		}
-        		else
-                    {
-                        it->second.at(i)->DoUnfold(0);
-                    }
-
-        	}
-        	it++;
+            }
+            it++;
         }
 
         // Unfolding for mass distribution
+        it = sysMassUnfold.begin();
+        it_end = sysMassUnfold.end();
+
+        while(it != it_end)
         {
-            it = sysMassUnfold.begin();
-            it_end = sysMassUnfold.end();
+            int nSys = it->second.size();
+            for(int i = 0; i < nSys; i++)
+            {
+                if((it->first)=="unfoldScan" || (it->first)=="unfoldBias")
+                {
+            	    //it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
+                    iBest_mass=it->second.at(i)->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
+                                                   TUnfoldDensity::kEScanTauRhoAvgSys,
+                                                   0,0,
+                                                   &lCurve_mass);
+            	}
+            	else it->second.at(i)->DoUnfold(0);
+
+            }
+            it++;
         }
-
-        while(it != it_end){
-                int nSys = it->second.size();
-                for(int i = 0; i < nSys; i++){
-                        if((it->first)=="unfoldScan" || (it->first)=="unfoldBias"){
-        			//it->second.at(i)->ScanLcurve(50,tauMin,tauMax,0);
-
-                                iBest_mass=it->second.at(i)->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
-                                                           TUnfoldDensity::kEScanTauRhoAvgSys,
-                                                           0,0,
-                                                           &lCurve_mass);
-        		}
-        		else it->second.at(i)->DoUnfold(0);
-
-                }
-                it++;
-        }
-    }
-
+    }// Unfold for systematic
 }
 
 int ISRUnfold::setMeanMass()
@@ -901,12 +718,12 @@ int ISRUnfold::setMeanMass()
             meanMassStatErr_data_detector.push_back(hdetector_mass->GetMeanError());
 
             //cout << "Unfolded, " << ibin << " th mass bin, mean: " << hunfolded_mass->GetMean() << " +/- " << hunfolded_mass->GetMeanError() << endl;
-            meanMass_data_det_unf.   push_back(hunfolded_mass->GetMean());
-            meanMassStatErr_data_det_unf.push_back(hunfolded_mass->GetMeanError());
+            meanMass_data_unfoled.   push_back(hunfolded_mass->GetMean());
+            meanMassStatErr_data_unfoled.push_back(hunfolded_mass->GetMeanError());
 
             //cout << "MC, " << ibin << " th mass bin, mean: " << hMC_mass->GetMean() << " +/- " << hMC_mass->GetMeanError() << endl;
-            meanMass_mc_det_unf.   push_back(hMC_mass->GetMean());
-            meanMassStatErr_mc_det_unf.push_back(hMC_mass->GetMeanError());
+            meanMass_mc_unfoled.   push_back(hMC_mass->GetMean());
+            meanMassStatErr_mc_unfoled.push_back(hMC_mass->GetMeanError());
         }
 
     }// end of mass bin loop
@@ -927,8 +744,8 @@ void ISRUnfold::setStatError()
     // Loop over mass bins
     for(int ibin = 0; ibin < nMassBin; ibin++)
     {
-        meanMassStatErr_data_det_unf.push_back(meanPtStatVariation.at(ibin)->GetRMS());
-        meanPtStatErr_data_det_unf.push_back(meanPtStatVariation.at(ibin)->GetRMS());
+        meanMassStatErr_data_unfoled.push_back(meanPtStatVariation.at(ibin)->GetRMS());
+        meanPtStatErr_data_unfoled.push_back(meanPtStatVariation.at(ibin)->GetRMS());
     } 
 }
 
@@ -963,14 +780,14 @@ double ISRUnfold::getDetMeanMassError(int ibin)
 double ISRUnfold::getUnfMeanMass(int ibin)
 {
 
-    int size = meanMass_data_det_unf.size();
+    int size = meanMass_data_unfoled.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);     
     }
     else
     {
-        return meanMass_data_det_unf.at(ibin);
+        return meanMass_data_unfoled.at(ibin);
     }
 }
 
@@ -978,28 +795,28 @@ double ISRUnfold::getUnfMeanMass(int ibin)
 double ISRUnfold::getUnfMeanMassError(int ibin)
 {
 
-    int size = meanMassStatErr_data_det_unf.size();
+    int size = meanMassStatErr_data_unfoled.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);     
     }
     else
     {
-        return meanMassStatErr_data_det_unf.at(ibin);
+        return meanMassStatErr_data_unfoled.at(ibin);
     }
 }
 
 double ISRUnfold::getMCGenMeanMass(int ibin)
 {
 
-    int size = meanMass_mc_det_unf.size();
+    int size = meanMass_mc_unfoled.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);     
     }
     else
     {
-        return meanMass_mc_det_unf.at(ibin);
+        return meanMass_mc_unfoled.at(ibin);
     }
 }
 
@@ -1020,7 +837,7 @@ void ISRUnfold::fillPtStatVariationHist(int istat)
 
         if(istat == 0)
         {
-            meanPtStatVariation.push_back(new TH1F("MeanPtStat_bin"+ibinMass, "MeanPtStat_bin"+ibinMass, 40, meanPt_data_det_unf.at(i)-1., meanPt_data_det_unf.at(i)+1.));
+            meanPtStatVariation.push_back(new TH1F("MeanPtStat_bin"+ibinMass, "MeanPtStat_bin"+ibinMass, 40, meanPt_data_unfoled.at(i)-1., meanPt_data_unfoled.at(i)+1.));
         }
 
         TH1* hpt_temp_data;
@@ -1057,7 +874,7 @@ void ISRUnfold::fillMassStatVariationHist(int istat)
 
         if(istat == 0)
         {
-            meanMassStatVariation.push_back(new TH1F("MeanMassStat_bin"+ibinMass, "MeanMassStat_bin"+ibinMass, 80, meanMass_data_det_unf.at(ibin)-2., meanMass_data_det_unf.at(ibin)+2.));
+            meanMassStatVariation.push_back(new TH1F("MeanMassStat_bin"+ibinMass, "MeanMassStat_bin"+ibinMass, 80, meanMass_data_unfoled.at(ibin)-2., meanMass_data_unfoled.at(ibin)+2.));
         }
         meanMassStatVariation.at(ibin)->Fill(hunfolded_mass->GetMean());
     }// end of mass bin loop
@@ -1096,11 +913,11 @@ int ISRUnfold::setMeanPt()
         meanPtStatErr_data_detector.push_back(hdetector_data->GetMeanError());
 
         //cout << "Unfolded, " << i << " th mass bin, mean: " << hpt_temp_data->GetMean() << " +/- " << hpt_temp_data->GetMeanError() << endl;
-        meanPt_data_det_unf.push_back(hpt_temp_data->GetMean());
-        meanPtStatErr_data_det_unf.push_back(hpt_temp_data->GetMeanError());
+        meanPt_data_unfoled.push_back(hpt_temp_data->GetMean());
+        meanPtStatErr_data_unfoled.push_back(hpt_temp_data->GetMeanError());
 
-        meanPt_mc_det_unf.push_back(hpt_temp_mc->GetMean());
-        meanPtErr_mc_det_unf.push_back(hpt_temp_mc->GetMeanError());
+        meanPt_mc_unfoled.push_back(hpt_temp_mc->GetMean());
+        meanPtStatErr_mc_unfoled.push_back(hpt_temp_mc->GetMeanError());
 
         delete hdetector_data;
         delete hpt_temp_data;
@@ -1141,42 +958,42 @@ double ISRUnfold::getDetMeanPtError(int ibin)
 double ISRUnfold::getUnfMeanPt(int ibin)
 {
 
-    int size = meanPt_data_det_unf.size();
+    int size = meanPt_data_unfoled.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);     
     }
     else
     {
-        return meanPt_data_det_unf.at(ibin);
+        return meanPt_data_unfoled.at(ibin);
     }
 }
 
 double ISRUnfold::getUnfMeanPtError(int ibin)
 {
 
-    int size = meanPtStatErr_data_det_unf.size();
+    int size = meanPtStatErr_data_unfoled.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);     
     }
     else
     {
-        return meanPtStatErr_data_det_unf.at(ibin);
+        return meanPtStatErr_data_unfoled.at(ibin);
     }
 }
 
 double ISRUnfold::getMCGenMeanPt(int ibin)
 {
 
-    int size = meanPt_mc_det_unf.size();
+    int size = meanPt_mc_unfoled.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);     
     }
     else
     {
-        return meanPt_mc_det_unf.at(ibin);
+        return meanPt_mc_unfoled.at(ibin);
     }
 }
 

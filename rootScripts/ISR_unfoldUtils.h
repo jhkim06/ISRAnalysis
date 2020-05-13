@@ -62,7 +62,8 @@ private:
     std::vector<TUnfoldDensityV17*> statPtUnfold;
     std::vector<TUnfoldDensityV17*> statMassUnfold;
 
-    std::vector<TH1*> meanPtStatVariation; // Histogram to save statistical variation for each mass bin
+    // Histogram to save statistical variations for each mass bin
+    std::vector<TH1*> meanPtStatVariation;
     std::vector<TH1*> meanMassStatVariation;
 
     // For systematic uncertainty
@@ -75,12 +76,12 @@ private:
     vector<Double_t> meanPt_data_detector,   meanPtStatErr_data_detector,   meanPtSysErr_data_detector, meanPtTotErr_data_detector;
     
     // Detector unfolded results
-    vector<Double_t> meanMass_data_det_unf, meanMassStatErr_data_det_unf, meanMassSysErr_data_det_unf, meanMassTotErr_data_det_unf;
-    vector<Double_t> meanPt_data_det_unf,   meanPtStatErr_data_det_unf,   meanPtSysErr_data_det_unf, meanPtTotErr_data_det_unf;
+    vector<Double_t> meanMass_data_unfoled, meanMassStatErr_data_unfoled, meanMassSysErr_data_unfoled, meanMassTotErr_data_unfoled;
+    vector<Double_t> meanPt_data_unfoled,   meanPtStatErr_data_unfoled,   meanPtSysErr_data_unfoled, meanPtTotErr_data_unfoled;
     
     // Nominal mean mass and pt for MC
-    vector<Double_t> meanMass_mc_det_unf, meanMassErr_mc_det_unf, meanMassStatErr_mc_det_unf, meanMassSysErr_mc_det_unf;
-    vector<Double_t> meanPt_mc_det_unf,   meanPtErr_mc_det_unf, meanPtStatErr_mc_det_unf, meanPtSysErr_mc_det_unf;
+    vector<Double_t> meanMass_mc_unfoled, meanMassStatErr_mc_unfoled, meanMassSysErr_mc_unfoled, meanMassTotErr_mc_unfoled;
+    vector<Double_t> meanPt_mc_unfoled, meanPtStatErr_mc_unfoled, meanPtSysErr_mc_unfoled, meanPtTotErr_mc_unfoled;
     
     TCanvas* c1;
     
@@ -152,7 +153,7 @@ public:
                 bool isSys = false, TString sysName = "", int totSysN = -1, int nth = 0, TString dirName = "full_phase");
 
     // Set systematic TUnfoldDensity
-    void setSysTUnfoldDensity(TString var, TString filepath, TString sysName, int totSysN, int nth, TString phase_name = "full_phase", TString fsr_correction_name = "dressed_dRp1");
+    void setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, int nth);
 
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
     TCanvas* drawFoldedHists(TString var, TString filePath);

@@ -306,9 +306,10 @@ gr_2018_electron_fsr_unfold = fsrUnfold_electron_2018.getPtVsMassTGraph("2018Ele
 import pyScripts.tdrStyle as tdrStyle
 import pyScripts.CMS_lumi as CMS_lumi
 
-markerSize = 1.5
+markerSize = 1.2
 
 tdrStyle.setTDRStyle()
+rt.gStyle.SetOptFit(0)
 # Draw 
 c_PtVsMass_detector = rt.TCanvas("PtVsMass_detector","PtVsMass_detector", 1000, 600)
 c_PtVsMass_detector.SetGridx()
@@ -376,6 +377,7 @@ c_PtVsMass_dressed.SetGridx()
 c_PtVsMass_dressed.SetGridy()
 c_PtVsMass_dressed.SetLogx()
 c_PtVsMass_dressed.SetBottomMargin(0.2)
+rt.gStyle.SetOptFit(0)
 
 gr_2016_muon_det_unfold.SetTitle("2016, 2017, 2018 Dressed level")
 gr_2016_muon_det_unfold.Draw("AP")
@@ -436,6 +438,7 @@ c_PtVsMass_preFSR.SetGridx()
 c_PtVsMass_preFSR.SetGridy()
 c_PtVsMass_preFSR.SetLogx()
 c_PtVsMass_preFSR.SetBottomMargin(0.2)
+rt.gStyle.SetOptFit(0)
 
 gr_2016_muon_fsr_unfold.SetTitle("2016, 2017, 2018 pre-FSR level")
 gr_2016_muon_fsr_unfold.Draw("AP")
