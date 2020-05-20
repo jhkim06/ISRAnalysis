@@ -95,7 +95,8 @@ class ISRAnalysis:
             bkgList = {"WJets_MG": "WJets", \
                        "WW_pythia": "EWK", "WZ_pythia": "EWK", "ZZ_pythia": "EWK", \
                        "DYJets10to50ToTauTau":"EWK", "DYJetsToTauTau":"EWK", \
-                       "TTLL_powheg": "Top", "SingleTop_tW_top_Incl": "Top", "SingleTop_tW_antitop_Incl": "Top"}
+                       "TTLL_powheg": "Top"}
+                       #"TTLL_powheg": "Top", "SingleTop_tW_top_Incl": "Top", "SingleTop_tW_antitop_Incl": "Top"}
         else :
             bkgList = {"WJets_MG": "WJets", \
                        "WW_pythia": "EWK", "WZ_pythia": "EWK", "ZZ_pythia": "EWK", \

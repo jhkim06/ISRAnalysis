@@ -169,7 +169,7 @@ public:
     }
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
     TCanvas* drawFoldedHists(TString var, TString filePath, TString steering, bool useAxis, TString sysName = "");
-    void setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal, TString steering, bool useAxis, TString sysName = "");
+    void setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "");
 
     // Do unfold 
     void doISRUnfold( bool doSys = false);

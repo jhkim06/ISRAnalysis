@@ -369,6 +369,10 @@ void ISRUnfold::setSystematics(TString sysName, TString sysHistName)
 // Draw detector distributions using input root file
 TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steering, bool useAxis, TString sysName)
 {
+    setTDRStyle();
+    writeExtraText = true;
+    extraText  = "work in progress";
+
     TH1::AddDirectory(kFALSE);
     cout << "ISRUnfold::drawFoldedHists, Draw plot!" << endl; 
 
@@ -402,9 +406,6 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
         hRatio_down = (TH1*) hData->Clone("hRatio_down");
     }
 
-    setTDRStyle();
-    writeExtraText = true;
-    extraText  = "work in progress";
 
     TCanvas* c_out = new TCanvas("detector_level_"+var, "detector_level_"+var, 50, 50, 1600, 1400);
     c_out->Draw();
@@ -424,16 +425,25 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
     hData->SetStats(false);
     hData->Draw("p9histe");
     hData->SetMarkerStyle(20);
-    hData->SetMarkerSize(.7);
+    hData->SetMarkerSize(1.2);
     hData->SetLineColor(kBlack);
-    hData->GetYaxis()->SetTitle("Events/bin");
-    hData->SetMaximum(1e8);
-    hData->SetMinimum(1e-1);
+    hData->GetYaxis()->SetTitle("Events/Bin");
+    hData->SetMaximum(5e9);
+    hData->SetMinimum(2e-1);
 
     hDY->SetFillColor(kYellow);
 
+    TLegend* leg = new TLegend(0.7, 0.65, 0.95, 0.85,"","brNDC");
+    //leg->SetNColumns(2);
+    leg->SetTextSize(0.04);
+    leg->SetFillStyle(0); // transparent
+    leg->SetBorderSize(0);
+
+    leg->AddEntry(hData, "Data", "pe");
+    leg->AddEntry(hDY, "Drell-Yan", "F");
+
     THStack* hsMC = new THStack("hsMC", "hsMC");
-    setTHStack(var, filePath, *hsMC, *hMCtotal, steering, useAxis);
+    setTHStack(var, filePath, *hsMC, *hMCtotal, *leg, steering, useAxis);
     hsMC->Add(hDY);
 
     THStack* hsMC_up;
@@ -442,13 +452,15 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
     {
         hsMC_up = new THStack("hsMC_up", "hsMC_up");
         hsMC_down = new THStack("hsMC_down", "hsMC_down");
-        setTHStack(var, filePath, *hsMC_up, *hMCtotal_up, steering, useAxis);
-        setTHStack(var, filePath, *hsMC_down, *hMCtotal_down, steering, useAxis);
+        setTHStack(var, filePath, *hsMC_up, *hMCtotal_up, *leg, steering, useAxis, sysMap[sysName][0]);
+        setTHStack(var, filePath, *hsMC_down, *hMCtotal_down, *leg, steering, useAxis, sysMap[sysName][1]);
     }
     
     hsMC->Draw("hist same");
     hData->Draw("p9histe same");
     pad1->RedrawAxis();
+
+    leg->Draw();
 
     TLine massEdgeLine;
     if(var=="Mass")
@@ -482,7 +494,35 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
 
     hRatio->SetMinimum(0.7);
     hRatio->SetMaximum(1.3);
+    
+    TString channel_name_;
+    if(channel_name=="electron") channel_name_ = "ee";
+    else channel_name_ = "#mu#mu";
 
+    if(useAxis)
+    {
+        if(var == "Mass")
+        {
+            hRatio->GetXaxis()->SetTitle("Mass^{" + channel_name_  + "} [GeV]");
+        }
+        if(var == "Pt")
+        {
+            hRatio->GetXaxis()->SetTitle("p_{T}^{" + channel_name_ + "} [GeV]");
+        }
+    }
+    else
+    {
+        if(var == "Mass")
+        {
+            hRatio->GetXaxis()->SetTitle("Mass bin index");
+        }
+        if(var == "Pt")
+        {
+            hRatio->GetXaxis()->SetTitle("p_{T} bin index");
+        }
+    }
+
+    // TODO 
     TH1* sysBand_ratio = NULL;
     if(sysName != "")
     {
@@ -501,8 +541,14 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
         sysBand_ratio->Draw("E2 same");
     }
 
+    int iPeriod_ = 4;
+    if(year == 2017)
+        iPeriod_ = 5;
+    if(year == 2018)
+        iPeriod_ = 6;
+        
     c_out->cd();
-    CMS_lumi(c_out, 7, 11);
+    CMS_lumi(pad1, iPeriod_, 11);
     c_out->SaveAs("detector_"+var+".png");
 
     delete filein;
@@ -510,14 +556,14 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
     return c_out;
 }
 
-void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal, TString steering, bool useAxis, TString sysName)
+void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName)
 {
     TH1::AddDirectory(kFALSE); 
     int bkgSize = bkgNames.size();
 
     // Count total number of each background type N
     map<TString, int> bkgTypeN;
-    cout << "N bkg: " << bkgSize << endl;
+    //cout << "N bkg: " << bkgSize << endl;
     for(int i = 0; i < bkgSize; i++)
     {
         map<TString, int>::iterator it = bkgTypeN.find(bkgTypes[i]);
@@ -527,7 +573,7 @@ void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCt
         }
         else
         {
-            cout << bkgTypes[i] << " first found" << endl;
+            //cout << bkgTypes[i] << " first found" << endl;
             bkgTypeN[bkgTypes[i]] = 1;
         }        
     }
@@ -559,10 +605,13 @@ void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCt
         // This type of backgrounds all added, so add them to THStack
         if(nthBkg == bkgTypeN[bkgTypes[i]])
         {
-            cout << bkgTypes[i] << " " << bkgTypeN[bkgTypes[i]] << endl;
+            //cout << bkgTypes[i] << " " << bkgTypeN[bkgTypes[i]] << endl;
             htemp->SetFillColor(bkgColors[bkgTypes[i]]); 
             hs.Add(htemp);
             hMCtotal.Add(htemp);
+
+            if(sysName == "")
+                leg.AddEntry(htemp, bkgTypes[i], "F");
 
             isFirstBkg = true;
             nthBkg = 0;
