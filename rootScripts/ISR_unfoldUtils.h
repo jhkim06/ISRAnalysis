@@ -54,6 +54,10 @@ private:
     TUnfoldBinning* mass_binning_Rec = NULL;
     TUnfoldBinning* mass_binning_Gen = NULL;
 
+    std::map<TString, vector<TString>> sysMap;
+    std::map<TString, TH1*> sysAbsHist;
+    std::map<TString, TH1*> sysRelHist;
+
     // For nominal results
     TUnfoldDensityV17* nomPtUnfold;
     TUnfoldDensityV17* nomMassUnfold;
@@ -82,8 +86,6 @@ private:
     // Nominal mean mass and pt for MC
     vector<Double_t> meanMass_mc_unfoled, meanMassStatErr_mc_unfoled, meanMassSysErr_mc_unfoled, meanMassTotErr_mc_unfoled;
     vector<Double_t> meanPt_mc_unfoled, meanPtStatErr_mc_unfoled, meanPtSysErr_mc_unfoled, meanPtTotErr_mc_unfoled;
-    
-    TCanvas* c1;
     
     // 
     Int_t nScan;
@@ -150,14 +152,24 @@ public:
 
     // Set background histograms
     void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
-                bool isSys = false, TString sysName = "", int totSysN = -1, int nth = 0, TString dirName = "full_phase");
+                 bool isSys = false, TString sysName = "", int totSysN = -1, int nth = 0, TString dirName = "full_phase", double bkgScale = 1.);
 
     // Set systematic TUnfoldDensity
-    void setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, int nth);
+    void setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, int nth);
 
+    void setSystematics(TString sysName, TString sysHistName);
+    void inline printSystematics()
+    {
+        std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
+        while(it != sysMap.end())
+        {
+            cout << "Systematic name: " << it->first << endl;
+            it++;
+        }
+    }
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
-    TCanvas* drawFoldedHists(TString var, TString filePath);
-    void setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal);
+    TCanvas* drawFoldedHists(TString var, TString filePath, TString steering, bool useAxis, TString sysName = "");
+    void setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal, TString steering, bool useAxis, TString sysName = "");
 
     // Do unfold 
     void doISRUnfold( bool doSys = false);

@@ -124,12 +124,11 @@ void ISRUnfold::setMassBindEdges()
 
 }
 
-void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, int nth)
+void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, int nth)
 {
-
     TFile* filein = new TFile(filepath);
     TH2* hmcGenRec;
-    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName +"/hmc" + var + "GenRecnominal");
+    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName +"/hmc" + var + "GenRec_" + sysPostfix);
 
     if( var == "Pt" )
     {
@@ -140,7 +139,6 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirN
                                                               TUnfoldDensityV17::kDensityModeBinWidth,
                                                               pt_binning_Gen,pt_binning_Rec));
     }
-
     else if( var == "Mass" )
     {
         sysMassUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
@@ -242,22 +240,24 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TStr
     delete filein;
 }
 
-void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, bool isSys, TString sysName, int totSysN, int nth, TString dirName)
+void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, bool isSys, TString sysName, int totSysN, int nth, TString dirName, double bkgScale)
 {
 
     TFile* filein = new TFile(filepath);
     TH1* hPtRec = NULL;
     TH1* hMassRec = NULL;
     
-    double bkg_scale = 1.;
+    double bkg_scale = bkgScale;
     TString systematic_postfix = sysName;
     
-    if(totSysN == 2){
+    if(totSysN == 2)
+    {
         if(nth == 0 ) systematic_postfix="_"+systematic_postfix+"Up";
         if(nth == 1 ) systematic_postfix="_"+systematic_postfix+"Down";
     }
     
-    if(totSysN == 6 && (sysName == "Scale" || sysName =="pdfScale")){
+    if(totSysN == 6 && (sysName == "Scale" || sysName =="pdfScale"))
+    {
         if(nth == 0 ) systematic_postfix="_"+systematic_postfix+"AUp";
         if(nth == 1 ) systematic_postfix="_"+systematic_postfix+"ADown";
         if(nth == 2 ) systematic_postfix="_"+systematic_postfix+"BUp";
@@ -266,7 +266,8 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
         if(nth == 5 ) systematic_postfix="_"+systematic_postfix+"ABDown";
     }
     
-    if(totSysN == 100 && sysName == "PDFerror"){
+    if(totSysN == 100 && sysName == "PDFerror")
+    {
         TString nth_;
         nth_.Form ("%03d", nth);
         systematic_postfix="_"+systematic_postfix+nth_;
@@ -360,8 +361,13 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
     delete filein;
 }
 
+void ISRUnfold::setSystematics(TString sysName, TString sysHistName)
+{
+    sysMap[sysName].push_back(sysHistName);
+}
+
 // Draw detector distributions using input root file
-TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath)
+TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steering, bool useAxis, TString sysName)
 {
     TH1::AddDirectory(kFALSE);
     cout << "ISRUnfold::drawFoldedHists, Draw plot!" << endl; 
@@ -372,20 +378,31 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath)
     TH1* hDY = NULL;
     TH1* hMCtotal = NULL;
     TH1* hRatio = NULL;
+    // For systematic
+    TH1* hDY_up = NULL;
+    TH1* hMCtotal_up = NULL;
+    TH1* hRatio_up = NULL;
+    TH1* hDY_down = NULL;
+    TH1* hMCtotal_down = NULL;
+    TH1* hRatio_down = NULL;
 
-    TString steering = "mass[UO];pt[UOC0]";
-    bool useAxis = true; // 
-    if(var == "Pt")
-    {
-        steering = "pt[UO];mass[UO]";
-        useAxis = false;
-    }
     hData = getRawHist(var, filePath, "Detector", "histo_DoubleMuonnominal", "Data", steering, useAxis);
     hDY = getRawHist(var, filePath, "Detector", "histo_DYJetsToMuMunominal", "Signal", steering, useAxis);
     hMCtotal = (TH1*) hDY->Clone("hMCtotal");
     hRatio = (TH1*) hData->Clone("hRatio");
 
-    TCanvas* c_out = new TCanvas("detector_level", "detector_level", 50, 50, 800, 700);
+    if(sysName != "")
+    {
+        hDY_up = getRawHist(var, filePath, "Detector", "histo_DYJetsToMuMu_" + sysMap[sysName][0], "Signal"+sysMap[sysName][0], steering, useAxis);
+        hMCtotal_up = (TH1*) hDY_up->Clone("hMCtotal_up");
+        hRatio_up = (TH1*) hData->Clone("hRatio_up");
+
+        hDY_down = getRawHist(var, filePath, "Detector", "histo_DYJetsToMuMu_" + sysMap[sysName][1], "Signal"+sysMap[sysName][1], steering, useAxis);
+        hMCtotal_down = (TH1*) hDY_down->Clone("hMCtotal_down");
+        hRatio_down = (TH1*) hData->Clone("hRatio_down");
+    }
+
+    TCanvas* c_out = new TCanvas("detector_level_"+var, "detector_level_"+var, 50, 50, 1600, 1400);
     c_out->Draw();
     c_out->cd();
 
@@ -412,12 +429,22 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath)
     hDY->SetFillColor(kYellow);
 
     THStack* hsMC = new THStack("hsMC", "hsMC");
-    // TODO stack function
-    setTHStack(var, filePath, *hsMC, *hMCtotal);
+    setTHStack(var, filePath, *hsMC, *hMCtotal, steering, useAxis);
     hsMC->Add(hDY);
+
+    THStack* hsMC_up;
+    THStack* hsMC_down;
+    if(sysName != "")
+    {
+        hsMC_up = new THStack("hsMC_up", "hsMC_up");
+        hsMC_down = new THStack("hsMC_down", "hsMC_down");
+        setTHStack(var, filePath, *hsMC_up, *hMCtotal_up, steering, useAxis);
+        setTHStack(var, filePath, *hsMC_down, *hMCtotal_down, steering, useAxis);
+    }
     
     hsMC->Draw("hist same");
     hData->Draw("p9histe same");
+    pad1->RedrawAxis();
 
     TLine massEdgeLine;
     if(var=="Mass")
@@ -429,7 +456,6 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath)
             massEdgeLine.DrawLine(massBinEdges[i], hData->GetMinimum(), massBinEdges[i], hData->GetMaximum());
         }
     }
-
     c_out->cd();
 
     TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.3);
@@ -453,15 +479,32 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath)
     hRatio->SetMinimum(0.7);
     hRatio->SetMaximum(1.3);
 
+    TH1* sysBand_ratio = NULL;
+    if(sysName != "")
+    {
+        hRatio_up->Divide(hMCtotal_up);
+        hRatio_down->Divide(hMCtotal_down);
+        sysBand_ratio = (TH1*)hRatio_up->Clone("sysBand_ratio");
+        for(int ibin = 1; ibin < sysBand_ratio->GetNbinsX()+1; ibin++)
+        {
+            double delta = fabs(hRatio_up->GetBinContent(ibin) - hRatio_down->GetBinContent(ibin));
+            sysBand_ratio->SetBinError(ibin, delta);
+            sysBand_ratio->SetBinContent(ibin, 1.);
+        }
+        sysBand_ratio->SetFillColorAlpha(kBlack,0.8);
+        sysBand_ratio->SetFillStyle(3004);
+        sysBand_ratio->Draw("E2 same");
+    }
+
     c_out->cd();
-    c_out->SaveAs("detector_"+var+".pdf");
+    c_out->SaveAs("detector_"+var+".png");
 
     delete filein;
 
     return c_out;
 }
 
-void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal)
+void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal, TString steering, bool useAxis, TString sysName)
 {
     TH1::AddDirectory(kFALSE); 
     int bkgSize = bkgNames.size();
@@ -487,25 +530,23 @@ void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCt
     bool isFirstBkg = true;
     int nthBkg = 0;
 
-    TString steering = "mass[UO];pt[UOC0]";
-    bool useAxis = true; // 
-    if(var == "Pt")
-    {
-        steering = "pt[UO];mass[UO]";
-        useAxis = false;
-    }
-
     for(int i = 0; i < bkgSize; i++)
     {
         if(isFirstBkg)
         {
-            htemp = getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"nominal", "h"+bkgNames[i], steering, useAxis);  
+            if(sysName == "")
+                htemp = getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"nominal", "h"+bkgNames[i], steering, useAxis);  
+            else
+                htemp = getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"_"+sysName, "h"+bkgNames[i], steering, useAxis);  
             isFirstBkg = false;
             nthBkg++;
         }
         else
         {
-            htemp->Add(getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"nominal", "h"+bkgNames[i], steering, useAxis));  
+            if(sysName == "")
+                htemp->Add(getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"nominal", "h"+bkgNames[i], steering, useAxis));  
+            else
+                htemp->Add(getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"_"+sysName, "h"+bkgNames[i], steering, useAxis));  
             nthBkg++;
         }
 
