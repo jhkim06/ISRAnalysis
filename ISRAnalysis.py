@@ -27,7 +27,7 @@ class ISRAnalysis:
                 dataHistPostfix = "EGamma"
         if self.channel == "muon":
             dataHistPostfix = dataHistPostfix + "Muon"
-        self.dataHistName = "histo_"+dataHistPostfix+"nominal"
+        self.dataHistName = "histo_"+dataHistPostfix+"_nominal"
             
         self.dy10to50HistName = "DYJets10to50"
         MG_postfix = "_MG"
@@ -69,13 +69,13 @@ class ISRAnalysis:
         inputHistName = self.dataHistName
         if useMCInput == True:
             if self.channel == "electron":
-                inputHistName = "histo_DYJetsToEEnominal"
+                inputHistName = "histo_DYJetsToEE_nominal"
             else :
-                inputHistName = "histo_DYJetsToMuMunominal"
+                inputHistName = "histo_DYJetsToMuMu_nominal"
         
         if useUnfoldOut == False:
-            self.unfold.setUnfInput("Pt",   self.inHistDic['hist'], "Detector", inputHistName, False, "nominal", 0)
-            self.unfold.setUnfInput("Mass", self.inHistDic['hist'], "Detector", inputHistName, False, "nominal", 0)
+            self.unfold.setUnfInput("Pt",   self.inHistDic['hist'], "Detector", inputHistName, False, "_nominal", 0)
+            self.unfold.setUnfInput("Mass", self.inHistDic['hist'], "Detector", inputHistName, False, "_nominal", 0)
         else:
             self.unfold.setUnfInput(unfoldObj, "Pt", False, "", 0)
             self.unfold.setUnfInput(unfoldObj, "Mass", False, "", 0)
@@ -87,7 +87,7 @@ class ISRAnalysis:
         for fake in fakeList.items():
             self.unfold.subBkgs(self.inHistDic['matrix'], fake, False, "", 0, -1, "detector_level_DY_Fake")
         
-    def setUnfoldBkgs(self, doSystematic = False , systName = "nominal", nthSys = 0, nTotSys = -1):
+    def setUnfoldBkgs(self, doSystematic = False , systName = "_nominal", nthSys = 0, nTotSys = -1):
    
         bkgList = {}
         # 2016 데이터만 single top 샘플을 갖고 있다 

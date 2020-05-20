@@ -280,10 +280,10 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
         bkgNames.push_back(bkgInfo.first);
         bkgTypes.push_back(bkgInfo.second);
 
-        hPtRec = (TH1*)filein->Get(dirName + "/Pt/histo_" + bkgInfo.first + "nominal");
+        hPtRec = (TH1*)filein->Get(dirName + "/Pt/histo_" + bkgInfo.first + "_nominal");
         nomPtUnfold->  SubtractBackground(hPtRec, bkgInfo.first, bkg_scale);
 
-        hMassRec = (TH1*)filein->Get(dirName + "/Mass/histo_" + bkgInfo.first + "nominal");
+        hMassRec = (TH1*)filein->Get(dirName + "/Mass/histo_" + bkgInfo.first + "_nominal");
         nomMassUnfold->SubtractBackground(hMassRec, bkgInfo.first, bkg_scale);
     }
 
@@ -386,8 +386,8 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
     TH1* hMCtotal_down = NULL;
     TH1* hRatio_down = NULL;
 
-    hData = getRawHist(var, filePath, "Detector", "histo_DoubleMuonnominal", "Data", steering, useAxis);
-    hDY = getRawHist(var, filePath, "Detector", "histo_DYJetsToMuMunominal", "Signal", steering, useAxis);
+    hData = getRawHist(var, filePath, "Detector", "histo_DoubleMuon_nominal", "Data", steering, useAxis);
+    hDY = getRawHist(var, filePath, "Detector", "histo_DYJetsToMuMu_nominal", "Signal", steering, useAxis);
     hMCtotal = (TH1*) hDY->Clone("hMCtotal");
     hRatio = (TH1*) hData->Clone("hRatio");
 
@@ -401,6 +401,10 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
         hMCtotal_down = (TH1*) hDY_down->Clone("hMCtotal_down");
         hRatio_down = (TH1*) hData->Clone("hRatio_down");
     }
+
+    setTDRStyle();
+    writeExtraText = true;
+    extraText  = "work in progress";
 
     TCanvas* c_out = new TCanvas("detector_level_"+var, "detector_level_"+var, 50, 50, 1600, 1400);
     c_out->Draw();
@@ -493,10 +497,12 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
         }
         sysBand_ratio->SetFillColorAlpha(kBlack,0.8);
         sysBand_ratio->SetFillStyle(3004);
+        sysBand_ratio->SetMarkerSize(0.);
         sysBand_ratio->Draw("E2 same");
     }
 
     c_out->cd();
+    CMS_lumi(c_out, 7, 11);
     c_out->SaveAs("detector_"+var+".png");
 
     delete filein;
@@ -535,7 +541,7 @@ void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCt
         if(isFirstBkg)
         {
             if(sysName == "")
-                htemp = getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"nominal", "h"+bkgNames[i], steering, useAxis);  
+                htemp = getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"_nominal", "h"+bkgNames[i], steering, useAxis);  
             else
                 htemp = getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"_"+sysName, "h"+bkgNames[i], steering, useAxis);  
             isFirstBkg = false;
@@ -544,7 +550,7 @@ void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCt
         else
         {
             if(sysName == "")
-                htemp->Add(getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"nominal", "h"+bkgNames[i], steering, useAxis));  
+                htemp->Add(getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"_nominal", "h"+bkgNames[i], steering, useAxis));  
             else
                 htemp->Add(getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"_"+sysName, "h"+bkgNames[i], steering, useAxis));  
             nthBkg++;
