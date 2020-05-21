@@ -78,9 +78,12 @@ private:
     std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysMassUnfold;
     
     /*------------------------- Results: mean values ----------------------------------*/ 
-    // Folded level 
+    // Folded level: from TUnfoldDensity (mean from the binned histogram) 
     vector<Double_t> meanMass_data_folded, meanMassStatErr_data_folded, meanMassSysErr_data_folded, meanMassTotErr_data_folded;
     vector<Double_t> meanPt_data_folded,   meanPtStatErr_data_folded,   meanPtSysErr_data_folded, meanPtTotErr_data_folded;
+    // Mean from raw histograms 
+    vector<Double_t> unbinnedMeanMass_data_folded, unbinnedMeanMassStatErr_data_folded, unbinnedMeanMassSysErr_data_folded, unbinnedMeanMassTotErr_data_folded;
+    vector<Double_t> unbinnedMeanPt_data_folded,   unbinnedMeanPtStatErr_data_folded,   unbinnedMeanPtSysErr_data_folded, unbinnedMeanPtTotErr_data_folded;
     
     // Unfolded results
     vector<Double_t> meanMass_data_unfoled, meanMassStatErr_data_unfoled, meanMassSysErr_data_unfoled, meanMassTotErr_data_unfoled;
@@ -171,8 +174,8 @@ public:
         }
     }
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
-    TCanvas* drawFoldedHists(TString var, TString filePath, TString steering, bool useAxis, TString sysName = "", TString outName = "");
-    void setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "");
+    TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "");
+    void setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "");
 
     // Do unfold 
     void doISRUnfold( bool doSys = false);

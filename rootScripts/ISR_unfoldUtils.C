@@ -274,48 +274,63 @@ void ISRUnfold::setSystematics(TString sysName, TString sysHistName)
 }
 
 // Draw detector distributions using input root file
-TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steering, bool useAxis, TString sysName, TString outName)
+TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TString outName)
 {
+    // If steering == "", then usual TH1 histogram
+    // If seering != "", TH1 from TUnfold     
+
     setTDRStyle();
     writeExtraText = true;
     extraText  = "work in progress";
     gStyle->SetLineWidth(2.);
     gStyle->SetFrameLineWidth(2.);
+    gROOT->ForceStyle(); 
 
     TH1::AddDirectory(kFALSE);
     cout << "ISRUnfold::drawFoldedHists, Draw plot!" << endl;
 
     TFile* filein = new TFile(filePath);
 
+    // For nominal histogram
     TH1* hData = NULL;
     TH1* hDY = NULL;
     TH1* hMCtotal = NULL;
     TH1* hRatio = NULL;
+
     // For systematic
     TH1* hDY_up = NULL;
     TH1* hMCtotal_up = NULL;
     TH1* hRatio_up = NULL;
+
     TH1* hDY_down = NULL;
     TH1* hMCtotal_down = NULL;
     TH1* hRatio_down = NULL;
 
-    hData = getRawHist(var, filePath, "Detector", "histo_DoubleMuon_nominal", "Data", steering, useAxis);
-    hDY = getRawHist(var, filePath, "Detector", "histo_DYJetsToMuMu_nominal", "Signal", steering, useAxis);
+    TString dataHistName_ = "histo_DoubleMuon";
+    TString DYHistName_ = "histo_DYJetsToMuMu";
+    if(steering != "")
+    {
+        dataHistName_ += "_nominal";
+        DYHistName_ += "_nominal";
+    }
+
+    hData = getRawHist(var, filePath, dirName, dataHistName_, "Data", steering, useAxis);
+    hDY = getRawHist(var, filePath, dirName, DYHistName_, "Signal", steering, useAxis);
     hMCtotal = (TH1*) hDY->Clone("hMCtotal");
     hRatio = (TH1*) hData->Clone("hRatio");
 
     if(sysName != "")
     {
-        hDY_up = getRawHist(var, filePath, "Detector", "histo_DYJetsToMuMu_" + sysMap[sysName][0], "Signal"+sysMap[sysName][0], steering, useAxis);
+        hDY_up = getRawHist(var, filePath, dirName, "histo_DYJetsToMuMu_" + sysMap[sysName][0], "Signal"+sysMap[sysName][0], steering, useAxis);
         hMCtotal_up = (TH1*) hDY_up->Clone("hMCtotal_up");
         hRatio_up = (TH1*) hData->Clone("hRatio_up");
 
-        hDY_down = getRawHist(var, filePath, "Detector", "histo_DYJetsToMuMu_" + sysMap[sysName][1], "Signal"+sysMap[sysName][1], steering, useAxis);
+        hDY_down = getRawHist(var, filePath, dirName, "histo_DYJetsToMuMu_" + sysMap[sysName][1], "Signal"+sysMap[sysName][1], steering, useAxis);
         hMCtotal_down = (TH1*) hDY_down->Clone("hMCtotal_down");
         hRatio_down = (TH1*) hData->Clone("hRatio_down");
     }
 
-
+    // Create canvas 
     TCanvas* c_out = new TCanvas("detector_level_"+var, "detector_level_"+var, 50, 50, 1600, 1400);
     c_out->Draw();
     c_out->cd();
@@ -347,12 +362,11 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
     leg->SetTextSize(0.035);
     leg->SetFillStyle(0); // transparent
     leg->SetBorderSize(0);
-
     leg->AddEntry(hData, "Data", "pe");
     leg->AddEntry(hDY, "Drell-Yan", "F");
 
     THStack* hsMC = new THStack("hsMC", "hsMC");
-    setTHStack(var, filePath, *hsMC, *hMCtotal, *leg, steering, useAxis);
+    setTHStack(var, filePath, dirName, *hsMC, *hMCtotal, *leg, steering, useAxis);
     hsMC->Add(hDY);
 
     THStack* hsMC_up;
@@ -361,8 +375,8 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
     {
         hsMC_up = new THStack("hsMC_up", "hsMC_up");
         hsMC_down = new THStack("hsMC_down", "hsMC_down");
-        setTHStack(var, filePath, *hsMC_up, *hMCtotal_up, *leg, steering, useAxis, sysMap[sysName][0]);
-        setTHStack(var, filePath, *hsMC_down, *hMCtotal_down, *leg, steering, useAxis, sysMap[sysName][1]);
+        setTHStack(var, filePath, dirName, *hsMC_up, *hMCtotal_up, *leg, steering, useAxis, sysMap[sysName][0]);
+        setTHStack(var, filePath, dirName, *hsMC_down, *hMCtotal_down, *leg, steering, useAxis, sysMap[sysName][1]);
     }
 
     hsMC->Draw("hist same");
@@ -408,30 +422,31 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
     if(channel_name=="electron") channel_name_ = "ee";
     else channel_name_ = "#mu#mu";
 
+    // TODO Make setXaxisTitle()
     if(useAxis)
     {
-        if(var == "Mass")
+        if(var.Contains("Mass"))
         {
             hRatio->GetXaxis()->SetTitle("Mass^{" + channel_name_  + "} [GeV]");
         }
-        if(var == "Pt")
+        if(var.Contains("Pt"))
         {
             hRatio->GetXaxis()->SetTitle("p_{T}^{" + channel_name_ + "} [GeV]");
         }
     }
     else
     {
-        if(var == "Mass")
+        if(var.Contains("Mass"))
         {
             hRatio->GetXaxis()->SetTitle("Mass bin index");
         }
-        if(var == "Pt")
+        if(var.Contains("Pt"))
         {
             hRatio->GetXaxis()->SetTitle("p_{T} bin index");
         }
     }
 
-    // TODO
+    // TODO Save systematic histograms
     TH1* sysBand_ratio = NULL;
     if(sysName != "")
     {
@@ -449,6 +464,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
         sysBand_ratio->SetMarkerSize(0.);
         sysBand_ratio->Draw("E2 same");
     }
+    hRatio->Draw("p9histe same");
 
     int iPeriod_ = 4;
     if(year == 2017)
@@ -456,9 +472,9 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
     if(year == 2018)
         iPeriod_ = 6;
 
-    c_out->cd();
     CMS_lumi(pad1, iPeriod_, 11);
 
+    c_out->cd();
     c_out->SaveAs(outName!=""?outName+".png":"detector_"+var+".png");
 
     delete filein;
@@ -466,7 +482,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
     return c_out;
 }
 
-void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName)
+void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName)
 {
     TH1::AddDirectory(kFALSE);
     int bkgSize = bkgNames.size();
@@ -476,6 +492,7 @@ void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCt
     //cout << "N bkg: " << bkgSize << endl;
     for(int i = 0; i < bkgSize; i++)
     {
+        if(bkgTypes[i] == "DY") continue;
         map<TString, int>::iterator it = bkgTypeN.find(bkgTypes[i]);
         if(it != bkgTypeN.end())
         {
@@ -494,21 +511,28 @@ void ISRUnfold::setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCt
 
     for(int i = 0; i < bkgSize; i++)
     {
+        if(bkgTypes[i] == "DY") continue;
+        TString histName_ = "histo_" + bkgNames[i];;
+        if(steering != "")
+        {
+            histName_ += "_nominal";
+        }
+
         if(isFirstBkg)
         {
             if(sysName == "")
-                htemp = getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"_nominal", "h"+bkgNames[i], steering, useAxis);
+                htemp = getRawHist(var, filePath, dirName, histName_, "h"+bkgNames[i], steering, useAxis);
             else
-                htemp = getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"_"+sysName, "h"+bkgNames[i], steering, useAxis);
+                htemp = getRawHist(var, filePath, dirName, "histo_"+bkgNames[i]+"_"+sysName, "h"+bkgNames[i], steering, useAxis);
             isFirstBkg = false;
             nthBkg++;
         }
         else
         {
             if(sysName == "")
-                htemp->Add(getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"_nominal", "h"+bkgNames[i], steering, useAxis));
+                htemp->Add(getRawHist(var, filePath, dirName, histName_, "h"+bkgNames[i], steering, useAxis));
             else
-                htemp->Add(getRawHist(var, filePath, "Detector", "histo_"+bkgNames[i]+"_"+sysName, "h"+bkgNames[i], steering, useAxis));
+                htemp->Add(getRawHist(var, filePath, dirName, "histo_"+bkgNames[i]+"_"+sysName, "h"+bkgNames[i], steering, useAxis));
             nthBkg++;
         }
 
@@ -654,8 +678,7 @@ int ISRUnfold::setMeanMass()
 {
     cout << "ISRUnfold::setMeanMass()   Save mean of dilepton..." << endl;
 
-    const TUnfoldBinningV17* temp_binning_gen_pt = pt_binning_Gen;
-    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
     int nMassBin = temp_tvecd->GetNrows() - 1;
     const Double_t* massBins = temp_tvecd->GetMatrixArray();
 
@@ -700,8 +723,7 @@ int ISRUnfold::setMeanMass()
 
 void ISRUnfold::setStatError()
 {
-    const TUnfoldBinningV17* temp_binning_gen_pt = pt_binning_Gen;
-    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
     int nMassBin = temp_tvecd->GetNrows() - 1;
 
     // Loop over mass bins
@@ -788,8 +810,7 @@ void ISRUnfold::fillPtStatVariationHist(int istat)
     cout << "ISRUnfold::fillPtStatVariationHist()  " << endl;
 
     // Find number of mass bins
-    const TUnfoldBinningV17* temp_binning_gen_pt = pt_binning_Gen;
-    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
     int nMassBin = temp_tvecd->GetNrows() - 1;
 
     // Save mean pt
@@ -818,8 +839,7 @@ void ISRUnfold::fillMassStatVariationHist(int istat)
 
     cout << "ISRUnfold::setMeanMass()   Save mean of dilepton..." << endl;
 
-    const TUnfoldBinningV17* temp_binning_gen_pt = pt_binning_Gen;
-    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
     int nMassBin = temp_tvecd->GetNrows() - 1;
     const Double_t* massBins = temp_tvecd->GetMatrixArray();
 
@@ -843,14 +863,13 @@ void ISRUnfold::fillMassStatVariationHist(int istat)
 
     delete hunfolded_mass;
 }
-// Set mean pt from mass and DY mc
+
 int ISRUnfold::setMeanPt()
 {
     cout << "ISRUnfold::setMeanPt()   Save mean of dilepton momentum..." << endl;
 
     // Find number of mass bins
-    const TUnfoldBinningV17* temp_binning_gen_pt = pt_binning_Gen;
-    const TVectorD* temp_tvecd = temp_binning_gen_pt->GetDistributionBinning(1);
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
     int nMassBin = temp_tvecd->GetNrows() - 1;
 
     TUnfoldDensityV17* p_unfold = NULL;
@@ -1020,22 +1039,38 @@ TH1* ISRUnfold::getRawHist(TString var, TString filePath, TString dirName, TStri
 {
     TH1::AddDirectory(kFALSE);
     TFile* filein = new TFile(filePath);
+    TH1* hist = NULL;
 
-    TH1* raw_hist = (TH1*)filein->Get(dirName+"/"+var+"/"+histName);
-    if(histName.Contains("DYJetsTo") && !histName.Contains("Tau"))
+    if(steering != "")
     {
-        histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
-        raw_hist->Add((TH1*)filein->Get(dirName+"/"+var+"/"+histName));
+        TH1* raw_hist = (TH1*)filein->Get(dirName+"/"+var+"/"+histName);
+        if(histName.Contains("DYJetsTo") && !histName.Contains("Tau"))
+        {
+            histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
+            raw_hist->Add((TH1*)filein->Get(dirName+"/"+var+"/"+histName));
+        }
+
+        if(var=="Pt")
+            hist = pt_binning_Rec->ExtractHistogram(outHistName, raw_hist, 0, useAxis, steering);
+        else
+            hist = mass_binning_Rec->ExtractHistogram(outHistName, raw_hist, 0, useAxis, steering);
+
+        delete raw_hist;
+    }
+    else
+    {
+        //cout << "Steering not provided, get raw histogram." << endl;
+        //cout << dirName+"/"+var+"/"+histName << endl;
+        hist = (TH1*)filein->Get(dirName+"/"+var+"/"+histName);
+        if(histName.Contains("DYJetsTo") && !histName.Contains("Tau"))
+        {
+            histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
+            hist->Add((TH1*)filein->Get(dirName+"/"+var+"/"+histName));
+        }
     }
 
-    TH1* hist;
-    if(var=="Pt")
-        hist = pt_binning_Rec->ExtractHistogram(outHistName, raw_hist, 0, useAxis, steering);
-    else
-        hist = mass_binning_Rec->ExtractHistogram(outHistName, raw_hist, 0, useAxis, steering);
-
     delete filein;
-    delete raw_hist;
+
     return hist;
 }
 

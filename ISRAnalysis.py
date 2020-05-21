@@ -109,13 +109,13 @@ class ISRAnalysis:
     def setSystematics(self, sysName, sysHistName):
         self.unfold.setSystematics(sysName, sysHistName)
 
-        #self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName)
+        self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName)
 
     def getSystematics(self):
         self.unfold.printSystematics()
 
-    def drawDetPlot(self, var = "Mass", steering = None, useAxis = None, sysName = "", outName = ""):
-        self.unfold.drawFoldedHists(var, self.inHistDic['hist'], steering, useAxis, sysName, outName)
+    def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = ""):
+        self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName)
     # Do unfold! 
     def doUnfold(self, doSystematic = False):
         self.unfold.doISRUnfold(doSystematic)
