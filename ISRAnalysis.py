@@ -64,7 +64,7 @@ class ISRAnalysis:
         self.unfold.setNomResMatrix("Pt", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName)
         self.unfold.setNomResMatrix("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName)
         
-    def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None):
+    def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = ""):
         
         inputHistName = self.dataHistName
         if useMCInput == True:
@@ -74,8 +74,8 @@ class ISRAnalysis:
                 inputHistName = "histo_DYJetsToMuMu_nominal"
         
         if useUnfoldOut == False:
-            self.unfold.setUnfInput("Pt",   self.inHistDic['hist'], "Detector", inputHistName, False, "nominal")
-            self.unfold.setUnfInput("Mass", self.inHistDic['hist'], "Detector", inputHistName, False, "nominal")
+            self.unfold.setUnfInput("Pt",   self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+            self.unfold.setUnfInput("Mass", self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
         else:
             self.unfold.setUnfInput(unfoldObj, "Pt", False, "", 0)
             self.unfold.setUnfInput(unfoldObj, "Mass", False, "", 0)
@@ -87,7 +87,7 @@ class ISRAnalysis:
         for fake in fakeList.items():
             self.unfold.subBkgs(self.inHistDic['matrix'], fake, False, "detector_level_DY_Fake", "", "")
         
-    def setUnfoldBkgs(self, doSystematic = False , systName = "nominal", sysPostfix = ""):
+    def setUnfoldBkgs(self, doSystematic = False , dirName = "Detector", systName = "nominal", sysPostfix = ""):
    
         bkgList = {}
         # 2016 데이터만 single top 샘플을 갖고 있다 
@@ -104,10 +104,12 @@ class ISRAnalysis:
                        "TTLL_powheg": "Top"}
         
         for bkg in bkgList.items():
-            self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, "Detector", systName, sysPostfix)
+            self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, dirName, systName, sysPostfix)
             
     def setSystematics(self, sysName, sysHistName):
         self.unfold.setSystematics(sysName, sysHistName)
+
+        #self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName)
 
     def getSystematics(self):
         self.unfold.printSystematics()
