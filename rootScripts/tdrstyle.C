@@ -113,7 +113,7 @@ void setTDRStyle() {
   tdrStyle->SetTitleSize(40, "XYZ");
   // tdrStyle->SetTitleXSize(Float_t size = 0.02); // Another way to set the size?
   // tdrStyle->SetTitleYSize(Float_t size = 0.02);
-  tdrStyle->SetTitleXOffset(2.5);
+  tdrStyle->SetTitleXOffset(3.5);
   tdrStyle->SetTitleYOffset(2.0);
   // tdrStyle->SetTitleOffset(1.1, "Y"); // Another way to set the Offset
 

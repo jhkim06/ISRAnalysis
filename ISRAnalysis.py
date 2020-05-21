@@ -74,20 +74,20 @@ class ISRAnalysis:
                 inputHistName = "histo_DYJetsToMuMu_nominal"
         
         if useUnfoldOut == False:
-            self.unfold.setUnfInput("Pt",   self.inHistDic['hist'], "Detector", inputHistName, False, "_nominal", 0)
-            self.unfold.setUnfInput("Mass", self.inHistDic['hist'], "Detector", inputHistName, False, "_nominal", 0)
+            self.unfold.setUnfInput("Pt",   self.inHistDic['hist'], "Detector", inputHistName, False, "nominal")
+            self.unfold.setUnfInput("Mass", self.inHistDic['hist'], "Detector", inputHistName, False, "nominal")
         else:
             self.unfold.setUnfInput(unfoldObj, "Pt", False, "", 0)
             self.unfold.setUnfInput(unfoldObj, "Mass", False, "", 0)
             
     def subFake(self):
-        
+            
         fakeList = {"DYJets": "DY", self.dy10to50HistName:"DY"}
         
         for fake in fakeList.items():
-            self.unfold.subBkgs(self.inHistDic['matrix'], fake, False, "", 0, -1, "detector_level_DY_Fake")
+            self.unfold.subBkgs(self.inHistDic['matrix'], fake, False, "detector_level_DY_Fake", "", "")
         
-    def setUnfoldBkgs(self, doSystematic = False , systName = "_nominal", nthSys = 0, nTotSys = -1):
+    def setUnfoldBkgs(self, doSystematic = False , systName = "nominal", sysPostfix = ""):
    
         bkgList = {}
         # 2016 데이터만 single top 샘플을 갖고 있다 
@@ -104,7 +104,7 @@ class ISRAnalysis:
                        "TTLL_powheg": "Top"}
         
         for bkg in bkgList.items():
-            self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, systName, nTotSys, nthSys, "Detector")
+            self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, "Detector", systName, sysPostfix)
             
     def setSystematics(self, sysName, sysHistName):
         self.unfold.setSystematics(sysName, sysHistName)
@@ -112,8 +112,8 @@ class ISRAnalysis:
     def getSystematics(self):
         self.unfold.printSystematics()
 
-    def drawDetPlot(self, var = "Mass", steering = None, useAxis = None, sysName = ""):
-        self.unfold.drawFoldedHists(var, self.inHistDic['hist'], steering, useAxis, sysName)
+    def drawDetPlot(self, var = "Mass", steering = None, useAxis = None, sysName = "", outName = ""):
+        self.unfold.drawFoldedHists(var, self.inHistDic['hist'], steering, useAxis, sysName, outName)
     # Do unfold! 
     def doUnfold(self, doSystematic = False):
         self.unfold.doISRUnfold(doSystematic)

@@ -50,7 +50,7 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
 
     // Set response matrix
     TH2* hmcGenRec;
-    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName +"/hmc" + var + "GenRecnominal");
+    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName +"/hmc" + var + "GenRec_nominal");
     
     if( var == "Pt" )
     {
@@ -64,6 +64,7 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
         // For statistical uncertainty 
         if(makeStatUnfold)
         {
+            cout << "Create response matrix for statistical uncertainty..." << endl;
             for(int i = 0; i < statSize; i++)
             {
                 statPtUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
@@ -124,7 +125,7 @@ void ISRUnfold::setMassBindEdges()
 
 }
 
-void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, int nth)
+void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix)
 {
     TFile* filein = new TFile(filepath);
     TH2* hmcGenRec;
@@ -132,21 +133,21 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirN
 
     if( var == "Pt" )
     {
-        sysPtUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
-                                                              TUnfold::kHistMapOutputHoriz,
-                                                              regMode,
-                                                              TUnfold::kEConstraintArea,
-                                                              TUnfoldDensityV17::kDensityModeBinWidth,
-                                                              pt_binning_Gen,pt_binning_Rec));
+        sysPtUnfold[sysName][sysPostfix] = new TUnfoldDensityV17(hmcGenRec,
+                                                                 TUnfold::kHistMapOutputHoriz,
+                                                                 regMode,
+                                                                 TUnfold::kEConstraintArea,
+                                                                 TUnfoldDensityV17::kDensityModeBinWidth,
+                                                                 pt_binning_Gen,pt_binning_Rec);
     }
     else if( var == "Mass" )
     {
-        sysMassUnfold[sysName].push_back( new TUnfoldDensityV17(hmcGenRec,
-                                                                TUnfold::kHistMapOutputHoriz,
-                                                                regMode,
-                                                                TUnfold::kEConstraintArea,
-                                                                TUnfoldDensityV17::kDensityModeBinWidth,
-                                                                mass_binning_Gen,mass_binning_Rec));
+        sysMassUnfold[sysName][sysPostfix] = new TUnfoldDensityV17(hmcGenRec,
+                                                                   TUnfold::kHistMapOutputHoriz,
+                                                                   regMode,
+                                                                   TUnfold::kEConstraintArea,
+                                                                   TUnfoldDensityV17::kDensityModeBinWidth,
+                                                                   mass_binning_Gen,mass_binning_Rec);
     }
     else
     {
@@ -182,28 +183,24 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString var, bool isSys, TString 
 }
 
 // Set input histogram from root file
-void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TString histName, bool isSys, TString sysName, int nth)
+void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TString histName, bool isSys, TString sysName, TString sysPostfix)
 {
     TH1::AddDirectory(kFALSE);
 
     TFile* filein = new TFile(filepath);
-    TString nth_;
-    nth_.Form("%d", nth);
     TH1* hRec = NULL;
+    hRec = (TH1*)filein->Get(dirName+"/"+var+"/"+histName);
+    // Use DY MC as unfolding input, i.e. simple closure test
+    if(histName.Contains("DYJetsTo"))
+    {
+        histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
+        hRec->Add((TH1*)filein->Get(dirName+"/"+var+"/"+histName));
+    }
 
     // Nominal histograms
     // TODO Use input covariance matrix
     if(!isSys)
     {
-        hRec = (TH1*)filein->Get(dirName+"/"+var+"/"+histName);
-
-        // Use DY MC as unfolding input, i.e. simple closure test
-        if(histName.Contains("DYJetsTo"))
-        {
-            histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
-            hRec->Add((TH1*)filein->Get(dirName+"/"+var+"/"+histName));
-        }
-
         if(var == "Pt")
         {
             nomPtUnfold->SetInput(hRec,   nominal_bias);
@@ -217,18 +214,16 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TStr
             exit (EXIT_FAILURE);
         }
     }
-    // Systematic histograms
     else
+    // Systematic histograms
     {
-        hRec = (TH1*)filein->Get(dirName+"/"+var+"/"+histName);
-        // For systematic, using the same input histogram as nominal, unless data changed in a systematic change
         if(var == "Pt")
         {
-            sysPtUnfold[sysName].at(nth)->SetInput(hRec,   nominal_bias);
+            sysPtUnfold[sysName][sysPostfix]->SetInput(hRec, nominal_bias);
         }
         else if(var == "Mass")
         {
-            sysMassUnfold[sysName].at(nth)->SetInput(hRec,   nominal_bias);
+            sysMassUnfold[sysName][sysPostfix]->SetInput(hRec, nominal_bias);
         }
         else
         {
@@ -240,123 +235,35 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TStr
     delete filein;
 }
 
-void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, bool isSys, TString sysName, int totSysN, int nth, TString dirName, double bkgScale)
+void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, bool isSys, TString dirName, TString sysName, TString sysPostfix)
 {
-
     TFile* filein = new TFile(filepath);
     TH1* hPtRec = NULL;
     TH1* hMassRec = NULL;
     
-    double bkg_scale = bkgScale;
-    TString systematic_postfix = sysName;
-    
-    if(totSysN == 2)
-    {
-        if(nth == 0 ) systematic_postfix="_"+systematic_postfix+"Up";
-        if(nth == 1 ) systematic_postfix="_"+systematic_postfix+"Down";
-    }
-    
-    if(totSysN == 6 && (sysName == "Scale" || sysName =="pdfScale"))
-    {
-        if(nth == 0 ) systematic_postfix="_"+systematic_postfix+"AUp";
-        if(nth == 1 ) systematic_postfix="_"+systematic_postfix+"ADown";
-        if(nth == 2 ) systematic_postfix="_"+systematic_postfix+"BUp";
-        if(nth == 3 ) systematic_postfix="_"+systematic_postfix+"BDown";
-        if(nth == 4 ) systematic_postfix="_"+systematic_postfix+"ABUp";
-        if(nth == 5 ) systematic_postfix="_"+systematic_postfix+"ABDown";
-    }
-    
-    if(totSysN == 100 && sysName == "PDFerror")
-    {
-        TString nth_;
-        nth_.Form ("%03d", nth);
-        systematic_postfix="_"+systematic_postfix+nth_;
-    }
-    
     // Nominal histograms
     if(!isSys)
     {
-
+        
         bkgNames.push_back(bkgInfo.first);
         bkgTypes.push_back(bkgInfo.second);
 
         hPtRec = (TH1*)filein->Get(dirName + "/Pt/histo_" + bkgInfo.first + "_nominal");
-        nomPtUnfold->  SubtractBackground(hPtRec, bkgInfo.first, bkg_scale);
+        nomPtUnfold->  SubtractBackground(hPtRec, bkgInfo.first);
 
         hMassRec = (TH1*)filein->Get(dirName + "/Mass/histo_" + bkgInfo.first + "_nominal");
-        nomMassUnfold->SubtractBackground(hMassRec, bkgInfo.first, bkg_scale);
+        nomMassUnfold->SubtractBackground(hMassRec, bkgInfo.first);
+    }
+    else
+    // Systematic 
+    {
+        hPtRec = (TH1*)filein->Get(dirName + "/Pt/histo_" + bkgInfo.first + "_" + sysPostfix);
+        sysPtUnfold[sysName][sysPostfix]->SubtractBackground(hPtRec, bkgInfo.first);
+
+        hMassRec = (TH1*)filein->Get(dirName + "/Mass/histo_" + bkgInfo.first + "_" + sysPostfix);
+        sysMassUnfold[sysName][sysPostfix]->SubtractBackground(hMassRec, bkgInfo.first);
     }
 
-/*
-    // Systematic histograms
-    else
-    {	
-    
-        // Systematics using nominal detector distributions
-        if(sysName=="Alt" || sysName=="unfoldBias" || sysName=="unfoldScan" || sysName == "Stat")
-        {
-            if(var == "Pt")
-            {
-                hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "nominal");
-            }
-            if(var == "Mass")
-            {
-                hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "nominal");
-            }
-        }
-        else
-        {
-            // WW WZ ZZ have no PDF systematics
-            if( (bkgName=="WW_pythia" || bkgName=="WZ_pythia" || bkgName=="ZZ_pythia") && (sysName=="pdfScale"||sysName=="Scale" || sysName=="AlphaS"||sysName=="alphaS"))
-            {
-                if(var == "Pt")
-                {
-                    hRec = (TH1*)filein->Get(phase_name + "/hist_ptll/histo_" + bkgName + "nominal");
-                }
-                if(var == "Mass")
-                {
-                    hRec = (TH1*)filein->Get(phase_name + "/hist_mll/histo_" + bkgName + "nominal");
-                }
-            }
-            else
-            {
-    
-                TString histDirPostfix = "";
-                if(sysName == "lepMom"){
-                    if(nth == 0)
-                    {
-                        phase_name += "_lepMomUp";
-                        histDirPostfix = "_lepMomUp";
-                        systematic_postfix = "nominal";
-                    }
-                    else if(nth == 1)
-                    {
-                        phase_name += "_lepMomDown";
-                        histDirPostfix = "_lepMomDown";
-                        systematic_postfix = "nominal";
-                    }
-                    else
-                    {
-                        exit(EXIT_FAILURE);
-                    }
-                }
-    
-                if(var == "Pt")
-                {
-                    hRec = (TH1*)filein->Get(phase_name + "/hist_ptll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix);
-                    cout << "path: " << phase_name + "/hist_ptll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix << endl;
-                }
-                if(var == "Mass")
-                {
-                    hRec = (TH1*)filein->Get(phase_name + "/hist_mll" + histDirPostfix + "/histo_" + bkgName + systematic_postfix);
-                }
-            }
-        }
-    
-        if( var == "Pt" )   sysPtUnfold[sysName].at(nth)  ->SubtractBackground(hRec, bkgName, bkg_scale);
-        if( var == "Mass" ) sysMassUnfold[sysName].at(nth)->SubtractBackground(hRec, bkgName, bkg_scale);
-    }
- */   
     filein->Close();
     delete filein;
 }
@@ -367,11 +274,13 @@ void ISRUnfold::setSystematics(TString sysName, TString sysHistName)
 }
 
 // Draw detector distributions using input root file
-TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steering, bool useAxis, TString sysName)
+TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steering, bool useAxis, TString sysName, TString outName)
 {
     setTDRStyle();
     writeExtraText = true;
     extraText  = "work in progress";
+    gStyle->SetLineWidth(2.);
+    gStyle->SetFrameLineWidth(2.);
 
     TH1::AddDirectory(kFALSE);
     cout << "ISRUnfold::drawFoldedHists, Draw plot!" << endl; 
@@ -435,7 +344,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
 
     TLegend* leg = new TLegend(0.7, 0.65, 0.95, 0.85,"","brNDC");
     //leg->SetNColumns(2);
-    leg->SetTextSize(0.04);
+    leg->SetTextSize(0.035);
     leg->SetFillStyle(0); // transparent
     leg->SetBorderSize(0);
 
@@ -476,7 +385,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
 
     TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.3);
     pad2->SetTopMargin(0.05);
-    pad2->SetBottomMargin(0.2);
+    pad2->SetBottomMargin(0.25);
     if(var=="Mass")
         pad2->SetLogx();
     pad2->SetTicks(1);
@@ -488,7 +397,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
     hRatio->Divide(hMCtotal);
     hRatio->Draw("p9histe");
     hRatio->SetMarkerStyle(20);
-    hRatio->SetMarkerSize(0.7);
+    hRatio->SetMarkerSize(1.2);
     hRatio->SetLineColor(kBlack);
     hRatio->GetYaxis()->SetTitle("Data/MC");
 
@@ -549,7 +458,8 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString steer
         
     c_out->cd();
     CMS_lumi(pad1, iPeriod_, 11);
-    c_out->SaveAs("detector_"+var+".png");
+    
+    c_out->SaveAs(outName!=""?outName+".png":"detector_"+var+".png");
 
     delete filein;
 
@@ -726,6 +636,7 @@ void ISRUnfold::doISRUnfold(bool doSys){
     }
 
     // For systematic
+/*
     if(doSys)
     {
         std::map<TString, std::vector<TUnfoldDensityV17*>>::iterator it;
@@ -781,6 +692,7 @@ void ISRUnfold::doISRUnfold(bool doSys){
             it++;
         }
     }// Unfold for systematic
+*/
 }
 
 int ISRUnfold::setMeanMass()
@@ -810,8 +722,8 @@ int ISRUnfold::setMeanMass()
         {
             // Get mean values
             //cout << "Detector, " << ibin << " th mass bin, mean: " << hdetector_mass->GetMean() << " +/- " << hdetector_mass->GetMeanError() << endl;
-            meanMass_data_detector. push_back(hdetector_mass->GetMean());
-            meanMassStatErr_data_detector.push_back(hdetector_mass->GetMeanError());
+            meanMass_data_folded. push_back(hdetector_mass->GetMean());
+            meanMassStatErr_data_folded.push_back(hdetector_mass->GetMeanError());
 
             //cout << "Unfolded, " << ibin << " th mass bin, mean: " << hunfolded_mass->GetMean() << " +/- " << hunfolded_mass->GetMeanError() << endl;
             meanMass_data_unfoled.   push_back(hunfolded_mass->GetMean());
@@ -848,28 +760,28 @@ void ISRUnfold::setStatError()
 double ISRUnfold::getDetMeanMass(int ibin)
 {
 
-    int size = meanMass_data_detector.size();
+    int size = meanMass_data_folded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);     
     }
     else
     {
-        return meanMass_data_detector.at(ibin);
+        return meanMass_data_folded.at(ibin);
     }
 }
 
 double ISRUnfold::getDetMeanMassError(int ibin)
 {
 
-    int size = meanMass_data_detector.size();
+    int size = meanMass_data_folded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);     
     }
     else
     {
-        return meanMassStatErr_data_detector.at(ibin);
+        return meanMassStatErr_data_folded.at(ibin);
     }
 }
 
@@ -1000,13 +912,13 @@ int ISRUnfold::setMeanPt()
         TH1* hpt_temp_mc;
 
         // get histograms to set mean values
-        TH1* hdetector_data = p_unfold->GetInput("h_detector_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        TH1* hdetector_data = p_unfold->GetInput("h_folded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
         hpt_temp_data = p_unfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
         hpt_temp_mc   = p_unfold->GetBias("histMC_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE); 
 
         //cout << "Detector, " << i << " th mass bin, mean: " << hdetector_data->GetMean() << " +/- " << hdetector_data->GetMeanError() << endl;
-        meanPt_data_detector.push_back(hdetector_data->GetMean());
-        meanPtStatErr_data_detector.push_back(hdetector_data->GetMeanError());
+        meanPt_data_folded.push_back(hdetector_data->GetMean());
+        meanPtStatErr_data_folded.push_back(hdetector_data->GetMeanError());
 
         //cout << "Unfolded, " << i << " th mass bin, mean: " << hpt_temp_data->GetMean() << " +/- " << hpt_temp_data->GetMeanError() << endl;
         meanPt_data_unfoled.push_back(hpt_temp_data->GetMean());
@@ -1026,28 +938,28 @@ int ISRUnfold::setMeanPt()
 double ISRUnfold::getDetMeanPt(int ibin)
 {
 
-    int size = meanPt_data_detector.size();
+    int size = meanPt_data_folded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);     
     }
     else
     {
-        return meanPt_data_detector.at(ibin);
+        return meanPt_data_folded.at(ibin);
     }
 }
 
 double ISRUnfold::getDetMeanPtError(int ibin)
 {
 
-    int size = meanPt_data_detector.size();
+    int size = meanPt_data_folded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);     
     }
     else
     {
-        return meanPtStatErr_data_detector.at(ibin);
+        return meanPtStatErr_data_folded.at(ibin);
     }
 }
 

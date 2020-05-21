@@ -71,15 +71,18 @@ private:
     std::vector<TH1*> meanMassStatVariation;
 
     // For systematic uncertainty
-    std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtUnfold;
-    std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassUnfold;
+    //std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtUnfold;
+    //std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassUnfold;
+
+    std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysPtUnfold;
+    std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysMassUnfold;
     
-    // Results: mean values 
-    // Detector level 
-    vector<Double_t> meanMass_data_detector, meanMassStatErr_data_detector, meanMassSysErr_data_detector, meanMassTotErr_data_detector;
-    vector<Double_t> meanPt_data_detector,   meanPtStatErr_data_detector,   meanPtSysErr_data_detector, meanPtTotErr_data_detector;
+    /*------------------------- Results: mean values ----------------------------------*/ 
+    // Folded level 
+    vector<Double_t> meanMass_data_folded, meanMassStatErr_data_folded, meanMassSysErr_data_folded, meanMassTotErr_data_folded;
+    vector<Double_t> meanPt_data_folded,   meanPtStatErr_data_folded,   meanPtSysErr_data_folded, meanPtTotErr_data_folded;
     
-    // Detector unfolded results
+    // Unfolded results
     vector<Double_t> meanMass_data_unfoled, meanMassStatErr_data_unfoled, meanMassSysErr_data_unfoled, meanMassTotErr_data_unfoled;
     vector<Double_t> meanPt_data_unfoled,   meanPtStatErr_data_unfoled,   meanPtSysErr_data_unfoled, meanPtTotErr_data_unfoled;
     
@@ -147,15 +150,15 @@ public:
     void setNomResMatrix(TString var, TString filepath, TString dirName, TString histName, bool isSquareMatrix = false);
 
     // Set input histogram
-    void setUnfInput(TString var, TString filepath, TString dirName, TString histName, bool isSys = false, TString sysName = "", int nth = 0);
+    void setUnfInput(TString var, TString filepath, TString dirName, TString histName, bool isSys = false, TString sysName = "", TString sysPostfix = "");
     void setUnfInput(ISRUnfold* unfold, TString var, bool isSys = false, TString sysName = "", int nth = 0);
 
     // Set background histograms
     void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
-                 bool isSys = false, TString sysName = "", int totSysN = -1, int nth = 0, TString dirName = "full_phase", double bkgScale = 1.);
+                 bool isSys = false, TString dirName = "full_phase", TString sysName = "", TString sysPostfix = "");
 
     // Set systematic TUnfoldDensity
-    void setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, int nth);
+    void setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix);
 
     void setSystematics(TString sysName, TString sysHistName);
     void inline printSystematics()
@@ -168,7 +171,7 @@ public:
         }
     }
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
-    TCanvas* drawFoldedHists(TString var, TString filePath, TString steering, bool useAxis, TString sysName = "");
+    TCanvas* drawFoldedHists(TString var, TString filePath, TString steering, bool useAxis, TString sysName = "", TString outName = "");
     void setTHStack(TString var, TString filePath, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "");
 
     // Do unfold 
