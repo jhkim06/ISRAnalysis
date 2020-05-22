@@ -150,15 +150,15 @@ public:
     void setBias(double bias);
 
     // Set nominal TUnfoldDensity 
-    void setNomResMatrix(TString var, TString filepath, TString dirName, TString histName, bool isSquareMatrix = false);
+    void setNomResMatrix(TString var, TString filepath, TString dirName, TString histName, TString binDef = "");
 
     // Set input histogram
-    void setUnfInput(TString var, TString filepath, TString dirName, TString histName, bool isSys = false, TString sysName = "", TString sysPostfix = "");
+    void setUnfInput(TString var, TString varPostfix = "", TString filepath = "", TString dirName ="", TString histName = "", bool isSys = false, TString sysName = "", TString sysPostfix = "");
     void setUnfInput(ISRUnfold* unfold, TString var, bool isSys = false, TString sysName = "", int nth = 0);
 
     // Set background histograms
     void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
-                 bool isSys = false, TString dirName = "full_phase", TString sysName = "", TString sysPostfix = "");
+                 bool isSys = false, TString binDef = "", TString dirName = "", TString sysName = "", TString sysPostfix = "");
 
     // Set systematic TUnfoldDensity
     void setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix);
@@ -174,8 +174,11 @@ public:
         }
     }
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
-    TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "");
+    TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0);
     void setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "");
+    void setXaxisTitle(TH1* hist, TString var, bool useAxis, TString title = "");
+    void writeCutInfo(TPad* pad, TString var, int nthMassBin = 0);
+    double getBinnedMean(TH1* hist);
 
     // Do unfold 
     void doISRUnfold( bool doSys = false);

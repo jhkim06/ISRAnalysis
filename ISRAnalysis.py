@@ -8,12 +8,13 @@ import pyScripts.unfoldUtil as unfoldutil
 class ISRAnalysis:
     
     def __init__(self, year_ = "2016", channel_= "electron", sys_ = False, matrix_filekey_ = "matrix",
-                 matrix_dirPath_ = "Detector_Dressed_DRp1_Fiducial", matrix_histName_ = "Detector_Dressed_DRp1"):
+                 matrix_dirPath_ = "Detector_Dressed_DRp1_Fiducial", matrix_histName_ = "Detector_Dressed_DRp1", binDef_ = ""):
         
         # 디텍터 언폴딩 디렉토리 경로 & 매트릭스 이름 
         self.matrix_filekey = matrix_filekey_
         self.matrix_dirPath  = matrix_dirPath_
         self.matrix_histName = matrix_histName_
+        self.binDef = binDef_
         
         self.channel = channel_
         self.year = year_
@@ -27,7 +28,7 @@ class ISRAnalysis:
                 dataHistPostfix = "EGamma"
         if self.channel == "muon":
             dataHistPostfix = dataHistPostfix + "Muon"
-        self.dataHistName = "histo_"+dataHistPostfix+"_nominal"
+        self.dataHistName = "histo_"+dataHistPostfix
             
         self.dy10to50HistName = "DYJets10to50"
         MG_postfix = "_MG"
@@ -61,21 +62,21 @@ class ISRAnalysis:
         self.unfold.setBias(self.bias)
         
         # Set response matrix
-        self.unfold.setNomResMatrix("Pt", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName)
-        self.unfold.setNomResMatrix("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName)
+        self.unfold.setNomResMatrix("Pt", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, self.binDef)
+        self.unfold.setNomResMatrix("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, self.binDef)
         
     def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = ""):
         
         inputHistName = self.dataHistName
         if useMCInput == True:
             if self.channel == "electron":
-                inputHistName = "histo_DYJetsToEE_nominal"
+                inputHistName = "histo_DYJetsToEE"
             else :
-                inputHistName = "histo_DYJetsToMuMu_nominal"
+                inputHistName = "histo_DYJetsToMuMu"
         
         if useUnfoldOut == False:
-            self.unfold.setUnfInput("Pt",   self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
-            self.unfold.setUnfInput("Mass", self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+            self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+            self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
         else:
             self.unfold.setUnfInput(unfoldObj, "Pt", False, "", 0)
             self.unfold.setUnfInput(unfoldObj, "Mass", False, "", 0)
@@ -85,9 +86,9 @@ class ISRAnalysis:
         fakeList = {"DYJets": "DY", self.dy10to50HistName:"DY"}
         
         for fake in fakeList.items():
-            self.unfold.subBkgs(self.inHistDic['matrix'], fake, False, "detector_level_DY_Fake", "", "")
+            self.unfold.subBkgs(self.inHistDic['matrix'], fake, False, self.binDef, "detector_level_DY_Fake", "", "")
         
-    def setUnfoldBkgs(self, doSystematic = False , dirName = "Detector", systName = "nominal", sysPostfix = ""):
+    def setUnfoldBkgs(self, doSystematic = False , dirName = "Detector",systName = "nominal", sysPostfix = ""):
    
         bkgList = {}
         # 2016 데이터만 single top 샘플을 갖고 있다 
@@ -104,7 +105,7 @@ class ISRAnalysis:
                        "TTLL_powheg": "Top"}
         
         for bkg in bkgList.items():
-            self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, dirName, systName, sysPostfix)
+            self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, self.binDef, dirName, systName, sysPostfix)
             
     def setSystematics(self, sysName, sysHistName):
         self.unfold.setSystematics(sysName, sysHistName)
@@ -114,8 +115,8 @@ class ISRAnalysis:
     def getSystematics(self):
         self.unfold.printSystematics()
 
-    def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = ""):
-        self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName)
+    def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0):
+        self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin)
     # Do unfold! 
     def doUnfold(self, doSystematic = False):
         self.unfold.doISRUnfold(doSystematic)

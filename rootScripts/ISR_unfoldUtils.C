@@ -12,21 +12,15 @@ void ISRUnfold::setOutputBaseDir(TString outPath)
     output_baseDir = outPath;
 }
 
-void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, TString histName, bool isSquareMatrix)
+void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, TString histName, TString binDef)
 {
     cout << "ISRUnfold::setNomResMatrix set response matrix..." << endl;
     TFile* filein = new TFile(filepath);
 
     TString Rec_binName = "Rec_"+var;
     TString Gen_binName = "Gen_"+var;
-    Rec_binName = dirName + "/" + var + "_ResMatrix_" + histName + "/" + Rec_binName;
-
-    // Use the same bin definition for both rec and gen histogram
-    if(isSquareMatrix)
-    {
-        Rec_binName = dirName + "/" + var + "_ResMatrix_" + histName + "/" + Gen_binName;
-    }
-    Gen_binName = dirName + "/" + var + "_ResMatrix_" + histName + "/" + Gen_binName;
+    Rec_binName = dirName + "/" + var + "_ResMatrix_" + histName + binDef + "/" + Rec_binName;
+    Gen_binName = dirName + "/" + var + "_ResMatrix_" + histName + binDef + "/" + Gen_binName;
 
     if(var == "Pt")
     {
@@ -50,7 +44,7 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
 
     // Set response matrix
     TH2* hmcGenRec;
-    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName +"/hmc" + var + "GenRec_nominal");
+    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef + "/hmc" + var + "GenRec");
 
     if( var == "Pt" )
     {
@@ -183,13 +177,13 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString var, bool isSys, TString 
 }
 
 // Set input histogram from root file
-void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TString histName, bool isSys, TString sysName, TString sysPostfix)
+void ISRUnfold::setUnfInput(TString var, TString varPostfix, TString filepath, TString dirName, TString histName, bool isSys, TString sysName, TString sysPostfix)
 {
     TH1::AddDirectory(kFALSE);
 
     TFile* filein = new TFile(filepath);
     TH1* hRec = NULL;
-    hRec = (TH1*)filein->Get(dirName+"/"+var+"/"+histName);
+    hRec = (TH1*)filein->Get(dirName+"/"+var+varPostfix+"/"+histName);
     // Use DY MC as unfolding input, i.e. simple closure test
     if(histName.Contains("DYJetsTo"))
     {
@@ -235,7 +229,7 @@ void ISRUnfold::setUnfInput(TString var, TString filepath, TString dirName, TStr
     delete filein;
 }
 
-void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, bool isSys, TString dirName, TString sysName, TString sysPostfix)
+void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, bool isSys, TString binDef, TString dirName, TString sysName, TString sysPostfix)
 {
     TFile* filein = new TFile(filepath);
     TH1* hPtRec = NULL;
@@ -248,19 +242,19 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
         bkgNames.push_back(bkgInfo.first);
         bkgTypes.push_back(bkgInfo.second);
 
-        hPtRec = (TH1*)filein->Get(dirName + "/Pt/histo_" + bkgInfo.first + "_nominal");
+        hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + bkgInfo.first);
         nomPtUnfold->  SubtractBackground(hPtRec, bkgInfo.first);
 
-        hMassRec = (TH1*)filein->Get(dirName + "/Mass/histo_" + bkgInfo.first + "_nominal");
+        hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + bkgInfo.first);
         nomMassUnfold->SubtractBackground(hMassRec, bkgInfo.first);
     }
     else
     // Systematic
     {
-        hPtRec = (TH1*)filein->Get(dirName + "/Pt/histo_" + bkgInfo.first + "_" + sysPostfix);
+        hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + bkgInfo.first + "_" + sysPostfix);
         sysPtUnfold[sysName][sysPostfix]->SubtractBackground(hPtRec, bkgInfo.first);
 
-        hMassRec = (TH1*)filein->Get(dirName + "/Mass/histo_" + bkgInfo.first + "_" + sysPostfix);
+        hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + bkgInfo.first + "_" + sysPostfix);
         sysMassUnfold[sysName][sysPostfix]->SubtractBackground(hMassRec, bkgInfo.first);
     }
 
@@ -274,17 +268,20 @@ void ISRUnfold::setSystematics(TString sysName, TString sysHistName)
 }
 
 // Draw detector distributions using input root file
-TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TString outName)
+TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin)
 {
     // If steering == "", then usual TH1 histogram
-    // If seering != "", TH1 from TUnfold     
+    // If seering != "", TH1 from TUnfold
+
+    double meanDipt = 0.;
+    double meanDipt_bkgsub = 0.;
 
     setTDRStyle();
     writeExtraText = true;
-    extraText  = "work in progress";
+    extraText  = "Work in progress";
     gStyle->SetLineWidth(2.);
     gStyle->SetFrameLineWidth(2.);
-    gROOT->ForceStyle(); 
+    gROOT->ForceStyle();
 
     TH1::AddDirectory(kFALSE);
     cout << "ISRUnfold::drawFoldedHists, Draw plot!" << endl;
@@ -308,11 +305,6 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
 
     TString dataHistName_ = "histo_DoubleMuon";
     TString DYHistName_ = "histo_DYJetsToMuMu";
-    if(steering != "")
-    {
-        dataHistName_ += "_nominal";
-        DYHistName_ += "_nominal";
-    }
 
     hData = getRawHist(var, filePath, dirName, dataHistName_, "Data", steering, useAxis);
     hDY = getRawHist(var, filePath, dirName, DYHistName_, "Signal", steering, useAxis);
@@ -330,7 +322,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
         hRatio_down = (TH1*) hData->Clone("hRatio_down");
     }
 
-    // Create canvas 
+    // Create canvas
     TCanvas* c_out = new TCanvas("detector_level_"+var, "detector_level_"+var, 50, 50, 1600, 1400);
     c_out->Draw();
     c_out->cd();
@@ -359,7 +351,8 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
 
     TLegend* leg = new TLegend(0.7, 0.65, 0.95, 0.85,"","brNDC");
     //leg->SetNColumns(2);
-    leg->SetTextSize(0.035);
+    leg->SetTextFont(43);
+    leg->SetTextSize(30);
     leg->SetFillStyle(0); // transparent
     leg->SetBorderSize(0);
     leg->AddEntry(hData, "Data", "pe");
@@ -383,7 +376,41 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     hData->Draw("p9histe same");
     pad1->RedrawAxis();
 
+    meanDipt = hData->GetMean();
+    TH1* hData_ = (TH1*) hData->Clone("DataBKGsubtracted");
+    TH1* hMCtotal_ = (TH1*) hMCtotal->Clone("MCtotalDYsubtracted");
+    hMCtotal_->Add(hDY, -1);
+    hData_->Add(hMCtotal_, -1);
+    meanDipt_bkgsub = hData_->GetMean();
+    double binnedMean = getBinnedMean(hData);
+
+    TLatex meanDipt_;
+    TLatex meanDipt_bkgsub_;
+    meanDipt_.SetTextFont(43);
+    meanDipt_.SetTextSize(40);
+    meanDipt_bkgsub_.SetTextFont(43);
+    meanDipt_bkgsub_.SetTextSize(40);
+
+    if(var.Contains("Pt"))
+    {
+        TString itos, itos_;
+        itos.Form ("%.2f", meanDipt);
+        itos_.Form ("%.2f", binnedMean);
+        meanDipt_.DrawLatexNDC(0.2, 0.6, "avg. p_{T}^{Data}: "+itos+"("+itos_+") GeV");
+        itos.Form ("%.2f", meanDipt_bkgsub);
+        meanDipt_bkgsub_.DrawLatexNDC(0.2, 0.6-0.05, "avg. p_{T}^{Data-Bkg}: "+itos);
+    }
+
     leg->Draw();
+
+    int iPeriod_ = 4;
+    if(year == 2017)
+        iPeriod_ = 5;
+    if(year == 2018)
+        iPeriod_ = 6;
+    CMS_lumi(pad1, iPeriod_, 11);
+    // writeCutInfo(pad, var, nthMassBin);
+    writeCutInfo(pad1, var, nthMassBin);
 
     TLine massEdgeLine;
     if(var=="Mass")
@@ -418,33 +445,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     hRatio->SetMinimum(0.7);
     hRatio->SetMaximum(1.3);
 
-    TString channel_name_;
-    if(channel_name=="electron") channel_name_ = "ee";
-    else channel_name_ = "#mu#mu";
-
-    // TODO Make setXaxisTitle()
-    if(useAxis)
-    {
-        if(var.Contains("Mass"))
-        {
-            hRatio->GetXaxis()->SetTitle("Mass^{" + channel_name_  + "} [GeV]");
-        }
-        if(var.Contains("Pt"))
-        {
-            hRatio->GetXaxis()->SetTitle("p_{T}^{" + channel_name_ + "} [GeV]");
-        }
-    }
-    else
-    {
-        if(var.Contains("Mass"))
-        {
-            hRatio->GetXaxis()->SetTitle("Mass bin index");
-        }
-        if(var.Contains("Pt"))
-        {
-            hRatio->GetXaxis()->SetTitle("p_{T} bin index");
-        }
-    }
+    setXaxisTitle(hRatio, var, useAxis);
 
     // TODO Save systematic histograms
     TH1* sysBand_ratio = NULL;
@@ -466,20 +467,100 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     }
     hRatio->Draw("p9histe same");
 
-    int iPeriod_ = 4;
-    if(year == 2017)
-        iPeriod_ = 5;
-    if(year == 2018)
-        iPeriod_ = 6;
+    TLine* l_ = new TLine(hRatio->GetXaxis()->GetXmin(),1,hRatio->GetXaxis()->GetXmax(),1);
+    l_->SetLineColor(kRed);
+    l_->Draw("same");
+    l_->SetLineStyle(3);
 
-    CMS_lumi(pad1, iPeriod_, 11);
-
+    // Save canvas
     c_out->cd();
     c_out->SaveAs(outName!=""?outName+".png":"detector_"+var+".png");
 
     delete filein;
 
     return c_out;
+}
+
+double ISRUnfold::getBinnedMean(TH1* hist)
+{
+    TH1* hBinned = (TH1*) hist->Clone("Binned");
+    TH1* hDummy = (TH1*) hist->Clone("Dummy");
+    hDummy->Reset("ICES");
+
+    hBinned->Add(hDummy, -1); // After Add() Sumwx information removed, so can get binned mean.
+    return hBinned->GetMean();
+}
+
+void ISRUnfold::setXaxisTitle(TH1* hist, TString var, bool useAxis, TString title)
+{
+    TString channel_name_;
+    if(channel_name=="electron") channel_name_ = "ee";
+    else channel_name_ = "#mu#mu";
+
+    if(useAxis)
+    {
+        TString title_;
+        if(var.Contains("Mass"))
+        {
+            title_ = "Mass^{" + channel_name_  + "} [GeV]";
+            if(title != "") title_ = title;
+            hist->GetXaxis()->SetTitle(title_);
+        }
+        if(var.Contains("Pt"))
+        {
+            title_ = "p_{T}^{" + channel_name_  + "} [GeV]";
+            if(title != "") title_ = title;
+            hist->GetXaxis()->SetTitle(title_);
+        }
+    }
+    else
+    {
+        if(var.Contains("Mass"))
+        {
+            hist->GetXaxis()->SetTitle("Mass bin index");
+        }
+        if(var.Contains("Pt"))
+        {
+            hist->GetXaxis()->SetTitle("p_{T} bin index");
+        }
+    }
+}
+
+void ISRUnfold::writeCutInfo(TPad* pad, TString var, int nthMassBin)
+{
+    pad->cd();
+
+    double x_ = 0.2;
+    double y_ = 0.7;
+    TString mass_cut_info;
+    TString lepton_cut_info;
+    TString lepton_type;
+    if(channel_name=="electron"){
+        lepton_type = "ee";
+        lepton_cut_info = "p_{T}>25(20) GeV, |#eta|<2.5";
+    }
+    else
+    {
+        lepton_type = "#mu#mu";
+        lepton_cut_info = "p_{T}>20(10) GeV, |#eta|<2.4";
+    }
+
+    TString low_bound_, upper_bound_;
+    low_bound_.Form("%d", (int)massBinEdges[nthMassBin]);
+    upper_bound_.Form("%d", (int)massBinEdges[nthMassBin+1]);
+    mass_cut_info = low_bound_ + " < M(" + lepton_type + ") < " + upper_bound_ + " (GeV)";
+
+    TLatex dimass_cut;
+    TLatex lepton_cut;
+    dimass_cut.SetTextFont(43);
+    dimass_cut.SetTextSize(40);
+    lepton_cut.SetTextFont(43);
+    lepton_cut.SetTextSize(40);
+    if(var.Contains("Pt"))
+    {
+        dimass_cut.DrawLatexNDC(x_, y_, mass_cut_info);
+        lepton_cut.DrawLatexNDC(x_, y_-0.05, lepton_cut_info);
+    }
 }
 
 void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName)
@@ -513,10 +594,6 @@ void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THSta
     {
         if(bkgTypes[i] == "DY") continue;
         TString histName_ = "histo_" + bkgNames[i];;
-        if(steering != "")
-        {
-            histName_ += "_nominal";
-        }
 
         if(isFirstBkg)
         {
@@ -660,7 +737,7 @@ void ISRUnfold::doISRUnfold(bool doSys){
         while(it != sysMap.end())
         {
             cout << "Unfold for " << it->first << " systematic." << endl;
-            int size = (it->second).size(); 
+            int size = (it->second).size();
             cout << size << " systematic variation exist." << endl;
 
             for(int i = 0; i < size; i++)
@@ -1043,17 +1120,25 @@ TH1* ISRUnfold::getRawHist(TString var, TString filePath, TString dirName, TStri
 
     if(steering != "")
     {
+        //cout << dirName+"/"+var+"/"+histName << endl;
         TH1* raw_hist = (TH1*)filein->Get(dirName+"/"+var+"/"+histName);
+        //cout << "# of bins: " << raw_hist->GetNbinsX() << endl;
         if(histName.Contains("DYJetsTo") && !histName.Contains("Tau"))
         {
             histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
             raw_hist->Add((TH1*)filein->Get(dirName+"/"+var+"/"+histName));
         }
 
-        if(var=="Pt")
+        if(var.Contains("Pt"))
+        {
             hist = pt_binning_Rec->ExtractHistogram(outHistName, raw_hist, 0, useAxis, steering);
+            //cout << "steering: " << steering << endl;
+            //cout << "# of bins: " << hist->GetNbinsX() << endl;
+        }
         else
+        {
             hist = mass_binning_Rec->ExtractHistogram(outHistName, raw_hist, 0, useAxis, steering);
+        }
 
         delete raw_hist;
     }
