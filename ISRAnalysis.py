@@ -81,12 +81,12 @@ class ISRAnalysis:
             self.unfold.setUnfInput(unfoldObj, "Pt", False, "", 0)
             self.unfold.setUnfInput(unfoldObj, "Mass", False, "", 0)
             
-    def subFake(self):
+    def subFake(self, isSys = False, systName = "nominal", sysPostfix = ""):
             
         fakeList = {"DYJets": "DY", self.dy10to50HistName:"DY"}
         
         for fake in fakeList.items():
-            self.unfold.subBkgs(self.inHistDic['matrix'], fake, False, self.binDef, "detector_level_DY_Fake", "", "")
+            self.unfold.subBkgs(self.inHistDic['matrix'], fake, isSys, self.binDef, "detector_level_DY_Fake", systName, sysPostfix)
         
     def setUnfoldBkgs(self, doSystematic = False , dirName = "Detector",systName = "nominal", sysPostfix = ""):
    
@@ -110,13 +110,18 @@ class ISRAnalysis:
     def setSystematics(self, sysName, sysHistName):
         self.unfold.setSystematics(sysName, sysHistName)
 
-        self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName)
+        self.unfold.setSysTUnfoldDensity("Pt", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+        self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
 
     def getSystematics(self):
         self.unfold.printSystematics()
 
     def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0):
         self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin)
+
+    def drawUnfPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
+        self.unfold.drawUnfoldedHists(var, steering, useAxis, sysName, outName, massBin, binWidth)
+
     # Do unfold! 
     def doUnfold(self, doSystematic = False):
         self.unfold.doISRUnfold(doSystematic)

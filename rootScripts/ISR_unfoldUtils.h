@@ -161,7 +161,7 @@ public:
                  bool isSys = false, TString binDef = "", TString dirName = "", TString sysName = "", TString sysPostfix = "");
 
     // Set systematic TUnfoldDensity
-    void setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix);
+    void setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString binDef);
 
     void setSystematics(TString sysName, TString sysHistName);
     void inline printSystematics()
@@ -175,10 +175,12 @@ public:
     }
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
     TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0);
+    TCanvas* drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);
     void setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "");
     void setXaxisTitle(TH1* hist, TString var, bool useAxis, TString title = "");
     void writeCutInfo(TPad* pad, TString var, int nthMassBin = 0);
     double getBinnedMean(TH1* hist);
+    void divideByBinWidth(TH1* hist, bool norm = false);
 
     // Do unfold 
     void doISRUnfold( bool doSys = false);

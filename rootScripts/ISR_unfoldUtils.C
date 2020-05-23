@@ -119,14 +119,15 @@ void ISRUnfold::setMassBindEdges()
 
 }
 
-void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix)
+void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString binDef)
 {
     TFile* filein = new TFile(filepath);
     TH2* hmcGenRec;
-    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName +"/hmc" + var + "GenRec_" + sysPostfix);
+    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec_" + sysPostfix);
 
     if( var == "Pt" )
     {
+        cout << "sys: " << sysName << " postfix: " << sysPostfix << endl;
         sysPtUnfold[sysName][sysPostfix] = new TUnfoldDensityV17(hmcGenRec,
                                                                  TUnfold::kHistMapOutputHoriz,
                                                                  regMode,
@@ -217,6 +218,7 @@ void ISRUnfold::setUnfInput(TString var, TString varPostfix, TString filepath, T
         }
         else if(var == "Mass")
         {
+            cout << "sysName: " << sysName << " postfix: " << sysPostfix << endl;
             sysMassUnfold[sysName][sysPostfix]->SetInput(hRec, nominal_bias);
         }
         else
@@ -295,6 +297,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     TH1* hRatio = NULL;
 
     // For systematic
+    // TODO consider PDF uncertainty etc.
     TH1* hDY_up = NULL;
     TH1* hMCtotal_up = NULL;
     TH1* hRatio_up = NULL;
@@ -332,13 +335,14 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     pad1->SetTopMargin(0.1);
     pad1->SetTicks(1);
     pad1->SetLogy();
-    if(var=="Mass")
+    if(var.Contains("Mass"))
         pad1->SetLogx();
     pad1->Draw();
     pad1->cd();
 
     hData->SetTitle("");
     hData->SetStats(false);
+    hData->GetXaxis()->SetMoreLogLabels(true);
     hData->Draw("p9histe");
     hData->SetMarkerStyle(20);
     hData->SetMarkerSize(1.2);
@@ -376,13 +380,14 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     hData->Draw("p9histe same");
     pad1->RedrawAxis();
 
+    // Get average transeverse momentum values
     meanDipt = hData->GetMean();
     TH1* hData_ = (TH1*) hData->Clone("DataBKGsubtracted");
     TH1* hMCtotal_ = (TH1*) hMCtotal->Clone("MCtotalDYsubtracted");
     hMCtotal_->Add(hDY, -1);
     hData_->Add(hMCtotal_, -1);
     meanDipt_bkgsub = hData_->GetMean();
-    double binnedMean = getBinnedMean(hData);
+    double binnedMean = getBinnedMean(hData); // To check how average value changes with binned histogram
 
     TLatex meanDipt_;
     TLatex meanDipt_bkgsub_;
@@ -398,7 +403,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
         itos_.Form ("%.2f", binnedMean);
         meanDipt_.DrawLatexNDC(0.2, 0.6, "avg. p_{T}^{Data}: "+itos+"("+itos_+") GeV");
         itos.Form ("%.2f", meanDipt_bkgsub);
-        meanDipt_bkgsub_.DrawLatexNDC(0.2, 0.6-0.05, "avg. p_{T}^{Data-Bkg}: "+itos);
+        meanDipt_bkgsub_.DrawLatexNDC(0.2, 0.6-0.07, "avg. p_{T}^{Data-Bkg}: "+itos);
     }
 
     leg->Draw();
@@ -419,6 +424,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
         {
             if(i==0) continue;
             if(i==massBinEdges.size()-1) continue;
+            massEdgeLine.SetLineStyle(2);
             massEdgeLine.DrawLine(massBinEdges[i], hData->GetMinimum(), massBinEdges[i], hData->GetMaximum());
         }
     }
@@ -479,6 +485,206 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     delete filein;
 
     return c_out;
+}
+
+TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth)
+{
+    // If steering == "", then usual TH1 histogram
+    // If seering != "", TH1 from TUnfold
+
+    setTDRStyle();
+    writeExtraText = true;
+    extraText  = "Work in progress";
+    gStyle->SetLineWidth(2.);
+    gStyle->SetFrameLineWidth(2.);
+    gROOT->ForceStyle();
+
+    TH1::AddDirectory(kFALSE);
+    cout << "ISRUnfold::drawFoldedHists, Draw plot!" << endl;
+
+    // For nominal histogram
+    TH1* hData = NULL;
+    TH1* hDY = NULL;
+    TH1* hRatio = NULL;
+
+    // For systematic
+    // TODO consider PDF uncertainty etc.
+    TH1* hDY_up = NULL;
+    TH1* hRatio_up = NULL;
+
+    TH1* hDY_down = NULL;
+    TH1* hRatio_down = NULL;
+
+    if(var.Contains("Pt"))
+    {
+        hData = nomPtUnfold->GetOutput("hUnfoldedPt",0,0,steering,useAxis);
+        hDY = nomPtUnfold->GetBias("hDYMCPt",0,0,steering,useAxis);;
+    }
+    else
+    {
+        hData = nomMassUnfold->GetOutput("hUnfoldedMass",0,0,steering,useAxis);
+        hDY = nomMassUnfold->GetBias("hDYMCMass",0,0,steering,useAxis);;
+    }
+    if(divBinWidth)
+    {
+        divideByBinWidth(hData, false);
+        divideByBinWidth(hDY, false);
+    }
+    hRatio = (TH1*) hData->Clone("hRatio");
+
+    if(sysName != "")
+    {
+        if(var.Contains("Pt"))
+        {
+            hDY_up = sysPtUnfold[sysName][sysMap[sysName][0]]->GetBias("hDYMCPt_up",0,0,steering,useAxis);;
+            hDY_down = sysPtUnfold[sysName][sysMap[sysName][1]]->GetBias("hDYMCPt_down",0,0,steering,useAxis);;
+        }
+        else
+        {
+            hDY_up = sysMassUnfold[sysName][sysMap[sysName][0]]->GetBias("hDYMCMass_up",0,0,steering,useAxis);;
+            hDY_down = sysMassUnfold[sysName][sysMap[sysName][1]]->GetBias("hDYMCMass_down",0,0,steering,useAxis);;
+        }
+        if(divBinWidth)
+        {
+            divideByBinWidth(hDY_up, false);
+            divideByBinWidth(hDY_down, false);
+        }
+        hRatio_up = (TH1*) hData->Clone("hRatio_up");
+        hRatio_down = (TH1*) hData->Clone("hRatio_down");
+    }
+
+    // Create canvas
+    TCanvas* c_out = new TCanvas("unfolded_level_"+var, "unfoled_level_"+var, 50, 50, 1600, 1400);
+    c_out->Draw();
+    c_out->cd();
+
+    TPad *pad1 = new TPad("pad1","pad1",0,0.3,1,1);
+    pad1->SetBottomMargin(0.01);
+    pad1->SetTopMargin(0.1);
+    pad1->SetTicks(1);
+    pad1->SetLogy();
+    if(var.Contains("Mass"))
+        pad1->SetLogx();
+    pad1->Draw();
+    pad1->cd();
+
+    hData->SetTitle("");
+    hData->SetStats(false);
+    hData->GetXaxis()->SetMoreLogLabels(true);
+    hData->Draw("p9histe");
+    hData->SetMarkerStyle(20);
+    hData->SetMarkerSize(1.2);
+    hData->SetLineColor(kBlack);
+    hData->GetYaxis()->SetTitle("Events/Bin");
+    hData->SetMaximum(5e9);
+    hData->SetMinimum(2e-1);
+
+    hDY->SetFillColor(kYellow);
+    hDY->Draw("hist same");
+
+    TLegend* leg = new TLegend(0.7, 0.65, 0.95, 0.85,"","brNDC");
+    //leg->SetNColumns(2);
+    leg->SetTextFont(43);
+    leg->SetTextSize(30);
+    leg->SetFillStyle(0); // transparent
+    leg->SetBorderSize(0);
+    leg->AddEntry(hData, "Unfolded data", "pe");
+    leg->AddEntry(hDY, "Drell-Yan (MG5_aMC@NLO)", "F");
+
+    hData->Draw("p9histe same");
+    pad1->RedrawAxis();
+
+    leg->Draw();
+
+    int iPeriod_ = 4;
+    if(year == 2017)
+        iPeriod_ = 5;
+    if(year == 2018)
+        iPeriod_ = 6;
+    CMS_lumi(pad1, iPeriod_, 11);
+    // writeCutInfo(pad, var, nthMassBin);
+    writeCutInfo(pad1, var, nthMassBin);
+
+    TLine massEdgeLine;
+    if(var=="Mass")
+    {
+        for(unsigned int i = 0; i < massBinEdges.size(); i++)
+        {
+            if(i==0) continue;
+            if(i==massBinEdges.size()-1) continue;
+            massEdgeLine.SetLineStyle(2);
+            massEdgeLine.DrawLine(massBinEdges[i], hData->GetMinimum(), massBinEdges[i], hData->GetMaximum());
+        }
+    }
+    c_out->cd();
+
+    TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.3);
+    pad2->SetTopMargin(0.05);
+    pad2->SetBottomMargin(0.25);
+    if(var=="Mass")
+        pad2->SetLogx();
+    pad2->SetTicks(1);
+    pad2->SetGridy(1);
+    pad2->Draw();
+    pad2->cd();
+
+    hRatio->SetStats(false);
+    hRatio->Divide(hDY);
+    hRatio->Draw("p9histe");
+    hRatio->SetMarkerStyle(20);
+    hRatio->SetMarkerSize(1.2);
+    hRatio->SetLineColor(kBlack);
+    hRatio->GetYaxis()->SetTitle("Unfolded/MC");
+
+    hRatio->SetMinimum(0.7);
+    hRatio->SetMaximum(1.3);
+
+    setXaxisTitle(hRatio, var, useAxis);
+
+    // TODO Save systematic histograms
+    TH1* sysBand_ratio = NULL;
+    if(sysName != "")
+    {
+        hRatio_up->Divide(hDY_up);
+        hRatio_down->Divide(hDY_down);
+        sysBand_ratio = (TH1*)hRatio_up->Clone("sysBand_ratio");
+        for(int ibin = 1; ibin < sysBand_ratio->GetNbinsX()+1; ibin++)
+        {
+            double delta = fabs(hRatio_up->GetBinContent(ibin) - hRatio_down->GetBinContent(ibin));
+            sysBand_ratio->SetBinError(ibin, delta);
+            sysBand_ratio->SetBinContent(ibin, 1.);
+        }
+        sysBand_ratio->SetFillColorAlpha(kBlack,0.8);
+        sysBand_ratio->SetFillStyle(3004);
+        sysBand_ratio->SetMarkerSize(0.);
+        sysBand_ratio->Draw("E2 same");
+    }
+    hRatio->Draw("p9histe same");
+
+    TLine* l_ = new TLine(hRatio->GetXaxis()->GetXmin(),1,hRatio->GetXaxis()->GetXmax(),1);
+    l_->SetLineColor(kRed);
+    l_->Draw("same");
+    l_->SetLineStyle(3);
+
+    // Save canvas
+    c_out->cd();
+    c_out->SaveAs(outName!=""?outName+".png":"unfolded_"+var+".png");
+
+    return c_out;
+}
+
+void ISRUnfold::divideByBinWidth(TH1* hist, bool norm)
+{
+    for(int ibin = 1; ibin < hist->GetXaxis()->GetNbins()+1; ibin++)
+    {
+        double binWidth = hist->GetBinWidth(ibin);
+        hist->SetBinContent(ibin, hist->GetBinContent(ibin)/ binWidth);
+        hist->SetBinError(ibin, hist->GetBinError(ibin)/ binWidth);
+    }
+    if(norm)
+    {
+        hist->Scale(1./ hist->Integral()); 
+    }
 }
 
 double ISRUnfold::getBinnedMean(TH1* hist)
@@ -732,7 +938,7 @@ void ISRUnfold::doISRUnfold(bool doSys){
     }
     else
     {
-    // For systematic
+        // For systematic
         std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
         while(it != sysMap.end())
         {
@@ -742,6 +948,7 @@ void ISRUnfold::doISRUnfold(bool doSys){
 
             for(int i = 0; i < size; i++)
             {
+                cout << "posfix: " << (it->second).at(i) << endl;
                 sysPtUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
                 sysMassUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
             }
