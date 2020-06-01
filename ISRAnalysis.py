@@ -64,7 +64,10 @@ class ISRAnalysis:
         # Set response matrix
         self.unfold.setNomResMatrix("Pt", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, self.binDef)
         self.unfold.setNomResMatrix("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, self.binDef)
-        
+       
+    def checkMatrixCond(self, var = "Mass"):
+        return self.unfold.checkMatrixCond(var)
+ 
     def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = ""):
         
         inputHistName = self.dataHistName
@@ -93,11 +96,11 @@ class ISRAnalysis:
         bkgList = {}
         # 2016 데이터만 single top 샘플을 갖고 있다 
         if self.year == "2016" :
-            bkgList = {"WJets_MG": "WJets", \
+            #bkgList = {"QCD": "Fake", "WJet": "Fake",\
+            bkgList = {"WJets_MG": "WJets",\
                        "WW_pythia": "EWK", "WZ_pythia": "EWK", "ZZ_pythia": "EWK", \
                        "DYJets10to50ToTauTau":"EWK", "DYJetsToTauTau":"EWK", \
-                       "TTLL_powheg": "Top"}
-                       #"TTLL_powheg": "Top", "SingleTop_tW_top_Incl": "Top", "SingleTop_tW_antitop_Incl": "Top"}
+                       "TTLL_powheg": "Top"} # "SingleTop_tW_top_Incl": "Top", "SingleTop_tW_antitop_Incl": "Top"}
         else :
             bkgList = {"WJets_MG": "WJets", \
                        "WW_pythia": "EWK", "WZ_pythia": "EWK", "ZZ_pythia": "EWK", \
@@ -116,8 +119,8 @@ class ISRAnalysis:
     def getSystematics(self):
         self.unfold.printSystematics()
 
-    def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0):
-        self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin)
+    def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
+        self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth)
 
     def drawUnfPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
         self.unfold.drawUnfoldedHists(var, steering, useAxis, sysName, outName, massBin, binWidth)
@@ -134,8 +137,18 @@ class ISRAnalysis:
         self.nMassBins = self.unfold.setMeanMass()
         self.unfold.setMeanPt()
 
+    def setSysMeanValues(self):
+        self.unfold.setSysMeanMass()
+        self.unfold.setSysMeanPt()
+
     def setStatError(self):
         self.unfold.setStatError()
+
+    def setSysError(self):
+        self.unfold.setSysError()
+
+    def setTotSysError(self):
+        self.unfold.setTotSysError()
     
     def getISRUnfold(self):
         
@@ -147,9 +160,10 @@ class ISRAnalysis:
             self.unfold.drawStatVariation(isPt, ibin)
 
     # Get histograms
-    def getPtVsMassTGraph(self, grTitle = "", isUnfolded = True):
+    def getPtVsMassTGraph(self, grTitle = "", isUnfolded = True, doSys = False):
         meanMass, meanPt = array('d'), array('d')
         meanMassStatErr, meanPtStatErr = array('d'), array('d')
+        meanMassSysErr, meanPtSysErr = array('d'), array('d')
 
         for ibin in range(self.nMassBins):
            
@@ -158,13 +172,20 @@ class ISRAnalysis:
                 meanPt.append(self.unfold.getUnfMeanPt(ibin))
                 meanMassStatErr.append(self.unfold.getUnfMeanMassError(ibin))
                 meanPtStatErr.append(self.unfold.getUnfMeanPtError(ibin))
+                if doSys :
+                    meanMassSysErr.append(self.unfold.getUnfMeanMassSysError(ibin))
+                    meanPtSysErr.append(self.unfold.getUnfMeanPtSysError(ibin))
             else:
                 meanMass.append(self.unfold.getDetMeanMass(ibin))
                 meanPt.append(self.unfold.getDetMeanPt(ibin))
                 meanMassStatErr.append(self.unfold.getDetMeanMassError(ibin))
                 meanPtStatErr.append(self.unfold.getDetMeanPtError(ibin))
             
-        gr = rt.TGraphErrors(self.nMassBins, meanMass, meanPt, meanMassStatErr, meanPtStatErr)
+        if doSys == False:
+            gr = rt.TGraphErrors(self.nMassBins, meanMass, meanPt, meanMassStatErr, meanPtStatErr)
+        else :
+            gr = rt.TGraphErrors(self.nMassBins, meanMass, meanPt, meanMassSysErr, meanPtSysErr)
+    
         gr.SetName(grTitle)
         return gr
 

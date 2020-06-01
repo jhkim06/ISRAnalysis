@@ -28,6 +28,7 @@
 #include "TUnfoldDensity.h"
 #include "TRandom.h"
 #include "TF1Convolution.h"
+#include "TDecompSVD.h"
 
 #include "TVectorD.h"
 #include "TUnfoldBinningXML.h"
@@ -71,9 +72,6 @@ private:
     std::vector<TH1*> meanMassStatVariation;
 
     // For systematic uncertainty
-    //std::map<TString, std::vector<TUnfoldDensityV17*>> sysPtUnfold;
-    //std::map<TString, std::vector<TUnfoldDensityV17*>> sysMassUnfold;
-
     std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysPtUnfold;
     std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysMassUnfold;
     
@@ -84,16 +82,23 @@ private:
     // Mean from raw histograms 
     vector<Double_t> unbinnedMeanMass_data_folded, unbinnedMeanMassStatErr_data_folded, unbinnedMeanMassSysErr_data_folded, unbinnedMeanMassTotErr_data_folded;
     vector<Double_t> unbinnedMeanPt_data_folded,   unbinnedMeanPtStatErr_data_folded,   unbinnedMeanPtSysErr_data_folded, unbinnedMeanPtTotErr_data_folded;
-    
     // Unfolded results
     vector<Double_t> meanMass_data_unfoled, meanMassStatErr_data_unfoled, meanMassSysErr_data_unfoled, meanMassTotErr_data_unfoled;
     vector<Double_t> meanPt_data_unfoled,   meanPtStatErr_data_unfoled,   meanPtSysErr_data_unfoled, meanPtTotErr_data_unfoled;
-    
     // Nominal mean mass and pt for MC
     vector<Double_t> meanMass_mc_unfoled, meanMassStatErr_mc_unfoled, meanMassSysErr_mc_unfoled, meanMassTotErr_mc_unfoled;
     vector<Double_t> meanPt_mc_unfoled, meanPtStatErr_mc_unfoled, meanPtSysErr_mc_unfoled, meanPtTotErr_mc_unfoled;
-    
-    // 
+
+    std::map<TString, std::map<TString, vector<double>>> meanMass_data_folded_sysVariation;
+    std::map<TString, std::map<TString, vector<double>>> meanPt_data_folded_sysVariation;
+
+    std::map<TString, std::map<TString, vector<double>>> meanMass_data_unfolded_sysVariation;
+    std::map<TString, std::map<TString, vector<double>>> meanPt_data_unfolded_sysVariation;
+
+    std::map<TString, vector<double>> meanMass_data_folded_systematic;
+    std::map<TString, vector<double>> meanPt_data_folded_systematic;
+    /*---------------------------------------------------------------------------------*/
+   
     Int_t nScan;
     TSpline *rhoLogTau;
     TGraph *lCurve;
@@ -139,12 +144,18 @@ public:
         makeStatUnfold = makeStatUnfold_;
 
         // Fill colors for backgrounds
+        bkgColors["Fake"] = kViolet+6;
         bkgColors["WJets"] = kViolet+1;
         bkgColors["EWK"] = kYellow+2;
         bkgColors["Top"] = kBlue;
 
     }
+    // Destructor
     ~ISRUnfold(){}
+
+    const TVectorD& checkMatrixCond(TString var = "Mass");
+    double getSmearedChi2(TString var, TString filePath, TString dirName, TString steering, bool useAxis, bool divBinWidth = false);
+    double getUnfoldedChi2(TString var, TString steering, bool useAxis, bool divBinWidth = false);
 
     void setOutputBaseDir(TString outPath);
     void setBias(double bias);
@@ -174,9 +185,9 @@ public:
         }
     }
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
-    TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0);
+    TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);
     TCanvas* drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);
-    void setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "");
+    void setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "", bool divBinWidth = false);
     void setXaxisTitle(TH1* hist, TString var, bool useAxis, TString title = "");
     void writeCutInfo(TPad* pad, TString var, int nthMassBin = 0);
     double getBinnedMean(TH1* hist);
@@ -187,12 +198,14 @@ public:
     void doStatUnfold(); 
 
     void setStatError();
+    void setSysError();
+    void setTotSysError();
 
     // Get histograms
     TH1* getDetUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
     TH1* getMCHists(TString var, TString outHistName, TString steering, bool useAxis = true);
     TH1* getDetHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
-    TH1* getRawHist(TString var, TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis);
+    TH1* getRawHist(TString var, TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis, bool divBinWidth = false);
 
     // Helper functions
     void doNorm(TH1* hist, bool norm = true); 
@@ -200,6 +213,8 @@ public:
 
     int setMeanPt();
     int setMeanMass();
+    int setSysMeanPt();
+    int setSysMeanMass();
 
     void fillPtStatVariationHist(int istat);
     void fillMassStatVariationHist(int istat);
@@ -213,6 +228,8 @@ public:
     double getUnfMeanMass(int ibin);
     double getUnfMeanPtError(int ibin);
     double getUnfMeanMassError(int ibin);
+    double getUnfMeanPtSysError(int ibin);
+    double getUnfMeanMassSysError(int ibin);
 
     double getMCGenMeanMass(int ibin);
     double getMCGenMeanPt(int ibin);
