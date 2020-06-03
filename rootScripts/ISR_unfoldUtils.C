@@ -95,17 +95,86 @@ double ISRUnfold::getUnfoldedChi2(TString var, TString steering, bool useAxis, b
 
     TH1* hData; // Data - Bkg
     TH1* hDY; // DY MC
+    TH2* hRho;
+
+    TH1 *g_fcnHist=0;
+    TMatrixD *g_fcnMatrix=0;
 
     if(var.Contains("Mass"))
     {
         hData = nomMassUnfold->GetOutput("hData_"+var, 0, 0, steering, useAxis);
         hDY = nomMassUnfold->GetBias("hData_"+var, 0, 0, steering, useAxis);
+        hRho = nomMassUnfold->GetRhoIJtotal("histRho_chi_"+var, 0,0, steering, useAxis);
     }
     else
     {
         hData = nomPtUnfold->GetOutput("hData_"+var, 0, 0, steering, useAxis);
         hDY = nomPtUnfold->GetBias("hData_"+var, 0, 0, steering, useAxis);
+        hRho = nomPtUnfold->GetRhoIJtotal("histRho_chi_"+var, 0,0, steering, useAxis);
     }
+
+    int n = hData->GetNbinsX();
+    TMatrixDSym v(n);
+    for(int i=0;i<n;i++) 
+    {
+       for(int j=0;j<n;j++) 
+        {
+            v(i,j)=hRho->GetBinContent(i+1,j+1)*(hData->GetBinError(i+1)*hData->GetBinError(j+1));
+        }
+    }
+
+    TMatrixDSymEigen ev(v);
+    TMatrixD d(n,n);
+    TVectorD di(ev.GetEigenValues());
+    for(int i=0;i<n;i++) {
+       if(di(i)>0.0) {
+          d(i,i)=1./di(i);
+       } else {
+          cout<<"bad eigenvalue i="<<i<<" di="<<di(i)<<"\n";
+          exit(0);
+       }
+    }
+
+    TMatrixD O(ev.GetEigenVectors());
+    TMatrixD DOT(d,TMatrixD::kMultTranspose,O);
+    g_fcnMatrix=new TMatrixD(O,TMatrixD::kMult,DOT);
+    TMatrixD test(*g_fcnMatrix,TMatrixD::kMult,v);
+    int error=0;
+
+    for(int i=0;i<n;i++) 
+    {
+        if(TMath::Abs(test(i,i)-1.0)>1.E-7) 
+        {
+            error++;
+        }
+        for(int j=0;j<n;j++) 
+        {
+            if(i==j) continue;
+            if(TMath::Abs(test(i,j)>1.E-7)) error++;
+        }
+    }
+
+    
+    // Calculate chi2
+    //for(int i=0;i<hData->GetNbinsX();i++) 
+    //{
+    //    
+    //    double di_=hData->GetBinContent(i+1)-hDY->GetBinContent(i+1);
+    //    if(g_fcnMatrix) 
+    //    {
+    //        for(int j=0;j<hData->GetNbinsX();j++) 
+    //        {
+    //            double dj=hData->GetBinContent(j+1)-hDY->GetBinContent(j+1);
+    //            chi2+=di_*dj*(*g_fcnMatrix)(i,j);
+    //        }
+    //    } 
+    //    else 
+    //    {
+    //        double pull=di_/hData->GetBinError(i+1);
+    //        chi2+=pull*pull;
+    //    }
+    //    ndf+=1.0;
+    //}
 
     for(int i=1;i<=hDY->GetNbinsX();i++)
     {
@@ -122,7 +191,7 @@ double ISRUnfold::getUnfoldedChi2(TString var, TString steering, bool useAxis, b
         //cout << "data: " << hData->GetBinContent(i) << " mc: " << hDY->GetBinContent(i) << " data error: " << hData->GetBinError(i) << endl;
         chi2+= pull*pull;
     }
-    //cout << "chi^{2}, " << chi2 << endl;
+    cout << "chi^{2}, " << chi2 << endl;
     return chi2;
 
 }
@@ -525,12 +594,12 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     meanDipt_bkgsub = hData_->GetMean();
     double binnedMean = getBinnedMean(hData); // To check how average value changes with binned histogram
 
-    TLatex meanDipt_;
-    TLatex meanDipt_bkgsub_;
-    meanDipt_.SetTextFont(43);
-    meanDipt_.SetTextSize(40);
-    meanDipt_bkgsub_.SetTextFont(43);
-    meanDipt_bkgsub_.SetTextSize(40);
+    //TLatex meanDipt_;
+    //TLatex meanDipt_bkgsub_;
+    //meanDipt_.SetTextFont(43);
+    //meanDipt_.SetTextSize(40);
+    //meanDipt_bkgsub_.SetTextFont(43);
+    //meanDipt_bkgsub_.SetTextSize(40);
 
     //if(var.Contains("Pt"))
     //{
@@ -542,7 +611,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     //    meanDipt_bkgsub_.DrawLatexNDC(0.2, 0.6-0.07, "avg. p_{T}^{Data-Bkg}: "+itos);
     //}
 
-    // getSmearedChi2(TString var, TString filePath, TString dirName, TString steering, bool useAxis, bool divBinWidth)
+    //getSmearedChi2(TString var, TString filePath, TString dirName, TString steering, bool useAxis, bool divBinWidth)
     TLatex smearedChi2;
     smearedChi2.SetTextFont(43);
     smearedChi2.SetTextSize(100);
@@ -639,8 +708,8 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     setTDRStyle();
     writeExtraText = true;
     extraText  = "Work in progress";
-    gStyle->SetLineWidth(2.);
-    gStyle->SetFrameLineWidth(2.);
+    gStyle->SetLineWidth(3.);
+    gStyle->SetFrameLineWidth(3.);
     gROOT->ForceStyle();
 
     TH1::AddDirectory(kFALSE);
@@ -745,10 +814,10 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     hDY->SetFillColor(kYellow);
     hDY->Draw("hist same");
 
-    TLegend* leg = new TLegend(0.7, 0.65, 0.95, 0.85,"","brNDC");
+    TLegend* leg = new TLegend(0.6, 0.7, 0.9, 0.9,"","brNDC");
     //leg->SetNColumns(2);
     leg->SetTextFont(43);
-    leg->SetTextSize(40);
+    leg->SetTextSize(80);
     leg->SetFillStyle(0); // transparent
     leg->SetBorderSize(0);
     leg->AddEntry(hData, "Unfolded data", "pe");
@@ -793,7 +862,10 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     pad2->SetTopMargin(0.05);
     pad2->SetBottomMargin(0.35);
     if(var=="Mass")
+    {
         pad2->SetLogx();
+        hRatio->GetXaxis()->SetMoreLogLabels(true);
+    }
     pad2->SetTicks(1);
     pad2->SetGridy(1);
     pad2->Draw();
@@ -930,13 +1002,18 @@ void ISRUnfold::writeCutInfo(TPad* pad, TString var, int nthMassBin)
     TLatex dimass_cut;
     TLatex lepton_cut;
     dimass_cut.SetTextFont(43);
-    dimass_cut.SetTextSize(40);
+    dimass_cut.SetTextSize(40 * 2.5);
     lepton_cut.SetTextFont(43);
-    lepton_cut.SetTextSize(40);
+    lepton_cut.SetTextSize(40 * 2.5);
     if(var.Contains("Pt"))
     {
         dimass_cut.DrawLatexNDC(x_, y_, mass_cut_info);
         lepton_cut.DrawLatexNDC(x_, y_-0.05, lepton_cut_info);
+    }
+    if(var.Contains("Mass"))
+    {
+        //dimass_cut.DrawLatexNDC(x_, y_, mass_cut_info);
+        lepton_cut.DrawLatexNDC(x_, y_, lepton_cut_info);
     }
 }
 
