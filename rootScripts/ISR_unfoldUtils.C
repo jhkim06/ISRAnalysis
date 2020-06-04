@@ -115,9 +115,9 @@ double ISRUnfold::getUnfoldedChi2(TString var, TString steering, bool useAxis, b
 
     int n = hData->GetNbinsX();
     TMatrixDSym v(n);
-    for(int i=0;i<n;i++) 
+    for(int i=0;i<n;i++)
     {
-       for(int j=0;j<n;j++) 
+       for(int j=0;j<n;j++)
         {
             v(i,j)=hRho->GetBinContent(i+1,j+1)*(hData->GetBinError(i+1)*hData->GetBinError(j+1));
         }
@@ -141,34 +141,34 @@ double ISRUnfold::getUnfoldedChi2(TString var, TString steering, bool useAxis, b
     TMatrixD test(*g_fcnMatrix,TMatrixD::kMult,v);
     int error=0;
 
-    for(int i=0;i<n;i++) 
+    for(int i=0;i<n;i++)
     {
-        if(TMath::Abs(test(i,i)-1.0)>1.E-7) 
+        if(TMath::Abs(test(i,i)-1.0)>1.E-7)
         {
             error++;
         }
-        for(int j=0;j<n;j++) 
+        for(int j=0;j<n;j++)
         {
             if(i==j) continue;
             if(TMath::Abs(test(i,j)>1.E-7)) error++;
         }
     }
 
-    
+
     // Calculate chi2
-    //for(int i=0;i<hData->GetNbinsX();i++) 
+    //for(int i=0;i<hData->GetNbinsX();i++)
     //{
-    //    
+    //
     //    double di_=hData->GetBinContent(i+1)-hDY->GetBinContent(i+1);
-    //    if(g_fcnMatrix) 
+    //    if(g_fcnMatrix)
     //    {
-    //        for(int j=0;j<hData->GetNbinsX();j++) 
+    //        for(int j=0;j<hData->GetNbinsX();j++)
     //        {
     //            double dj=hData->GetBinContent(j+1)-hDY->GetBinContent(j+1);
     //            chi2+=di_*dj*(*g_fcnMatrix)(i,j);
     //        }
-    //    } 
-    //    else 
+    //    }
+    //    else
     //    {
     //        double pull=di_/hData->GetBinError(i+1);
     //        chi2+=pull*pull;
@@ -303,6 +303,38 @@ void ISRUnfold::setMassBindEdges()
     {
         cout << "ISRUnfold::setMassBindEdges massBinEdges already set." << endl;
     }
+
+}
+
+void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold)
+{
+    cout << "setFromPrevUnfResult()" << endl;
+    // Loop over sytematics considered in the previous unfold class
+    // So first get sysMap map object
+    std::map<TString, std::vector<TString>> sysMap_ = unfold->getSystematicMap();
+
+    std::map<TString, std::vector<TString>>::iterator it = sysMap_.begin();
+    while(it != sysMap_.end())
+    {
+        cout << "Systematic name: " << it->first << endl;
+
+        if(sysMap.find(it->first) == sysMap.end())
+        {
+          // not found
+        } else
+        {
+            // found
+            sysPtUnfold[it->first][sysMap_[it->first][0]]->SetInput(unfold->sysPtUnfold[it->first][sysMap_[it->first][0]]->GetOutput("hUnfoldedPt_"+ it->first + "_" + sysMap_[it->first][0],0,0,"*[*]",false), 1.);
+            //sysMassUnfold[it->first][sysPostfix]->SetInput(unfold->getDetUnfoldedHists("Mass", "UnfoldOut_Mass_"+it->first, "*[*]", false), 1.);
+            //sysPtUnfold[sysName][sysMap[sysName][0]]->GetOutput("hUnfoldedPt_up",0,0,steering,useAxis);
+        }
+        it++;
+    }
+
+    // Check if systematic also exist this unfold class
+    // If so, just set input
+    // If not, create TUnfoldDensity and set input
+    // Finally, update this sysMap!
 
 }
 
@@ -508,7 +540,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     TString DYHistName_ = "histo_DYJetsToMuMu";
     if(channel_name == "electron")
     {
-        dataHistName_ = "histo_DoubleEG"; 
+        dataHistName_ = "histo_DoubleEG";
         DYHistName_  = "histo_DYJetsToEE";
     }
 
@@ -683,6 +715,8 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
         sysBand_ratio->SetFillStyle(3004);
         sysBand_ratio->SetMarkerSize(0.);
         sysBand_ratio->Draw("E2 same");
+
+        sysRelHist_detector[sysName] = sysBand_ratio; 
     }
     hRatio->Draw("p9histe same");
 
@@ -722,6 +756,7 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
 
     // For systematic
     // TODO consider PDF uncertainty etc.
+    // Make a function returning systematic band for systematic source
     TH1* hDY_up = NULL;
     TH1* hRatio_up = NULL;
 
@@ -914,6 +949,11 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     c_out->SaveAs(outName!=""?outName+".png":"unfolded_"+var+".png");
 
     return c_out;
+}
+
+TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString steering, bool useAxis, bool isRatio, bool isMC)
+{
+    //
 }
 
 void ISRUnfold::divideByBinWidth(TH1* hist, bool norm)

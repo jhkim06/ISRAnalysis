@@ -67,6 +67,10 @@ class ISRAnalysis:
        
     def checkMatrixCond(self, var = "Mass"):
         return self.unfold.checkMatrixCond(var)
+
+    def setFromPrevUnfold(self, preUnfold):
+
+        self.unfold.setFromPrevUnfResult(preUnfold)
  
     def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = ""):
         
@@ -81,6 +85,7 @@ class ISRAnalysis:
             self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
             self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
         else:
+            # Let's set systematic input histograms also!
             self.unfold.setUnfInput(unfoldObj, "Pt", False, "", 0)
             self.unfold.setUnfInput(unfoldObj, "Mass", False, "", 0)
             
@@ -96,8 +101,8 @@ class ISRAnalysis:
         bkgList = {}
         # 2016 데이터만 single top 샘플을 갖고 있다 
         if self.year == "2016" :
-            #bkgList = {"QCD": "Fake", "WJet": "Fake",\
-            bkgList = {"WJets_MG": "WJets",\
+            bkgList = {"QCD": "Fake", "WJet": "Fake",\
+            #bkgList = {"WJets_MG": "WJets",\
                        "WW_pythia": "EWK", "WZ_pythia": "EWK", "ZZ_pythia": "EWK", \
                        "DYJets10to50ToTauTau":"EWK", "DYJetsToTauTau":"EWK", \
                        "TTLL_powheg": "Top"} # "SingleTop_tW_top_Incl": "Top", "SingleTop_tW_antitop_Incl": "Top"}
