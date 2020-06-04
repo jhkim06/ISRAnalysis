@@ -56,8 +56,8 @@ private:
     TUnfoldBinning* mass_binning_Gen = NULL;
 
     std::map<TString, vector<TString>> sysMap;
-    std::map<TString, TH1*> sysAbsHist_detector;
-    std::map<TString, TH1*> sysRelHist_detector;
+    std::map<TString, TH1*> sysAbsPtHist_detector;
+    std::map<TString, TH1*> sysRelPtHist_detector;
 
     // For nominal results
     TUnfoldDensityV17* nomPtUnfold;
@@ -193,7 +193,7 @@ public:
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
     TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);
     TCanvas* drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);
-    TH1* getDetectorSystematicBand(TString var, TString steering, bool useAxis, bool isRatio, bool isMC);
+    TH1* getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC);
     void setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "", bool divBinWidth = false);
     void setXaxisTitle(TH1* hist, TString var, bool useAxis, TString title = "");
     void writeCutInfo(TPad* pad, TString var, int nthMassBin = 0);

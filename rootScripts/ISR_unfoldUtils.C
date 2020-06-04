@@ -525,17 +525,6 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     TH1* hMCtotal = NULL;
     TH1* hRatio = NULL;
 
-    // For systematic
-    // TODO consider PDF uncertainty etc.
-    TH1* hDY_up = NULL;
-    TH1* hMCtotal_up = NULL;
-    TH1* hRatio_up = NULL;
-
-    TH1* hDY_down = NULL;
-    TH1* hMCtotal_down = NULL;
-    TH1* hRatio_down = NULL;
-
-    // FIXME consider electron channel name
     TString dataHistName_ = "histo_DoubleMuon";
     TString DYHistName_ = "histo_DYJetsToMuMu";
     if(channel_name == "electron")
@@ -549,18 +538,6 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
 
     hMCtotal = (TH1*) hDY->Clone("hMCtotal");
     hRatio = (TH1*) hData->Clone("hRatio");
-
-    if(sysName != "")
-    {
-        hDY_up = getRawHist(var, filePath, dirName, "histo_DYJetsToMuMu_" + sysMap[sysName][0], "Signal"+sysMap[sysName][0], steering, useAxis, divBinWidth);
-        hMCtotal_up = (TH1*) hDY_up->Clone("hMCtotal_up");
-        hRatio_up = (TH1*) hData->Clone("hRatio_up");
-
-        hDY_down = getRawHist(var, filePath, dirName, "histo_DYJetsToMuMu_" + sysMap[sysName][1], "Signal"+sysMap[sysName][1], steering, useAxis, divBinWidth);
-        hMCtotal_down = (TH1*) hDY_down->Clone("hMCtotal_down");
-        hRatio_down = (TH1*) hData->Clone("hRatio_down");
-
-    }
 
     // Create canvas
     TCanvas* c_out = new TCanvas("detector_level_"+var, "detector_level_"+var, 3200, 2800);
@@ -602,16 +579,6 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     THStack* hsMC = new THStack("hsMC", "hsMC");
     setTHStack(var, filePath, dirName, *hsMC, *hMCtotal, *leg, steering, useAxis, "", divBinWidth);
     hsMC->Add(hDY);
-
-    THStack* hsMC_up;
-    THStack* hsMC_down;
-    if(sysName != "")
-    {
-        hsMC_up = new THStack("hsMC_up", "hsMC_up");
-        hsMC_down = new THStack("hsMC_down", "hsMC_down");
-        setTHStack(var, filePath, dirName, *hsMC_up, *hMCtotal_up, *leg, steering, useAxis, sysMap[sysName][0], divBinWidth);
-        setTHStack(var, filePath, dirName, *hsMC_down, *hMCtotal_down, *leg, steering, useAxis, sysMap[sysName][1], divBinWidth);
-    }
 
     hsMC->Draw("hist same");
     hData->Draw("p9histe same");
@@ -663,7 +630,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     writeCutInfo(pad1, var, nthMassBin);
 
     TLine massEdgeLine;
-    if(var=="Mass")
+    if(var.Contains("Mass"))
     {
         for(unsigned int i = 0; i < massBinEdges.size(); i++)
         {
@@ -700,23 +667,32 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
 
     // TODO Save systematic histograms
     TH1* sysBand_ratio = NULL;
-    if(sysName != "")
+    TLegend* leg_sys = NULL; 
+    if(sysName != "") 
     {
-        hRatio_up->Divide(hMCtotal_up);
-        hRatio_down->Divide(hMCtotal_down);
-        sysBand_ratio = (TH1*)hRatio_up->Clone("sysBand_ratio");
-        for(int ibin = 1; ibin < sysBand_ratio->GetNbinsX()+1; ibin++)
+        leg_sys = new TLegend(0.7, 0.75, 0.95, 0.85,"","brNDC");
+        if(sysRelPtHist_detector.find(sysName) == sysRelPtHist_detector.end())
         {
-            double delta = fabs(hRatio_up->GetBinContent(ibin) - hRatio_down->GetBinContent(ibin));
-            sysBand_ratio->SetBinError(ibin, delta);
-            sysBand_ratio->SetBinContent(ibin, 1.);
+            sysBand_ratio = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, true);
+            sysRelPtHist_detector[sysName] = sysBand_ratio; 
+        }
+        else
+        {
+            cout << "Systematic band exists!" << endl;
+            sysBand_ratio = sysRelPtHist_detector[sysName];
         }
         sysBand_ratio->SetFillColorAlpha(kRed,0.8);
         sysBand_ratio->SetFillStyle(3004);
         sysBand_ratio->SetMarkerSize(0.);
         sysBand_ratio->Draw("E2 same");
 
-        sysRelHist_detector[sysName] = sysBand_ratio; 
+        leg_sys->SetTextFont(43);
+        leg_sys->SetTextSize(100);
+        leg_sys->SetFillStyle(0); // transparent
+        leg_sys->SetBorderSize(0);
+        leg_sys->AddEntry(sysBand_ratio, sysName, "F");
+        leg_sys->Draw();
+
     }
     hRatio->Draw("p9histe same");
 
@@ -727,7 +703,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
 
     // Save canvas
     c_out->cd();
-    c_out->SaveAs(outName!=""?outName+".png":"detector_"+var+".png");
+    c_out->SaveAs(outName!=""?outName+var+sysName+".png":"detector_"+var+sysName+".png");
 
     delete filein;
 
@@ -951,9 +927,61 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     return c_out;
 }
 
-TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString steering, bool useAxis, bool isRatio, bool isMC)
+TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC)
 {
-    //
+    TString dataHistName_ = "histo_DoubleMuon";
+    TString DYHistName_ = "histo_DYJetsToMuMu";
+    if(channel_name == "electron")
+    {
+        dataHistName_ = "histo_DoubleEG";
+        DYHistName_  = "histo_DYJetsToEE";
+    }
+
+    // Notice this is for MC uncertainty
+    TH1* hDY_up = NULL;
+    TH1* hMCtotal_up = NULL;
+    TH1* hRatio_up = NULL;
+
+    TH1* hDY_down = NULL;
+    TH1* hMCtotal_down = NULL;
+    TH1* hRatio_down = NULL;
+
+    // Notice that this is for up/down sytematic
+    hDY_up = getRawHist(var, filePath, dirName, DYHistName_ + "_" + sysMap[sysName][0], "Signal"+sysMap[sysName][0], steering, useAxis, divBinWidth);
+    hMCtotal_up = (TH1*) hDY_up->Clone("hMCtotal_up");
+    hRatio_up = (TH1*) hData->Clone("hRatio_up");
+
+    hDY_down = getRawHist(var, filePath, dirName, DYHistName_ + "_" + sysMap[sysName][1], "Signal"+sysMap[sysName][1], steering, useAxis, divBinWidth);
+    hMCtotal_down = (TH1*) hDY_down->Clone("hMCtotal_down");
+    hRatio_down = (TH1*) hData->Clone("hRatio_down");
+
+    // Dummy THStack, TLegend
+    THStack* hsMC_up;
+    THStack* hsMC_down;
+    TLegend* leg = new TLegend(0.6, 0.7, 0.9, 0.9,"","brNDC");;
+    hsMC_up = new THStack("hsMC_up", "hsMC_up");
+    hsMC_down = new THStack("hsMC_down", "hsMC_down");
+    setTHStack(var, filePath, dirName, *hsMC_up, *hMCtotal_up, *leg, steering, useAxis, sysMap[sysName][0], divBinWidth);
+    setTHStack(var, filePath, dirName, *hsMC_down, *hMCtotal_down, *leg, steering, useAxis, sysMap[sysName][1], divBinWidth);
+
+    delete hsMC_up;
+    delete hsMC_down;   
+    delete leg;
+
+    TH1* sysBand_ratio = NULL;
+    hRatio_up->Divide(hMCtotal_up);
+    hRatio_down->Divide(hMCtotal_down);
+    sysBand_ratio = (TH1*)hRatio_up->Clone("sysBand_ratio");
+
+    for(int ibin = 1; ibin < sysBand_ratio->GetNbinsX()+1; ibin++)
+    {
+        double delta = fabs(hRatio_up->GetBinContent(ibin) - hRatio_down->GetBinContent(ibin));
+        sysBand_ratio->SetBinError(ibin, delta);
+        sysBand_ratio->SetBinContent(ibin, 1.);
+    }
+
+    //sysRelPtHist_detector[sysName] = sysBand_ratio; 
+    return sysBand_ratio;
 }
 
 void ISRUnfold::divideByBinWidth(TH1* hist, bool norm)
