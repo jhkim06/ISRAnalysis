@@ -697,30 +697,12 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     if(sysName != "") 
     {
         leg_sys = new TLegend(0.7, 0.75, 0.95, 0.85,"","brNDC");
-        //if(sysRelPtHist_detector.find(sysName) == sysRelPtHist_detector.end())
-        //{
-            //if(sysName.Contains("LepMom"))
-            //{
-            //    sysBand_ratio = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, false, sysFilePath);
-            //    sysBand_ratio->SetFillColorAlpha(kBlack,0.8);
-            //}
-            //else
-            //{
-            //    sysBand_ratio = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, true, sysFilePath);
-            //    sysBand_ratio->SetFillColorAlpha(kRed,0.8);
-            //}
 
-            sysBand_ratio_forData = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, false, sysFilePath);
-            sysBand_ratio_forData->SetFillColorAlpha(kBlack,0.8);
-            sysBand_ratio_forMC = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, true, sysFilePath);
-            sysBand_ratio_forMC->SetFillColorAlpha(kRed,0.8);
-            //sysRelPtHist_detector[sysName] = sysBand_ratio; 
-        //}
-        //else
-        //{
-        //    cout << "Systematic band exists!" << endl;
-        //    sysBand_ratio = sysRelPtHist_detector[sysName];
-        //}
+        sysBand_ratio_forData = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, false, sysFilePath);
+        sysBand_ratio_forData->SetFillColorAlpha(kBlack,0.8);
+        sysBand_ratio_forMC = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, true, sysFilePath);
+        sysBand_ratio_forMC->SetFillColorAlpha(kRed,0.8);
+
         sysBand_ratio_forData->SetFillStyle(3004);
         sysBand_ratio_forData->SetMarkerSize(0.);
         sysBand_ratio_forData->Draw("E2 same");
@@ -771,18 +753,6 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     TH1* hDY = NULL;
     TH1* hRatio = NULL;
 
-    // For systematic
-    // TODO consider PDF uncertainty etc.
-    // Make a function returning systematic band for systematic source
-    TH1* hDY_up = NULL;
-    TH1* hRatio_up = NULL;
-
-    TH1* hDY_down = NULL;
-    TH1* hRatio_down = NULL;
-
-    TH1* hData_up = NULL;
-    TH1* hData_down = NULL;
-
     if(var.Contains("Pt"))
     {
         hData = nomPtUnfold->GetOutput("hUnfoldedPt",0,0,steering,useAxis);
@@ -799,35 +769,6 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
         divideByBinWidth(hDY, false);
     }
     hRatio = (TH1*) hData->Clone("hRatio");
-
-    if(sysName != "")
-    {
-        if(var.Contains("Pt"))
-        {
-            hDY_up = sysPtUnfold[sysName][sysMap[sysName][0]]->GetBias("hDYMCPt_up",0,0,steering,useAxis);;
-            hDY_down = sysPtUnfold[sysName][sysMap[sysName][1]]->GetBias("hDYMCPt_down",0,0,steering,useAxis);;
-
-            hData_up = sysPtUnfold[sysName][sysMap[sysName][0]]->GetOutput("hUnfoldedPt_up",0,0,steering,useAxis);
-            hData_down = sysPtUnfold[sysName][sysMap[sysName][1]]->GetOutput("hUnfoldedPt_down",0,0,steering,useAxis);
-        }
-        else
-        {
-            hDY_up = sysMassUnfold[sysName][sysMap[sysName][0]]->GetBias("hDYMCMass_up",0,0,steering,useAxis);;
-            hDY_down = sysMassUnfold[sysName][sysMap[sysName][1]]->GetBias("hDYMCMass_down",0,0,steering,useAxis);;
-
-            hData_up = sysMassUnfold[sysName][sysMap[sysName][0]]->GetOutput("hUnfoldedMass_up",0,0,steering,useAxis);
-            hData_down = sysMassUnfold[sysName][sysMap[sysName][1]]->GetOutput("hUnfoldedMass_down",0,0,steering,useAxis);
-        }
-        if(divBinWidth)
-        {
-            divideByBinWidth(hDY_up, false);
-            divideByBinWidth(hDY_down, false);
-            divideByBinWidth(hData_up, false);
-            divideByBinWidth(hData_down, false);
-        }
-        hRatio_up = (TH1*) hData_up->Clone("hRatio_up");
-        hRatio_down = (TH1*) hData_down->Clone("hRatio_down");
-    }
 
     // Create canvas
     TCanvas* c_out = new TCanvas("unfolded_level_"+var, "unfoled_level_"+var, 3200, 2800);
@@ -854,14 +795,6 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     hData->GetYaxis()->SetTitle("Events/Bin");
     hData->SetMaximum(5e9);
     hData->SetMinimum(2e-1);
-
-    if(sysName != "")
-    {
-        hData_up->SetLineStyle(2);
-        hData_down->SetLineStyle(2);
-        hData_up->Draw("HIST SAME");
-        hData_down->Draw("HIST SAME");
-    }
 
     hDY->SetFillColor(kYellow);
     hDY->Draw("hist same");
@@ -936,25 +869,34 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
 
     setXaxisTitle(hRatio, var, useAxis);
 
-    // TODO Save systematic histograms
-    TH1* sysBand_ratio = NULL;
-    if(sysName != "")
-    {
-        hRatio_up->Divide(hDY);
-        hRatio_down->Divide(hDY);
-        sysBand_ratio = (TH1*)hRatio_up->Clone("sysBand_ratio");
-        for(int ibin = 1; ibin < sysBand_ratio->GetNbinsX()+1; ibin++)
-        {
-            double delta = fabs(hRatio_up->GetBinContent(ibin) - hRatio_down->GetBinContent(ibin));
-            sysBand_ratio->SetBinError(ibin, delta);
-            sysBand_ratio->SetBinContent(ibin, hRatio->GetBinContent(ibin));
-        }
-        sysBand_ratio->SetFillColorAlpha(kBlack,0.8);
-        sysBand_ratio->SetFillStyle(3004);
-        sysBand_ratio->SetMarkerSize(0.);
-        sysBand_ratio->Draw("E2 same");
-    }
     hRatio->Draw("p9histe same");
+    TH1* sysBand_ratio_forData = NULL;
+    TH1* sysBand_ratio_forMC = NULL;
+    TLegend* leg_sys = NULL; 
+    if(sysName != "") 
+    {
+        leg_sys = new TLegend(0.7, 0.75, 0.95, 0.85,"","brNDC");
+
+        sysBand_ratio_forData = getUnfoldedSystematicBand(var, steering, true, sysName, hData, hDY, hRatio, divBinWidth, true, false);
+        sysBand_ratio_forData->SetFillColorAlpha(kBlack,0.8);
+        sysBand_ratio_forMC = getUnfoldedSystematicBand(var, steering, true, sysName, hData, hDY, hRatio, divBinWidth, true, true);;
+        sysBand_ratio_forMC->SetFillColorAlpha(kRed,0.8);
+
+        sysBand_ratio_forData->SetFillStyle(3004);
+        sysBand_ratio_forData->SetMarkerSize(0.);
+        sysBand_ratio_forData->Draw("E2 same");
+        sysBand_ratio_forMC->SetFillStyle(3004);
+        sysBand_ratio_forMC->SetMarkerSize(0.);
+        sysBand_ratio_forMC->Draw("E2 same");
+
+        leg_sys->SetTextFont(43);
+        leg_sys->SetTextSize(100);
+        leg_sys->SetFillStyle(0); // transparent
+        leg_sys->SetBorderSize(0);
+        leg_sys->AddEntry(sysBand_ratio_forMC, sysName, "F");
+        leg_sys->Draw();
+
+    }
 
     TLine* l_ = new TLine(hRatio->GetXaxis()->GetXmin(),1,hRatio->GetXaxis()->GetXmax(),1);
     l_->SetLineColor(kRed);
@@ -966,6 +908,78 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     c_out->SaveAs(outName!=""?outName+".png":"unfolded_"+var+".png");
 
     return c_out;
+}
+
+TH1* ISRUnfold::getUnfoldedSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC)
+{
+    TH1* sysBand_ratio = NULL;
+
+    int variationSize = sysMap[sysName].size();
+    for(int ith = 0; ith < variationSize; ith++)
+    {
+        TH1* hSYS_temp = NULL;
+        TH1* hRatio_temp = NULL; 
+
+        if(var.Contains("Pt"))
+        {
+            if(forMC)
+                hSYS_temp = sysPtUnfold[sysName][sysMap[sysName][ith]]->GetBias("hDYMCPt_temp",0,0,steering,useAxis);
+            else
+                hSYS_temp = sysPtUnfold[sysName][sysMap[sysName][ith]]->GetOutput("hUnfoldedPt_temp",0,0,steering,useAxis); 
+        }
+        else
+        {
+            if(forMC)
+                hSYS_temp = sysMassUnfold[sysName][sysMap[sysName][ith]]->GetBias("hDYMCMass_temp",0,0,steering,useAxis);
+            else
+                hSYS_temp = sysMassUnfold[sysName][sysMap[sysName][ith]]->GetOutput("hUnfoldedMass_temp",0,0,steering,useAxis); 
+        }
+        if(divBinWidth)
+        {
+            divideByBinWidth(hSYS_temp, false); 
+        }
+
+        if(forMC)
+        {
+            hRatio_temp = (TH1*) hData->Clone("hRatio_temp");
+            hRatio_temp->Divide(hSYS_temp);
+            if(ith==0) sysBand_ratio = (TH1*)hRatio_temp->Clone("sysUnfBand_ratio"+sysName);
+        }
+        else
+        {
+            hRatio_temp = (TH1*) hSYS_temp->Clone("hRatio_temp");
+            hRatio_temp->Divide(hDY);
+            if(ith==0) sysBand_ratio = (TH1*)hRatio_temp->Clone("sysUnfBand_ratio"+sysName);
+        }
+
+        for(int ibin = 1; ibin < sysBand_ratio->GetNbinsX()+1; ibin++)
+        {
+            double delta = fabs(hRatio_temp->GetBinContent(ibin) - hRatio->GetBinContent(ibin));
+            if(ith != 0)
+            {
+                delta = delta > sysBand_ratio->GetBinError(ibin) ? delta : sysBand_ratio->GetBinError(ibin);
+            }
+
+            if(delta < 1e-5)
+                sysBand_ratio->SetBinError(ibin, 1e-5);
+            else
+                sysBand_ratio->SetBinError(ibin, delta);
+        
+            if(forMC)
+            {
+                sysBand_ratio->SetBinContent(ibin, 1.);
+            }
+            else
+            {
+                sysBand_ratio->SetBinContent(ibin, hRatio->GetBinContent(ibin));
+            }
+        }
+
+        delete hSYS_temp; // This could be data or MC systematic variation
+        delete hRatio_temp;
+    }   
+
+    return sysBand_ratio;
 }
 
 TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, TString sysFilePath)
@@ -1494,7 +1508,7 @@ int ISRUnfold::setSysMeanMass()
                 // Set x-axis range
                 hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(massBins[ibin]+0.01), hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
                 meanMass_data_unfolded_sysVariation[it->first][(it->second).at(i)].push_back(hunfolded_mass->GetMean());
-                cout << it->first << " " << (it->second).at(i) << " " << hunfolded_mass->GetMean() << endl;
+                //cout << it->first << " " << (it->second).at(i) << " " << hunfolded_mass->GetMean() << endl;
             }// End of mass bin loop
             delete hunfolded_mass;
         }
@@ -1518,6 +1532,8 @@ void ISRUnfold::setSysError()
             double error_mass = 0.;
             double error_pt = 0.;
             int size = (it->second).size();
+
+            // Take the maximum variation as systematic uncertainty
             for(int i = 0; i < size; i++)
             {
                 double temp_error_mass = fabs(meanMass_data_unfolded_sysVariation[it->first][(it->second).at(i)].at(ibin) - meanMass_data_unfoled.at(ibin));
