@@ -342,10 +342,19 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirN
 {
     TFile* filein = new TFile(filepath);
     TH2* hmcGenRec = NULL;
-    if(sysName != "Fake")
-        hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec_" + sysPostfix);
-    else
+    
+    if(sysName == "Fake")
+    {
         hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec");
+    }
+    else if(sysName.Contains("LepMom"))
+    {
+        hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec");
+    }
+    else
+    {
+        hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec_" + sysPostfix);
+    }
 
     if( var == "Pt" )
     {
@@ -407,6 +416,7 @@ void ISRUnfold::setUnfInput(TString var, TString varPostfix, TString filepath, T
     TFile* filein = new TFile(filepath);
     TH1* hRec = NULL;
     hRec = (TH1*)filein->Get(dirName+"/"+var+varPostfix+"/"+histName);
+
     // Use DY MC as unfolding input, i.e. simple closure test
     if(histName.Contains("DYJetsTo"))
     {
@@ -417,12 +427,14 @@ void ISRUnfold::setUnfInput(TString var, TString varPostfix, TString filepath, T
     // Nominal histograms
     // First input covariance test (ID)
     TFile* fcov = new TFile("/home/jhkim/ISR_Run2/unfolding/TUnfoldISR2016/rootScripts/covariance.root");
+    TFile* fcov_pt = new TFile("/home/jhkim/ISR_Run2/unfolding/TUnfoldISR2016/rootScripts/covariance_pt.root");
     TH2* hCov = (TH2*) fcov->Get("cov");
+    TH2* hCov_pt = (TH2*) fcov_pt->Get("cov");
     if(!isSys)
     {
         if(var == "Pt")
         {
-            nomPtUnfold->SetInput(hRec,   nominal_bias);
+            nomPtUnfold->SetInput(hRec,   nominal_bias, 0, hCov_pt);
         }
         else if(var == "Mass")
         {
@@ -464,7 +476,6 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
     // Nominal histograms
     if(!isSys)
     {
-
         bkgNames.push_back(bkgInfo.first);
         bkgTypes.push_back(bkgInfo.second);
 
@@ -477,16 +488,30 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
     else
     // Systematic
     {
-        TString histPostfix = bkgInfo.first + "_" + sysPostfix;
-        if(bkgInfo.second != "Fake" && sysName == "Fake") histPostfix = bkgInfo.first;
-        if(bkgInfo.second == "Fake" && sysName != "Fake") histPostfix = bkgInfo.first;
+        if(!sysName.Contains("LepMom"))
+        {
+            TString histPostfix = bkgInfo.first + "_" + sysPostfix;
+            if(bkgInfo.second != "Fake" && sysName == "Fake") histPostfix = bkgInfo.first;
+            if(bkgInfo.second == "Fake" && sysName != "Fake") histPostfix = bkgInfo.first;
 
-        hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + histPostfix);
-        //cout << dirName + "/Pt"+binDef+"/histo_" + histPostfix << endl;
-        sysPtUnfold[sysName][sysPostfix]->SubtractBackground(hPtRec, bkgInfo.first);
+            hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + histPostfix);
+            //cout << dirName + "/Pt"+binDef+"/histo_" + histPostfix << endl;
+            sysPtUnfold[sysName][sysPostfix]->SubtractBackground(hPtRec, bkgInfo.first);
 
-        hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + histPostfix);
-        sysMassUnfold[sysName][sysPostfix]->SubtractBackground(hMassRec, bkgInfo.first);
+            hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + histPostfix);
+            sysMassUnfold[sysName][sysPostfix]->SubtractBackground(hMassRec, bkgInfo.first);
+        }
+        else
+        {
+            TString histPostfix = bkgInfo.first;
+
+            hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + histPostfix);
+            cout << dirName + "/Pt"+binDef+"/histo_" + histPostfix << endl;
+            sysPtUnfold[sysName][sysPostfix]->SubtractBackground(hPtRec, bkgInfo.first);
+
+            hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + histPostfix);
+            sysMassUnfold[sysName][sysPostfix]->SubtractBackground(hMassRec, bkgInfo.first);
+        }
     }
 
     filein->Close();
@@ -499,7 +524,7 @@ void ISRUnfold::setSystematics(TString sysName, TString sysHistName)
 }
 
 // Draw detector distributions using input root file
-TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth)
+TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth, TString sysFilePath)
 {
     // If steering == "", then usual TH1 histogram
     // If seering != "", TH1 from TUnfold
@@ -666,31 +691,48 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     setXaxisTitle(hRatio, var, useAxis);
 
     // TODO Save systematic histograms
-    TH1* sysBand_ratio = NULL;
+    TH1* sysBand_ratio_forData = NULL;
+    TH1* sysBand_ratio_forMC = NULL;
     TLegend* leg_sys = NULL; 
     if(sysName != "") 
     {
         leg_sys = new TLegend(0.7, 0.75, 0.95, 0.85,"","brNDC");
-        if(sysRelPtHist_detector.find(sysName) == sysRelPtHist_detector.end())
-        {
-            sysBand_ratio = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, true);
-            sysRelPtHist_detector[sysName] = sysBand_ratio; 
-        }
-        else
-        {
-            cout << "Systematic band exists!" << endl;
-            sysBand_ratio = sysRelPtHist_detector[sysName];
-        }
-        sysBand_ratio->SetFillColorAlpha(kRed,0.8);
-        sysBand_ratio->SetFillStyle(3004);
-        sysBand_ratio->SetMarkerSize(0.);
-        sysBand_ratio->Draw("E2 same");
+        //if(sysRelPtHist_detector.find(sysName) == sysRelPtHist_detector.end())
+        //{
+            //if(sysName.Contains("LepMom"))
+            //{
+            //    sysBand_ratio = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, false, sysFilePath);
+            //    sysBand_ratio->SetFillColorAlpha(kBlack,0.8);
+            //}
+            //else
+            //{
+            //    sysBand_ratio = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, true, sysFilePath);
+            //    sysBand_ratio->SetFillColorAlpha(kRed,0.8);
+            //}
+
+            sysBand_ratio_forData = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, false, sysFilePath);
+            sysBand_ratio_forData->SetFillColorAlpha(kBlack,0.8);
+            sysBand_ratio_forMC = getDetectorSystematicBand(var, filePath, dirName, steering, useAxis,  sysName, hData, hDY, hMCtotal, hRatio, divBinWidth, true, true, sysFilePath);
+            sysBand_ratio_forMC->SetFillColorAlpha(kRed,0.8);
+            //sysRelPtHist_detector[sysName] = sysBand_ratio; 
+        //}
+        //else
+        //{
+        //    cout << "Systematic band exists!" << endl;
+        //    sysBand_ratio = sysRelPtHist_detector[sysName];
+        //}
+        sysBand_ratio_forData->SetFillStyle(3004);
+        sysBand_ratio_forData->SetMarkerSize(0.);
+        sysBand_ratio_forData->Draw("E2 same");
+        sysBand_ratio_forMC->SetFillStyle(3004);
+        sysBand_ratio_forMC->SetMarkerSize(0.);
+        sysBand_ratio_forMC->Draw("E2 same");
 
         leg_sys->SetTextFont(43);
         leg_sys->SetTextSize(100);
         leg_sys->SetFillStyle(0); // transparent
         leg_sys->SetBorderSize(0);
-        leg_sys->AddEntry(sysBand_ratio, sysName, "F");
+        leg_sys->AddEntry(sysBand_ratio_forMC, sysName, "F");
         leg_sys->Draw();
 
     }
@@ -706,7 +748,6 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     c_out->SaveAs(outName!=""?outName+var+sysName+".png":"detector_"+var+sysName+".png");
 
     delete filein;
-
     return c_out;
 }
 
@@ -927,8 +968,14 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     return c_out;
 }
 
-TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC)
+TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, TString sysFilePath)
 {
+
+    if(sysFilePath != "")
+    {
+        filePath = sysFilePath;
+    }
+
     TString dataHistName_ = "histo_DoubleMuon";
     TString DYHistName_ = "histo_DYJetsToMuMu";
     if(channel_name == "electron")
@@ -938,46 +985,151 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
     }
 
     // Notice this is for MC uncertainty
-    TH1* hDY_up = NULL;
+    TH1* hSYS_up = NULL;
     TH1* hMCtotal_up = NULL;
     TH1* hRatio_up = NULL;
 
-    TH1* hDY_down = NULL;
+    TH1* hSYS_down = NULL;
     TH1* hMCtotal_down = NULL;
     TH1* hRatio_down = NULL;
 
+    // TODO check size of sysMap[sysName]
+    //
     // Notice that this is for up/down sytematic
-    hDY_up = getRawHist(var, filePath, dirName, DYHistName_ + "_" + sysMap[sysName][0], "Signal"+sysMap[sysName][0], steering, useAxis, divBinWidth);
-    hMCtotal_up = (TH1*) hDY_up->Clone("hMCtotal_up");
-    hRatio_up = (TH1*) hData->Clone("hRatio_up");
-
-    hDY_down = getRawHist(var, filePath, dirName, DYHistName_ + "_" + sysMap[sysName][1], "Signal"+sysMap[sysName][1], steering, useAxis, divBinWidth);
-    hMCtotal_down = (TH1*) hDY_down->Clone("hMCtotal_down");
-    hRatio_down = (TH1*) hData->Clone("hRatio_down");
-
     // Dummy THStack, TLegend
     THStack* hsMC_up;
     THStack* hsMC_down;
     TLegend* leg = new TLegend(0.6, 0.7, 0.9, 0.9,"","brNDC");;
     hsMC_up = new THStack("hsMC_up", "hsMC_up");
     hsMC_down = new THStack("hsMC_down", "hsMC_down");
-    setTHStack(var, filePath, dirName, *hsMC_up, *hMCtotal_up, *leg, steering, useAxis, sysMap[sysName][0], divBinWidth);
-    setTHStack(var, filePath, dirName, *hsMC_down, *hMCtotal_down, *leg, steering, useAxis, sysMap[sysName][1], divBinWidth);
 
-    delete hsMC_up;
-    delete hsMC_down;   
-    delete leg;
+    TString tempHistName = DYHistName_;
+    TString tempDirName = dirName;
+    TString tempNewHistName = "Signal"+sysMap[sysName][0];
 
+    if(forMC)
+    {
+        if(!sysName.Contains("LepMom"))
+        {
+            tempHistName = DYHistName_ + "_" + sysMap[sysName][0]; 
+        }
+        else
+        {
+            tempDirName = dirName + "_" + sysMap[sysName][0]; 
+        }
+    }
+    else
+    {
+        tempHistName = dataHistName_; 
+        if(sysName.Contains("LepMom")) 
+        {
+            tempDirName = dirName + "_" + sysMap[sysName][0]; 
+            tempNewHistName = "Data"+sysMap[sysName][0]; 
+        }
+    }
+
+    hSYS_up = getRawHist(var, filePath, tempDirName, tempHistName, tempNewHistName, steering, useAxis, divBinWidth);
+    hMCtotal_up = (TH1*) hSYS_up->Clone("hMCtotal_up");
+    hRatio_up = (TH1*) hData->Clone("hRatio_up");
+    if(forMC)
+        hRatio_up = (TH1*) hData->Clone("hRatio_up");
+    else
+        hRatio_up = (TH1*) hSYS_up->Clone("hRatio_up");
+
+    if(forMC) setTHStack(var, filePath, tempDirName, *hsMC_up, *hMCtotal_up, *leg, steering, useAxis, sysMap[sysName][0], divBinWidth);
+
+    tempNewHistName = "Signal"+sysMap[sysName][1];
+    if(forMC)
+    {
+        if(!sysName.Contains("LepMom"))
+        {
+            tempHistName = DYHistName_ + "_" + sysMap[sysName][1]; 
+        }
+        else
+        {
+            tempDirName = dirName + "_" + sysMap[sysName][1]; 
+        }
+    }
+    else
+    {
+        tempHistName = dataHistName_; 
+        if(sysName.Contains("LepMom")) 
+        {
+            tempDirName = dirName + "_" + sysMap[sysName][1]; 
+            tempNewHistName = "Data"+sysMap[sysName][1]; 
+        }
+    }
+
+
+    if(sysMap[sysName][1] != "Nominal")
+    {
+        hSYS_down = getRawHist(var, filePath, tempDirName, tempHistName , tempNewHistName, steering, useAxis, divBinWidth);
+        hMCtotal_down = (TH1*) hSYS_down->Clone("hMCtotal_down");
+        if(forMC)
+        {
+            hRatio_down = (TH1*) hData->Clone("hRatio_down");
+        }
+        else
+        {
+            hRatio_down = (TH1*) hSYS_down->Clone("hRatio_down");
+        }
+        if(forMC) setTHStack(var, filePath, tempDirName, *hsMC_down, *hMCtotal_down, *leg, steering, useAxis, sysMap[sysName][1], divBinWidth);
+
+        if(forMC)
+        {
+            delete hsMC_up;
+            delete hsMC_down;   
+            delete leg;
+        }
+    }
+    else
+    {
+        if(forMC)
+        {
+            hRatio_down = (TH1*) hData->Clone("hRatio_down");
+        }
+        else
+        {
+            hRatio_down = (TH1*) hData->Clone("hRatio_down"); 
+        }   
+        if(forMC) 
+        {
+            hMCtotal_down = (TH1*) hMCtotal->Clone("hMCtotal_down"); 
+        }
+    }
+
+    // Set systematic band
     TH1* sysBand_ratio = NULL;
-    hRatio_up->Divide(hMCtotal_up);
-    hRatio_down->Divide(hMCtotal_down);
-    sysBand_ratio = (TH1*)hRatio_up->Clone("sysBand_ratio");
+    if(forMC)
+    {
+        hRatio_up->Divide(hMCtotal_up);
+        hRatio_down->Divide(hMCtotal_down);
+        sysBand_ratio = (TH1*)hRatio_up->Clone("sysBand_ratio");
+    }
+    else
+    {
+        hRatio_up->Divide(hMCtotal);
+        hRatio_down->Divide(hMCtotal);
+        sysBand_ratio = (TH1*)hRatio_up->Clone("sysBand_ratio");
+    }
 
     for(int ibin = 1; ibin < sysBand_ratio->GetNbinsX()+1; ibin++)
     {
         double delta = fabs(hRatio_up->GetBinContent(ibin) - hRatio_down->GetBinContent(ibin));
-        sysBand_ratio->SetBinError(ibin, delta);
-        sysBand_ratio->SetBinContent(ibin, 1.);
+        if(delta < 1e-5)
+            sysBand_ratio->SetBinError(ibin, 1e-5);
+        else
+            sysBand_ratio->SetBinError(ibin, delta);
+    
+        if(forMC)
+        {
+            sysBand_ratio->SetBinContent(ibin, 1.);
+        }
+        else
+        {
+            sysBand_ratio->SetBinContent(ibin, hRatio->GetBinContent(ibin));
+            //cout << ibin << " bin, " << hRatio->GetBinContent(ibin) << " err: " << delta << endl; 
+        }
     }
 
     //sysRelPtHist_detector[sysName] = sysBand_ratio; 
@@ -1126,6 +1278,10 @@ void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THSta
             else
             {
                 TString histPostfix = "histo_"+bkgNames[i] + "_" + sysName;
+                if(sysName.Contains("LepMom"))
+                {
+                    histPostfix = "histo_"+bkgNames[i]; 
+                }
                 if(bkgTypes[i] != "Fake" && sysName == "Fake") histPostfix = "histo_"+bkgNames[i];
                 if(bkgTypes[i] == "Fake" && sysName != "Fake") histPostfix = "histo_"+bkgNames[i];
                 htemp = getRawHist(var, filePath, dirName, histPostfix, "h"+bkgNames[i], steering, useAxis, divBinWidth);
@@ -1142,6 +1298,10 @@ void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THSta
             else
             {
                 TString histPostfix = "histo_"+bkgNames[i] + "_" + sysName;
+                if(sysName.Contains("LepMom"))
+                {
+                    histPostfix = "histo_"+bkgNames[i]; 
+                }
                 if(bkgTypes[i] != "Fake" && sysName == "Fake") histPostfix = "histo_"+bkgNames[i];
                 if(bkgTypes[i] == "Fake" && sysName != "Fake") histPostfix = "histo_"+bkgNames[i];
                 htemp->Add(getRawHist(var, filePath, dirName, histPostfix, "h"+bkgNames[i], steering, useAxis, divBinWidth));

@@ -82,8 +82,17 @@ class ISRAnalysis:
                 inputHistName = "histo_DYJetsToMuMu"
         
         if useUnfoldOut == False:
-            self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
-            self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+            # TODO If sysPostfix is "Nominal", then use self.inHistDic[self.matrix_filekey], self.matrix_dirPath
+            if "LepMom" in sysName :
+                if sysPostfix == "Nominal" :
+                    self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+                    self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+                else :
+                    self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist_lepScale'], dirName+"_"+sysPostfix, inputHistName, isSys, sysName, sysPostfix)
+                    self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist_lepScale'], dirName+"_"+sysPostfix, inputHistName, isSys, sysName, sysPostfix)
+            else :
+                self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+                self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
         else:
             # Let's set systematic input histograms also!
             self.unfold.setUnfInput(unfoldObj, "Pt", False, "", 0)
@@ -94,15 +103,22 @@ class ISRAnalysis:
         fakeList = {"DYJets": "DY", self.dy10to50HistName:"DY"}
         
         for fake in fakeList.items():
-            self.unfold.subBkgs(self.inHistDic['matrix'], fake, isSys, self.binDef, "detector_level_DY_Fake", systName, sysPostfix)
+            # TODO If sysPostfix is "Nominal", then use self.inHistDic[self.matrix_filekey], self.matrix_dirPath
+            if "LepMom" in systName :
+                if sysPostfix == "Nominal" : 
+                    self.unfold.subBkgs(self.inHistDic['matrix'], fake, isSys, self.binDef, "detector_level_DY_Fake", systName, sysPostfix)
+                else :
+                    self.unfold.subBkgs(self.inHistDic['matrix_lepScale'], fake, isSys, self.binDef, "detector_level_DY_Fake_"+sysPostfix, systName, sysPostfix)
+            else :
+                self.unfold.subBkgs(self.inHistDic['matrix'], fake, isSys, self.binDef, "detector_level_DY_Fake", systName, sysPostfix)
         
     def setUnfoldBkgs(self, doSystematic = False , dirName = "Detector",systName = "nominal", sysPostfix = ""):
    
         bkgList = {}
         # 2016 데이터만 single top 샘플을 갖고 있다 
         if self.year == "2016" :
-            bkgList = {"QCD": "Fake", "WJet": "Fake",\
-            #bkgList = {"WJets_MG": "WJets",\
+            #bkgList = {"QCD": "Fake", "WJet": "Fake",\
+            bkgList = {"WJets_MG": "WJets",\
                        "WW_pythia": "EWK", "WZ_pythia": "EWK", "ZZ_pythia": "EWK", \
                        "DYJets10to50ToTauTau":"EWK", "DYJetsToTauTau":"EWK", \
                        "TTLL_powheg": "Top"} # "SingleTop_tW_top_Incl": "Top", "SingleTop_tW_antitop_Incl": "Top"}
@@ -113,19 +129,37 @@ class ISRAnalysis:
                        "TTLL_powheg": "Top"}
         
         for bkg in bkgList.items():
-            self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, self.binDef, dirName, systName, sysPostfix)
+            # TODO If sysPostfix is "Nominal", then use self.inHistDic[self.matrix_filekey], self.matrix_dirPath
+            if "LepMom" in systName :
+                if sysPostfix == "Nominal" :
+                    self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, self.binDef, dirName, systName, sysPostfix)
+                else : 
+                    self.unfold.subBkgs(self.inHistDic['hist_lepScale'], bkg, doSystematic, self.binDef, dirName+"_"+sysPostfix, systName, sysPostfix)
+            else :
+                self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, self.binDef, dirName, systName, sysPostfix)
             
     def setSystematics(self, sysName, sysHistName):
         self.unfold.setSystematics(sysName, sysHistName)
 
-        self.unfold.setSysTUnfoldDensity("Pt", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
-        self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+        if "LepMom" in sysName :
+            if sysHistName == "Nominal" :
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+            else :
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["matrix_lepScale"], self.matrix_dirPath+"_"+sysHistName, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["matrix_lepScale"], self.matrix_dirPath+"_"+sysHistName, self.matrix_histName, sysName, sysHistName, self.binDef)
+        else :
+            self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+            self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
 
     def getSystematics(self):
         self.unfold.printSystematics()
 
     def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
-        self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth)
+        if "LepMom" in sysName :
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_lepScale'])
+        else : 
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth)
 
     def drawUnfPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
         self.unfold.drawUnfoldedHists(var, steering, useAxis, sysName, outName, massBin, binWidth)
