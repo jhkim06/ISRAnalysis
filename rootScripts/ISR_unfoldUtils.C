@@ -971,6 +971,8 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
 TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, TString sysFilePath)
 {
 
+    TH1* sysBand_ratio = NULL;
+
     if(sysFilePath != "")
     {
         filePath = sysFilePath;
@@ -984,152 +986,119 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
         DYHistName_  = "histo_DYJetsToEE";
     }
 
-    // Notice this is for MC uncertainty
-    TH1* hSYS_up = NULL;
-    TH1* hMCtotal_up = NULL;
-    TH1* hRatio_up = NULL;
+    int variationSize = sysMap[sysName].size();
 
-    TH1* hSYS_down = NULL;
-    TH1* hMCtotal_down = NULL;
-    TH1* hRatio_down = NULL;
-
-    // TODO check size of sysMap[sysName]
-    //
-    // Notice that this is for up/down sytematic
-    // Dummy THStack, TLegend
-    THStack* hsMC_up;
-    THStack* hsMC_down;
-    TLegend* leg = new TLegend(0.6, 0.7, 0.9, 0.9,"","brNDC");;
-    hsMC_up = new THStack("hsMC_up", "hsMC_up");
-    hsMC_down = new THStack("hsMC_down", "hsMC_down");
-
-    TString tempHistName = DYHistName_;
-    TString tempDirName = dirName;
-    TString tempNewHistName = "Signal"+sysMap[sysName][0];
-
-    if(forMC)
+    for(int ith = 0; ith < variationSize; ith++)
     {
-        if(!sysName.Contains("LepMom"))
-        {
-            tempHistName = DYHistName_ + "_" + sysMap[sysName][0]; 
-        }
-        else
-        {
-            tempDirName = dirName + "_" + sysMap[sysName][0]; 
-        }
-    }
-    else
-    {
-        tempHistName = dataHistName_; 
-        if(sysName.Contains("LepMom")) 
-        {
-            tempDirName = dirName + "_" + sysMap[sysName][0]; 
-            tempNewHistName = "Data"+sysMap[sysName][0]; 
-        }
-    }
+        TH1* hSYS_temp = NULL; // This could be data or MC systematic variation
+        TH1* hMCtotal_temp = NULL;
+        TH1* hRatio_temp = NULL;
 
-    hSYS_up = getRawHist(var, filePath, tempDirName, tempHistName, tempNewHistName, steering, useAxis, divBinWidth);
-    hMCtotal_up = (TH1*) hSYS_up->Clone("hMCtotal_up");
-    hRatio_up = (TH1*) hData->Clone("hRatio_up");
-    if(forMC)
-        hRatio_up = (TH1*) hData->Clone("hRatio_up");
-    else
-        hRatio_up = (TH1*) hSYS_up->Clone("hRatio_up");
+        // Dummy THStack, TLegend
+        THStack* hsMC_temp;
+        TLegend* leg = new TLegend(0.6, 0.7, 0.9, 0.9,"","brNDC");;
+        hsMC_temp = new THStack("hsMC_temp", "hsMC_temp");
 
-    if(forMC) setTHStack(var, filePath, tempDirName, *hsMC_up, *hMCtotal_up, *leg, steering, useAxis, sysMap[sysName][0], divBinWidth);
-
-    tempNewHistName = "Signal"+sysMap[sysName][1];
-    if(forMC)
-    {
-        if(!sysName.Contains("LepMom"))
-        {
-            tempHistName = DYHistName_ + "_" + sysMap[sysName][1]; 
-        }
-        else
-        {
-            tempDirName = dirName + "_" + sysMap[sysName][1]; 
-        }
-    }
-    else
-    {
-        tempHistName = dataHistName_; 
-        if(sysName.Contains("LepMom")) 
-        {
-            tempDirName = dirName + "_" + sysMap[sysName][1]; 
-            tempNewHistName = "Data"+sysMap[sysName][1]; 
-        }
-    }
-
-
-    if(sysMap[sysName][1] != "Nominal")
-    {
-        hSYS_down = getRawHist(var, filePath, tempDirName, tempHistName , tempNewHistName, steering, useAxis, divBinWidth);
-        hMCtotal_down = (TH1*) hSYS_down->Clone("hMCtotal_down");
-        if(forMC)
-        {
-            hRatio_down = (TH1*) hData->Clone("hRatio_down");
-        }
-        else
-        {
-            hRatio_down = (TH1*) hSYS_down->Clone("hRatio_down");
-        }
-        if(forMC) setTHStack(var, filePath, tempDirName, *hsMC_down, *hMCtotal_down, *leg, steering, useAxis, sysMap[sysName][1], divBinWidth);
+        TString tempHistName = DYHistName_;
+        TString tempDirName = dirName;
+        TString tempNewHistName = "Signal"+sysMap[sysName][ith];
 
         if(forMC)
         {
-            delete hsMC_up;
-            delete hsMC_down;   
-            delete leg;
+            if(!sysName.Contains("LepMom"))
+            {
+                tempHistName = DYHistName_ + "_" + sysMap[sysName][ith]; 
+            }
+            else
+            {
+                tempDirName = dirName + "_" + sysMap[sysName][ith]; 
+            }
         }
-    }
-    else
-    {
+        else
+        {
+            tempHistName = dataHistName_; 
+            if(sysName.Contains("LepMom")) 
+            {
+                tempDirName = dirName + "_" + sysMap[sysName][ith]; 
+                tempNewHistName = "Data"+sysMap[sysName][ith]; 
+            }
+        }
+
+        if(sysMap[sysName][ith] != "Nominal")
+        {
+            hSYS_temp = getRawHist(var, filePath, tempDirName, tempHistName, tempNewHistName, steering, useAxis, divBinWidth);
+            hMCtotal_temp = (TH1*) hSYS_temp->Clone("hMCtotal_temp");
+            hRatio_temp = (TH1*) hData->Clone("hRatio_temp");
+
+            if(forMC)
+                hRatio_temp = (TH1*) hData->Clone("hRatio_temp");
+            else
+                hRatio_temp = (TH1*) hSYS_temp->Clone("hRatio_temp");
+
+            if(forMC)
+            {
+                setTHStack(var, filePath, tempDirName, *hsMC_temp, *hMCtotal_temp, *leg, steering, useAxis, sysMap[sysName][ith], divBinWidth);
+                delete hsMC_temp;
+                delete leg;
+            }
+        }
+        else
+        {
+            if(forMC)
+            {
+                hRatio_temp = (TH1*) hData->Clone("hRatio_down");
+            }
+            else
+            {
+                hRatio_temp = (TH1*) hData->Clone("hRatio_down"); 
+            }   
+            if(forMC) 
+            {
+                hMCtotal_temp = (TH1*) hMCtotal->Clone("hMCtotal_down"); 
+            }
+        }
+
+        // Set systematic band
+        
+        // Create histogram 
         if(forMC)
         {
-            hRatio_down = (TH1*) hData->Clone("hRatio_down");
+            hRatio_temp->Divide(hMCtotal_temp);
+            if(ith==0) sysBand_ratio = (TH1*)hRatio_temp->Clone("sysBand_ratio"+sysName);
         }
         else
         {
-            hRatio_down = (TH1*) hData->Clone("hRatio_down"); 
-        }   
-        if(forMC) 
-        {
-            hMCtotal_down = (TH1*) hMCtotal->Clone("hMCtotal_down"); 
+            hRatio_temp->Divide(hMCtotal);
+            if(ith==0) sysBand_ratio = (TH1*)hRatio_temp->Clone("sysBand_ratio"+sysName);
         }
-    }
 
-    // Set systematic band
-    TH1* sysBand_ratio = NULL;
-    if(forMC)
-    {
-        hRatio_up->Divide(hMCtotal_up);
-        hRatio_down->Divide(hMCtotal_down);
-        sysBand_ratio = (TH1*)hRatio_up->Clone("sysBand_ratio");
-    }
-    else
-    {
-        hRatio_up->Divide(hMCtotal);
-        hRatio_down->Divide(hMCtotal);
-        sysBand_ratio = (TH1*)hRatio_up->Clone("sysBand_ratio");
-    }
+        // Update error
+        for(int ibin = 1; ibin < sysBand_ratio->GetNbinsX()+1; ibin++)
+        {
+            double delta = fabs(hRatio_temp->GetBinContent(ibin) - hRatio->GetBinContent(ibin));
+            if(ith != 0)
+            {
+                delta = delta > sysBand_ratio->GetBinError(ibin) ? delta : sysBand_ratio->GetBinError(ibin);
+            }
 
-    for(int ibin = 1; ibin < sysBand_ratio->GetNbinsX()+1; ibin++)
-    {
-        double delta = fabs(hRatio_up->GetBinContent(ibin) - hRatio_down->GetBinContent(ibin));
-        if(delta < 1e-5)
-            sysBand_ratio->SetBinError(ibin, 1e-5);
-        else
-            sysBand_ratio->SetBinError(ibin, delta);
-    
-        if(forMC)
-        {
-            sysBand_ratio->SetBinContent(ibin, 1.);
+            if(delta < 1e-5)
+                sysBand_ratio->SetBinError(ibin, 1e-5);
+            else
+                sysBand_ratio->SetBinError(ibin, delta);
+        
+            if(forMC)
+            {
+                sysBand_ratio->SetBinContent(ibin, 1.);
+            }
+            else
+            {
+                sysBand_ratio->SetBinContent(ibin, hRatio->GetBinContent(ibin));
+            }
         }
-        else
-        {
-            sysBand_ratio->SetBinContent(ibin, hRatio->GetBinContent(ibin));
-            //cout << ibin << " bin, " << hRatio->GetBinContent(ibin) << " err: " << delta << endl; 
-        }
+
+        delete hSYS_temp; // This could be data or MC systematic variation
+        delete hMCtotal_temp;
+        delete hRatio_temp;
     }
 
     //sysRelPtHist_detector[sysName] = sysBand_ratio; 
