@@ -176,6 +176,10 @@ class ISRAnalysis:
         self.nMassBins = self.unfold.setMeanMass()
         self.unfold.setMeanPt()
 
+    def setAcceptMeanValues(self):
+        self.unfold.setMeanPt_Accept()
+        self.unfold.setMeanMass_Accept()
+
     def setSysMeanValues(self):
         self.unfold.setSysMeanMass()
         self.unfold.setSysMeanPt()
@@ -198,8 +202,14 @@ class ISRAnalysis:
         for ibin in range(self.nMassBins): 
             self.unfold.drawStatVariation(isPt, ibin)
 
+    def doAcceptance(self) :
+        self.unfold.doAcceptCorr(self.inHistDic['hist_accept'], self.binDef)
+
+    def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False): 
+        self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
+
     # Get histograms
-    def getPtVsMassTGraph(self, grTitle = "", isUnfolded = True, doSys = False):
+    def getPtVsMassTGraph(self, grTitle = "", isUnfolded = True, isAccepted = False, doSys = False):
         meanMass, meanPt = array('d'), array('d')
         meanMassStatErr, meanPtStatErr = array('d'), array('d')
         meanMassSysErr, meanPtSysErr = array('d'), array('d')
@@ -214,6 +224,12 @@ class ISRAnalysis:
                 if doSys :
                     meanMassSysErr.append(self.unfold.getUnfMeanMassSysError(ibin))
                     meanPtSysErr.append(self.unfold.getUnfMeanPtSysError(ibin))
+            elif isAccepted:
+                meanMass.append(self.unfold.getAccMeanMass(ibin))
+                meanPt.append(self.unfold.getAccMeanPt(ibin))
+                meanMassStatErr.append(self.unfold.getAccMeanMassError(ibin))
+                meanPtStatErr.append(self.unfold.getAccMeanPtError(ibin))
+
             else:
                 meanMass.append(self.unfold.getDetMeanMass(ibin))
                 meanPt.append(self.unfold.getDetMeanPt(ibin))

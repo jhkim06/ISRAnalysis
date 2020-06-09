@@ -342,7 +342,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirN
 {
     TFile* filein = new TFile(filepath);
     TH2* hmcGenRec = NULL;
-    
+
     if(sysName == "Fake")
     {
         hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec");
@@ -693,8 +693,8 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     // TODO Save systematic histograms
     TH1* sysBand_ratio_forData = NULL;
     TH1* sysBand_ratio_forMC = NULL;
-    TLegend* leg_sys = NULL; 
-    if(sysName != "") 
+    TLegend* leg_sys = NULL;
+    if(sysName != "")
     {
         leg_sys = new TLegend(0.7, 0.75, 0.95, 0.85,"","brNDC");
 
@@ -872,8 +872,8 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     hRatio->Draw("p9histe same");
     TH1* sysBand_ratio_forData = NULL;
     TH1* sysBand_ratio_forMC = NULL;
-    TLegend* leg_sys = NULL; 
-    if(sysName != "") 
+    TLegend* leg_sys = NULL;
+    if(sysName != "")
     {
         leg_sys = new TLegend(0.7, 0.75, 0.95, 0.85,"","brNDC");
 
@@ -910,6 +910,130 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     return c_out;
 }
 
+TCanvas* ISRUnfold::drawAcceptCorrHists(TString var, TString filePath, TString binDef, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth)
+{
+    setTDRStyle();
+    writeExtraText = true;
+    extraText  = "Work in progress";
+    gStyle->SetLineWidth(3.);
+    gStyle->SetFrameLineWidth(3.);
+    gROOT->ForceStyle();
+
+    TH1::AddDirectory(kFALSE);
+    cout << "ISRUnfold::drawFoldedHists, Draw plot!" << endl;
+
+    TFile* filein = new TFile(filePath);
+
+    TH1* hData = NULL;
+    TH1* hDY_raw = NULL;
+    TH1* hDY = NULL;
+    TH1* hRatio = NULL;
+
+    if(var.Contains("Pt"))
+    {
+        hData = pt_binning_Gen->ExtractHistogram("hData", hFullPhasePtData, 0, useAxis, steering);
+        hDY_raw = (TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets");
+        hDY_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50"));
+        hDY = pt_binning_Gen->ExtractHistogram("hDY", hDY_raw, 0, useAxis, steering);
+    }
+    else
+    {
+        hData = mass_binning_Gen->ExtractHistogram("hData", hFullPhaseMassData, 0, useAxis, steering);
+        hDY_raw = (TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets");
+        hDY_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50"));
+        hDY = mass_binning_Gen->ExtractHistogram("hDY", hDY_raw, 0, useAxis, steering);
+    }
+    if(divBinWidth)
+    {
+        divideByBinWidth(hData, false);
+        divideByBinWidth(hDY, false);
+    }
+    hRatio = (TH1*) hData->Clone("hRatio");
+
+    TCanvas* c_out = new TCanvas("acceptance_corrected_"+var, "acceptance_corrected_"+var, 3200, 2800);
+    c_out->Draw();
+    c_out->cd();
+
+    TPad *pad1 = new TPad("pad1","pad1",0,0.3,1,1);
+    pad1->SetBottomMargin(0.01);
+    pad1->SetTopMargin(0.1);
+    pad1->SetTicks(1);
+    pad1->SetLogy();
+    if(var.Contains("Mass"))
+        pad1->SetLogx();
+    pad1->Draw();
+    pad1->cd();
+
+    hData->SetTitle("");
+    hData->SetStats(false);
+    hData->GetXaxis()->SetMoreLogLabels(true);
+    hData->Draw("p9histe");
+    hData->SetMarkerStyle(20);
+    hData->SetMarkerSize(3.2);
+    hData->SetLineColor(kBlack);
+    hData->GetYaxis()->SetTitle("Events/Bin");
+    hData->SetMaximum(5e9);
+    hData->SetMinimum(2e-1);
+
+    hDY->SetFillColor(kYellow);
+    hDY->Draw("hist same");
+
+    TLegend* leg = new TLegend(0.6, 0.7, 0.9, 0.9,"","brNDC");
+    //leg->SetNColumns(2);
+    leg->SetTextFont(43);
+    leg->SetTextSize(80);
+    leg->SetFillStyle(0); // transparent
+    leg->SetBorderSize(0);
+    leg->AddEntry(hData, "Unfolded data", "pe");
+    leg->AddEntry(hDY, "Drell-Yan (MG5_aMC@NLO)", "F");
+
+    hData->Draw("p9histe same");
+    pad1->RedrawAxis();
+
+    leg->Draw();
+
+    int iPeriod_ = 4;
+    if(year == 2017)
+        iPeriod_ = 5;
+    if(year == 2018)
+        iPeriod_ = 6;
+    CMS_lumi(pad1, iPeriod_, 11);
+
+    c_out->cd();
+
+    TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.3);
+    pad2->SetTopMargin(0.05);
+    pad2->SetBottomMargin(0.35);
+    if(var=="Mass")
+    {
+        pad2->SetLogx();
+        hRatio->GetXaxis()->SetMoreLogLabels(true);
+    }
+    pad2->SetTicks(1);
+    pad2->SetGridy(1);
+    pad2->Draw();
+    pad2->cd();
+
+    hRatio->SetStats(false);
+    hRatio->Divide(hDY);
+    hRatio->Draw("p9histe");
+    hRatio->SetMarkerStyle(20);
+    hRatio->SetMarkerSize(3.2);
+    hRatio->SetLineColor(kBlack);
+    hRatio->GetYaxis()->SetTitle("Unfolded/MC");
+
+    hRatio->SetMinimum(0.7);
+    hRatio->SetMaximum(1.3);
+
+    setXaxisTitle(hRatio, var, useAxis);
+
+    hRatio->Draw("p9histe same");
+
+    c_out->cd();
+    c_out->SaveAs(outName!=""?outName+".png":"acceptance_"+var+".png");
+    return c_out;
+}
+
 TH1* ISRUnfold::getUnfoldedSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC)
 {
     TH1* sysBand_ratio = NULL;
@@ -918,25 +1042,25 @@ TH1* ISRUnfold::getUnfoldedSystematicBand(TString var, TString steering, bool us
     for(int ith = 0; ith < variationSize; ith++)
     {
         TH1* hSYS_temp = NULL;
-        TH1* hRatio_temp = NULL; 
+        TH1* hRatio_temp = NULL;
 
         if(var.Contains("Pt"))
         {
             if(forMC)
                 hSYS_temp = sysPtUnfold[sysName][sysMap[sysName][ith]]->GetBias("hDYMCPt_temp",0,0,steering,useAxis);
             else
-                hSYS_temp = sysPtUnfold[sysName][sysMap[sysName][ith]]->GetOutput("hUnfoldedPt_temp",0,0,steering,useAxis); 
+                hSYS_temp = sysPtUnfold[sysName][sysMap[sysName][ith]]->GetOutput("hUnfoldedPt_temp",0,0,steering,useAxis);
         }
         else
         {
             if(forMC)
                 hSYS_temp = sysMassUnfold[sysName][sysMap[sysName][ith]]->GetBias("hDYMCMass_temp",0,0,steering,useAxis);
             else
-                hSYS_temp = sysMassUnfold[sysName][sysMap[sysName][ith]]->GetOutput("hUnfoldedMass_temp",0,0,steering,useAxis); 
+                hSYS_temp = sysMassUnfold[sysName][sysMap[sysName][ith]]->GetOutput("hUnfoldedMass_temp",0,0,steering,useAxis);
         }
         if(divBinWidth)
         {
-            divideByBinWidth(hSYS_temp, false); 
+            divideByBinWidth(hSYS_temp, false);
         }
 
         if(forMC)
@@ -964,7 +1088,7 @@ TH1* ISRUnfold::getUnfoldedSystematicBand(TString var, TString steering, bool us
                 sysBand_ratio->SetBinError(ibin, 1e-5);
             else
                 sysBand_ratio->SetBinError(ibin, delta);
-        
+
             if(forMC)
             {
                 sysBand_ratio->SetBinContent(ibin, 1.);
@@ -977,7 +1101,7 @@ TH1* ISRUnfold::getUnfoldedSystematicBand(TString var, TString steering, bool us
 
         delete hSYS_temp; // This could be data or MC systematic variation
         delete hRatio_temp;
-    }   
+    }
 
     return sysBand_ratio;
 }
@@ -1021,20 +1145,20 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
         {
             if(!sysName.Contains("LepMom"))
             {
-                tempHistName = DYHistName_ + "_" + sysMap[sysName][ith]; 
+                tempHistName = DYHistName_ + "_" + sysMap[sysName][ith];
             }
             else
             {
-                tempDirName = dirName + "_" + sysMap[sysName][ith]; 
+                tempDirName = dirName + "_" + sysMap[sysName][ith];
             }
         }
         else
         {
-            tempHistName = dataHistName_; 
-            if(sysName.Contains("LepMom")) 
+            tempHistName = dataHistName_;
+            if(sysName.Contains("LepMom"))
             {
-                tempDirName = dirName + "_" + sysMap[sysName][ith]; 
-                tempNewHistName = "Data"+sysMap[sysName][ith]; 
+                tempDirName = dirName + "_" + sysMap[sysName][ith];
+                tempNewHistName = "Data"+sysMap[sysName][ith];
             }
         }
 
@@ -1064,17 +1188,17 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
             }
             else
             {
-                hRatio_temp = (TH1*) hData->Clone("hRatio_down"); 
-            }   
-            if(forMC) 
+                hRatio_temp = (TH1*) hData->Clone("hRatio_down");
+            }
+            if(forMC)
             {
-                hMCtotal_temp = (TH1*) hMCtotal->Clone("hMCtotal_down"); 
+                hMCtotal_temp = (TH1*) hMCtotal->Clone("hMCtotal_down");
             }
         }
 
         // Set systematic band
-        
-        // Create histogram 
+
+        // Create histogram
         if(forMC)
         {
             hRatio_temp->Divide(hMCtotal_temp);
@@ -1099,7 +1223,7 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
                 sysBand_ratio->SetBinError(ibin, 1e-5);
             else
                 sysBand_ratio->SetBinError(ibin, delta);
-        
+
             if(forMC)
             {
                 sysBand_ratio->SetBinContent(ibin, 1.);
@@ -1115,7 +1239,7 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
         delete hRatio_temp;
     }
 
-    //sysRelPtHist_detector[sysName] = sysBand_ratio; 
+    //sysRelPtHist_detector[sysName] = sysBand_ratio;
     return sysBand_ratio;
 }
 
@@ -1263,7 +1387,7 @@ void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THSta
                 TString histPostfix = "histo_"+bkgNames[i] + "_" + sysName;
                 if(sysName.Contains("LepMom"))
                 {
-                    histPostfix = "histo_"+bkgNames[i]; 
+                    histPostfix = "histo_"+bkgNames[i];
                 }
                 if(bkgTypes[i] != "Fake" && sysName == "Fake") histPostfix = "histo_"+bkgNames[i];
                 if(bkgTypes[i] == "Fake" && sysName != "Fake") histPostfix = "histo_"+bkgNames[i];
@@ -1283,7 +1407,7 @@ void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THSta
                 TString histPostfix = "histo_"+bkgNames[i] + "_" + sysName;
                 if(sysName.Contains("LepMom"))
                 {
-                    histPostfix = "histo_"+bkgNames[i]; 
+                    histPostfix = "histo_"+bkgNames[i];
                 }
                 if(bkgTypes[i] != "Fake" && sysName == "Fake") histPostfix = "histo_"+bkgNames[i];
                 if(bkgTypes[i] == "Fake" && sysName != "Fake") histPostfix = "histo_"+bkgNames[i];
@@ -1369,7 +1493,8 @@ void ISRUnfold::doStatUnfold()
     }
 }
 
-void ISRUnfold::doISRUnfold(bool doSys){
+void ISRUnfold::doISRUnfold(bool doSys)
+{
 
     //double tauMin=1.e-4;
     //double tauMax=1.e-3;
@@ -1432,6 +1557,78 @@ void ISRUnfold::doISRUnfold(bool doSys){
 
 }
 
+void ISRUnfold::doAcceptCorr(TString filePath, TString binDef)
+{
+    TFile* filein = new TFile(filePath);
+
+    TH1* hFullPhaseMassMC_raw = NULL;
+    TH1* hFiducialPhaseMassMC = NULL;
+    TH1* hFullPhasePtMC_raw = NULL;
+    TH1* hFiducialPhasePtMC = NULL;
+
+    // Mass
+    hFullPhaseMassMC_raw = (TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets");
+    hFullPhaseMassMC_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50"));
+
+    hFiducialPhaseMassMC = nomMassUnfold->GetBias("hFiducialMass", 0, 0, "*[*]", false);
+    hAcceptanceMass = (TH1*) hFullPhaseMassMC_raw->Clone("hAcceptanceMass");
+    hAcceptanceMass->Divide(hFiducialPhaseMassMC);
+
+    hFullPhaseMassData = nomMassUnfold->GetOutput("hFullPhaseMassData",0,0, "*[*]", false);
+    hFullPhaseMassData->Multiply(hAcceptanceMass);
+
+    // Pt
+    hFullPhasePtMC_raw = (TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets");
+    hFullPhasePtMC_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50"));
+
+    hFiducialPhasePtMC = nomPtUnfold->GetBias("hFiducialPt", 0, 0, "*[*]", false);
+    hAcceptancePt = (TH1*) hFullPhasePtMC_raw->Clone("hAcceptancePt");
+    hAcceptancePt->Divide(hFiducialPhasePtMC);
+
+    hFullPhasePtData = nomPtUnfold->GetOutput("hFullPhasePtData",0,0, "*[*]", false);
+    hFullPhasePtData->Multiply(hAcceptancePt);
+}
+
+void ISRUnfold::setMeanMass_Accept()
+{
+
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+    const Double_t* massBins = temp_tvecd->GetMatrixArray();
+
+    TH1* hAccept_corr_mass = mass_binning_Gen->ExtractHistogram("hData_accept", hFullPhaseMassData, 0, kTRUE, "mass[UO];pt[UOC0]");
+    for(int ibin = 0; ibin < nMassBin; ibin++)
+    {
+        hAccept_corr_mass->GetXaxis()->SetRange(hAccept_corr_mass->GetXaxis()->FindBin(massBins[ibin]+0.01), hAccept_corr_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+
+        meanMass_data_acc_corrected. push_back(hAccept_corr_mass->GetMean());
+        meanMassStatErr_data_acc_corrected.push_back(hAccept_corr_mass->GetMeanError());
+    }
+
+    delete hAccept_corr_mass;
+}
+
+void ISRUnfold::setMeanPt_Accept()
+{
+
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+
+    for(int i = 0; i < nMassBin; i++)
+    {
+        TString ibinMass;
+        ibinMass.Form("%d", i);
+
+        TH1* hAccept_corr_pt = pt_binning_Gen->ExtractHistogram("hData_accept", hFullPhasePtData, 0, kTRUE, "pt[UO];mass[UOC"+ibinMass+"]");
+
+        //cout << "Detector, " << i << " th mass bin, mean: " << hdetector_data->GetMean() << " +/- " << hdetector_data->GetMeanError() << endl;
+        meanPt_data_acc_corrected.push_back(hAccept_corr_pt->GetMean());
+        meanPtStatErr_data_acc_corrected.push_back(hAccept_corr_pt->GetMeanError());
+
+        delete hAccept_corr_pt;
+    }
+}
+
 int ISRUnfold::setMeanMass()
 {
     cout << "ISRUnfold::setMeanMass()   Save mean of dilepton..." << endl;
@@ -1455,7 +1652,6 @@ int ISRUnfold::setMeanMass()
         hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(massBins[ibin]+0.01), hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
         hMC_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(massBins[ibin]+0.01), hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
 
-        {
             // Get mean values
             //cout << "Detector, " << ibin << " th mass bin, mean: " << hdetector_mass->GetMean() << " +/- " << hdetector_mass->GetMeanError() << endl;
             meanMass_data_folded. push_back(hdetector_mass->GetMean());
@@ -1468,7 +1664,6 @@ int ISRUnfold::setMeanMass()
             //cout << "MC, " << ibin << " th mass bin, mean: " << hMC_mass->GetMean() << " +/- " << hMC_mass->GetMeanError() << endl;
             meanMass_mc_unfoled.   push_back(hMC_mass->GetMean());
             meanMassStatErr_mc_unfoled.push_back(hMC_mass->GetMeanError());
-        }
 
     }// End of mass bin loop
 
@@ -1632,7 +1827,6 @@ double ISRUnfold::getUnfMeanMass(int ibin)
     }
 }
 
-
 double ISRUnfold::getUnfMeanMassError(int ibin)
 {
 
@@ -1658,6 +1852,34 @@ double ISRUnfold::getUnfMeanMassSysError(int ibin)
     else
     {
         return meanMassSysErr_data_unfoled.at(ibin);
+    }
+}
+
+double ISRUnfold::getAccMeanMass(int ibin)
+{
+
+    int size = meanMass_data_unfoled.size();
+    if(ibin >= size)
+    {
+        exit (EXIT_FAILURE);
+    }
+    else
+    {
+        return meanMass_data_acc_corrected.at(ibin);
+    }
+}
+
+double ISRUnfold::getAccMeanMassError(int ibin)
+{
+
+    int size = meanMassStatErr_data_unfoled.size();
+    if(ibin >= size)
+    {
+        exit (EXIT_FAILURE);
+    }
+    else
+    {
+        return meanMassStatErr_data_acc_corrected.at(ibin);
     }
 }
 
@@ -1886,6 +2108,34 @@ double ISRUnfold::getUnfMeanPtSysError(int ibin)
     else
     {
         return meanPtSysErr_data_unfoled.at(ibin);
+    }
+}
+
+double ISRUnfold::getAccMeanPt(int ibin)
+{
+
+    int size = meanPt_data_unfoled.size();
+    if(ibin >= size)
+    {
+        exit (EXIT_FAILURE);
+    }
+    else
+    {
+        return meanPt_data_acc_corrected.at(ibin);
+    }
+}
+
+double ISRUnfold::getAccMeanPtError(int ibin)
+{
+
+    int size = meanPtStatErr_data_unfoled.size();
+    if(ibin >= size)
+    {
+        exit (EXIT_FAILURE);
+    }
+    else
+    {
+        return meanPtStatErr_data_acc_corrected.at(ibin);
     }
 }
 

@@ -59,6 +59,7 @@ private:
     std::map<TString, TH1*> sysAbsPtHist_detector;
     std::map<TString, TH1*> sysRelPtHist_detector;
 
+    // Unfolding
     // For nominal results
     TUnfoldDensityV17* nomPtUnfold;
     TUnfoldDensityV17* nomMassUnfold;
@@ -75,7 +76,7 @@ private:
     std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysPtUnfold;
     std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysMassUnfold;
     
-    /*------------------------- Results: mean values ----------------------------------*/ 
+    /*------------------------------------------------------------------------------------- Results: mean values ---------------------------------------------------------------------------------------*/ 
     // Folded level: from TUnfoldDensity (mean from the binned histogram) 
     vector<Double_t> meanMass_data_folded, meanMassStatErr_data_folded, meanMassSysErr_data_folded, meanMassTotErr_data_folded;
     vector<Double_t> meanPt_data_folded,   meanPtStatErr_data_folded,   meanPtSysErr_data_folded, meanPtTotErr_data_folded;
@@ -97,8 +98,18 @@ private:
 
     std::map<TString, vector<double>> meanMass_data_folded_systematic;
     std::map<TString, vector<double>> meanPt_data_folded_systematic;
-    /*---------------------------------------------------------------------------------*/
+    /*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
    
+    // Acceptance correction
+    TH1* hFullPhaseMassData; // data after acceptance correction 
+    TH1* hFullPhasePtData;  
+
+    TH1* hAcceptanceMass;  
+    TH1* hAcceptancePt;  
+
+    vector<Double_t> meanMass_data_acc_corrected, meanMassStatErr_data_acc_corrected, meanMassSysErr_data_acc_corrected, meanMassTotErr_data_acc_corrected;
+    vector<Double_t> meanPt_data_acc_corrected,   meanPtStatErr_data_acc_corrected,   meanPtSysErr_data_acc_corrected, meanPtTotErr_data_acc_corrected;
+
     Int_t nScan;
     TSpline *rhoLogTau;
     TGraph *lCurve;
@@ -209,6 +220,9 @@ public:
     void setSysError();
     void setTotSysError();
 
+    void doAcceptCorr(TString filePath, TString binDef);
+    TCanvas* drawAcceptCorrHists(TString var, TString filePath, TString binDef, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth); 
+
     // Get histograms
     TH1* getDetUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
     TH1* getMCHists(TString var, TString outHistName, TString steering, bool useAxis = true);
@@ -221,6 +235,8 @@ public:
 
     int setMeanPt();
     int setMeanMass();
+    void setMeanPt_Accept();
+    void setMeanMass_Accept();
     int setSysMeanPt();
     int setSysMeanMass();
 
@@ -238,6 +254,10 @@ public:
     double getUnfMeanMassError(int ibin);
     double getUnfMeanPtSysError(int ibin);
     double getUnfMeanMassSysError(int ibin);
+    double getAccMeanPt(int ibin);
+    double getAccMeanPtError(int ibin);
+    double getAccMeanMass(int ibin);
+    double getAccMeanMassError(int ibin);
 
     double getMCGenMeanMass(int ibin);
     double getMCGenMeanPt(int ibin);
