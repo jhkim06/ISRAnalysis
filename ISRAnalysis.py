@@ -97,10 +97,14 @@ class ISRAnalysis:
             # Let's set systematic input histograms also!
             self.unfold.setUnfInput(unfoldObj, "Pt", False, "", 0)
             self.unfold.setUnfInput(unfoldObj, "Mass", False, "", 0)
+
+    def setFromPreviousUnfold(self, unfoldObj) :
+        self.unfold.setFromPrevUnfResult(unfoldObj)
             
     def subFake(self, isSys = False, systName = "nominal", sysPostfix = ""):
             
         fakeList = {"DYJets": "DY", self.dy10to50HistName:"DY"}
+        #fakeList = {"ZToEE_M_50_120_powheg": "DY", "ZToEE_M_120_200_powheg":"DY", "ZToEE_M_200_400_powheg":"DY", "DYJets10to50_MG":"DY"}
         
         for fake in fakeList.items():
             # TODO If sysPostfix is "Nominal", then use self.inHistDic[self.matrix_filekey], self.matrix_dirPath
@@ -184,14 +188,24 @@ class ISRAnalysis:
         self.unfold.setSysMeanMass()
         self.unfold.setSysMeanPt()
 
+    def setAcceptSysMeanValues(self):
+        self.unfold.setSysMeanMass_Accept()
+        self.unfold.setSysMeanPt_Accept()
+
     def setStatError(self):
         self.unfold.setStatError()
 
     def setSysError(self):
         self.unfold.setSysError()
 
+    def setAcceptSysError(self):
+        self.unfold.setSysError_Accept()
+
     def setTotSysError(self):
         self.unfold.setTotSysError()
+
+    def setAcceptTotSysError(self):
+        self.unfold.setTotSysError_Accept()
     
     def getISRUnfold(self):
         
@@ -202,8 +216,9 @@ class ISRAnalysis:
         for ibin in range(self.nMassBins): 
             self.unfold.drawStatVariation(isPt, ibin)
 
-    def doAcceptance(self) :
-        self.unfold.doAcceptCorr(self.inHistDic['hist_accept'], self.binDef)
+    def doAcceptance(self, doSys = False) :
+        #self.unfold.doAcceptCorr(self.inHistDic['hist_accept'], self.binDef, doSys)
+        self.unfold.doAcceptCorr(self.inHistDic['hist_accept'], "_FineCoarse", doSys)
 
     def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False): 
         self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
@@ -229,7 +244,9 @@ class ISRAnalysis:
                 meanPt.append(self.unfold.getAccMeanPt(ibin))
                 meanMassStatErr.append(self.unfold.getAccMeanMassError(ibin))
                 meanPtStatErr.append(self.unfold.getAccMeanPtError(ibin))
-
+                if doSys :
+                    meanMassSysErr.append(self.unfold.getAccMeanMassSysError(ibin))
+                    meanPtSysErr.append(self.unfold.getAccMeanPtSysError(ibin))
             else:
                 meanMass.append(self.unfold.getDetMeanMass(ibin))
                 meanPt.append(self.unfold.getDetMeanPt(ibin))

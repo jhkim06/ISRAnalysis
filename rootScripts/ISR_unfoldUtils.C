@@ -231,6 +231,7 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
     // Set response matrix
     TH2* hmcGenRec;
     hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef + "/hmc" + var + "GenRec");
+    cout << dirName + "/" + var + "_ResMatrix_" + histName + binDef + "/hmc" + var + "GenRec" << endl;
 
     if( var == "Pt" )
     {
@@ -240,6 +241,8 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
     	                                    TUnfold::kEConstraintArea,
     	                                    TUnfoldDensityV17::kDensityModeBinWidth,
     	                                    pt_binning_Gen,pt_binning_Rec);
+
+        hPtResponseM = (TH2*) hmcGenRec->Clone("hPtResponseM");
 
         // For statistical uncertainty
         if(makeStatUnfold)
@@ -264,6 +267,8 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
                                               TUnfold::kEConstraintArea,
                                               TUnfoldDensityV17::kDensityModeBinWidth,
                                               mass_binning_Gen,mass_binning_Rec);
+
+        hMassResponseM = (TH2*) hmcGenRec->Clone("hMassResponseM");
 
         // For statistical uncertainty
         if(makeStatUnfold)
@@ -311,31 +316,52 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold)
     cout << "setFromPrevUnfResult()" << endl;
     // Loop over sytematics considered in the previous unfold class
     // So first get sysMap map object
-    std::map<TString, std::vector<TString>> sysMap_ = unfold->getSystematicMap();
+    std::map<TString, std::vector<TString>> sysMap_previous = unfold->getSystematicMap();
 
-    std::map<TString, std::vector<TString>>::iterator it = sysMap_.begin();
-    while(it != sysMap_.end())
+    std::map<TString, std::vector<TString>>::iterator it = sysMap_previous.begin();
+    while(it != sysMap_previous.end())
     {
         cout << "Systematic name: " << it->first << endl;
+        
+        if(this->sysMap.find(it->first) == this->sysMap.end())
+        {
+            // Not found in this ISRUnfold class, but exits in the previous one
+            // Systematic not considered in this ISRUnfold class, create TUnfoldDensity using the default response matrix
+            int size = sysMap_previous[it->first].size();
+            for(int ith = 0; ith < size; ith++)
+            {
+                cout << "Systematic variation, " << sysMap_previous[it->first][ith] << endl;
+                this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]] = new TUnfoldDensityV17(hPtResponseM,TUnfold::kHistMapOutputHoriz,
+                                                                                                regMode, TUnfold::kEConstraintArea, TUnfoldDensityV17::kDensityModeBinWidth,
+                                                                                                pt_binning_Gen,pt_binning_Rec);
 
-        if(sysMap.find(it->first) == sysMap.end())
+                this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]] = new TUnfoldDensityV17(hMassResponseM,TUnfold::kHistMapOutputHoriz,
+                                                                                                regMode, TUnfold::kEConstraintArea, TUnfoldDensityV17::kDensityModeBinWidth,
+                                                                                                mass_binning_Gen, mass_binning_Rec);
+
+                this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedPt_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedMass_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+
+                this->sysMap[it->first].push_back(sysMap_previous[it->first][ith]);
+            }
+        } 
+        else
         {
-          // not found
-        } else
-        {
-            // found
-            sysPtUnfold[it->first][sysMap_[it->first][0]]->SetInput(unfold->sysPtUnfold[it->first][sysMap_[it->first][0]]->GetOutput("hUnfoldedPt_"+ it->first + "_" + sysMap_[it->first][0],0,0,"*[*]",false), 1.);
-            //sysMassUnfold[it->first][sysPostfix]->SetInput(unfold->getDetUnfoldedHists("Mass", "UnfoldOut_Mass_"+it->first, "*[*]", false), 1.);
-            //sysPtUnfold[sysName][sysMap[sysName][0]]->GetOutput("hUnfoldedPt_up",0,0,steering,useAxis);
+            // Found
+            // Systematic only for this ISRUnfold class
+            // Loop over systematic varations
+
+            // If previous ISRUnfold class have this systematic result, then use the output as input for this ISRUnfold class
+            int size = sysMap_previous[it->first].size();
+            for(int ith = 0; ith < size; ith++)
+            {
+                this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedPt_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedMass_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+            }
+            // Else, use the default input
         }
         it++;
     }
-
-    // Check if systematic also exist this unfold class
-    // If so, just set input
-    // If not, create TUnfoldDensity and set input
-    // Finally, update this sysMap!
-
 }
 
 void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString binDef)
@@ -878,14 +904,14 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
         leg_sys = new TLegend(0.7, 0.75, 0.95, 0.85,"","brNDC");
 
         sysBand_ratio_forData = getUnfoldedSystematicBand(var, steering, true, sysName, hData, hDY, hRatio, divBinWidth, true, false);
-        sysBand_ratio_forData->SetFillColorAlpha(kBlack,0.8);
+        sysBand_ratio_forData->SetFillColorAlpha(kBlack,0.5);
         sysBand_ratio_forMC = getUnfoldedSystematicBand(var, steering, true, sysName, hData, hDY, hRatio, divBinWidth, true, true);;
-        sysBand_ratio_forMC->SetFillColorAlpha(kRed,0.8);
+        sysBand_ratio_forMC->SetFillColorAlpha(kRed,0.5);
 
         sysBand_ratio_forData->SetFillStyle(3004);
         sysBand_ratio_forData->SetMarkerSize(0.);
         sysBand_ratio_forData->Draw("E2 same");
-        sysBand_ratio_forMC->SetFillStyle(3004);
+        sysBand_ratio_forMC->SetFillStyle(3001);
         sysBand_ratio_forMC->SetMarkerSize(0.);
         sysBand_ratio_forMC->Draw("E2 same");
 
@@ -1332,6 +1358,7 @@ void ISRUnfold::writeCutInfo(TPad* pad, TString var, int nthMassBin)
     dimass_cut.SetTextSize(40 * 2.5);
     lepton_cut.SetTextFont(43);
     lepton_cut.SetTextSize(40 * 2.5);
+
     if(var.Contains("Pt"))
     {
         dimass_cut.DrawLatexNDC(x_, y_, mass_cut_info);
@@ -1557,7 +1584,7 @@ void ISRUnfold::doISRUnfold(bool doSys)
 
 }
 
-void ISRUnfold::doAcceptCorr(TString filePath, TString binDef)
+void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys)
 {
     TFile* filein = new TFile(filePath);
 
@@ -1587,6 +1614,168 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef)
 
     hFullPhasePtData = nomPtUnfold->GetOutput("hFullPhasePtData",0,0, "*[*]", false);
     hFullPhasePtData->Multiply(hAcceptancePt);
+
+    // Draw acceptance
+    drawAcceptance("Mass", hFiducialPhaseMassMC, "");
+    drawAcceptance("Pt", hFiducialPhasePtMC, "");
+
+    if(doSys)
+    {
+        std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
+        while(it != sysMap.end())
+        {
+            int size = (it->second).size();
+            for(int i = 0; i < size; i++)
+            {
+                hSysFullPhaseMassData[it->first][(it->second).at(i)] = sysMassUnfold[it->first][(it->second).at(i)]->GetOutput("hFullPhaseMassData"+it->first+(it->second).at(i),0,0, "*[*]", false);
+                hSysFullPhasePtData[it->first][(it->second).at(i)]   = sysPtUnfold[it->first][(it->second).at(i)]->GetOutput("hFullPhasePtData"+it->first+(it->second).at(i),0,0, "*[*]", false);
+
+                // FIXME use different acceptance for PDF AlphaS Scale etc 
+                hSysFullPhaseMassData[it->first][(it->second).at(i)]->Multiply(hAcceptanceMass); 
+                hSysFullPhasePtData[it->first][(it->second).at(i)]->Multiply(hAcceptancePt); 
+            }
+            it++;
+        }
+    }
+
+    delete hFullPhaseMassMC_raw;
+    delete hFiducialPhaseMassMC;
+    delete hFullPhasePtMC_raw;  
+    delete hFiducialPhasePtMC;
+}
+
+void ISRUnfold::drawAcceptance(TString var, TH1* hMC, TString outName)
+{
+    setTDRStyle();
+    writeExtraText = true;
+    extraText  = "Simulation";
+    gStyle->SetLineWidth(3.);
+    gStyle->SetFrameLineWidth(3.);
+    gROOT->ForceStyle();
+
+    TH1* hFullPhase = NULL;
+    TH1* hFiducialPhase = NULL;
+    TH1* hAcceptance = NULL;
+
+    if(var.Contains("Mass"))
+    {
+        hFullPhase = mass_binning_Gen->ExtractHistogram("hData", hFullPhaseMassData, 0, true, "mass[UO];pt[UOC0]");
+        hFiducialPhase = mass_binning_Gen->ExtractHistogram("hData", hMC, 0, true, "mass[UO];pt[UOC0]");
+    
+        divideByBinWidth(hFullPhase, false); 
+        divideByBinWidth(hFiducialPhase, false); 
+
+        hAcceptance = (TH1*) hFiducialPhase->Clone("hAcceptance");
+        hAcceptance->Divide(hFullPhase);       
+        drawComparisonPlot(var, "Acceptance", "Events/bin", "Acceptance", "", hFullPhase, hFiducialPhase, hAcceptance, ""); 
+    }
+    if(var.Contains("Pt"))
+    {
+        const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
+        int nMassBin = temp_tvecd->GetNrows() - 1;
+
+        TH1* hAccept_corr_mass = mass_binning_Gen->ExtractHistogram("hData_accept", hFullPhaseMassData, 0, kTRUE, "mass[UO];pt[UOC0]");
+        for(int ibin = 0; ibin < nMassBin; ibin++)
+        {
+            TString ibinMass;
+            ibinMass.Form("%d", ibin);
+
+            hFullPhase = pt_binning_Gen->ExtractHistogram("hData", hFullPhasePtData, 0, true, "pt[UO];mass[UOC"+ibinMass+"]");
+            hFiducialPhase = pt_binning_Gen->ExtractHistogram("hData", hMC, 0, true, "pt[UO];mass[UOC"+ibinMass+"]");
+        
+            divideByBinWidth(hFullPhase, false); 
+            divideByBinWidth(hFiducialPhase, false); 
+
+            hAcceptance = (TH1*) hFiducialPhase->Clone("hAcceptance");
+            hAcceptance->Divide(hFullPhase);       
+            drawComparisonPlot(var, "Acceptance", "Events/bin", "Acceptance", "", hFullPhase, hFiducialPhase, hAcceptance, "AcceptancePt_M_"+ibinMass+"_", ibin); 
+            
+            delete hFullPhase;
+            delete hFiducialPhase;
+            delete hAcceptance;
+        }
+    }
+
+}
+
+void ISRUnfold::drawComparisonPlot(TString var, TString plotName, TString topYaxisName, TString bottomYaxisName, TString bottomXaxisName, TH1* h1, TH1* h2, TH1* hratio, TString outName, int nthMassBin)
+{
+
+    // TODO make below lines as a function
+    TCanvas* c_out = new TCanvas(plotName + "_" + var, plotName + "_" + var, 3200, 2800);
+    c_out->Draw();
+    c_out->cd();
+
+    TPad *pad1 = new TPad("pad1","pad1",0,0.3,1,1);
+    pad1->SetBottomMargin(0.01);
+    pad1->SetTopMargin(0.1);
+    pad1->SetTicks(1);
+    pad1->SetLogy();
+    if(var.Contains("Mass"))
+        pad1->SetLogx();
+    pad1->Draw();
+    pad1->cd();
+
+    h1->SetTitle("");
+    h1->SetStats(false);
+    h1->GetXaxis()->SetMoreLogLabels(true);
+    h1->Draw("p9histe");
+    h1->SetMarkerStyle(20);
+    h1->SetMarkerSize(3.2);
+    h1->SetLineColor(kBlack);
+    h1->GetYaxis()->SetTitle(topYaxisName);
+    h1->SetMaximum(5e9);
+    h1->SetMinimum(2e-1);
+
+    h2->SetMarkerStyle(20);
+    h2->SetMarkerSize(3.2);
+    h2->SetLineColor(kRed);
+    h2->SetMarkerColor(kRed);
+    h2->Draw("p9histe same");
+
+    int iPeriod_ = 4;
+    if(year == 2017)
+        iPeriod_ = 5;
+    if(year == 2018)
+        iPeriod_ = 6;
+    CMS_lumi(pad1, iPeriod_, 11);
+
+
+    if(var.Contains("Pt"))
+        writeCutInfo(pad1, var, nthMassBin);
+
+    c_out->cd();
+
+    TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.3);
+    pad2->SetTopMargin(0.05);
+    pad2->SetBottomMargin(0.35);
+    if(var=="Mass")
+    {
+        pad2->SetLogx();
+        hratio->GetXaxis()->SetMoreLogLabels(true);
+    }
+    pad2->SetTicks(1);
+    pad2->SetGridy(1);
+    if(var.Contains("Mass"))
+        pad2->SetLogy();
+    pad2->Draw();
+    pad2->cd();
+
+    hratio->SetStats(false);
+    hratio->Draw("p9histe");
+    hratio->SetMarkerStyle(20);
+    hratio->SetMarkerSize(3.2);
+    hratio->SetLineColor(kBlack);
+    hratio->GetYaxis()->SetTitle(bottomYaxisName);
+
+    hratio->SetMinimum(1e-3);
+    hratio->SetMaximum(1.0);
+
+    setXaxisTitle(hratio, var, true);
+    hratio->Draw("p9histe same");
+
+    c_out->cd();
+    c_out->SaveAs(outName!=""?outName+".png":plotName+"_"+var+".png");
 }
 
 void ISRUnfold::setMeanMass_Accept()
@@ -1712,6 +1901,40 @@ int ISRUnfold::setSysMeanMass()
     return nMassBin;
 }
 
+void ISRUnfold::setSysMeanMass_Accept()
+{
+
+    cout << "ISRUnfold::setSysMeanMass_Accept()   Save mean of dilepton..." << endl;
+
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+    const Double_t* massBins = temp_tvecd->GetMatrixArray();
+
+    // For systematic
+    std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
+    while(it != sysMap.end())
+    {
+        int size = (it->second).size();
+
+        for(int i = 0; i < size; i++)
+        {
+
+            TH1* hunfolded_mass_raw = hSysFullPhaseMassData[it->first][(it->second).at(i)];
+            TH1* hunfolded_mass = mass_binning_Gen->ExtractHistogram("temp_mass", hunfolded_mass_raw, 0, kTRUE, "mass[UO];pt[UOC0]"); 
+            // Loop over mass bins
+            for(int ibin = 0; ibin < nMassBin; ibin++)
+            {
+                // Set x-axis range
+                hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(massBins[ibin]+0.01), hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+                meanMass_data_accept_sysVariation[it->first][(it->second).at(i)].push_back(hunfolded_mass->GetMean());
+                //cout << it->first << " " << (it->second).at(i) << " " << hunfolded_mass->GetMean() << endl;
+            }// End of mass bin loop
+            delete hunfolded_mass;
+        }
+        it++;
+    }
+}
+
 void ISRUnfold::setSysError()
 {
     const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
@@ -1746,6 +1969,41 @@ void ISRUnfold::setSysError()
     }
 }
 
+void ISRUnfold::setSysError_Accept() 
+{
+
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+
+    // For systematic
+    std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
+    while(it != sysMap.end())
+    {
+        cout << "Systematic: " << it->first << endl;
+        for(int ibin = 0; ibin < nMassBin; ibin++)
+        {
+            double error_mass = 0.;
+            double error_pt = 0.;
+            int size = (it->second).size();
+
+            // Take the maximum variation as systematic uncertainty
+            for(int i = 0; i < size; i++)
+            {
+                double temp_error_mass = fabs(meanMass_data_accept_sysVariation[it->first][(it->second).at(i)].at(ibin) - meanMass_data_acc_corrected.at(ibin));
+                double temp_error_pt = fabs(meanPt_data_accept_sysVariation[it->first][(it->second).at(i)].at(ibin) - meanPt_data_acc_corrected.at(ibin));
+                error_mass = error_mass < temp_error_mass?temp_error_mass:error_mass;
+                error_pt = error_pt < temp_error_pt?temp_error_pt:error_pt;
+
+            }
+            meanMass_data_accept_systematic[it->first].push_back(error_mass);
+            meanPt_data_accept_systematic[it->first].push_back(error_pt);
+            cout << ibin << " mass bin " << endl;
+            cout << "mass: " << error_mass / meanMass_data_acc_corrected.at(ibin) * 100.  << " pt: " << error_pt / meanPt_data_acc_corrected.at(ibin) * 100.<< endl;
+        }
+        it++;
+    }
+}
+
 void ISRUnfold::setTotSysError()
 {
 
@@ -1772,6 +2030,32 @@ void ISRUnfold::setTotSysError()
     }
 }
 
+void ISRUnfold::setTotSysError_Accept() 
+{
+
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+
+    // For systematic
+    for(int ibin = 0; ibin < nMassBin; ibin++)
+    {
+        double totSys_mass = 0.;
+        double totSys_pt = 0.;
+        std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
+        while(it != sysMap.end())
+        {
+            double sysErr_mass = meanMass_data_accept_systematic[it->first].at(ibin);
+            double sysErr_pt = meanPt_data_accept_systematic[it->first].at(ibin);
+
+            totSys_mass += pow(sysErr_mass, 2);
+            totSys_pt += pow(sysErr_pt, 2);
+            it++;
+        }
+        meanMassSysErr_data_acc_corrected.push_back(sqrt(totSys_mass));
+        meanPtSysErr_data_acc_corrected.push_back(sqrt(totSys_pt));
+    }
+
+}
 void ISRUnfold::setStatError()
 {
     const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
@@ -1852,6 +2136,20 @@ double ISRUnfold::getUnfMeanMassSysError(int ibin)
     else
     {
         return meanMassSysErr_data_unfoled.at(ibin);
+    }
+}
+
+double ISRUnfold::getAccMeanMassSysError(int ibin)
+{
+
+    int size = meanMassStatErr_data_unfoled.size();
+    if(ibin >= size)
+    {
+        exit (EXIT_FAILURE);
+    }
+    else
+    {
+        return meanMassSysErr_data_acc_corrected.at(ibin);
     }
 }
 
@@ -2041,6 +2339,42 @@ int ISRUnfold::setSysMeanPt()
     return nMassBin;
 }
 
+void ISRUnfold::setSysMeanPt_Accept()
+{
+
+    cout << "ISRUnfold::setSysMeanPt_Accept()   Save mean of dilepton momentum..." << endl;
+
+    // Find number of mass bins
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+
+    std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
+    while(it != sysMap.end())
+    {
+        int size = (it->second).size();
+
+        for(int i = 0; i < size; i++)
+        {
+            // Save mean pt
+            for(int j = 0; j < nMassBin; j++)
+            {
+                TString ibinMass;
+                ibinMass.Form("%d", j);
+
+                TH1* hunfolded_pt_raw = hSysFullPhasePtData[it->first][(it->second).at(i)];
+                TH1* hunfolded_pt = pt_binning_Gen->ExtractHistogram("temp_pt", hunfolded_pt_raw, 0, kTRUE, "pt[UO];mass[UOC"+ibinMass+"]");
+
+                // Get histograms to set mean values
+                meanPt_data_accept_sysVariation[it->first][(it->second).at(i)].push_back(hunfolded_pt->GetMean());
+                cout << it->first << " " << (it->second).at(i) << " " << hunfolded_pt->GetMean() << endl;
+
+                delete hunfolded_pt;
+            }
+        }
+        it++;
+    }
+}
+
 double ISRUnfold::getDetMeanPt(int ibin)
 {
 
@@ -2108,6 +2442,20 @@ double ISRUnfold::getUnfMeanPtSysError(int ibin)
     else
     {
         return meanPtSysErr_data_unfoled.at(ibin);
+    }
+}
+
+double ISRUnfold::getAccMeanPtSysError(int ibin)
+{
+
+    int size = meanPtStatErr_data_unfoled.size();
+    if(ibin >= size)
+    {
+        exit (EXIT_FAILURE);
+    }
+    else
+    {
+        return meanPtSysErr_data_acc_corrected.at(ibin);
     }
 }
 

@@ -2,6 +2,7 @@
 #define UNFOLDUTILS_H
 
 #include <iostream>
+#include <iomanip> 
 #include <map>
 #include <cmath>
 #include <TMath.h>
@@ -64,6 +65,9 @@ private:
     TUnfoldDensityV17* nomPtUnfold;
     TUnfoldDensityV17* nomMassUnfold;
 
+    TH2* hPtResponseM;
+    TH2* hMassResponseM;
+
     // For statistical uncertainty
     std::vector<TUnfoldDensityV17*> statPtUnfold;
     std::vector<TUnfoldDensityV17*> statMassUnfold;
@@ -104,11 +108,20 @@ private:
     TH1* hFullPhaseMassData; // data after acceptance correction 
     TH1* hFullPhasePtData;  
 
+    std::map<TString, std::map<TString, TH1*>> hSysFullPhaseMassData;
+    std::map<TString, std::map<TString, TH1*>> hSysFullPhasePtData;
+    
     TH1* hAcceptanceMass;  
     TH1* hAcceptancePt;  
 
     vector<Double_t> meanMass_data_acc_corrected, meanMassStatErr_data_acc_corrected, meanMassSysErr_data_acc_corrected, meanMassTotErr_data_acc_corrected;
     vector<Double_t> meanPt_data_acc_corrected,   meanPtStatErr_data_acc_corrected,   meanPtSysErr_data_acc_corrected, meanPtTotErr_data_acc_corrected;
+
+    std::map<TString, std::map<TString, vector<double>>> meanMass_data_accept_sysVariation;
+    std::map<TString, std::map<TString, vector<double>>> meanPt_data_accept_sysVariation;
+
+    std::map<TString, vector<double>> meanMass_data_accept_systematic;
+    std::map<TString, vector<double>> meanPt_data_accept_systematic;
 
     Int_t nScan;
     TSpline *rhoLogTau;
@@ -218,10 +231,15 @@ public:
 
     void setStatError();
     void setSysError();
+    void setSysError_Accept();
     void setTotSysError();
+    void setTotSysError_Accept();
 
-    void doAcceptCorr(TString filePath, TString binDef);
+    void doAcceptCorr(TString filePath, TString binDef, bool doSys = false);
+    void drawAcceptance(TString var, TH1* hMC, TString outName);
     TCanvas* drawAcceptCorrHists(TString var, TString filePath, TString binDef, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth); 
+
+    void drawComparisonPlot(TString var, TString plotName, TString topYaxisName, TString bottomYaxisName, TString bottomXaxisName, TH1* h1, TH1* h2, TH1* hratio, TString outName, int nthMassBin = 0);
 
     // Get histograms
     TH1* getDetUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
@@ -239,6 +257,8 @@ public:
     void setMeanMass_Accept();
     int setSysMeanPt();
     int setSysMeanMass();
+    void setSysMeanPt_Accept();
+    void setSysMeanMass_Accept();
 
     void fillPtStatVariationHist(int istat);
     void fillMassStatVariationHist(int istat);
@@ -258,6 +278,8 @@ public:
     double getAccMeanPtError(int ibin);
     double getAccMeanMass(int ibin);
     double getAccMeanMassError(int ibin);
+    double getAccMeanPtSysError(int ibin);
+    double getAccMeanMassSysError(int ibin);
 
     double getMCGenMeanMass(int ibin);
     double getMCGenMeanPt(int ibin);
