@@ -82,7 +82,6 @@ class ISRAnalysis:
                 inputHistName = "histo_DYJetsToMuMu"
         
         if useUnfoldOut == False:
-            # TODO If sysPostfix is "Nominal", then use self.inHistDic[self.matrix_filekey], self.matrix_dirPath
             if "LepMom" in sysName :
                 if sysPostfix == "Nominal" :
                     self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
@@ -95,8 +94,8 @@ class ISRAnalysis:
                 self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
         else:
             # Let's set systematic input histograms also!
-            self.unfold.setUnfInput(unfoldObj, "Pt", False, "", 0)
-            self.unfold.setUnfInput(unfoldObj, "Mass", False, "", 0)
+            self.unfold.setUnfInput(unfoldObj, "Pt", isSys, sysName, sysPostfix)
+            self.unfold.setUnfInput(unfoldObj, "Mass", isSys, sysName, sysPostfix)
 
     def setFromPreviousUnfold(self, unfoldObj) :
         self.unfold.setFromPrevUnfResult(unfoldObj)
@@ -152,12 +151,30 @@ class ISRAnalysis:
             else :
                 self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["matrix_lepScale"], self.matrix_dirPath+"_"+sysHistName, self.matrix_histName, sysName, sysHistName, self.binDef)
                 self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["matrix_lepScale"], self.matrix_dirPath+"_"+sysHistName, self.matrix_histName, sysName, sysHistName, self.binDef)
+        elif "Unfold" in sysName :
+            if sysHistName == "Nominal" :
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+            else :
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["fsr_matrix_powheg_pythia"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["fsr_matrix_powheg_pythia"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+
+        elif "FSR" in sysName :
+            if sysHistName == "PHOTOS" :
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["fsr_matrix_powheg_photos"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["fsr_matrix_powheg_photos"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+            else :
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["fsr_matrix_powheg_pythia"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["fsr_matrix_powheg_pythia"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
         else :
             self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
             self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
 
     def getSystematics(self):
         self.unfold.printSystematics()
+
+    def printMeanValues(self):
+        self.unfold.printMeanValues(True)
 
     def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
         if "LepMom" in sysName :

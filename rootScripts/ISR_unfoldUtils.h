@@ -123,6 +123,8 @@ private:
     std::map<TString, vector<double>> meanMass_data_accept_systematic;
     std::map<TString, vector<double>> meanPt_data_accept_systematic;
 
+    bool verbose;
+
     Int_t nScan;
     TSpline *rhoLogTau;
     TGraph *lCurve;
@@ -147,7 +149,7 @@ private:
 public:
     
     // Constructor
-    ISRUnfold(TString channel, int year_ = 2016, int regMode_ = 0, bool makeStatUnfold_ = true)
+    ISRUnfold(TString channel, int year_ = 2016, int regMode_ = 0, bool makeStatUnfold_ = true, bool verbose_ = false)
     {
         cout << "ISRUnfold set!" << endl;
 
@@ -173,6 +175,8 @@ public:
         bkgColors["EWK"] = kYellow+2;
         bkgColors["Top"] = kBlue;
 
+        verbose = verbose_;
+
     }
     // Destructor
     ~ISRUnfold(){}
@@ -191,7 +195,7 @@ public:
 
     // Set input histogram
     void setUnfInput(TString var, TString varPostfix = "", TString filepath = "", TString dirName ="", TString histName = "", bool isSys = false, TString sysName = "", TString sysPostfix = "");
-    void setUnfInput(ISRUnfold* unfold, TString var, bool isSys = false, TString sysName = "", int nth = 0);
+    void setUnfInput(ISRUnfold* unfold, TString var, bool isSys = false, TString sysName = "", TString sysPostfix = "");
 
     // Set background histograms
     void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
@@ -284,8 +288,8 @@ public:
     double getMCGenMeanMass(int ibin);
     double getMCGenMeanPt(int ibin);
 
+    void printMeanValues(bool printSys);
     void drawStatVariation(bool isPt = true, int massBin = 0);
-
 };
 
 #endif
