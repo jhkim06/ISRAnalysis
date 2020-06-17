@@ -460,11 +460,11 @@ void ISRUnfold::setUnfInput(TString var, TString varPostfix, TString filepath, T
     {
         if(var == "Pt")
         {
-            nomPtUnfold->SetInput(hRec,   nominal_bias, 0, hCov_pt);
+            nomPtUnfold->SetInput(hRec,   nominal_bias, 0);
         }
         else if(var == "Mass")
         {
-            nomMassUnfold->SetInput(hRec, nominal_bias, 0, hCov);
+            nomMassUnfold->SetInput(hRec, nominal_bias, 0);
         }
         else{
             cout << "ISRUnfold::setUnfInput, only Pt and Mass available for var" << endl;
