@@ -1952,6 +1952,7 @@ void ISRUnfold::setSysError()
 
     std::streamsize ss = std::cout.precision();
     std::cout.precision(2);
+    std::cout.setf( std::ios::fixed, std:: ios::floatfield );
 
     // For systematic
     std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
@@ -1960,7 +1961,7 @@ void ISRUnfold::setSysError()
         cout << "Systematic: " << it->first << endl;
         cout << setw(10) << "Mass bin" ;
         cout << setw(10) << "Mass" ; 
-        cout << setw(10) << "Pt" << endl;
+        cout << setw(10) << "Pt" << endl; 
         for(int ibin = 0; ibin < nMassBin; ibin++)
         {
             double error_mass = 0.;
@@ -1985,8 +1986,8 @@ void ISRUnfold::setSysError()
             meanMass_data_folded_systematic[it->first].push_back(error_mass);
             meanPt_data_folded_systematic[it->first].push_back(error_pt);
 
-            meanMass_data_folded_rel_systematic[it->first].push_back(error_mass/ meanMass_data_unfolded.at(ibin));
-            meanPt_data_folded_rel_systematic[it->first].push_back(error_pt/ meanPt_data_unfolded.at(ibin));
+            meanMass_data_folded_rel_systematic[it->first].push_back(error_mass/ meanMass_data_unfolded.at(ibin) * 100.);
+            meanPt_data_folded_rel_systematic[it->first].push_back(error_pt/ meanPt_data_unfolded.at(ibin) * 100.);
             cout << setw(10) << error_mass ;
             cout << setw(10) << error_pt << endl;
         }
@@ -2120,8 +2121,8 @@ void ISRUnfold::setStatError()
         meanMassStatErr_data_unfolded.push_back(meanMassStatVariation.at(ibin)->GetRMS());
         meanPtStatErr_data_unfolded.push_back(meanPtStatVariation.at(ibin)->GetRMS());
 
-        meanMassStatRelErr_data_unfolded.push_back(meanMassStatVariation.at(ibin)->GetRMS()/ meanMass_data_unfolded.at(ibin));
-        meanPtStatRelErr_data_unfolded.push_back(meanPtStatVariation.at(ibin)->GetRMS()/ meanPt_data_unfolded.at(ibin));
+        meanMassStatRelErr_data_unfolded.push_back(meanMassStatVariation.at(ibin)->GetRMS()/ meanMass_data_unfolded.at(ibin) * 100.);
+        meanPtStatRelErr_data_unfolded.push_back(meanPtStatVariation.at(ibin)->GetRMS()/ meanPt_data_unfolded.at(ibin) * 100.);
     }
 }
 
@@ -2731,7 +2732,7 @@ void ISRUnfold::drawSystematics(TString var)
     c_out->Draw();
     c_out->cd();
 
-    TLegend* leg = new TLegend(0.5, 0.5, 0.95, 0.9,"","brNDC");
+    TLegend* leg = new TLegend(0.45, 0.5, 0.95, 0.9,"","brNDC");
     leg->SetBorderSize(0);
     leg->SetFillStyle(0);
     leg->SetTextFont(43);
@@ -2761,10 +2762,11 @@ void ISRUnfold::drawSystematics(TString var)
             else
                 map_sys_graph[it->first]->SetTitle("Relative uncertainty on <Mass^{\ell\ell}> [%]");
 
-            map_sys_graph[it->first]->GetYaxis()->SetRangeUser(0., 0.03);
+            map_sys_graph[it->first]->GetYaxis()->SetRangeUser(0., 3.);
+            map_sys_graph[it->first]->GetXaxis()->SetLimits(0.5,5.5);
             map_sys_graph[it->first]->GetYaxis()->SetTitleOffset(1.0);
             map_sys_graph[it->first]->GetYaxis()->SetTitle("Relative uncertainty [%]");
-            map_sys_graph[it->first]->GetXaxis()->SetTitleOffset(0.8);
+            map_sys_graph[it->first]->GetXaxis()->SetTitleOffset(0.7);
             map_sys_graph[it->first]->GetXaxis()->SetTitle("mass bin");
             map_sys_graph[it->first]->Draw("APC");
             first_draw = false;
