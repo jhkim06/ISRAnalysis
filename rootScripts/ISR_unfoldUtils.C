@@ -1584,6 +1584,8 @@ void ISRUnfold::doISRUnfold(bool doSys)
                 //cout << "posfix: " << (it->second).at(i) << endl;
                 sysPtUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
                 sysMassUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
+            
+                // TODO if PDF, then save variations in a histogram
             }
             it++;
         }
@@ -2062,16 +2064,17 @@ void ISRUnfold::printMeanValues(bool printSys = false)
     
     cout << "Mean values" << endl;
     cout << setw(10) << "Mass bin" ;
-    cout << setw(20) << "Mass" ;
-    cout << setw(20) << "Pt" << endl;
-    cout << "-----------------------------------------------------------------" << endl;
+    cout << setw(30) << "Mass (GeV)" ;
+    cout << setw(30) << "Pt (GeV)" << endl;
+    for(int i = 0; i < 70; i++) cout << "-";
+    cout << endl;
     for(int i = 0; i < size; i++)
     {   
         cout << setw(10) << i;
         if(printSys)
         {
-            cout << setw(20) << meanMass_data_unfoled.at(i) << "+/-" << meanMassSysErr_data_unfoled.at(i) << "+/-" << meanMassStatErr_data_unfoled.at(i) ; 
-            cout << setw(20) << meanPt_data_unfoled.at(i) << "+/-" << meanPtSysErr_data_unfoled.at(i) << "+/-" << meanPtStatErr_data_unfoled.at(i) << endl; 
+            cout << setw(16) << meanMass_data_unfoled.at(i) << "+/-" << meanMassSysErr_data_unfoled.at(i) << "+/-" << meanMassStatErr_data_unfoled.at(i) ; 
+            cout << setw(16) << meanPt_data_unfoled.at(i) << "+/-" << meanPtSysErr_data_unfoled.at(i) << "+/-" << meanPtStatErr_data_unfoled.at(i) << endl; 
         }
     }
     std::cout.precision(ss);
