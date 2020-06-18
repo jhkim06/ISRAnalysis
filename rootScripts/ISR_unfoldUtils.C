@@ -804,7 +804,7 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     hRatio = (TH1*) hData->Clone("hRatio");
 
     // Create canvas
-    TCanvas* c_out = new TCanvas("unfolded_level_"+var, "unfoled_level_"+var, 3200, 2800);
+    TCanvas* c_out = new TCanvas("unfolded_level_"+var, "unfolded_level_"+var, 3200, 2800);
     c_out->Draw();
     c_out->cd();
 
@@ -1856,12 +1856,12 @@ int ISRUnfold::setMeanMass()
             meanMassStatErr_data_folded.push_back(hdetector_mass->GetMeanError());
 
             //cout << "Unfolded, " << ibin << " th mass bin, mean: " << hunfolded_mass->GetMean() << " +/- " << hunfolded_mass->GetMeanError() << endl;
-            meanMass_data_unfoled.   push_back(hunfolded_mass->GetMean());
-            meanMassStatErr_data_unfoled.push_back(hunfolded_mass->GetMeanError());
+            meanMass_data_unfolded.   push_back(hunfolded_mass->GetMean());
+            meanMassStatErr_data_unfolded.push_back(hunfolded_mass->GetMeanError());
 
             //cout << "MC, " << ibin << " th mass bin, mean: " << hMC_mass->GetMean() << " +/- " << hMC_mass->GetMeanError() << endl;
-            meanMass_mc_unfoled.   push_back(hMC_mass->GetMean());
-            meanMassStatErr_mc_unfoled.push_back(hMC_mass->GetMeanError());
+            meanMass_mc_unfolded.   push_back(hMC_mass->GetMean());
+            meanMassStatErr_mc_unfolded.push_back(hMC_mass->GetMeanError());
 
     }// End of mass bin loop
 
@@ -1970,8 +1970,8 @@ void ISRUnfold::setSysError()
             // Take the maximum variation as systematic uncertainty
             for(int i = 0; i < size; i++)
             {
-                double temp_error_mass = fabs(meanMass_data_unfolded_sysVariation[it->first][(it->second).at(i)].at(ibin) - meanMass_data_unfoled.at(ibin));
-                double temp_error_pt = fabs(meanPt_data_unfolded_sysVariation[it->first][(it->second).at(i)].at(ibin) - meanPt_data_unfoled.at(ibin));
+                double temp_error_mass = fabs(meanMass_data_unfolded_sysVariation[it->first][(it->second).at(i)].at(ibin) - meanMass_data_unfolded.at(ibin));
+                double temp_error_pt = fabs(meanPt_data_unfolded_sysVariation[it->first][(it->second).at(i)].at(ibin) - meanPt_data_unfolded.at(ibin));
                 error_mass = error_mass < temp_error_mass?temp_error_mass:error_mass;
                 error_pt = error_pt < temp_error_pt?temp_error_pt:error_pt;
 
@@ -1984,6 +1984,9 @@ void ISRUnfold::setSysError()
             }
             meanMass_data_folded_systematic[it->first].push_back(error_mass);
             meanPt_data_folded_systematic[it->first].push_back(error_pt);
+
+            meanMass_data_folded_rel_systematic[it->first].push_back(error_mass/ meanMass_data_unfolded.at(ibin));
+            meanPt_data_folded_rel_systematic[it->first].push_back(error_pt/ meanPt_data_unfolded.at(ibin));
             cout << setw(10) << error_mass ;
             cout << setw(10) << error_pt << endl;
         }
@@ -2049,8 +2052,8 @@ void ISRUnfold::setTotSysError()
             totSys_pt += pow(sysErr_pt, 2);
             it++;
         }
-        meanMassSysErr_data_unfoled.push_back(sqrt(totSys_mass));
-        meanPtSysErr_data_unfoled.push_back(sqrt(totSys_pt));
+        meanMassSysErr_data_unfolded.push_back(sqrt(totSys_mass));
+        meanPtSysErr_data_unfolded.push_back(sqrt(totSys_pt));
     }
 }
 
@@ -2060,7 +2063,7 @@ void ISRUnfold::printMeanValues(bool printSys = false)
     std::cout.precision(2);
     std::cout.setf( std::ios::fixed, std:: ios::floatfield );
 
-    int size = meanMass_data_unfoled.size();
+    int size = meanMass_data_unfolded.size();
     
     cout << "Mean values" << endl;
     cout << setw(10) << "Mass bin" ;
@@ -2073,8 +2076,8 @@ void ISRUnfold::printMeanValues(bool printSys = false)
         cout << setw(10) << i;
         if(printSys)
         {
-            cout << setw(16) << meanMass_data_unfoled.at(i) << "+/-" << meanMassSysErr_data_unfoled.at(i) << "+/-" << meanMassStatErr_data_unfoled.at(i) ; 
-            cout << setw(16) << meanPt_data_unfoled.at(i) << "+/-" << meanPtSysErr_data_unfoled.at(i) << "+/-" << meanPtStatErr_data_unfoled.at(i) << endl; 
+            cout << setw(16) << meanMass_data_unfolded.at(i) << "+/-" << meanMassSysErr_data_unfolded.at(i) << "+/-" << meanMassStatErr_data_unfolded.at(i) ; 
+            cout << setw(16) << meanPt_data_unfolded.at(i) << "+/-" << meanPtSysErr_data_unfolded.at(i) << "+/-" << meanPtStatErr_data_unfolded.at(i) << endl; 
         }
     }
     std::cout.precision(ss);
@@ -2114,8 +2117,11 @@ void ISRUnfold::setStatError()
     // Loop over mass bins
     for(int ibin = 0; ibin < nMassBin; ibin++)
     {
-        meanMassStatErr_data_unfoled.push_back(meanPtStatVariation.at(ibin)->GetRMS());
-        meanPtStatErr_data_unfoled.push_back(meanPtStatVariation.at(ibin)->GetRMS());
+        meanMassStatErr_data_unfolded.push_back(meanMassStatVariation.at(ibin)->GetRMS());
+        meanPtStatErr_data_unfolded.push_back(meanPtStatVariation.at(ibin)->GetRMS());
+
+        meanMassStatRelErr_data_unfolded.push_back(meanMassStatVariation.at(ibin)->GetRMS()/ meanMass_data_unfolded.at(ibin));
+        meanPtStatRelErr_data_unfolded.push_back(meanPtStatVariation.at(ibin)->GetRMS()/ meanPt_data_unfolded.at(ibin));
     }
 }
 
@@ -2150,49 +2156,49 @@ double ISRUnfold::getDetMeanMassError(int ibin)
 double ISRUnfold::getUnfMeanMass(int ibin)
 {
 
-    int size = meanMass_data_unfoled.size();
+    int size = meanMass_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
     }
     else
     {
-        return meanMass_data_unfoled.at(ibin);
+        return meanMass_data_unfolded.at(ibin);
     }
 }
 
 double ISRUnfold::getUnfMeanMassError(int ibin)
 {
 
-    int size = meanMassStatErr_data_unfoled.size();
+    int size = meanMassStatErr_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
     }
     else
     {
-        return meanMassStatErr_data_unfoled.at(ibin);
+        return meanMassStatErr_data_unfolded.at(ibin);
     }
 }
 
 double ISRUnfold::getUnfMeanMassSysError(int ibin)
 {
 
-    int size = meanMassStatErr_data_unfoled.size();
+    int size = meanMassStatErr_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
     }
     else
     {
-        return meanMassSysErr_data_unfoled.at(ibin);
+        return meanMassSysErr_data_unfolded.at(ibin);
     }
 }
 
 double ISRUnfold::getAccMeanMassSysError(int ibin)
 {
 
-    int size = meanMassStatErr_data_unfoled.size();
+    int size = meanMassStatErr_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
@@ -2206,7 +2212,7 @@ double ISRUnfold::getAccMeanMassSysError(int ibin)
 double ISRUnfold::getAccMeanMass(int ibin)
 {
 
-    int size = meanMass_data_unfoled.size();
+    int size = meanMass_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
@@ -2220,7 +2226,7 @@ double ISRUnfold::getAccMeanMass(int ibin)
 double ISRUnfold::getAccMeanMassError(int ibin)
 {
 
-    int size = meanMassStatErr_data_unfoled.size();
+    int size = meanMassStatErr_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
@@ -2234,14 +2240,14 @@ double ISRUnfold::getAccMeanMassError(int ibin)
 double ISRUnfold::getMCGenMeanMass(int ibin)
 {
 
-    int size = meanMass_mc_unfoled.size();
+    int size = meanMass_mc_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
     }
     else
     {
-        return meanMass_mc_unfoled.at(ibin);
+        return meanMass_mc_unfolded.at(ibin);
     }
 }
 
@@ -2261,7 +2267,7 @@ void ISRUnfold::fillPtStatVariationHist(int istat)
 
         if(istat == 0)
         {
-            meanPtStatVariation.push_back(new TH1F("MeanPtStat_bin"+ibinMass, "MeanPtStat_bin"+ibinMass, 40, meanPt_data_unfoled.at(i)-1., meanPt_data_unfoled.at(i)+1.));
+            meanPtStatVariation.push_back(new TH1F("MeanPtStat_bin"+ibinMass, "MeanPtStat_bin"+ibinMass, 40, meanPt_data_unfolded.at(i)-1., meanPt_data_unfolded.at(i)+1.));
         }
 
         TH1* hpt_temp_data;
@@ -2296,7 +2302,7 @@ void ISRUnfold::fillMassStatVariationHist(int istat)
 
         if(istat == 0)
         {
-            meanMassStatVariation.push_back(new TH1F("MeanMassStat_bin"+ibinMass, "MeanMassStat_bin"+ibinMass, 80, meanMass_data_unfoled.at(ibin)-2., meanMass_data_unfoled.at(ibin)+2.));
+            meanMassStatVariation.push_back(new TH1F("MeanMassStat_bin"+ibinMass, "MeanMassStat_bin"+ibinMass, 80, meanMass_data_unfolded.at(ibin)-2., meanMass_data_unfolded.at(ibin)+2.));
         }
         meanMassStatVariation.at(ibin)->Fill(hunfolded_mass->GetMean());
     }// end of mass bin loop
@@ -2334,11 +2340,11 @@ int ISRUnfold::setMeanPt()
         meanPtStatErr_data_folded.push_back(hdetector_data->GetMeanError());
 
         //cout << "Unfolded, " << i << " th mass bin, mean: " << hpt_temp_data->GetMean() << " +/- " << hpt_temp_data->GetMeanError() << endl;
-        meanPt_data_unfoled.push_back(hpt_temp_data->GetMean());
-        meanPtStatErr_data_unfoled.push_back(hpt_temp_data->GetMeanError());
+        meanPt_data_unfolded.push_back(hpt_temp_data->GetMean());
+        meanPtStatErr_data_unfolded.push_back(hpt_temp_data->GetMeanError());
 
-        meanPt_mc_unfoled.push_back(hpt_temp_mc->GetMean());
-        meanPtStatErr_mc_unfoled.push_back(hpt_temp_mc->GetMeanError());
+        meanPt_mc_unfolded.push_back(hpt_temp_mc->GetMean());
+        meanPtStatErr_mc_unfolded.push_back(hpt_temp_mc->GetMeanError());
 
         delete hdetector_data;
         delete hpt_temp_data;
@@ -2456,49 +2462,49 @@ double ISRUnfold::getDetMeanPtError(int ibin)
 double ISRUnfold::getUnfMeanPt(int ibin)
 {
 
-    int size = meanPt_data_unfoled.size();
+    int size = meanPt_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
     }
     else
     {
-        return meanPt_data_unfoled.at(ibin);
+        return meanPt_data_unfolded.at(ibin);
     }
 }
 
 double ISRUnfold::getUnfMeanPtError(int ibin)
 {
 
-    int size = meanPtStatErr_data_unfoled.size();
+    int size = meanPtStatErr_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
     }
     else
     {
-        return meanPtStatErr_data_unfoled.at(ibin);
+        return meanPtStatErr_data_unfolded.at(ibin);
     }
 }
 
 double ISRUnfold::getUnfMeanPtSysError(int ibin)
 {
 
-    int size = meanPtStatErr_data_unfoled.size();
+    int size = meanPtStatErr_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
     }
     else
     {
-        return meanPtSysErr_data_unfoled.at(ibin);
+        return meanPtSysErr_data_unfolded.at(ibin);
     }
 }
 
 double ISRUnfold::getAccMeanPtSysError(int ibin)
 {
 
-    int size = meanPtStatErr_data_unfoled.size();
+    int size = meanPtStatErr_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
@@ -2512,7 +2518,7 @@ double ISRUnfold::getAccMeanPtSysError(int ibin)
 double ISRUnfold::getAccMeanPt(int ibin)
 {
 
-    int size = meanPt_data_unfoled.size();
+    int size = meanPt_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
@@ -2526,7 +2532,7 @@ double ISRUnfold::getAccMeanPt(int ibin)
 double ISRUnfold::getAccMeanPtError(int ibin)
 {
 
-    int size = meanPtStatErr_data_unfoled.size();
+    int size = meanPtStatErr_data_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
@@ -2540,14 +2546,14 @@ double ISRUnfold::getAccMeanPtError(int ibin)
 double ISRUnfold::getMCGenMeanPt(int ibin)
 {
 
-    int size = meanPt_mc_unfoled.size();
+    int size = meanPt_mc_unfolded.size();
     if(ibin >= size)
     {
         exit (EXIT_FAILURE);
     }
     else
     {
-        return meanPt_mc_unfoled.at(ibin);
+        return meanPt_mc_unfolded.at(ibin);
     }
 }
 
@@ -2679,4 +2685,116 @@ void ISRUnfold::drawStatVariation(bool isPt, int massBin)
         c->SaveAs("MeanMassStat_" + nth + year_ + ".pdf");
     }
     delete c;
+}
+
+void ISRUnfold::drawSystematics(TString var)
+{
+
+    // Loop over
+    // meanMass_data_folded_systematic, meanPt_data_folded_systematic
+    setTDRStyle();
+    writeExtraText = true;
+    extraText  = "Work in progress";
+    gStyle->SetLineWidth(3);
+    gStyle->SetFrameLineWidth(3);
+    gROOT->ForceStyle();
+
+    // Prepare TGraph for each systematic
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+    vector<double> v_bins;
+    for(int i = 0; i < nMassBin; i++)
+    {
+        v_bins.push_back(i+1);
+    }
+
+    map<TString, TGraph*> map_sys_graph;
+    std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
+    while(it != sysMap.end())
+    {
+        if(var.Contains("Pt"))
+        {
+            map_sys_graph[it->first] = new TGraph(nMassBin, &v_bins[0], &meanPt_data_folded_rel_systematic[it->first][0]); 
+        }
+        else
+        {
+            map_sys_graph[it->first] = new TGraph(nMassBin, &v_bins[0], &meanMass_data_folded_rel_systematic[it->first][0]); 
+        }
+        it++;
+    }
+
+    // Create canvas
+    TCanvas* c_out = new TCanvas("relative_uncertainty_"+var, "relative_uncertainty_"+var, 3000, 1800);
+    c_out->SetGridy(1);
+    c_out->SetGridx(1);
+    c_out->SetTopMargin(0.08);
+    c_out->Draw();
+    c_out->cd();
+
+    TLegend* leg = new TLegend(0.5, 0.5, 0.95, 0.9,"","brNDC");
+    leg->SetBorderSize(0);
+    leg->SetFillStyle(0);
+    leg->SetTextFont(43);
+    leg->SetTextSize(70);
+
+    int marker = 20;
+    int markerSize = 3;
+    int markerColor = 1;
+    bool first_draw = true;
+
+    it = sysMap.begin();
+    while(it != sysMap.end()) 
+    {
+        if(markerColor == 10) markerColor = 1;
+        map_sys_graph[it->first]->SetMarkerStyle(marker);
+        map_sys_graph[it->first]->SetMarkerSize(markerSize);
+        map_sys_graph[it->first]->SetMarkerColor(markerColor==5?46:markerColor);
+        map_sys_graph[it->first]->SetLineColor(markerColor==5?46:markerColor);
+        markerColor++;
+        marker++;    
+
+        if(first_draw)
+        {
+            //map_sys_graph[it->first]->SetTitleOffset(0.02); 
+            if(var.Contains("Pt"))
+                map_sys_graph[it->first]->SetTitle("Relative uncertainty on <p_{T}^{\ell\ell}> [%]");
+            else
+                map_sys_graph[it->first]->SetTitle("Relative uncertainty on <Mass^{\ell\ell}> [%]");
+
+            map_sys_graph[it->first]->GetYaxis()->SetRangeUser(0., 0.03);
+            map_sys_graph[it->first]->GetYaxis()->SetTitleOffset(1.0);
+            map_sys_graph[it->first]->GetYaxis()->SetTitle("Relative uncertainty [%]");
+            map_sys_graph[it->first]->GetXaxis()->SetTitleOffset(0.8);
+            map_sys_graph[it->first]->GetXaxis()->SetTitle("mass bin");
+            map_sys_graph[it->first]->Draw("APC");
+            first_draw = false;
+        }
+        else
+        {
+            map_sys_graph[it->first]->Draw("PC SAME");
+        }
+        leg->AddEntry(map_sys_graph[it->first], it->first, "p");
+        it++;
+    }
+    // Stat
+    if(var.Contains("Pt"))
+    {
+        map_sys_graph["Stat."] = new TGraph(nMassBin, &v_bins[0], &meanPtStatRelErr_data_unfolded[0]);
+    }
+    else
+    {
+        map_sys_graph["Stat."] = new TGraph(nMassBin, &v_bins[0], &meanMassStatRelErr_data_unfolded[0]);
+    }
+    map_sys_graph["Stat."]->SetMarkerSize(0);
+    map_sys_graph["Stat."]->SetLineColor(1);
+    map_sys_graph["Stat."]->SetLineStyle(2);
+    map_sys_graph["Stat."]->SetLineWidth(5);
+    map_sys_graph["Stat."]->Draw("PC SAME");
+    leg->AddEntry(map_sys_graph["Stat."], "Statistical", "l");
+
+    leg->Draw();
+    c_out->cd();
+    c_out->SaveAs("Systematic_"+var+".png");
+
+    delete c_out;
 }

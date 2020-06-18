@@ -185,6 +185,8 @@ class ISRAnalysis:
     def drawUnfPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
         self.unfold.drawUnfoldedHists(var, steering, useAxis, sysName, outName, massBin, binWidth)
 
+    def drawSystematics(self, var = "Pt") :
+        self.unfold.drawSystematics(var) 
     # Do unfold! 
     def doUnfold(self, doSystematic = False):
         self.unfold.doISRUnfold(doSystematic)

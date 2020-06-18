@@ -88,11 +88,11 @@ private:
     vector<Double_t> unbinnedMeanMass_data_folded, unbinnedMeanMassStatErr_data_folded, unbinnedMeanMassSysErr_data_folded, unbinnedMeanMassTotErr_data_folded;
     vector<Double_t> unbinnedMeanPt_data_folded,   unbinnedMeanPtStatErr_data_folded,   unbinnedMeanPtSysErr_data_folded, unbinnedMeanPtTotErr_data_folded;
     // Unfolded results
-    vector<Double_t> meanMass_data_unfoled, meanMassStatErr_data_unfoled, meanMassSysErr_data_unfoled, meanMassTotErr_data_unfoled;
-    vector<Double_t> meanPt_data_unfoled,   meanPtStatErr_data_unfoled,   meanPtSysErr_data_unfoled, meanPtTotErr_data_unfoled;
+    vector<Double_t> meanMass_data_unfolded, meanMassStatErr_data_unfolded, meanMassSysErr_data_unfolded, meanMassTotErr_data_unfolded;
+    vector<Double_t> meanPt_data_unfolded,   meanPtStatErr_data_unfolded,   meanPtSysErr_data_unfolded, meanPtTotErr_data_unfolded;
     // Nominal mean mass and pt for MC
-    vector<Double_t> meanMass_mc_unfoled, meanMassStatErr_mc_unfoled, meanMassSysErr_mc_unfoled, meanMassTotErr_mc_unfoled;
-    vector<Double_t> meanPt_mc_unfoled, meanPtStatErr_mc_unfoled, meanPtSysErr_mc_unfoled, meanPtTotErr_mc_unfoled;
+    vector<Double_t> meanMass_mc_unfolded, meanMassStatErr_mc_unfolded, meanMassSysErr_mc_unfolded, meanMassTotErr_mc_unfolded;
+    vector<Double_t> meanPt_mc_unfolded, meanPtStatErr_mc_unfolded, meanPtSysErr_mc_unfolded, meanPtTotErr_mc_unfolded;
 
     std::map<TString, std::map<TString, vector<double>>> meanMass_data_folded_sysVariation;
     std::map<TString, std::map<TString, vector<double>>> meanPt_data_folded_sysVariation;
@@ -102,6 +102,11 @@ private:
 
     std::map<TString, vector<double>> meanMass_data_folded_systematic;
     std::map<TString, vector<double>> meanPt_data_folded_systematic;
+
+    std::map<TString, vector<double>> meanMass_data_folded_rel_systematic;
+    std::map<TString, vector<double>> meanPt_data_folded_rel_systematic;
+    
+    vector<Double_t> meanMassStatRelErr_data_unfolded, meanPtStatRelErr_data_unfolded;
     /*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
    
     // Acceptance correction
@@ -290,6 +295,7 @@ public:
 
     void printMeanValues(bool printSys);
     void drawStatVariation(bool isPt = true, int massBin = 0);
+    void drawSystematics(TString var);
 };
 
 #endif
