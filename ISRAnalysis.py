@@ -235,6 +235,16 @@ class ISRAnalysis:
         for ibin in range(self.nMassBins): 
             self.unfold.drawStatVariation(isPt, ibin)
 
+    def drawPDFVar(self, isPt = True):
+
+        for ibin in range(self.nMassBins): 
+            self.unfold.drawPDFVariation(isPt, ibin)
+
+    def drawSysVar(self, sysName, var = "Pt"):
+
+        for ibin in range(self.nMassBins): 
+            self.unfold.drawSysVariation(sysName, var, ibin)
+
     def doAcceptance(self, doSys = False) :
         #self.unfold.doAcceptCorr(self.inHistDic['hist_accept'], self.binDef, doSys)
         self.unfold.doAcceptCorr(self.inHistDic['hist_accept'], "_FineCoarse", doSys)

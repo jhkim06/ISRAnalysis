@@ -15,6 +15,8 @@
 
 #include <TGraphErrors.h>
 #include <TCanvas.h>
+#include <TPad.h>
+#include <TFrame.h>
 #include <TStyle.h>
 #include <TLegend.h>
 #include <TLine.h>
@@ -76,6 +78,9 @@ private:
     std::vector<TH1*> meanPtStatVariation;
     std::vector<TH1*> meanMassStatVariation;
 
+    std::vector<TH1*> meanPtPDFVariation;
+    std::vector<TH1*> meanMassPDFVariation;
+
     // For systematic uncertainty
     std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysPtUnfold;
     std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysMassUnfold;
@@ -130,16 +135,6 @@ private:
 
     bool verbose;
 
-    Int_t nScan;
-    TSpline *rhoLogTau;
-    TGraph *lCurve;
-    Int_t iBest;
-    
-    Int_t nScan_mass;
-    TSpline *rhoLogTau_mass;
-    TGraph *lCurve_mass;
-    Int_t iBest_mass;
-    
     // Conditions for unfolding
     TUnfold::ERegMode regMode;
     double nominal_bias;
@@ -271,6 +266,9 @@ public:
 
     void fillPtStatVariationHist(int istat);
     void fillMassStatVariationHist(int istat);
+
+    void fillPtPDFVariationHist(int istat);
+    void fillMassPDFVariationHist(int istat);
    
     // Get mean values 
     double getDetMeanPt(int ibin);
@@ -295,6 +293,8 @@ public:
 
     void printMeanValues(bool printSys);
     void drawStatVariation(bool isPt = true, int massBin = 0);
+    void drawPDFVariation(bool isPt = true, int massBin = 0);
+    void drawSysVariation(TString sysName, TString var, int massBin);
     void drawSystematics(TString var);
 };
 

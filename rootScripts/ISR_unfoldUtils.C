@@ -966,14 +966,20 @@ TCanvas* ISRUnfold::drawAcceptCorrHists(TString var, TString filePath, TString b
     {
         hData = pt_binning_Gen->ExtractHistogram("hData", hFullPhasePtData, 0, useAxis, steering);
         hDY_raw = (TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets");
-        hDY_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50"));
+        if(year==2016)
+            hDY_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50"));
+        else
+            hDY_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50_MG"));
         hDY = pt_binning_Gen->ExtractHistogram("hDY", hDY_raw, 0, useAxis, steering);
     }
     else
     {
         hData = mass_binning_Gen->ExtractHistogram("hData", hFullPhaseMassData, 0, useAxis, steering);
         hDY_raw = (TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets");
-        hDY_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50"));
+        if(year==2016)
+            hDY_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50"));
+        else
+            hDY_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50_MG"));
         hDY = mass_binning_Gen->ExtractHistogram("hDY", hDY_raw, 0, useAxis, steering);
     }
     if(divBinWidth)
@@ -1468,19 +1474,6 @@ void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THSta
 }
 void ISRUnfold::doStatUnfold()
 {
-    //double tauMin=1.e-4;
-    //double tauMax=1.e-3;
-
-    nScan=50;
-    rhoLogTau=0;
-    lCurve=0;
-    iBest = 0;
-
-    nScan_mass=50;
-    rhoLogTau_mass=0;
-    lCurve_mass=0;
-    iBest_mass = 0;
-
     if(regMode == TUnfold::kRegModeNone)
     {
         for(int istat = 0; istat < statSize; istat++)
@@ -1529,49 +1522,17 @@ void ISRUnfold::doStatUnfold()
 
 void ISRUnfold::doISRUnfold(bool doSys)
 {
-
-    //double tauMin=1.e-4;
-    //double tauMax=1.e-3;
-
-    nScan=50;
-    rhoLogTau=0;
-    lCurve=0;
-    iBest = 0;
-
-    nScan_mass=50;
-    rhoLogTau_mass=0;
-    lCurve_mass=0;
-    iBest_mass = 0;
-
     if(!doSys)
     {
         // Nominal unfolding
-        if(regMode == TUnfold::kRegModeNone)
-        {
-            nomPtUnfold->DoUnfold(0);
-            nomMassUnfold->DoUnfold(0);
-        }
-        else
-        {
-            // Regularization, use ScanTau() as a default method to find tau
-            // ScanLcurve
-            //iBest=nomPtUnfold->ScanTau(nScan,0.,0.,&rhoLogTau,
-            //                           TUnfoldDensity::kEScanTauRhoAvgSys,
-            //                           0,0,
-            //                           &lCurve);
-
-            nomPtUnfold->DoUnfold(0.); // Tau
-            nomMassUnfold->DoUnfold(0);
-            //iBest_mass=nomMassUnfold->ScanTau(nScan_mass,0.,0.,&rhoLogTau_mass,
-            //                           TUnfoldDensity::kEScanTauRhoAvgSys,
-            //                           0,0,
-            //                           &lCurve_mass);
-        }
+        nomPtUnfold->DoUnfold(0);
+        nomMassUnfold->DoUnfold(0);
     }
     else
     {
+        
         //cout << "Do systematic unfold!" << endl;
-        // For systematic
+        //For systematic
         std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
         while(it != sysMap.end())
         {
@@ -1586,11 +1547,15 @@ void ISRUnfold::doISRUnfold(bool doSys)
                 sysMassUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
             
                 // TODO if PDF, then save variations in a histogram
+                if(it->first == "PDF")
+                {
+                    fillMassPDFVariationHist(i+1); // i+1 since it starts from 1
+                    fillPtPDFVariationHist(i+1);
+                }
             }
             it++;
         }
     }// Unfold for systematic
-
 }
 
 void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys)
@@ -1604,7 +1569,10 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys)
 
     // Mass
     hFullPhaseMassMC_raw = (TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets");
-    hFullPhaseMassMC_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50"));
+    if(year==2016)
+        hFullPhaseMassMC_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50"));
+    else
+        hFullPhaseMassMC_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50_MG"));
 
     hFiducialPhaseMassMC = nomMassUnfold->GetBias("hFiducialMass", 0, 0, "*[*]", false);
     hAcceptanceMass = (TH1*) hFullPhaseMassMC_raw->Clone("hAcceptanceMass");
@@ -1615,7 +1583,10 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys)
 
     // Pt
     hFullPhasePtMC_raw = (TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets");
-    hFullPhasePtMC_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50"));
+    if(year==2016)
+        hFullPhasePtMC_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50"));
+    else
+        hFullPhasePtMC_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50_MG"));
 
     hFiducialPhasePtMC = nomPtUnfold->GetBias("hFiducialPt", 0, 0, "*[*]", false);
     hAcceptancePt = (TH1*) hFullPhasePtMC_raw->Clone("hAcceptancePt");
@@ -1968,26 +1939,38 @@ void ISRUnfold::setSysError()
             double error_pt = 0.;
             int size = (it->second).size();
             cout << setw(10) << ibin ; 
-            // Take the maximum variation as systematic uncertainty
-            for(int i = 0; i < size; i++)
-            {
-                double temp_error_mass = fabs(meanMass_data_unfolded_sysVariation[it->first][(it->second).at(i)].at(ibin) - meanMass_data_unfolded.at(ibin));
-                double temp_error_pt = fabs(meanPt_data_unfolded_sysVariation[it->first][(it->second).at(i)].at(ibin) - meanPt_data_unfolded.at(ibin));
-                error_mass = error_mass < temp_error_mass?temp_error_mass:error_mass;
-                error_pt = error_pt < temp_error_pt?temp_error_pt:error_pt;
 
-                if(it->first == "FSR")
+
+            if(it->first != "PDF")
+            {
+                // Take the maximum variation as systematic uncertainty
+                for(int i = 0; i < size; i++)
                 {
-                    error_mass = fabs(meanMass_data_unfolded_sysVariation[it->first][(it->second).at(0)].at(ibin)-meanMass_data_unfolded_sysVariation[it->first][(it->second).at(1)].at(ibin));
-                    error_pt = fabs(meanPt_data_unfolded_sysVariation[it->first][(it->second).at(0)].at(ibin)-meanPt_data_unfolded_sysVariation[it->first][(it->second).at(1)].at(ibin));
-                    break;
+                    double temp_error_mass = fabs(meanMass_data_unfolded_sysVariation[it->first][(it->second).at(i)].at(ibin) - meanMass_data_unfolded.at(ibin));
+                    double temp_error_pt = fabs(meanPt_data_unfolded_sysVariation[it->first][(it->second).at(i)].at(ibin) - meanPt_data_unfolded.at(ibin));
+                    error_mass = error_mass < temp_error_mass?temp_error_mass:error_mass;
+                    error_pt = error_pt < temp_error_pt?temp_error_pt:error_pt;
+
+                    if(it->first == "FSR")
+                    {
+                        error_mass = fabs(meanMass_data_unfolded_sysVariation[it->first][(it->second).at(0)].at(ibin)-meanMass_data_unfolded_sysVariation[it->first][(it->second).at(1)].at(ibin));
+                        error_pt = fabs(meanPt_data_unfolded_sysVariation[it->first][(it->second).at(0)].at(ibin)-meanPt_data_unfolded_sysVariation[it->first][(it->second).at(1)].at(ibin));
+                        break;
+                    }
                 }
             }
+            else
+            {
+                error_mass = meanMassPDFVariation.at(ibin)->GetRMS();
+                error_pt = meanPtPDFVariation.at(ibin)->GetRMS();
+            }
+
             meanMass_data_folded_systematic[it->first].push_back(error_mass);
             meanPt_data_folded_systematic[it->first].push_back(error_pt);
 
             meanMass_data_folded_rel_systematic[it->first].push_back(error_mass/ meanMass_data_unfolded.at(ibin) * 100.);
             meanPt_data_folded_rel_systematic[it->first].push_back(error_pt/ meanPt_data_unfolded.at(ibin) * 100.);
+
             cout << setw(10) << error_mass ;
             cout << setw(10) << error_pt << endl;
         }
@@ -2250,6 +2233,81 @@ double ISRUnfold::getMCGenMeanMass(int ibin)
     {
         return meanMass_mc_unfolded.at(ibin);
     }
+}
+
+
+void ISRUnfold::fillPtPDFVariationHist(int ith)
+{
+    //cout << "ISRUnfold::fillPtPDFVariationHist()  ith: " << ith << endl;
+
+    // Find number of mass bins
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+
+    TString ith_;
+    ith_.Form("%03d", ith);
+
+    // Save mean pt
+    for(int i = 0; i < nMassBin; i++)
+    {
+        TString ibinMass;
+        ibinMass.Form("%d", i);
+
+        TH1* hpt_temp_nominal = nomPtUnfold->GetOutput("hunfolded_pt_temp_nom",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        double nominal_mean = hpt_temp_nominal->GetMean();
+
+        if(ith == 1)
+        {
+            meanPtPDFVariation.push_back(new TH1F("MeanPtPDF_bin"+ibinMass, "MeanPtPDF_bin"+ibinMass, 100, nominal_mean-0.05, nominal_mean+0.05));
+        }
+
+        TH1* hpt_temp_data;
+
+        // Get histograms to set mean values
+        hpt_temp_data = sysPtUnfold["PDF"]["PDFerror"+ith_]->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+        meanPtPDFVariation.at(i)->Fill(hpt_temp_data->GetMean());
+
+        delete hpt_temp_data;
+        delete hpt_temp_nominal;
+    }
+}
+
+void ISRUnfold::fillMassPDFVariationHist(int ith)
+{
+
+    //cout << "ISRUnfold::setMeanMass()   Save mean of dilepton..." << endl;
+
+    const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
+    int nMassBin = temp_tvecd->GetNrows() - 1;
+    const Double_t* massBins = temp_tvecd->GetMatrixArray();
+
+    TString ith_;
+    ith_.Form("%03d", ith);
+
+    //cout << "PDFerror"+ith_ << endl;
+    TH1* hunfolded_mass = sysMassUnfold["PDF"]["PDFerror"+ith_]->GetOutput("hunfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+    TH1* hmass_temp_nominal = nomMassUnfold->GetOutput("hunfolded_mass_temp_nom",0,0,"mass[UO];pt[UOC0]",kTRUE);
+
+    // Loop over mass bins
+    for(int ibin = 0; ibin < nMassBin; ibin++)
+    {
+        TString ibinMass;
+        ibinMass.Form("%d", ibin);
+
+        // set x-axis range
+        hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(massBins[ibin]+0.01), hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+        hmass_temp_nominal->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(massBins[ibin]+0.01), hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+
+        if(ith == 1)
+        {
+            double nominal_mean = hmass_temp_nominal->GetMean();
+            meanMassPDFVariation.push_back(new TH1F("MeanMassPDF_bin"+ibinMass, "MeanMassPDF_bin"+ibinMass, 100, nominal_mean-0.05, nominal_mean+0.05));
+        }
+        meanMassPDFVariation.at(ibin)->Fill(hunfolded_mass->GetMean());
+    }// end of mass bin loop
+
+    delete hunfolded_mass;
+    delete hmass_temp_nominal;
 }
 
 void ISRUnfold::fillPtStatVariationHist(int istat)
@@ -2666,8 +2724,9 @@ TH1* ISRUnfold::getRawHist(TString var, TString filePath, TString dirName, TStri
 
 void ISRUnfold::drawStatVariation(bool isPt, int massBin)
 {
-    TCanvas* c = new TCanvas("c","c", 800, 800);
-    c->SetLogy();
+    gStyle->SetOptStat(1101);
+    TCanvas* c = new TCanvas("c","c", 2400, 2400);
+    //c->SetLogy();
     c->cd();
 
     TString nth;
@@ -2678,14 +2737,186 @@ void ISRUnfold::drawStatVariation(bool isPt, int massBin)
     if(isPt)
     {
         meanPtStatVariation.at(massBin)->Draw("pe");
-        c->SaveAs("MeanPtStat_" + nth + year_ + ".pdf");
+        c->Update();
+
+        double y_max = c->GetFrame()->GetY2();
+        double y_min = c->GetFrame()->GetY1();
+        double x_nominal = meanPt_data_unfolded.at(massBin);
+
+        TLine grid;
+        grid.SetLineColor(kRed);
+        grid.SetLineStyle(2);
+        grid.DrawLine(x_nominal, y_min, x_nominal, y_max);
+
+        c->SaveAs("MeanPtStat_" + nth + year_ + ".png");
     }
     else
     {
         meanMassStatVariation.at(massBin)->Draw("pe");
-        c->SaveAs("MeanMassStat_" + nth + year_ + ".pdf");
+        c->Update();
+
+        double y_max = c->GetFrame()->GetY2();
+        double y_min = c->GetFrame()->GetY1();
+        double x_nominal = meanMass_data_unfolded.at(massBin);
+
+        TLine grid;
+        grid.SetLineColor(kRed);
+        grid.SetLineStyle(2);
+        grid.DrawLine(x_nominal, y_min, x_nominal, y_max);
+
+        c->SaveAs("MeanMassStat_" + nth + year_ + ".png");
     }
     delete c;
+}
+
+
+void ISRUnfold::drawPDFVariation(bool isPt, int massBin)
+{
+    gStyle->SetOptStat(1101);
+    TCanvas* c = new TCanvas("c","c", 2400, 2400);
+    //c->SetLogy();
+    c->cd();
+
+    TString nth;
+    nth.Form("%d", massBin);
+    TString year_;
+    year_.Form("%d", year);
+
+    if(isPt)
+    {
+        meanPtPDFVariation.at(massBin)->Draw("pe");
+        c->Update();
+
+        double y_max = c->GetFrame()->GetY2();
+        double y_min = c->GetFrame()->GetY1();
+        double x_nominal = meanPt_data_unfolded.at(massBin);
+
+        TLine grid;
+        grid.SetLineColor(kRed);
+        grid.SetLineStyle(2);
+        grid.DrawLine(x_nominal, y_min, x_nominal, y_max);
+
+        c->SaveAs("MeanPtPDF_" + nth + year_ + ".png");
+    }
+    else
+    {
+        meanMassPDFVariation.at(massBin)->Draw("pe");
+        c->Update();
+
+        double y_max = c->GetFrame()->GetY2();
+        double y_min = c->GetFrame()->GetY1();
+        double x_nominal = meanMass_data_unfolded.at(massBin);
+
+        TLine grid;
+        grid.SetLineColor(kRed);
+        grid.SetLineStyle(2);
+        grid.DrawLine(x_nominal, y_min, x_nominal, y_max);
+
+        c->SaveAs("MeanMassPDF_" + nth + year_ + ".png");
+    }
+    delete c;
+}
+
+void ISRUnfold::drawSysVariation(TString sysName, TString var, int massBin)
+{
+    gStyle->SetOptStat(0);
+    TCanvas* c = new TCanvas("c","c", 2400, 2400);
+    c->cd();
+
+    TH1* hout = NULL;
+
+    TString nth;
+    nth.Form("%d", massBin);
+    TString year_;
+    year_.Form("%d", year);
+
+    int size = sysMap[sysName].size();
+
+    if(var.Contains("Pt"))
+    {
+        double x_nominal = meanPt_data_unfolded.at(massBin);
+        double x_err = meanPtSysErr_data_unfolded.at(massBin);
+        hout = new TH1D("hSysVar", "hSysVar", 10, x_nominal-x_err, x_nominal+x_err); // # of bins doesn't matter here
+        hout->GetYaxis()->SetTickLength(0);
+        hout->GetYaxis()->SetLabelSize(0);
+        hout->GetXaxis()->SetTitle("<p_{T}^{\ell\ell}> [GeV]");
+        hout->Draw();
+        c->Update();
+
+        double y_max = c->GetFrame()->GetY2();
+        double y_min = c->GetFrame()->GetY1();
+
+        TLatex *l = new TLatex(x_nominal,y_max/2., "Nominal");
+        l->SetTextAngle(90);
+        l->SetTextFont(43);
+        l->SetTextSize(50);
+        l->Draw();
+
+        TLine grid;
+        grid.SetLineColor(kRed);
+        grid.SetLineStyle(1);
+        grid.DrawLine(x_nominal, y_min, x_nominal, y_max);
+
+        TLine grid_var;
+        grid_var.SetLineColor(kBlack);
+        grid_var.SetLineStyle(2);
+
+        for(int i = 0; i < size; i++)
+        {
+            double x_variation = meanPt_data_unfolded_sysVariation[sysName][sysMap[sysName][i]].at(massBin); 
+            grid_var.DrawLine(x_variation, y_min, x_variation, y_max); 
+            l = new TLatex(x_variation,y_max/2., sysMap[sysName][i]);
+            l->SetTextAngle(90);
+            l->SetTextFont(43);
+            l->SetTextSize(50);
+            l->Draw();
+        }
+    
+        c->SaveAs("MeanPt_"+sysName+"_"+nth+"_"+year_+".png");
+    }
+    else
+    {
+        // 
+        double x_nominal = meanMass_data_unfolded.at(massBin);
+        double x_err = meanMassSysErr_data_unfolded.at(massBin);
+        hout = new TH1D("hSysVar", "hSysVar", 10, x_nominal-x_err, x_nominal+x_err); // # of bins doesn't matter here
+        hout->GetYaxis()->SetTickLength(0);
+        hout->GetYaxis()->SetLabelSize(0);
+        hout->GetXaxis()->SetTitle("<Mass^{\ell\ell}> [GeV]");
+        hout->Draw();
+        c->Update();
+
+        double y_max = c->GetFrame()->GetY2();
+        double y_min = c->GetFrame()->GetY1();
+
+        TLatex *l = new TLatex(x_nominal,y_max/2., "Nominal");
+        l->SetTextAngle(90);
+        l->SetTextFont(43);
+        l->SetTextSize(50);
+        l->Draw();
+
+        TLine grid;
+        grid.SetLineColor(kRed);
+        grid.SetLineStyle(1);
+        grid.DrawLine(x_nominal, y_min, x_nominal, y_max);
+
+        TLine grid_var;
+        grid_var.SetLineColor(kBlack);
+        grid_var.SetLineStyle(2);
+
+        for(int i = 0; i < size; i++)
+        {
+            double x_variation = meanMass_data_unfolded_sysVariation[sysName][sysMap[sysName][i]].at(massBin); 
+            grid_var.DrawLine(x_variation, y_min, x_variation, y_max); 
+            l = new TLatex(x_variation,y_max/2., sysMap[sysName][i]);
+            l->SetTextAngle(90);
+            l->SetTextFont(43);
+            l->SetTextSize(50);
+            l->Draw();
+        }
+    
+        c->SaveAs("MeanMass_"+sysName+"_"+nth+"_"+year_+".png");
+    }
 }
 
 void ISRUnfold::drawSystematics(TString var)
