@@ -760,7 +760,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
 
     // Save canvas
     c_out->cd();
-    c_out->SaveAs(outName!=""?outName+var+sysName+".png":"detector_"+var+sysName+".png");
+    c_out->SaveAs(outName!=""?output_baseDir+outName+var+sysName+".png":output_baseDir+"detector_"+var+sysName+".png");
 
     delete filein;
     return c_out;
@@ -938,7 +938,7 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
 
     // Save canvas
     c_out->cd();
-    c_out->SaveAs(outName!=""?outName+".png":"unfolded_"+var+".png");
+    c_out->SaveAs(outName!=""?output_baseDir+outName+".png":output_baseDir+"unfolded_"+var+".png");
 
     return c_out;
 }
@@ -1069,7 +1069,7 @@ TCanvas* ISRUnfold::drawAcceptCorrHists(TString var, TString filePath, TString b
     hRatio->Draw("p9histe same");
 
     c_out->cd();
-    c_out->SaveAs(outName!=""?outName+".png":"acceptance_"+var+".png");
+    c_out->SaveAs(outName!=""?output_baseDir+outName+".png":output_baseDir+"acceptance_"+var+".png");
     return c_out;
 }
 
@@ -1755,7 +1755,7 @@ void ISRUnfold::drawComparisonPlot(TString var, TString plotName, TString topYax
     hratio->Draw("p9histe same");
 
     c_out->cd();
-    c_out->SaveAs(outName!=""?outName+".png":plotName+"_"+var+".png");
+    c_out->SaveAs(outName!=""?output_baseDir+outName+".png":output_baseDir+plotName+"_"+var+".png");
 }
 
 void ISRUnfold::setMeanMass_Accept()
@@ -2748,7 +2748,7 @@ void ISRUnfold::drawStatVariation(bool isPt, int massBin)
         grid.SetLineStyle(2);
         grid.DrawLine(x_nominal, y_min, x_nominal, y_max);
 
-        c->SaveAs("MeanPtStat_" + nth + year_ + ".png");
+        c->SaveAs(output_baseDir+"MeanPtStat_" + nth + year_ + ".png");
     }
     else
     {
@@ -2764,7 +2764,7 @@ void ISRUnfold::drawStatVariation(bool isPt, int massBin)
         grid.SetLineStyle(2);
         grid.DrawLine(x_nominal, y_min, x_nominal, y_max);
 
-        c->SaveAs("MeanMassStat_" + nth + year_ + ".png");
+        c->SaveAs(output_baseDir+"MeanMassStat_" + nth + year_ + ".png");
     }
     delete c;
 }
@@ -2796,7 +2796,7 @@ void ISRUnfold::drawPDFVariation(bool isPt, int massBin)
         grid.SetLineStyle(2);
         grid.DrawLine(x_nominal, y_min, x_nominal, y_max);
 
-        c->SaveAs("MeanPtPDF_" + nth + year_ + ".png");
+        c->SaveAs(output_baseDir+"MeanPtPDF_" + nth + year_ + ".png");
     }
     else
     {
@@ -2812,7 +2812,7 @@ void ISRUnfold::drawPDFVariation(bool isPt, int massBin)
         grid.SetLineStyle(2);
         grid.DrawLine(x_nominal, y_min, x_nominal, y_max);
 
-        c->SaveAs("MeanMassPDF_" + nth + year_ + ".png");
+        c->SaveAs(output_baseDir+"MeanMassPDF_" + nth + year_ + ".png");
     }
     delete c;
 }
@@ -2872,7 +2872,7 @@ void ISRUnfold::drawSysVariation(TString sysName, TString var, int massBin)
             l->Draw();
         }
     
-        c->SaveAs("MeanPt_"+sysName+"_"+nth+"_"+year_+".png");
+        c->SaveAs(output_baseDir+"MeanPt_"+sysName+"_"+nth+"_"+year_+".png");
     }
     else
     {
@@ -2915,7 +2915,7 @@ void ISRUnfold::drawSysVariation(TString sysName, TString var, int massBin)
             l->Draw();
         }
     
-        c->SaveAs("MeanMass_"+sysName+"_"+nth+"_"+year_+".png");
+        c->SaveAs(output_baseDir+"MeanMass_"+sysName+"_"+nth+"_"+year_+".png");
     }
 }
 
@@ -3027,7 +3027,7 @@ void ISRUnfold::drawSystematics(TString var)
 
     leg->Draw();
     c_out->cd();
-    c_out->SaveAs("Systematic_"+var+".png");
+    c_out->SaveAs(output_baseDir+"Systematic_"+var+".png");
 
     delete c_out;
 }
