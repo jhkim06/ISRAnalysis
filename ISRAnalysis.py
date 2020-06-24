@@ -188,8 +188,8 @@ class ISRAnalysis:
     def drawSystematics(self, var = "Pt") :
         self.unfold.drawSystematics(var) 
     # Do unfold! 
-    def doUnfold(self, doSystematic = False):
-        self.unfold.doISRUnfold(doSystematic)
+    def doUnfold(self, doSystematic = False, doRegularize = False):
+        self.unfold.doISRUnfold(doSystematic, doRegularize)
 
     def doStatUnfold(self):
         self.unfold.doStatUnfold()
@@ -251,6 +251,9 @@ class ISRAnalysis:
 
     def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False): 
         self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
+
+    def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):
+        self.unfold.drawCorrelation(var, steering, useAxis, outName)
 
     # Get histograms
     def getPtVsMassTGraph(self, grTitle = "", isUnfolded = True, isAccepted = False, doSys = False):

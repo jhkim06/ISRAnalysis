@@ -230,7 +230,7 @@ public:
     void divideByBinWidth(TH1* hist, bool norm = false);
 
     // Do unfold 
-    void doISRUnfold( bool doSys = false);
+    void doISRUnfold( bool doSys = false, bool doReg = false);
     void doStatUnfold(); 
 
     void setStatError();
@@ -242,7 +242,7 @@ public:
     void doAcceptCorr(TString filePath, TString binDef, bool doSys = false);
     void drawAcceptance(TString var, TH1* hMC, TString outName);
     TCanvas* drawAcceptCorrHists(TString var, TString filePath, TString binDef, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth); 
-
+    void drawCorrelation(TString var, TString steering, bool useAis, TString outName = "");
     void drawComparisonPlot(TString var, TString plotName, TString topYaxisName, TString bottomYaxisName, TString bottomXaxisName, TH1* h1, TH1* h2, TH1* hratio, TString outName, int nthMassBin = 0);
 
     // Get histograms

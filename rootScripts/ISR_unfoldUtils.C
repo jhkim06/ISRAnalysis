@@ -1520,13 +1520,30 @@ void ISRUnfold::doStatUnfold()
     }
 }
 
-void ISRUnfold::doISRUnfold(bool doSys)
+void ISRUnfold::doISRUnfold(bool doSys, bool doReg)
 {
     if(!doSys)
     {
-        // Nominal unfolding
-        nomPtUnfold->DoUnfold(0);
-        nomMassUnfold->DoUnfold(0);
+        if(!doReg)
+        {
+            // Nominal unfolding
+            nomPtUnfold->DoUnfold(0);
+            nomMassUnfold->DoUnfold(0);
+        }
+        else
+        {
+            nomMassUnfold->DoUnfold(0);
+            int istart = pt_binning_Gen->GetGlobalBinNumber(0., 200.);
+            int iend = pt_binning_Gen->GetGlobalBinNumber(99., 200.);
+            nomPtUnfold->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
+
+            //TGraph *lcurve;
+            //TSpline *logtaux,*logtauy,*logtaucurvature;
+            //int ibest=nomPtUnfold->ScanLcurve(100,0,0,&lcurve,&logtaux,&logtauy,&logtaucurvature);
+            double tauMin=0.;
+            double tauMax=0.;
+            nomPtUnfold->ScanLcurve(100,tauMin,tauMax,0);
+        }
     }
     else
     {
@@ -1542,11 +1559,13 @@ void ISRUnfold::doISRUnfold(bool doSys)
 
             for(int i = 0; i < size; i++)
             {
-                //cout << "posfix: " << (it->second).at(i) << endl;
-                sysPtUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
-                sysMassUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
+                if(!doReg)
+                {
+                    //cout << "posfix: " << (it->second).at(i) << endl;
+                    sysPtUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
+                    sysMassUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
+                }
             
-                // TODO if PDF, then save variations in a histogram
                 if(it->first == "PDF")
                 {
                     fillMassPDFVariationHist(i+1); // i+1 since it starts from 1
@@ -1558,6 +1577,30 @@ void ISRUnfold::doISRUnfold(bool doSys)
     }// Unfold for systematic
 }
 
+void ISRUnfold::drawCorrelation(TString var, TString steering, bool useAxis, TString outName)
+{
+    gStyle->SetOptStat(0);
+    TCanvas* c = new TCanvas("c","c", 2400, 2400);
+    c->cd();
+
+    TH2* hCorrelation = NULL;
+
+    if(var.Contains("Mass"))
+    {
+        hCorrelation=nomMassUnfold->GetRhoIJtotal("histRho", 0, 0, steering, useAxis);
+    }
+    else
+    {
+        hCorrelation=nomPtUnfold->GetRhoIJtotal("histRho", 0, 0, steering, useAxis);
+    }
+
+    hCorrelation->SetMinimum(-1.);
+    hCorrelation->SetMaximum(1.);
+    hCorrelation->Draw("COLZ"); 
+
+    c->SaveAs(output_baseDir+"Correlation_"+var+"_"+outName+".png");
+    delete hCorrelation;
+}
 void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys)
 {
     TFile* filein = new TFile(filePath);
