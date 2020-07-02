@@ -181,6 +181,8 @@ public:
     // Destructor
     ~ISRUnfold(){}
 
+    void drawResponseM(TString var, TString sysName = "", TString sysPostfix = "", bool isDetector = true);
+
     const TVectorD& checkMatrixCond(TString var = "Mass");
     double getSmearedChi2(TString var, TString filePath, TString dirName, TString steering, bool useAxis, bool divBinWidth = false);
     double getUnfoldedChi2(TString var, TString steering, bool useAxis, bool divBinWidth = false);
@@ -247,9 +249,11 @@ public:
 
     // Get histograms
     TH1* getDetUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
-    TH1* getMCHists(TString var, TString outHistName, TString steering, bool useAxis = true);
+    TH1* getGenMCHist(TString var, TString steering, bool useAxis = true, int massBin = 0, bool binWidth = false);
     TH1* getDetHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
     TH1* getRawHist(TString var, TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis, bool divBinWidth = false);
+
+    TH1* getUnfInput(TString var, TString steering, bool useAxis, int massBin, bool binWidth);
 
     // Helper functions
     void doNorm(TH1* hist, bool norm = true); 

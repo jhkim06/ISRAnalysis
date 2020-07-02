@@ -103,7 +103,6 @@ class ISRAnalysis:
     def subFake(self, isSys = False, systName = "nominal", sysPostfix = ""):
             
         fakeList = {"DYJets": "DY", self.dy10to50HistName:"DY"}
-        #fakeList = {"ZToEE_M_50_120_powheg": "DY", "ZToEE_M_120_200_powheg":"DY", "ZToEE_M_200_400_powheg":"DY", "DYJets10to50_MG":"DY"}
         
         for fake in fakeList.items():
             # TODO If sysPostfix is "Nominal", then use self.inHistDic[self.matrix_filekey], self.matrix_dirPath
@@ -119,9 +118,9 @@ class ISRAnalysis:
    
         bkgList = {}
         # 2016 데이터만 single top 샘플을 갖고 있다 
-        if self.year == "2016" :
-            #bkgList = {"QCD": "Fake", "WJet": "Fake",\
-            bkgList = {"WJets_MG": "WJets",\
+        if self.year == "2016" or self.year == "2017" or self.year == "2018":
+            bkgList = {"QCD": "Fake", "WJet": "Fake",\
+            #bkgList = {"WJets_MG": "WJets",\
                        "WW_pythia": "EWK", "WZ_pythia": "EWK", "ZZ_pythia": "EWK", \
                        "DYJets10to50ToTauTau":"EWK", "DYJetsToTauTau":"EWK", \
                        "TTLL_powheg": "Top"} # "SingleTop_tW_top_Incl": "Top", "SingleTop_tW_antitop_Incl": "Top"}
@@ -138,6 +137,8 @@ class ISRAnalysis:
                     self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, self.binDef, dirName, systName, sysPostfix)
                 else : 
                     self.unfold.subBkgs(self.inHistDic['hist_lepScale'], bkg, doSystematic, self.binDef, dirName+"_"+sysPostfix, systName, sysPostfix)
+            elif "Unfold_det" == systName :
+                self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, self.binDef, dirName, systName, sysPostfix)
             else :
                 self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, self.binDef, dirName, systName, sysPostfix)
             
@@ -151,13 +152,20 @@ class ISRAnalysis:
             else :
                 self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["matrix_lepScale"], self.matrix_dirPath+"_"+sysHistName, self.matrix_histName, sysName, sysHistName, self.binDef)
                 self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["matrix_lepScale"], self.matrix_dirPath+"_"+sysHistName, self.matrix_histName, sysName, sysHistName, self.binDef)
-        elif "Unfold" in sysName :
+        elif "Unfold" == sysName :
             if sysHistName == "Nominal" :
                 self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
                 self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
             else :
                 self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["fsr_matrix_powheg_pythia"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
                 self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["fsr_matrix_powheg_pythia"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+        elif "Unfold_det" == sysName :
+            if sysHistName == "Nominal" :
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+            else :
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["matrix_zptcorr"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["matrix_zptcorr"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
 
         elif "FSR" in sysName :
             if sysHistName == "PHOTOS" :
@@ -175,6 +183,9 @@ class ISRAnalysis:
 
     def printMeanValues(self):
         self.unfold.printMeanValues(True)
+
+    def drawResponseM(self, var = "Mass", sysName = "", sysPostfix = "", isDetector = True):
+        self.unfold.drawResponseM(var, sysName, sysPostfix, isDetector)
 
     def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
         if "LepMom" in sysName :
@@ -255,6 +266,12 @@ class ISRAnalysis:
     def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):
         self.unfold.drawCorrelation(var, steering, useAxis, outName)
 
+    def getUnfInHist(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
+        return self.unfold.getUnfInput(var, steering, useAxis, massBin, binWidth)
+
+    def getGenMCHist(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
+        return self.unfold.getGenMCHist(var, steering, useAxis, massBin, binWidth)
+
     # Get histograms
     def getPtVsMassTGraph(self, grTitle = "", isUnfolded = True, isAccepted = False, doSys = False):
         meanMass, meanPt = array('d'), array('d')
@@ -292,4 +309,3 @@ class ISRAnalysis:
     
         gr.SetName(grTitle)
         return gr
-
