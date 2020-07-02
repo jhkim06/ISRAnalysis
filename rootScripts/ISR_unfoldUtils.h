@@ -193,11 +193,11 @@ public:
     // Set nominal TUnfoldDensity 
     void setNomResMatrix(TString var, TString filepath, TString dirName, TString histName, TString binDef = "");
 
-    void setFromPrevUnfResult(ISRUnfold* unfold);
+    void setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept = false);
 
     // Set input histogram
     void setUnfInput(TString var, TString varPostfix = "", TString filepath = "", TString dirName ="", TString histName = "", bool isSys = false, TString sysName = "", TString sysPostfix = "");
-    void setUnfInput(ISRUnfold* unfold, TString var, bool isSys = false, TString sysName = "", TString sysPostfix = "");
+    void setUnfInput(ISRUnfold* unfold, TString var, bool isSys = false, TString sysName = "", TString sysPostfix = "", bool useAccept = false);
 
     // Set background histograms
     void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 

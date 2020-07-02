@@ -607,9 +607,9 @@ void ISRUnfold::setMassBindEdges()
 
 }
 
-void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold)
+void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
 {
-    //cout << "setFromPrevUnfResult()" << endl;
+    cout << "setFromPrevUnfResult(), useAccept? " << useAccept << endl;
     // Loop over sytematics considered in the previous unfold class
     // So first get sysMap map object
     std::map<TString, std::vector<TString>> sysMap_previous = unfold->getSystematicMap();
@@ -617,7 +617,7 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold)
     std::map<TString, std::vector<TString>>::iterator it = sysMap_previous.begin();
     while(it != sysMap_previous.end())
     {
-        //cout << "Systematic name: " << it->first << endl;
+        cout << "Systematic name: " << it->first << endl;
         
         if(this->sysMap.find(it->first) == this->sysMap.end())
         {
@@ -635,8 +635,18 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold)
                                                                                                 regMode, TUnfold::kEConstraintArea, TUnfoldDensityV17::kDensityModeBinWidth,
                                                                                                 mass_binning_Gen, mass_binning_Rec);
 
-                this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedPt_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
-                this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedMass_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                if(!useAccept)
+                {
+                    this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedPt_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                    this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedMass_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                } 
+                else
+                {       
+                    cout << "use acceptance corrected output!" << endl;
+                    this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhasePtData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                    this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhaseMassData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                }
+                
 
                 this->sysMap[it->first].push_back(sysMap_previous[it->first][ith]);
             }
@@ -651,8 +661,16 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold)
             int size = sysMap_previous[it->first].size();
             for(int ith = 0; ith < size; ith++)
             {
-                this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedPt_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
-                this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedMass_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                if(!useAccept)
+                {
+                    this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedPt_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                    this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedMass_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                }
+                else
+                {
+                    this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhasePtData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                    this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhaseMassData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                }
             }
             // Else, use the default input
         }
@@ -709,30 +727,59 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirN
 }
 
 // Set input histogram from unfolding output
-void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString var, bool isSys, TString sysName, TString sysPostfix)
+void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString var, bool isSys, TString sysName, TString sysPostfix, bool useAccept)
 {
     TH1::AddDirectory(kFALSE);
 
-    if(!isSys)
+    if(!useAccept)
     {
-        if(var=="Pt")
+        if(!isSys)
         {
-            nomPtUnfold->SetInput(unfold->getDetUnfoldedHists("Pt", "UnfoldOut_Pt", "*[*]", false), 1.);
+            if(var=="Pt")
+            {
+                nomPtUnfold->SetInput(unfold->getDetUnfoldedHists("Pt", "UnfoldOut_Pt", "*[*]", false), 1.);
+            }
+            else
+            {
+                nomMassUnfold->SetInput(unfold->getDetUnfoldedHists("Mass", "UnfoldOut_Mass", "*[*]", false), 1.);
+            }
         }
         else
         {
-            nomMassUnfold->SetInput(unfold->getDetUnfoldedHists("Mass", "UnfoldOut_Mass", "*[*]", false), 1.);
+            if(var=="Pt")
+            {
+                sysPtUnfold[sysName][sysPostfix]->SetInput(unfold->getDetUnfoldedHists("Pt", "UnfoldOut_Pt"+sysName+sysPostfix, "*[*]", false), 1.);
+            }
+            else
+            {
+                sysMassUnfold[sysName][sysPostfix]->SetInput(unfold->getDetUnfoldedHists("Mass", "UnfoldOut_Mass"+sysName+sysPostfix, "*[*]", false), 1.);
+            }
         }
     }
     else
     {
-        if(var=="Pt")
+        cout << "set from previous unfold class, isSys " << isSys << endl; 
+        if(!isSys)
         {
-            sysPtUnfold[sysName][sysPostfix]->SetInput(unfold->getDetUnfoldedHists("Pt", "UnfoldOut_Pt"+sysName+sysPostfix, "*[*]", false), 1.);
+            if(var=="Pt")
+            {
+                nomPtUnfold->SetInput(unfold->hFullPhasePtData, 1.);
+            }
+            else
+            {
+                nomMassUnfold->SetInput(unfold->hFullPhaseMassData, 1.);
+            }
         }
         else
         {
-            sysMassUnfold[sysName][sysPostfix]->SetInput(unfold->getDetUnfoldedHists("Mass", "UnfoldOut_Mass"+sysName+sysPostfix, "*[*]", false), 1.);
+            if(var=="Pt")
+            {
+                sysPtUnfold[sysName][sysPostfix]->SetInput(unfold->hFullPhasePtData, 1.);
+            }
+            else
+            {
+                sysMassUnfold[sysName][sysPostfix]->SetInput(unfold->hFullPhaseMassData, 1.);
+            }
         }
     }
 }
@@ -1263,22 +1310,26 @@ TCanvas* ISRUnfold::drawAcceptCorrHists(TString var, TString filePath, TString b
 
     if(var.Contains("Pt"))
     {
-        hData = pt_binning_Gen->ExtractHistogram("hData", hFullPhasePtData, 0, useAxis, steering);
-        hDY_raw = (TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets");
-        if(year==2016)
-            hDY_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50"));
+        if(sysName=="")
+            hData = pt_binning_Gen->ExtractHistogram("hData", hFullPhasePtData, 0, useAxis, steering);
         else
-            hDY_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50_MG"));
+            hData = pt_binning_Gen->ExtractHistogram("hData", hSysFullPhasePtData["ID"]["IdSFUp"], 0, useAxis, steering);
+
+        hDY_raw = (TH1*) filein->Get("Acceptance/PtGen" + binDef + "/histo_DYJets");
+        if(year==2016)
+            hDY_raw->Add((TH1*) filein->Get("Acceptance/PtGen" + binDef + "/histo_DYJets10to50"));
+        else
+            hDY_raw->Add((TH1*) filein->Get("Acceptance/PtGen" + binDef + "/histo_DYJets10to50_MG"));
         hDY = pt_binning_Gen->ExtractHistogram("hDY", hDY_raw, 0, useAxis, steering);
     }
     else
     {
         hData = mass_binning_Gen->ExtractHistogram("hData", hFullPhaseMassData, 0, useAxis, steering);
-        hDY_raw = (TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets");
+        hDY_raw = (TH1*) filein->Get("Acceptance/MassGen" + binDef + "/histo_DYJets");
         if(year==2016)
-            hDY_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50"));
+            hDY_raw->Add((TH1*) filein->Get("Acceptance/MassGen" + binDef + "/histo_DYJets10to50"));
         else
-            hDY_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50_MG"));
+            hDY_raw->Add((TH1*) filein->Get("Acceptance/MassGen" + binDef + "/histo_DYJets10to50_MG"));
         hDY = mass_binning_Gen->ExtractHistogram("hDY", hDY_raw, 0, useAxis, steering);
     }
     if(divBinWidth)
@@ -1919,11 +1970,11 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys)
     TH1* hFiducialPhasePtMC = NULL;
 
     // Mass
-    hFullPhaseMassMC_raw = (TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets");
+    hFullPhaseMassMC_raw = (TH1*) filein->Get("Acceptance/MassGen" + binDef + "/histo_DYJets");
     if(year==2016)
-        hFullPhaseMassMC_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50"));
+        hFullPhaseMassMC_raw->Add((TH1*) filein->Get("Acceptance/MassGen" + binDef + "/histo_DYJets10to50"));
     else
-        hFullPhaseMassMC_raw->Add((TH1*) filein->Get("FullPhase/MassGen" + binDef + "/histo_DYJets10to50_MG"));
+        hFullPhaseMassMC_raw->Add((TH1*) filein->Get("Acceptance/MassGen" + binDef + "/histo_DYJets10to50_MG"));
 
     hFiducialPhaseMassMC = nomMassUnfold->GetBias("hFiducialMass", 0, 0, "*[*]", false);
     hAcceptanceMass = (TH1*) hFullPhaseMassMC_raw->Clone("hAcceptanceMass");
@@ -1933,11 +1984,11 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys)
     hFullPhaseMassData->Multiply(hAcceptanceMass);
 
     // Pt
-    hFullPhasePtMC_raw = (TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets");
+    hFullPhasePtMC_raw = (TH1*) filein->Get("Acceptance/PtGen" + binDef + "/histo_DYJets");
     if(year==2016)
-        hFullPhasePtMC_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50"));
+        hFullPhasePtMC_raw->Add((TH1*) filein->Get("Acceptance/PtGen" + binDef + "/histo_DYJets10to50"));
     else
-        hFullPhasePtMC_raw->Add((TH1*) filein->Get("FullPhase/PtGen" + binDef + "/histo_DYJets10to50_MG"));
+        hFullPhasePtMC_raw->Add((TH1*) filein->Get("Acceptance/PtGen" + binDef + "/histo_DYJets10to50_MG"));
 
     hFiducialPhasePtMC = nomPtUnfold->GetBias("hFiducialPt", 0, 0, "*[*]", false);
     hAcceptancePt = (TH1*) hFullPhasePtMC_raw->Clone("hAcceptancePt");

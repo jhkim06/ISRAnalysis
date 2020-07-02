@@ -69,8 +69,7 @@ class ISRAnalysis:
         return self.unfold.checkMatrixCond(var)
 
     def setFromPrevUnfold(self, preUnfold):
-
-        self.unfold.setFromPrevUnfResult(preUnfold)
+        self.unfold.setFromPrevUnfResult(preUnfold, True)
  
     def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = ""):
         
@@ -94,11 +93,11 @@ class ISRAnalysis:
                 self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
         else:
             # Let's set systematic input histograms also!
-            self.unfold.setUnfInput(unfoldObj, "Pt", isSys, sysName, sysPostfix)
-            self.unfold.setUnfInput(unfoldObj, "Mass", isSys, sysName, sysPostfix)
+            self.unfold.setUnfInput(unfoldObj, "Pt", isSys, sysName, sysPostfix, True)
+            self.unfold.setUnfInput(unfoldObj, "Mass", isSys, sysName, sysPostfix, True)
 
     def setFromPreviousUnfold(self, unfoldObj) :
-        self.unfold.setFromPrevUnfResult(unfoldObj)
+        self.unfold.setFromPrevUnfResult(unfoldObj, True)
             
     def subFake(self, isSys = False, systName = "nominal", sysPostfix = ""):
             
@@ -119,8 +118,8 @@ class ISRAnalysis:
         bkgList = {}
         # 2016 데이터만 single top 샘플을 갖고 있다 
         if self.year == "2016" or self.year == "2017" or self.year == "2018":
-            bkgList = {"QCD": "Fake", "WJet": "Fake",\
-            #bkgList = {"WJets_MG": "WJets",\
+            #bkgList = {"QCD": "Fake", "WJet": "Fake",\
+            bkgList = {"WJets_MG": "WJets",\
                        "WW_pythia": "EWK", "WZ_pythia": "EWK", "ZZ_pythia": "EWK", \
                        "DYJets10to50ToTauTau":"EWK", "DYJetsToTauTau":"EWK", \
                        "TTLL_powheg": "Top"} # "SingleTop_tW_top_Incl": "Top", "SingleTop_tW_antitop_Incl": "Top"}
@@ -256,12 +255,17 @@ class ISRAnalysis:
         for ibin in range(self.nMassBins): 
             self.unfold.drawSysVariation(sysName, var, ibin)
 
-    def doAcceptance(self, doSys = False) :
-        #self.unfold.doAcceptCorr(self.inHistDic['hist_accept'], self.binDef, doSys)
-        self.unfold.doAcceptCorr(self.inHistDic['hist_accept'], "_FineCoarse", doSys)
+    def doAcceptance(self, doSys = False, isFSR = False) :
+        if isFSR :
+            self.unfold.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys)
+        else :
+            self.unfold.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", doSys)
 
-    def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False): 
-        self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
+    def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isFSR = False): 
+        if isFSR :
+            self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept_fullPhase'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
+        else : 
+            self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept_drp1'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
 
     def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):
         self.unfold.drawCorrelation(var, steering, useAxis, outName)
