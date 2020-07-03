@@ -957,6 +957,12 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     pad1->Draw();
     pad1->cd();
 
+    if(var.Contains("Mass"))
+    {
+        hData->GetXaxis()->SetRangeUser(massBinEdges.at(0), massBinEdges.at(5));
+        hDY->GetXaxis()->SetRangeUser(massBinEdges.at(0), massBinEdges.at(5));
+    }
+
     hData->SetTitle("");
     hData->SetStats(false);
     hData->GetXaxis()->SetMoreLogLabels(true);
@@ -1055,6 +1061,12 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     pad2->Draw();
     pad2->cd();
 
+    if(var.Contains("Mass"))
+    {
+        hRatio->GetXaxis()->SetRangeUser(massBinEdges.at(0), massBinEdges.at(5));
+        hMCtotal->GetXaxis()->SetRangeUser(massBinEdges.at(0), massBinEdges.at(5));
+    }
+
     hRatio->SetStats(false);
     hRatio->Divide(hMCtotal);
     hRatio->Draw("p9histe");
@@ -1098,7 +1110,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     }
     hRatio->Draw("p9histe same");
 
-    TLine* l_ = new TLine(hRatio->GetXaxis()->GetXmin(),1,hRatio->GetXaxis()->GetXmax(),1);
+    TLine* l_ = new TLine(massBinEdges.at(0),1,hRatio->GetXaxis()->GetXmax(),1);
     l_->SetLineColor(kRed);
     l_->Draw("same");
     l_->SetLineStyle(3);
@@ -1310,10 +1322,7 @@ TCanvas* ISRUnfold::drawAcceptCorrHists(TString var, TString filePath, TString b
 
     if(var.Contains("Pt"))
     {
-        if(sysName=="")
-            hData = pt_binning_Gen->ExtractHistogram("hData", hFullPhasePtData, 0, useAxis, steering);
-        else
-            hData = pt_binning_Gen->ExtractHistogram("hData", hSysFullPhasePtData["ID"]["IdSFUp"], 0, useAxis, steering);
+        hData = pt_binning_Gen->ExtractHistogram("hData", hFullPhasePtData, 0, useAxis, steering);
 
         hDY_raw = (TH1*) filein->Get("Acceptance/PtGen" + binDef + "/histo_DYJets");
         if(year==2016)
@@ -1818,6 +1827,11 @@ void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THSta
         if(nthBkg == bkgTypeN[bkgTypes[i]])
         {
             //cout << bkgTypes[i] << " " << bkgTypeN[bkgTypes[i]] << endl;
+            
+            if(var.Contains("Mass"))
+            {
+                htemp->GetXaxis()->SetRangeUser(massBinEdges.at(0), massBinEdges.at(5));
+            }
             htemp->SetFillColor(bkgColors[bkgTypes[i]]);
             hs.Add(htemp);
             hMCtotal.Add(htemp);
