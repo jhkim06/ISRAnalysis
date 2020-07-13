@@ -191,7 +191,7 @@ double ISRUnfold::getUnfoldedChi2(TString var, TString steering, bool useAxis, b
         //cout << "data: " << hData->GetBinContent(i) << " mc: " << hDY->GetBinContent(i) << " data error: " << hData->GetBinError(i) << endl;
         chi2+= pull*pull;
     }
-    cout << "chi^{2}, " << chi2 << endl;
+    //cout << "chi^{2}, " << chi2 << endl;
     return chi2;
 
 }
@@ -699,7 +699,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirN
 
     if( var == "Pt" )
     {
-        cout << "sys: " << sysName << " postfix: " << sysPostfix << endl;
+        //cout << "sys: " << sysName << " postfix: " << sysPostfix << endl;
         sysPtUnfold[sysName][sysPostfix] = new TUnfoldDensityV17(hmcGenRec,
                                                                  TUnfold::kHistMapOutputHoriz,
                                                                  regMode,
@@ -758,7 +758,7 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString var, bool isSys, TString 
     }
     else
     {
-        cout << "set from previous unfold class, isSys " << isSys << endl;
+        //cout << "set from previous unfold class, isSys " << isSys << endl;
         if(!isSys)
         {
             if(var=="Pt")
@@ -791,7 +791,7 @@ void ISRUnfold::setUnfInput(TString var, TString varPostfix, TString filepath, T
 
     TFile* filein = new TFile(filepath);
     TH1* hRec = NULL;
-    cout << dirName+"/"+var+varPostfix+"/"+histName << endl;
+    //cout << dirName+"/"+var+varPostfix+"/"+histName << endl;
     hRec = (TH1*)filein->Get(dirName+"/"+var+varPostfix+"/"+histName);
 
     // Use DY MC as unfolding input, i.e. simple closure test
@@ -909,6 +909,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
 
     double meanDipt = 0.;
     double meanDipt_bkgsub = 0.;
+    double histMin = 5e-1;
 
     setTDRStyle();
     writeExtraText = true;
@@ -973,12 +974,11 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     hData->SetMarkerSize(3.2);
     hData->SetLineColor(kBlack);
     hData->GetYaxis()->SetTitle("Events/Bin");
-    hData->SetMaximum(5e9);
-    hData->SetMinimum(1e-1);
+    hData->SetMinimum(histMin);
 
-    hDY->SetFillColor(kYellow);
+    hDY->SetFillColor(kOrange);
 
-    TLegend* leg = new TLegend(0.7, 0.65, 0.95, 0.85,"","brNDC");
+    TLegend* leg = new TLegend(0.7, 0.6, 0.95, 0.85,"","brNDC");
     //leg->SetNColumns(2);
     leg->SetTextFont(43);
     leg->SetTextSize(100);
@@ -990,6 +990,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     THStack* hsMC = new THStack("hsMC", "hsMC");
     setTHStack(var, filePath, dirName, *hsMC, *hMCtotal, *leg, steering, useAxis, "", divBinWidth);
     hsMC->Add(hDY);
+    hData->SetMaximum(hsMC->GetMaximum() * 1e5);
 
     hsMC->Draw("hist same");
     hData->Draw("p9histe same");
@@ -1041,14 +1042,21 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     writeCutInfo(pad1, var, nthMassBin);
 
     TLine massEdgeLine;
-    if(var.Contains("Mass"))
+    //if(var.Contains("Mass"))
     {
-        for(unsigned int i = 0; i < massBinEdges.size(); i++)
+        //for(unsigned int i = 0; i < massBinEdges.size(); i++)
+        //{
+        //    if(i==0) continue;
+        //    if(i==massBinEdges.size()-1) continue;
+        //    massEdgeLine.SetLineStyle(2);
+        //    massEdgeLine.DrawLine(massBinEdges[i], hData->GetMinimum(), massBinEdges[i], hData->GetMaximum());
+        //}
+
+        TH1 *last = (TH1*)hsMC->GetStack()->Last();
+        for(int ibin = 2; ibin < hData->GetNbinsX()+1; ibin++)
         {
-            if(i==0) continue;
-            if(i==massBinEdges.size()-1) continue;
-            massEdgeLine.SetLineStyle(2);
-            massEdgeLine.DrawLine(massBinEdges[i], hData->GetMinimum(), massBinEdges[i], hData->GetMaximum());
+            massEdgeLine.SetLineStyle(1);
+            massEdgeLine.DrawLine(hData->GetXaxis()->GetBinLowEdge(ibin), histMin, hData->GetXaxis()->GetBinLowEdge(ibin), last->GetBinContent(ibin));
         }
     }
     c_out->cd();
@@ -1112,10 +1120,10 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     }
     hRatio->Draw("p9histe same");
 
-    TLine* l_ = new TLine(massBinEdges.at(0),1,hRatio->GetXaxis()->GetXmax(),1);
+    TLine* l_ = new TLine(hRatio->GetXaxis()->GetXmin(), 1, hRatio->GetXaxis()->GetXmax(), 1);
     l_->SetLineColor(kRed);
     l_->Draw("same");
-    l_->SetLineStyle(3);
+    l_->SetLineStyle(1);
 
     // Save canvas
     c_out->cd();
@@ -1193,7 +1201,7 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     hData->SetMaximum(5e9);
     hData->SetMinimum(2e-1);
 
-    hDY->SetFillColor(kYellow);
+    hDY->SetFillColor(kOrange);
     hDY->Draw("hist same");
 
     TLegend* leg = new TLegend(0.6, 0.7, 0.9, 0.9,"","brNDC");
@@ -1384,7 +1392,7 @@ TCanvas* ISRUnfold::drawAcceptCorrHists(TString var, TString filePath, TString b
     hData->SetMaximum(5e9);
     hData->SetMinimum(2e-1);
 
-    hDY->SetFillColor(kYellow);
+    hDY->SetFillColor(kOrange);
     hDY->Draw("hist same");
 
     TLegend* leg = new TLegend(0.6, 0.7, 0.9, 0.9,"","brNDC");
@@ -1589,7 +1597,7 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
 
             if(forMC)
             {
-                cout << "call setTHStack" << endl;
+                //cout << "call setTHStack" << endl;
                 setTHStack(var, filePath, tempDirName, *hsMC_temp, *hMCtotal_temp, *leg, steering, useAxis, sysMap[sysName][ith], divBinWidth);
                 delete hsMC_temp;
                 delete leg;
@@ -1764,10 +1772,12 @@ void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THSta
 {
     TH1::AddDirectory(kFALSE);
     int bkgSize = bkgNames.size();
+    map<TString, TH1*> tempMap_legend;
+    vector<TString> temp_bkgName;
 
     // Count total number of each background type N
     map<TString, int> bkgTypeN;
-    cout << "N bkg: " << bkgSize << endl;
+    //cout << "N bkg: " << bkgSize << endl;
     for(int i = 0; i < bkgSize; i++)
     {
         if(bkgTypes[i] == "DY") continue;
@@ -1848,12 +1858,22 @@ void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THSta
             hMCtotal.Add(htemp);
 
             if(sysName == "")
-                leg.AddEntry(htemp, bkgTypes[i], "F");
+            {
+                //leg.AddEntry(htemp, bkgTypes[i], "F");
+                tempMap_legend[bkgTypes[i]] = htemp;
+                temp_bkgName.push_back(bkgTypes[i]);
+            }
 
             isFirstBkg = true;
             nthBkg = 0;
         }
     }
+
+    for(unsigned int i = temp_bkgName.size(); i > 0; i--)
+    {
+        leg.AddEntry(tempMap_legend[temp_bkgName.at(i-1)], temp_bkgName.at(i-1), "F");
+    }
+
 }
 void ISRUnfold::doStatUnfold()
 {

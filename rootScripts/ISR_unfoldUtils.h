@@ -182,8 +182,8 @@ public:
         // Fill colors for backgrounds
         bkgColors["Fake"] = kViolet+6;
         bkgColors["WJets"] = kViolet+1;
-        bkgColors["EWK"] = kYellow+2;
-        bkgColors["Top"] = kBlue;
+        bkgColors["EWK"] = kOrange+1;
+        bkgColors["Top"] = kAzure+1;
 
         verbose = verbose_;
 
