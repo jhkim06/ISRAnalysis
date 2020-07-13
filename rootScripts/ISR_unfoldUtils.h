@@ -81,6 +81,9 @@ private:
     std::vector<TH1*> meanPtPDFVariation;
     std::vector<TH1*> meanMassPDFVariation;
 
+    std::vector<TH1*> meanPtPDFVariation_Accept;
+    std::vector<TH1*> meanMassPDFVariation_Accept;
+
     // For systematic uncertainty
     std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysPtUnfold;
     std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysMassUnfold;
@@ -95,7 +98,11 @@ private:
     // Unfolded results
     vector<Double_t> meanMass_data_unfolded, meanMassStatErr_data_unfolded, meanMassSysErr_data_unfolded, meanMassTotErr_data_unfolded;
     vector<Double_t> meanPt_data_unfolded,   meanPtStatErr_data_unfolded,   meanPtSysErr_data_unfolded, meanPtTotErr_data_unfolded;
+
     // Nominal mean mass and pt for MC
+    vector<Double_t> meanMass_mc_folded, meanMassStatErr_mc_folded, meanMassSysErr_mc_folded, meanMassTotErr_mc_folded;
+    vector<Double_t> meanPt_mc_folded, meanPtStatErr_mc_folded, meanPtSysErr_mc_folded, meanPtTotErr_mc_folded;
+
     vector<Double_t> meanMass_mc_unfolded, meanMassStatErr_mc_unfolded, meanMassSysErr_mc_unfolded, meanMassTotErr_mc_unfolded;
     vector<Double_t> meanPt_mc_unfolded, meanPtStatErr_mc_unfolded, meanPtSysErr_mc_unfolded, meanPtTotErr_mc_unfolded;
 
@@ -132,6 +139,9 @@ private:
 
     std::map<TString, vector<double>> meanMass_data_accept_systematic;
     std::map<TString, vector<double>> meanPt_data_accept_systematic;
+
+    std::map<TString, vector<double>> meanMass_data_accept_rel_systematic;
+    std::map<TString, vector<double>> meanPt_data_accept_rel_systematic;
 
     bool verbose;
 
@@ -241,14 +251,14 @@ public:
     void setTotSysError();
     void setTotSysError_Accept();
 
-    void doAcceptCorr(TString filePath, TString binDef, bool doSys = false);
+    void doAcceptCorr(TString filePath, TString binDef, bool doSys = false, TString outName = "");
     void drawAcceptance(TString var, TH1* hMC, TString outName);
     TCanvas* drawAcceptCorrHists(TString var, TString filePath, TString binDef, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth); 
     void drawCorrelation(TString var, TString steering, bool useAis, TString outName = "");
     void drawComparisonPlot(TString var, TString plotName, TString topYaxisName, TString bottomYaxisName, TString bottomXaxisName, TH1* h1, TH1* h2, TH1* hratio, TString outName, int nthMassBin = 0);
 
     // Get histograms
-    TH1* getDetUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
+    TH1* getUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true, bool divBinWidth = false);
     TH1* getGenMCHist(TString var, TString steering, bool useAxis = true, int massBin = 0, bool binWidth = false);
     TH1* getDetHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
     TH1* getRawHist(TString var, TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis, bool divBinWidth = false);
@@ -259,8 +269,8 @@ public:
     void doNorm(TH1* hist, bool norm = true); 
     void drawtext(TGraph* g);
 
-    int setMeanPt();
-    int setMeanMass();
+    int setMeanPt(TString filePath = "", TString dirName = "");
+    int setMeanMass(TString filePath = "", TString dirName = "");
     void setMeanPt_Accept();
     void setMeanMass_Accept();
     int setSysMeanPt();
@@ -272,13 +282,19 @@ public:
     void fillMassStatVariationHist(int istat);
 
     void fillPtPDFVariationHist(int istat);
+    void fillPtPDFVariationHist_Accept(int istat);
     void fillMassPDFVariationHist(int istat);
+    void fillMassPDFVariationHist_Accept(int istat);
    
     // Get mean values 
     double getDetMeanPt(int ibin);
     double getDetMeanMass(int ibin);
     double getDetMeanPtError(int ibin);
     double getDetMeanMassError(int ibin);
+    double getMCDetMeanPt(int ibin);
+    double getMCDetMeanMass(int ibin);
+    double getMCDetMeanPtError(int ibin);
+    double getMCDetMeanMassError(int ibin);
     double getUnfMeanPt(int ibin);
     double getUnfMeanMass(int ibin);
     double getUnfMeanPtError(int ibin);
@@ -291,6 +307,8 @@ public:
     double getAccMeanMassError(int ibin);
     double getAccMeanPtSysError(int ibin);
     double getAccMeanMassSysError(int ibin);
+    double getAccMeanPtTotError(int ibin);
+    double getAccMeanMassTotError(int ibin);
 
     double getMCGenMeanMass(int ibin);
     double getMCGenMeanPt(int ibin);
@@ -300,6 +318,7 @@ public:
     void drawPDFVariation(bool isPt = true, int massBin = 0);
     void drawSysVariation(TString sysName, TString var, int massBin);
     void drawSystematics(TString var);
+    void drawSystematics_Acceptance(TString var);
 };
 
 #endif

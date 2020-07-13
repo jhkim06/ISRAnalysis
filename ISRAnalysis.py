@@ -2,6 +2,7 @@ import os
 import sys
 from array import array
 import ROOT as rt
+import math
 
 import pyScripts.unfoldUtil as unfoldutil
 
@@ -68,9 +69,6 @@ class ISRAnalysis:
     def checkMatrixCond(self, var = "Mass"):
         return self.unfold.checkMatrixCond(var)
 
-    def setFromPrevUnfold(self, preUnfold):
-        self.unfold.setFromPrevUnfResult(preUnfold, True)
- 
     def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = ""):
         
         inputHistName = self.dataHistName
@@ -79,22 +77,25 @@ class ISRAnalysis:
                 inputHistName = "histo_DYJetsToEE"
             else :
                 inputHistName = "histo_DYJetsToMuMu"
-        
-        if useUnfoldOut == False:
-            if "LepMom" in sysName :
-                if sysPostfix == "Nominal" :
+
+            self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+            self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+        else :
+            if useUnfoldOut == False:
+                if "LepMom" in sysName :
+                    if sysPostfix == "Nominal" :
+                        self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+                        self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+                    else :
+                        self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist_lepScale'], dirName+"_"+sysPostfix, inputHistName, isSys, sysName, sysPostfix)
+                        self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist_lepScale'], dirName+"_"+sysPostfix, inputHistName, isSys, sysName, sysPostfix)
+                else :
                     self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
                     self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
-                else :
-                    self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist_lepScale'], dirName+"_"+sysPostfix, inputHistName, isSys, sysName, sysPostfix)
-                    self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist_lepScale'], dirName+"_"+sysPostfix, inputHistName, isSys, sysName, sysPostfix)
-            else :
-                self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
-                self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
-        else:
-            # Let's set systematic input histograms also!
-            self.unfold.setUnfInput(unfoldObj, "Pt", isSys, sysName, sysPostfix, True)
-            self.unfold.setUnfInput(unfoldObj, "Mass", isSys, sysName, sysPostfix, True)
+            else:
+                # Set unfold input from previous unfold 
+                self.unfold.setUnfInput(unfoldObj, "Pt", isSys, sysName, sysPostfix, True)
+                self.unfold.setUnfInput(unfoldObj, "Mass", isSys, sysName, sysPostfix, True)
 
     def setFromPreviousUnfold(self, unfoldObj) :
         self.unfold.setFromPrevUnfResult(unfoldObj, True)
@@ -118,8 +119,8 @@ class ISRAnalysis:
         bkgList = {}
         # 2016 데이터만 single top 샘플을 갖고 있다 
         if self.year == "2016" or self.year == "2017" or self.year == "2018":
-            bkgList = {"QCD": "Fake", "WJet": "Fake",\
-            #bkgList = {"WJets_MG": "WJets",\
+            #bkgList = {"QCD": "Fake", "WJet": "Fake",\
+            bkgList = {"WJets_MG": "WJets",\
                        "WW_pythia": "EWK", "WZ_pythia": "EWK", "ZZ_pythia": "EWK", \
                        "DYJets10to50ToTauTau":"EWK", "DYJetsToTauTau":"EWK", \
                        "TTLL_powheg": "Top"} # "SingleTop_tW_top_Incl": "Top", "SingleTop_tW_antitop_Incl": "Top"}
@@ -195,8 +196,11 @@ class ISRAnalysis:
     def drawUnfPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
         self.unfold.drawUnfoldedHists(var, steering, useAxis, sysName, outName, massBin, binWidth)
 
-    def drawSystematics(self, var = "Pt") :
-        self.unfold.drawSystematics(var) 
+    def drawSystematics(self, var = "Pt", isAccept = False) :
+        if isAccept:
+            self.unfold.drawSystematics_Acceptance(var)
+        else :
+            self.unfold.drawSystematics(var) 
     # Do unfold! 
     def doUnfold(self, doSystematic = False, doRegularize = False):
         self.unfold.doISRUnfold(doSystematic, doRegularize)
@@ -204,10 +208,14 @@ class ISRAnalysis:
     def doStatUnfold(self):
         self.unfold.doStatUnfold()
 
-    def setMeanValues(self):
+    def setMeanValues(self, setDetector = False):
         # Set mean mass and pt values
-        self.nMassBins = self.unfold.setMeanMass()
-        self.unfold.setMeanPt()
+        if setDetector :
+            self.nMassBins = self.unfold.setMeanMass(self.inHistDic['hist'], "Detector")
+            self.unfold.setMeanPt(self.inHistDic['hist'], "Detector")
+        else :
+            self.nMassBins = self.unfold.setMeanMass()
+            self.unfold.setMeanPt()
 
     def setAcceptMeanValues(self):
         self.unfold.setMeanPt_Accept()
@@ -255,11 +263,11 @@ class ISRAnalysis:
         for ibin in range(self.nMassBins): 
             self.unfold.drawSysVariation(sysName, var, ibin)
 
-    def doAcceptance(self, doSys = False, isFSR = False) :
+    def doAcceptance(self, doSys = False, isFSR = False, outName = "") :
         if isFSR :
-            self.unfold.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys)
+            self.unfold.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys, outName)
         else :
-            self.unfold.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", doSys)
+            self.unfold.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", doSys, outName)
 
     def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isFSR = False): 
         if isFSR :
@@ -270,42 +278,118 @@ class ISRAnalysis:
     def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):
         self.unfold.drawCorrelation(var, steering, useAxis, outName)
 
+    def getRawHist(self, var = "Mass", histName = "", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
+        self.unfold.getRawHist(var, self.inHistDic['hist'], "Detector", histName, outName, steering, useAxis, binWidth)
+
     def getUnfInHist(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
         return self.unfold.getUnfInput(var, steering, useAxis, massBin, binWidth)
+
+    def getUnfHist(self, var = "Mass", outName = "" , steering = None, useAxis = True, binWidth = False):
+        return self.unfold.getUnfoldedHists(var, outName, steering, useAxis, binWidth)
 
     def getGenMCHist(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
         return self.unfold.getGenMCHist(var, steering, useAxis, massBin, binWidth)
 
     # Get histograms
-    def getPtVsMassTGraph(self, grTitle = "", isUnfolded = True, isAccepted = False, doSys = False):
+    def getCDFPtVsMassTGraph(self, grTitle = ""):
+        meanMass, meanPt = array('d'), array('d')
+        meanMassStatErr, meanPtStatErr = array('d'), array('d')
+        meanMassSysErr, meanPtSysErr = array('d'), array('d')
+
+        # Muon
+        cdf_muon_mass      = [47.72, 70.66, 90.99, 115.29, 243.33]
+        cdf_muon_mass_stat = [0.05, 0.04, 0.01, 0.18, 1.63]
+        cdf_muon_mass_sys  = [0.04, 0.07, 0.08, 0.14, 0.40]
+        cdf_muon_mass_tot  = []
+
+        cdf_electron_mass      = [47.83, 70.76, 90.98, 115.11, 245.46]
+        cdf_electron_mass_stat = [0.05, 0.04, 0.01, 0.13, 1.29]
+        cdf_electron_mass_sys  = [0.07, 0.04, 0.07, 0.14, 0.21]
+        cdf_electron_mass_tot  = []
+        
+        # Electron
+        cdf_muon_pt      = [9.12, 10.81, 11.84, 13.17, 16.18]
+        cdf_muon_pt_stat = [0.09, 0.08, 0.03, 0.12, 0.61]
+        cdf_muon_pt_sys  = [0.12, 0.14, 0.03, 0.12, 0.45]
+        cdf_muon_pt_tot  = []
+
+        cdf_electron_pt      = [9.10, 10.84, 11.79, 12.93, 16.41]
+        cdf_electron_pt_stat = [0.13, 0.08, 0.02, 0.09, 0.56]
+        cdf_electron_pt_sys  = [0.18, 0.10, 0.01, 0.09, 0.35]
+        cdf_electron_pt_tot  = []
+
+        for i in range(5):
+            cdf_muon_mass_tot.append(math.sqrt(math.pow(cdf_muon_mass_sys[i], 2) + math.pow(cdf_muon_mass_stat[i], 2)))
+            cdf_electron_mass_tot.append(math.sqrt(math.pow(cdf_electron_mass_sys[i], 2) + math.pow(cdf_electron_mass_stat[i], 2)))
+
+            cdf_muon_pt_tot.append(math.sqrt(math.pow(cdf_muon_pt_stat[i], 2) + math.pow(cdf_muon_pt_sys[i], 2)))
+            cdf_electron_pt_tot.append(math.sqrt(math.pow(cdf_electron_pt_stat[i], 2) + math.pow(cdf_electron_pt_sys[i], 2)))
+
+        for ibin in range(5):
+            if self.channel == "electron":
+                    meanMass.append(cdf_electron_mass[ibin])
+                    meanPt.append(cdf_electron_pt[ibin])
+                    meanMassStatErr.append(cdf_electron_mass_stat[ibin])
+                    meanPtStatErr.append(cdf_electron_pt_stat[ibin])
+
+                    meanMassSysErr.append(cdf_electron_mass_tot[ibin])
+                    meanPtSysErr.append(cdf_electron_pt_tot[ibin])
+                                 
+            if self.channel == "muon":
+                    meanMass.append(cdf_muon_mass[ibin])
+                    meanPt.append(cdf_muon_pt[ibin])
+                    meanMassStatErr.append(cdf_muon_mass_stat[ibin])
+                    meanPtStatErr.append(cdf_muon_pt_stat[ibin])
+
+                    meanMassSysErr.append(cdf_muon_mass_tot[ibin])
+                    meanPtSysErr.append(cdf_muon_pt_tot[ibin])
+
+        gr = rt.TGraphErrors(self.nMassBins, meanMass, meanPt, meanMassSysErr, meanPtSysErr)
+    
+        gr.SetName(grTitle)
+        return gr
+             
+
+    def getPtVsMassTGraph(self, grTitle = "", isData = True, whichLevel = "Detector", doSys = False):
         meanMass, meanPt = array('d'), array('d')
         meanMassStatErr, meanPtStatErr = array('d'), array('d')
         meanMassSysErr, meanPtSysErr = array('d'), array('d')
 
         for ibin in range(self.nMassBins):
-           
-            if isUnfolded:
-                meanMass.append(self.unfold.getUnfMeanMass(ibin))
-                meanPt.append(self.unfold.getUnfMeanPt(ibin))
-                meanMassStatErr.append(self.unfold.getUnfMeanMassError(ibin))
-                meanPtStatErr.append(self.unfold.getUnfMeanPtError(ibin))
-                if doSys :
-                    meanMassSysErr.append(self.unfold.getUnfMeanMassSysError(ibin))
-                    meanPtSysErr.append(self.unfold.getUnfMeanPtSysError(ibin))
-            elif isAccepted:
-                meanMass.append(self.unfold.getAccMeanMass(ibin))
-                meanPt.append(self.unfold.getAccMeanPt(ibin))
-                meanMassStatErr.append(self.unfold.getAccMeanMassError(ibin))
-                meanPtStatErr.append(self.unfold.getAccMeanPtError(ibin))
-                if doSys :
-                    meanMassSysErr.append(self.unfold.getAccMeanMassSysError(ibin))
-                    meanPtSysErr.append(self.unfold.getAccMeanPtSysError(ibin))
-            else:
-                meanMass.append(self.unfold.getDetMeanMass(ibin))
-                meanPt.append(self.unfold.getDetMeanPt(ibin))
-                meanMassStatErr.append(self.unfold.getDetMeanMassError(ibin))
-                meanPtStatErr.append(self.unfold.getDetMeanPtError(ibin))
-            
+          
+            if isData: 
+                if whichLevel == "Unfolded":
+                    meanMass.append(self.unfold.getUnfMeanMass(ibin))
+                    meanPt.append(self.unfold.getUnfMeanPt(ibin))
+                    meanMassStatErr.append(self.unfold.getUnfMeanMassError(ibin))
+                    meanPtStatErr.append(self.unfold.getUnfMeanPtError(ibin))
+                    if doSys :
+                        meanMassSysErr.append(self.unfold.getUnfMeanMassSysError(ibin))
+                        meanPtSysErr.append(self.unfold.getUnfMeanPtSysError(ibin))
+                elif whichLevel == "Acceptance":
+                    meanMass.append(self.unfold.getAccMeanMass(ibin))
+                    meanPt.append(self.unfold.getAccMeanPt(ibin))
+                    meanMassStatErr.append(self.unfold.getAccMeanMassError(ibin))
+                    meanPtStatErr.append(self.unfold.getAccMeanPtError(ibin))
+                    if doSys :
+                        meanMassSysErr.append(self.unfold.getAccMeanMassTotError(ibin))
+                        meanPtSysErr.append(self.unfold.getAccMeanMassTotError(ibin))
+                elif whichLevel == "Detector":
+                    meanMass.append(self.unfold.getDetMeanMass(ibin))
+                    meanPt.append(self.unfold.getDetMeanPt(ibin))
+                    meanMassStatErr.append(self.unfold.getDetMeanMassError(ibin))
+                    meanPtStatErr.append(self.unfold.getDetMeanPtError(ibin))
+                else :
+                    print("Please check phase space name")
+            if isData == False:
+                if whichLevel == "Detector":
+                    meanMass.append(self.unfold.getMCDetMeanMass(ibin))
+                    meanPt.append(self.unfold.getMCDetMeanPt(ibin))
+                    meanMassStatErr.append(self.unfold.getMCDetMeanMassError(ibin))
+                    meanPtStatErr.append(self.unfold.getMCDetMeanPtError(ibin))
+                    print("detector mc check pt", self.unfold.getMCDetMeanPt(ibin))
+                    print("detector mc check mass", self.unfold.getMCDetMeanMass(ibin))
+ 
         if doSys == False:
             gr = rt.TGraphErrors(self.nMassBins, meanMass, meanPt, meanMassStatErr, meanPtStatErr)
         else :
