@@ -69,17 +69,23 @@ class ISRAnalysis:
     def checkMatrixCond(self, var = "Mass"):
         return self.unfold.checkMatrixCond(var)
 
-    def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = ""):
+    def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = "", isFSR = False):
         
         inputHistName = self.dataHistName
         if useMCInput == True:
-            if self.channel == "electron":
-                inputHistName = "histo_DYJetsToEE"
-            else :
-                inputHistName = "histo_DYJetsToMuMu"
+            if isFSR == False:
+                if self.channel == "electron":
+                    inputHistName = "histo_DYJetsToEE"
+                else :
+                    inputHistName = "histo_DYJetsToMuMu"
 
-            self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
-            self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+                self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+                self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+            else :
+                inputHistName = "histo_DYJets"
+
+                self.unfold.setUnfInput("Pt",   "Gen_FineCoarse", self.inHistDic['hist_accept_drp1'], dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
+                self.unfold.setUnfInput("Mass", "Gen_FineCoarse", self.inHistDic['hist_accept_drp1'], dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
         else :
             if useUnfoldOut == False:
                 if "LepMom" in sysName :
@@ -100,19 +106,25 @@ class ISRAnalysis:
     def setFromPreviousUnfold(self, unfoldObj) :
         self.unfold.setFromPrevUnfResult(unfoldObj, True)
             
-    def subFake(self, isSys = False, systName = "nominal", sysPostfix = ""):
+    def subFake(self, isSys = False, systName = "nominal", sysPostfix = "", isFSR = False):
             
         fakeList = {"DYJets": "DY", self.dy10to50HistName:"DY"}
-        
-        for fake in fakeList.items():
-            # TODO If sysPostfix is "Nominal", then use self.inHistDic[self.matrix_filekey], self.matrix_dirPath
-            if "LepMom" in systName :
-                if sysPostfix == "Nominal" : 
-                    self.unfold.subBkgs(self.inHistDic['matrix'], fake, isSys, self.binDef, "detector_level_DY_Fake", systName, sysPostfix)
+       
+        if not isFSR: 
+            for fake in fakeList.items():
+                # TODO If sysPostfix is "Nominal", then use self.inHistDic[self.matrix_filekey], self.matrix_dirPath
+                if "LepMom" in systName :
+                    if sysPostfix == "Nominal" : 
+                        self.unfold.subBkgs(self.inHistDic['matrix'], fake, isSys, self.binDef, "detector_level_DY_Fake", systName, sysPostfix, isFSR)
+                    else :
+                        self.unfold.subBkgs(self.inHistDic['matrix_lepScale'], fake, isSys, self.binDef, "detector_level_DY_Fake_"+sysPostfix, systName, sysPostfix, isFSR)
                 else :
-                    self.unfold.subBkgs(self.inHistDic['matrix_lepScale'], fake, isSys, self.binDef, "detector_level_DY_Fake_"+sysPostfix, systName, sysPostfix)
-            else :
-                self.unfold.subBkgs(self.inHistDic['matrix'], fake, isSys, self.binDef, "detector_level_DY_Fake", systName, sysPostfix)
+                    self.unfold.subBkgs(self.inHistDic['matrix'], fake, isSys, self.binDef, "detector_level_DY_Fake", systName, sysPostfix, isFSR)
+        else:
+            for fake in fakeList.items():
+                # TODO If sysPostfix is "Nominal", then use self.inHistDic[self.matrix_filekey], self.matrix_dirPath
+                self.unfold.subBkgs(self.inHistDic['fsr_matrix'], fake, isSys, self.binDef, "dressed_level_DY_fake", systName, sysPostfix, isFSR)
+
         
     def setUnfoldBkgs(self, doSystematic = False , dirName = "Detector",systName = "nominal", sysPostfix = ""):
    

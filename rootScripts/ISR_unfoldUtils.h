@@ -60,7 +60,24 @@ private:
 
     std::map<TString, vector<TString>> sysMap;
     std::map<TString, TH1*> sysAbsPtHist_detector;
-    std::map<TString, TH1*> sysRelPtHist_detector;
+
+    std::map<int, std::map<TString, TH1*>> sysRelPtHist_detectorData;
+    std::map<int, std::map<TString, TH1*>> sysRelPtHist_detectorMC;
+    std::map<TString, TH1*> sysRelMassHist_detectorData;
+    std::map<TString, TH1*> sysRelMassHist_detectorMC;
+
+    std::map<int, std::map<TString, TH1*>> sysRelPtHist_unfoldedData;
+    std::map<int, std::map<TString, TH1*>> sysRelPtHist_unfoldedMC;
+    std::map<TString, TH1*> sysRelMassHist_unfoldedData;
+    std::map<TString, TH1*> sysRelMassHist_unfoldedMC;
+
+    std::map<int, std::map<TString, TH1*>> sysRelPtHist_unfoldedAcceptData;
+    std::map<int, std::map<TString, TH1*>> sysRelPtHist_unfoldedAcceptMC;
+    std::map<TString, TH1*> sysRelMassHist_unfoldedAcceptData;
+    std::map<TString, TH1*> sysRelMassHist_unfoldedAcceptMC;
+
+    std::map<int, std::map<TString, TH1*>> sysAbsPtHist_unfoldedAcceptMC;
+    std::map<TString, TH1*> sysAbsMassHist_unfoldedAcceptMC;
 
     // Unfolding
     // For nominal results
@@ -127,6 +144,8 @@ private:
 
     std::map<TString, std::map<TString, TH1*>> hSysFullPhaseMassData;
     std::map<TString, std::map<TString, TH1*>> hSysFullPhasePtData;
+    std::map<TString, std::map<TString, TH1*>> hSysFullPhaseMassMC;
+    std::map<TString, std::map<TString, TH1*>> hSysFullPhasePtMC;
     
     TH1* hAcceptanceMass;  
     TH1* hAcceptancePt;  
@@ -206,12 +225,12 @@ public:
     void setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept = false);
 
     // Set input histogram
-    void setUnfInput(TString var, TString varPostfix = "", TString filepath = "", TString dirName ="", TString histName = "", bool isSys = false, TString sysName = "", TString sysPostfix = "");
+    void setUnfInput(TString var, TString varPostfix = "", TString filepath = "", TString dirName ="", TString histName = "", bool isSys = false, TString sysName = "", TString sysPostfix = "", bool isFSR = false);
     void setUnfInput(ISRUnfold* unfold, TString var, bool isSys = false, TString sysName = "", TString sysPostfix = "", bool useAccept = false);
 
     // Set background histograms
     void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
-                 bool isSys = false, TString binDef = "", TString dirName = "", TString sysName = "", TString sysPostfix = "");
+                 bool isSys = false, TString binDef = "", TString dirName = "", TString sysName = "", TString sysPostfix = "", bool isFSR = false);
 
     // Set systematic TUnfoldDensity
     void setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString binDef);
@@ -233,8 +252,9 @@ public:
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
     TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, TString sysFilePath = "");
     TCanvas* drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);
-    TH1* getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, TString sysFilePath = "");
-    TH1* getUnfoldedSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC);
+    TH1* getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, TString sysFilePath = "", int nthMassBin = 0);
+    TH1* getUnfoldedSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, int nthMassBin = 0);
+    TH1* getUnfAcceptSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, int nthMassBin = 0);
     void setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "", bool divBinWidth = false);
     void setXaxisTitle(TH1* hist, TString var, bool useAxis, TString title = "");
     void writeCutInfo(TPad* pad, TString var, int nthMassBin = 0);
