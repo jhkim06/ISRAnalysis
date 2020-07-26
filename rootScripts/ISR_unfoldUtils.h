@@ -75,9 +75,9 @@ private:
     std::map<int, std::map<TString, TH1*>> sysRelPtHist_unfoldedAcceptMC;
     std::map<TString, TH1*> sysRelMassHist_unfoldedAcceptData;
     std::map<TString, TH1*> sysRelMassHist_unfoldedAcceptMC;
-
     std::map<int, std::map<TString, TH1*>> sysAbsPtHist_unfoldedAcceptMC;
     std::map<TString, TH1*> sysAbsMassHist_unfoldedAcceptMC;
+
 
     // Unfolding
     // For nominal results
@@ -334,6 +334,7 @@ public:
     double getMCGenMeanPt(int ibin);
 
     void printMeanValues(bool printSys);
+    void printMeanValues_Accept(bool printSys = false);
     void drawStatVariation(bool isPt = true, int massBin = 0);
     void drawPDFVariation(bool isPt = true, int massBin = 0);
     void drawSysVariation(TString sysName, TString var, int massBin);

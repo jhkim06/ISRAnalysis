@@ -342,81 +342,10 @@ void ISRUnfold::drawResponseM(TString var, TString sysName, TString sysPostfix, 
         }
 
     }
-
-    TH2D* ticks_ = NULL;
+    
     TString draw_option = "COLZ";
 
-/*
-    if(var == "Pt")
-    {
-
-        ticks_ = new TH2D("tick", "tick", histProb->GetNbinsX(), histProb->GetXaxis()->GetXmin(), histProb->GetXaxis()->GetXmax(),
-                                          histProb->GetNbinsY(), histProb->GetYaxis()->GetXmin(), histProb->GetYaxis()->GetXmax());
-
-
-        int center = (xaxis1_nbin + pt_binning_Gen->HasUnderflow(0) + pt_binning_Gen->HasOverflow(0)) / 2;
-        int totalBins = xaxis1_nbin + pt_binning_Gen->HasUnderflow(0) + pt_binning_Gen->HasOverflow(0);
-        int center_y = (yaxis1_nbin + pt_binning_Rec->HasUnderflow(0) + pt_binning_Rec->HasOverflow(0)) / 2;
-        int totalBins_y = yaxis1_nbin + pt_binning_Rec->HasUnderflow(0) + pt_binning_Rec->HasOverflow(0);
-
-        if(pt_binning_Gen->HasUnderflow(1))
-        {
-            ticks_->GetXaxis()->SetBinLabel(histProb->GetXaxis()->FindBin(center), "Underflow");  // 5 = # of pt bins / 2
-            ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(center_y), "Underflow");  // 5 = # of pt bins / 2
-
-            center += totalBins;
-            center_y += totalBins_y;
-        }
-
-        for(int ibin = 0; ibin < nMassBin; ibin++)
-        {
-            TString lowMassEdge;
-            TString highMassEdge;
-
-            lowMassEdge.Form("%d", (int)massBinEdges[ibin]);
-            highMassEdge.Form("%d", (int)massBinEdges[ibin+1]);
-            TString var_name = "M";
-            if(var == "Mass") var_name = "p_{T}";
-                ticks_->GetXaxis()->SetBinLabel(histProb->GetXaxis()->FindBin(center), lowMassEdge+"<"+var_name+"<"+highMassEdge+" GeV");  // TODO option to set mass region
-
-            ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(center_y), lowMassEdge+"<"+var_name+"<"+highMassEdge+" GeV");
-
-            center += totalBins;
-            center_y += totalBins_y;
-        }
-        if(pt_binning_Gen->HasOverflow(1))
-        {
-            ticks_->GetXaxis()->SetBinLabel(histProb->GetXaxis()->FindBin(center), "Overflow");
-            ticks_->GetYaxis()->SetBinLabel(histProb->GetYaxis()->FindBin(center_y), "Overflow");
-        }
-
-        //if(detector_unfold) ticks_->GetYaxis()->SetTitle("Detector level bin");
-        //else ticks_->GetYaxis()->SetTitle("Dressed level bin");
-
-        ticks_->GetYaxis()->SetTitleFont(43);
-        ticks_->GetYaxis()->SetTitleSize(40);
-        ticks_->GetYaxis()->SetTitleOffset(1.2);
-        //if(detector_unfold) ticks_->GetXaxis()->SetTitle("Dressed level bin");
-        //else ticks_->GetXaxis()->SetTitle("Pre FSR level bin");
-        ticks_->GetXaxis()->SetTitleFont(43);
-        ticks_->GetXaxis()->SetTitleSize(40);
-        ticks_->GetXaxis()->SetTitleOffset(1.2);
-
-        ticks_->GetXaxis()->SetLabelColor(kGray+2);
-        ticks_->GetYaxis()->SetLabelColor(kGray+2);
-        ticks_->GetXaxis()->SetLabelSize(15);
-        ticks_->GetYaxis()->SetLabelSize(15);
-        ticks_->GetXaxis()->LabelsOption("v");
-        ticks_->GetXaxis()->SetTickSize(0);
-        ticks_->GetYaxis()->SetTickSize(0);
-        ticks_->GetZaxis()->SetRangeUser(1e-3, 0.9);
-        ticks_->Draw("colz"); //
-        histProb->Draw("same axis COLZ"); // "colz same" not working
-        draw_option = "same COLZ";
-    }
-*/
-
-    histProb_woUO->Draw(draw_option);
+    histProb_woUO->Draw("COLZ");
     histProb_woUO->GetZaxis()->SetRangeUser(1e-3, 1.0);
     histProb_woUO->GetYaxis()->SetTitleFont(43);
     histProb_woUO->GetYaxis()->SetTitleSize(100);
@@ -424,12 +353,108 @@ void ISRUnfold::drawResponseM(TString var, TString sysName, TString sysPostfix, 
     histProb_woUO->GetXaxis()->SetTitleFont(43);
     histProb_woUO->GetXaxis()->SetTitleSize(100);
     histProb_woUO->GetXaxis()->SetTitleOffset(1.5);
+
+    vector<TGaxis*> v_xaxis; 
+
+    if(var.Contains("Pt"))
+    {
+        histProb_woUO->GetXaxis()->SetLabelSize(0);
+        histProb_woUO->GetXaxis()->SetTickSize(0);
+        for(int ibin = 0; ibin < nMassBin; ibin++)
+        {
+            v_xaxis.push_back( new TGaxis(9 * ibin, 0, 9 * (ibin+1), 0, 0, 100, 10,""));
+            v_xaxis.at(ibin)->SetLabelFont(43);
+            v_xaxis.at(ibin)->SetLabelSize(0);
+            v_xaxis.at(ibin)->Draw();
+            v_xaxis.at(ibin)->ChangeLabel(10,-1,100,-1,-1,-1,"100");  
+            v_xaxis.at(ibin)->SetLabelOffset(0.05);  
+            v_xaxis.at(ibin)->Draw();
+        }
+    }
+    //TGaxis *axis1 = new TGaxis(0, 0, 9, 0, 0, 100, 10,"");
+    //axis1->SetLabelFont(43);
+    //axis1->SetLabelSize(0);
+    //axis1->Draw();
+    //axis1->ChangeLabel(10,-1,100,-1,-1,-1,"100");  
+    //axis1->SetLabelOffset(0.05);  
+    //axis1->Draw();
+
+    //TGaxis *axis2 = new TGaxis(9, 0, 18, 0, 0, 100, 10,"");
+    //axis2->SetLabelFont(43);
+    //axis2->SetLabelSize(0);
+    //axis2->Draw();
+    //axis2->ChangeLabel(10,-1,100,-1,-1,-1,"100");  
+    //axis2->SetLabelOffset(0.05);  
+    //axis2->Draw();
+
+    //if(var == "Pt")
+    //{
+
+    //    ticks_ = new TH2D("tick", "tick", histProb_woUO->GetNbinsX(), histProb_woUO->GetXaxis()->GetXmin(), histProb_woUO->GetXaxis()->GetXmax(),
+    //                                      histProb_woUO->GetNbinsY(), histProb_woUO->GetYaxis()->GetXmin(), histProb_woUO->GetYaxis()->GetXmax());
+
+
+    //    int center = (xaxis1_nbin) / 2;
+    //    int totalBins = xaxis1_nbin;
+    //    int center_y = (yaxis1_nbin) / 2;
+    //    int totalBins_y = yaxis1_nbin;
+
+    //    //if(pt_binning_Gen->HasUnderflow(1))
+    //    //{
+    //    //    ticks_->GetXaxis()->SetBinLabel(histProb_woUO->GetXaxis()->FindBin(center), "Underflow");  // 5 = # of pt bins / 2
+    //    //    ticks_->GetYaxis()->SetBinLabel(histProb_woUO->GetYaxis()->FindBin(center_y), "Underflow");  // 5 = # of pt bins / 2
+
+    //    //    center += totalBins;
+    //    //    center_y += totalBins_y;
+    //    //}
+
+    //    for(int ibin = 0; ibin < nMassBin; ibin++)
+    //    {
+    //        TString lowMassEdge;
+    //        TString highMassEdge;
+
+    //        lowMassEdge.Form("%d", (int)massBinEdges[ibin]);
+    //        highMassEdge.Form("%d", (int)massBinEdges[ibin+1]);
+    //        TString var_name = "M";
+    //        if(var == "Mass") var_name = "p_{T}";
+    //            ticks_->GetXaxis()->SetBinLabel(histProb_woUO->GetXaxis()->FindBin(center), lowMassEdge+"<"+var_name+"<"+highMassEdge+" GeV");  // TODO option to set mass region
+
+    //        ticks_->GetYaxis()->SetBinLabel(histProb_woUO->GetYaxis()->FindBin(center_y), lowMassEdge+"<"+var_name+"<"+highMassEdge+" GeV");
+
+    //        center += totalBins;
+    //        center_y += totalBins_y;
+    //    }
+    //    if(pt_binning_Gen->HasOverflow(1))
+    //    {
+    //        ticks_->GetXaxis()->SetBinLabel(histProb_woUO->GetXaxis()->FindBin(center), "Overflow");
+    //        ticks_->GetYaxis()->SetBinLabel(histProb_woUO->GetYaxis()->FindBin(center_y), "Overflow");
+    //    }
+
+    //    //ticks_->GetYaxis()->SetTitleFont(43);
+    //    //ticks_->GetYaxis()->SetTitleSize(40);
+    //    //ticks_->GetYaxis()->SetTitleOffset(1.2);
+    //    //ticks_->GetXaxis()->SetTitleFont(43);
+    //    //ticks_->GetXaxis()->SetTitleSize(40);
+    //    //ticks_->GetXaxis()->SetTitleOffset(1.2);
+
+    //    ticks_->GetXaxis()->SetLabelColor(kGray+2);
+    //    ticks_->GetYaxis()->SetLabelColor(kGray+2);
+    //    ticks_->GetXaxis()->SetLabelSize(30);
+    //    ticks_->GetYaxis()->SetLabelSize(30);
+    //    //ticks_->GetXaxis()->LabelsOption("v");
+    //    ticks_->GetXaxis()->SetTickSize(0);
+    //    ticks_->GetYaxis()->SetTickSize(0);
+    //    ticks_->Draw("SAME COLZ"); //
+    //    //histProb_woUO->Draw("same axis COLZ"); // "colz same" not working
+    //    //draw_option = "same COLZ";
+    //}
+
     if(isDetector)
     {
         if(var=="Pt")
         {
-        histProb_woUO->GetYaxis()->SetTitle("Detector p_{T}/mass bin");
-        histProb_woUO->GetXaxis()->SetTitle("Generator p_{T}/mass (dressed level) bin");
+        histProb_woUO->GetYaxis()->SetTitle("Detector p_{T} [GeV]");
+        histProb_woUO->GetXaxis()->SetTitle("Generator p_{T} (dressed level) [GeV]");
         }
         else
         {
@@ -441,8 +466,8 @@ void ISRUnfold::drawResponseM(TString var, TString sysName, TString sysPostfix, 
     {
         if(var=="Pt")
         {
-        histProb_woUO->GetYaxis()->SetTitle("Generator p_{T}/mass (dressed level) bin");
-        histProb_woUO->GetXaxis()->SetTitle("Generator p_{T}/mass (parton level) bin");
+        histProb_woUO->GetYaxis()->SetTitle("Generator p_{T} (dressed level) [GeV]");
+        histProb_woUO->GetXaxis()->SetTitle("Generator p_{T} (parton level) [GeV]");
         }
         else
         {
@@ -544,7 +569,7 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
         // For statistical uncertainty
         if(makeStatUnfold)
         {
-            //cout << "Create response matrix for statistical uncertainty..." << endl;
+            cout << "Create response matrix for statistical uncertainty..." << endl;
             for(int i = 0; i < statSize; i++)
             {
                 statPtUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
@@ -688,7 +713,7 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirN
     {
         hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec");
     }
-    else if(sysName.Contains("LepMom") || sysName.Contains("Unfold") || sysName.Contains("FSR"))
+    else if(sysName.Contains("LepMom") || sysName.Contains("Unfold") || sysName.Contains("FSR") || sysName.Contains("ZptCorr"))
     {
         //cout << dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec" << endl;
         hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec");
@@ -880,7 +905,7 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
     {
         if(!isFSR)
         {
-            if(!(sysName.Contains("LepMom") || sysName.Contains("Unfold")))
+            if(!(sysName.Contains("LepMom") || sysName.Contains("Unfold") || sysName.Contains("ZptCorr")))
             {
                 TString histPostfix = bkgInfo.first + "_" + sysPostfix;
                 if(bkgInfo.second != "Fake" && sysName == "Fake") histPostfix = bkgInfo.first;
@@ -1469,6 +1494,26 @@ TCanvas* ISRUnfold::drawAcceptCorrHists(TString var, TString filePath, TString b
     hDY->SetFillColor(kOrange);
     hDY->Draw("hist same");
 
+    TH1* sysBand_forMC = NULL;
+    if(sysName != "")
+    {
+        sysBand_forMC = getUnfAcceptSystematicBand(var, steering, true, sysName, hData, hDY, hDY, divBinWidth, false, true, nthMassBin);
+        sysBand_forMC->SetFillColorAlpha(kRed,0.6);
+
+        if(var.Contains("Pt"))
+        {
+            sysAbsPtHist_unfoldedAcceptMC[nthMassBin][sysName] = sysBand_forMC;
+        }
+        else
+        {       
+            sysAbsMassHist_unfoldedAcceptMC[sysName] = sysBand_forMC;
+        }
+
+        sysBand_forMC->SetFillStyle(3001);
+        sysBand_forMC->SetMarkerSize(0.);
+        sysBand_forMC->Draw("E2 same");
+    }
+
     TLine massEdgeLine;
     for(int ibin = 2; ibin < hData->GetNbinsX()+1; ibin++)
     {
@@ -1759,8 +1804,15 @@ TH1* ISRUnfold::getUnfAcceptSystematicBand(TString var, TString steering, bool u
             if(forMC)
             {
                 
-                hRatio_temp.push_back((TH1*) hData->Clone("hRatio_temp"));
-                hRatio_temp.at(ith)->Divide(hSYS_temp);
+                if(isRatio)
+                {
+                    hRatio_temp.push_back((TH1*) hData->Clone("hRatio_temp"));
+                    hRatio_temp.at(ith)->Divide(hSYS_temp);
+                }
+                else
+                {
+                    hRatio_temp.push_back((TH1*) hSYS_temp->Clone("hRatio_temp"));
+                }
                 if(ith==0) sysBand_ratio = (TH1*)hRatio_temp.at(ith)->Clone("sysUnfBand_ratio"+sysName);
             }
             else
@@ -1793,7 +1845,8 @@ TH1* ISRUnfold::getUnfAcceptSystematicBand(TString var, TString steering, bool u
 
                 if(forMC)
                 {
-                    sysBand_ratio->SetBinContent(ibin, 1.);
+                    if(isRatio) sysBand_ratio->SetBinContent(ibin, 1.);
+                    else sysBand_ratio->SetBinContent(ibin, hDY->GetBinContent(ibin));
                 }
                 else
                 {
@@ -1912,7 +1965,7 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
                 {
                     tempHistName = DYHistName_ + "_" + sysMap[sysName][ith];
                     // FIXME
-                    if(sysName.Contains("Unfold"))
+                    if(sysName.Contains("Unfold") || sysName.Contains("ZptCorr"))
                         tempHistName = DYHistName_;
                 }
                 else
@@ -2281,10 +2334,12 @@ void ISRUnfold::setTHStack(TString var, TString filePath, TString dirName, THSta
 }
 void ISRUnfold::doStatUnfold()
 {
+    //cout << "ISRUnfold::doStatUnfold() " << endl;
     if(regMode == TUnfold::kRegModeNone)
     {
         for(int istat = 0; istat < statSize; istat++)
         {
+            //cout << istat << " th stat.." << endl;
             TH1* tempMassInput;
             TH1* tempPtInput;
 
@@ -2369,7 +2424,7 @@ void ISRUnfold::doISRUnfold(bool doSys, bool doReg)
             {
                 if(!doReg)
                 {
-                    cout << "posfix: " << (it->second).at(i) << endl;
+                    //cout << "posfix: " << (it->second).at(i) << endl;
                     sysPtUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
                     sysMassUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
                 }
@@ -2867,7 +2922,7 @@ void ISRUnfold::setSysError()
                     error_mass = error_mass < temp_error_mass?temp_error_mass:error_mass;
                     error_pt = error_pt < temp_error_pt?temp_error_pt:error_pt;
 
-                    if(it->first == "FSR")
+                    if((it->first).Contains("FSR"))
                     {
                         error_mass = fabs(meanMass_data_unfolded_sysVariation[it->first][(it->second).at(0)].at(ibin)-meanMass_data_unfolded_sysVariation[it->first][(it->second).at(1)].at(ibin));
                         error_pt = fabs(meanPt_data_unfolded_sysVariation[it->first][(it->second).at(0)].at(ibin)-meanPt_data_unfolded_sysVariation[it->first][(it->second).at(1)].at(ibin));
@@ -2921,6 +2976,7 @@ void ISRUnfold::setSysError_Accept()
             double error_mass = 0.;
             double error_pt = 0.;
             int size = (it->second).size();
+            cout << setw(10) << ibin ;
 
             // Take the maximum variation as systematic uncertainty
             if(it->first != "PDF")
@@ -2932,7 +2988,7 @@ void ISRUnfold::setSysError_Accept()
                 error_mass = error_mass < temp_error_mass?temp_error_mass:error_mass;
                 error_pt = error_pt < temp_error_pt?temp_error_pt:error_pt;
 
-                if(it->first == "FSR")
+                if((it->first).Contains("FSR"))
                 {
                     error_mass = fabs(meanMass_data_unfolded_sysVariation[it->first][(it->second).at(0)].at(ibin)-meanMass_data_unfolded_sysVariation[it->first][(it->second).at(1)].at(ibin));
                     error_pt = fabs(meanPt_data_unfolded_sysVariation[it->first][(it->second).at(0)].at(ibin)-meanPt_data_unfolded_sysVariation[it->first][(it->second).at(1)].at(ibin));
@@ -2989,7 +3045,7 @@ void ISRUnfold::setTotSysError()
     }
 }
 
-void ISRUnfold::printMeanValues(bool printSys = false)
+void ISRUnfold::printMeanValues(bool printSys)
 {
     std::streamsize ss = std::cout.precision();
     std::cout.precision(2);
@@ -3010,6 +3066,33 @@ void ISRUnfold::printMeanValues(bool printSys = false)
         {
             cout << setw(16) << meanMass_data_unfolded.at(i) << "+/-" << meanMassSysErr_data_unfolded.at(i) << "+/-" << meanMassStatErr_data_unfolded.at(i) ;
             cout << setw(16) << meanPt_data_unfolded.at(i) << "+/-" << meanPtSysErr_data_unfolded.at(i) << "+/-" << meanPtStatErr_data_unfolded.at(i) << endl;
+        }
+    }
+    std::cout.precision(ss);
+}
+
+void ISRUnfold::printMeanValues_Accept(bool printSys)
+{
+    cout << "Acceptance (or efficiency) corrected mean values" << endl;
+    std::streamsize ss = std::cout.precision();
+    std::cout.precision(2);
+    std::cout.setf( std::ios::fixed, std:: ios::floatfield );
+
+    int size = meanMass_data_unfolded.size();
+
+    cout << "Mean values" << endl;
+    cout << setw(10) << "Mass bin" ;
+    cout << setw(30) << "Mass (GeV)" ;
+    cout << setw(30) << "Pt (GeV)" << endl;
+    for(int i = 0; i < 70; i++) cout << "-";
+    cout << endl;
+    for(int i = 0; i < size; i++)
+    {
+        cout << setw(10) << i;
+        if(printSys)
+        {
+            cout << setw(16) << meanMass_data_acc_corrected.at(i) << "+/-" << meanMassSysErr_data_acc_corrected.at(i) << "+/-" << meanMassStatErr_data_acc_corrected.at(i) ;
+            cout << setw(16) << meanPt_data_acc_corrected.at(i) << "+/-" << meanPtSysErr_data_acc_corrected.at(i) << "+/-" << meanPtStatErr_data_acc_corrected.at(i) << endl;
         }
     }
     std::cout.precision(ss);
