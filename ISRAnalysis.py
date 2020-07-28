@@ -69,23 +69,36 @@ class ISRAnalysis:
     def checkMatrixCond(self, var = "Mass"):
         return self.unfold.checkMatrixCond(var)
 
-    def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = "", isFSR = False):
+    def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = "", isFSR = False, useMadgraph = False):
         
         inputHistName = self.dataHistName
         if useMCInput == True:
+            #
+            temp_filePath = self.inHistDic['hist'] 
+
             if isFSR == False:
                 if self.channel == "electron":
                     inputHistName = "histo_DYJetsToEE"
                 else :
                     inputHistName = "histo_DYJetsToMuMu"
 
-                self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
-                self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
+                if useMadgraph == False:
+
+                    self.unfold.setUnfInput("Pt",   self.binDef, temp_filePath, dirName, inputHistName, isSys, sysName, sysPostfix)
+                    self.unfold.setUnfInput("Mass", self.binDef, temp_filePath, dirName, inputHistName, isSys, sysName, sysPostfix)
+                else :
+                    temp_filePath = self.inHistDic['hist_DYMG']
+ 
+                    self.unfold.setUnfInput("Pt",   self.binDef, temp_filePath, dirName, inputHistName, isSys, sysName, sysPostfix)
+                    self.unfold.setUnfInput("Mass", self.binDef, temp_filePath, dirName, inputHistName, isSys, sysName, sysPostfix)
             else :
                 inputHistName = "histo_DYJets"
 
-                self.unfold.setUnfInput("Pt",   "Gen_FineCoarse", self.inHistDic['hist_accept_drp1'], dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
-                self.unfold.setUnfInput("Mass", "Gen_FineCoarse", self.inHistDic['hist_accept_drp1'], dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
+                temp_filePath = self.inHistDic['hist_accept_drp1']
+
+                self.unfold.setUnfInput("Pt",   "Gen_FineCoarse", temp_filePath, dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
+                self.unfold.setUnfInput("Mass", "Gen_FineCoarse", temp_filePath, dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
+
         else :
             if useUnfoldOut == False:
                 if "LepMom" in sysName :
@@ -163,7 +176,12 @@ class ISRAnalysis:
     def setSystematics(self, sysName, sysHistName):
         self.unfold.setSystematics(sysName, sysHistName)
 
-        if "LepMom" in sysName :
+        if "Closure" in sysName:
+            if sysHistName == "Nominal" :
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["matrix"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["matrix"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+        
+        elif "LepMom" in sysName :
             if sysHistName == "Nominal" :
                 self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
                 self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
@@ -222,8 +240,8 @@ class ISRAnalysis:
         else : 
             self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth)
 
-    def drawUnfPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
-        self.unfold.drawUnfoldedHists(var, steering, useAxis, sysName, outName, massBin, binWidth)
+    def drawUnfPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isType3Closure = False):
+        self.unfold.drawUnfoldedHists(var, steering, useAxis, sysName, outName, massBin, binWidth, isType3Closure)
 
     def drawSystematics(self, var = "Pt", isAccept = False) :
         if isAccept:

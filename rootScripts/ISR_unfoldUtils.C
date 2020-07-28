@@ -354,12 +354,16 @@ void ISRUnfold::drawResponseM(TString var, TString sysName, TString sysPostfix, 
     histProb_woUO->GetXaxis()->SetTitleSize(100);
     histProb_woUO->GetXaxis()->SetTitleOffset(1.5);
 
-    vector<TGaxis*> v_xaxis; 
+    vector<TGaxis*> v_xaxis, v_yaxis; 
 
     if(var.Contains("Pt"))
     {
         histProb_woUO->GetXaxis()->SetLabelSize(0);
         histProb_woUO->GetXaxis()->SetTickSize(0);
+
+        histProb_woUO->GetYaxis()->SetLabelSize(0);
+        histProb_woUO->GetYaxis()->SetTickSize(0);
+
         for(int ibin = 0; ibin < nMassBin; ibin++)
         {
             v_xaxis.push_back( new TGaxis(9 * ibin, 0, 9 * (ibin+1), 0, 0, 100, 10,""));
@@ -369,6 +373,14 @@ void ISRUnfold::drawResponseM(TString var, TString sysName, TString sysPostfix, 
             v_xaxis.at(ibin)->ChangeLabel(10,-1,100,-1,-1,-1,"100");  
             v_xaxis.at(ibin)->SetLabelOffset(0.05);  
             v_xaxis.at(ibin)->Draw();
+
+            v_yaxis.push_back( new TGaxis(0, 17 * ibin, 0, 17 * (ibin+1), 0, 100, 10, ""));
+            v_yaxis.at(ibin)->SetLabelFont(43);
+            v_yaxis.at(ibin)->SetLabelSize(0);
+            v_yaxis.at(ibin)->Draw();
+            v_yaxis.at(ibin)->ChangeLabel(10,-1,100,-1,-1,-1,"100");  
+            v_yaxis.at(ibin)->SetLabelOffset(0.05);  
+            v_yaxis.at(ibin)->Draw();
         }
     }
     //TGaxis *axis1 = new TGaxis(0, 0, 9, 0, 0, 100, 10,"");
@@ -713,7 +725,8 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirN
     {
         hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec");
     }
-    else if(sysName.Contains("LepMom") || sysName.Contains("Unfold") || sysName.Contains("FSR") || sysName.Contains("ZptCorr"))
+    // FIXME lets define a flag to use the default matrix
+    else if(sysName.Contains("LepMom") || sysName.Contains("Unfold") || sysName.Contains("FSR") || sysName.Contains("ZptCorr") || sysName.Contains("Closure"))
     {
         //cout << dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec" << endl;
         hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec");
@@ -905,7 +918,7 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
     {
         if(!isFSR)
         {
-            if(!(sysName.Contains("LepMom") || sysName.Contains("Unfold") || sysName.Contains("ZptCorr")))
+            if(!(sysName.Contains("LepMom") || sysName.Contains("Unfold") || sysName.Contains("ZptCorr") || sysName.Contains("Closure")))
             {
                 TString histPostfix = bkgInfo.first + "_" + sysPostfix;
                 if(bkgInfo.second != "Fake" && sysName == "Fake") histPostfix = bkgInfo.first;
@@ -1212,7 +1225,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     return c_out;
 }
 
-TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth)
+TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth, bool isType3Closure)
 {
     // If steering == "", then usual TH1 histogram
     // If seering != "", TH1 from TUnfold
@@ -1237,12 +1250,18 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     if(var.Contains("Pt"))
     {
         hData = nomPtUnfold->GetOutput("hUnfoldedPt",0,0,steering,useAxis);
-        hDY = nomPtUnfold->GetBias("hDYMCPt",0,0,steering,useAxis);;
+        if(!isType3Closure)
+            hDY = nomPtUnfold->GetBias("hDYMCPt",0,0,steering,useAxis);
+        else
+            hDY = sysPtUnfold["Closure"]["Nominal"]->GetBias("hDYMCPt",0,0,steering,useAxis);
     }
     else
     {
         hData = nomMassUnfold->GetOutput("hUnfoldedMass",0,0,steering,useAxis);
-        hDY = nomMassUnfold->GetBias("hDYMCMass",0,0,steering,useAxis);;
+        if(!isType3Closure)
+            hDY = nomMassUnfold->GetBias("hDYMCMass",0,0,steering,useAxis);
+        else
+            hDY = sysMassUnfold["Closure"]["Nominal"]->GetBias("hDYMCMass",0,0,steering,useAxis);
     }
     if(divBinWidth)
     {

@@ -251,7 +251,7 @@ public:
     }
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
     TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, TString sysFilePath = "");
-    TCanvas* drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);
+    TCanvas* drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, bool isType3Closure = false);
     TH1* getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, TString sysFilePath = "", int nthMassBin = 0);
     TH1* getUnfoldedSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, int nthMassBin = 0);
     TH1* getUnfAcceptSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, int nthMassBin = 0);
