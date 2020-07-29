@@ -81,15 +81,15 @@ private:
 
     // Unfolding
     // For nominal results
-    TUnfoldDensityV17* nomPtUnfold;
-    TUnfoldDensityV17* nomMassUnfold;
+    TUnfoldDensity* nomPtUnfold;
+    TUnfoldDensity* nomMassUnfold;
 
     TH2* hPtResponseM;
     TH2* hMassResponseM;
 
     // For statistical uncertainty
-    std::vector<TUnfoldDensityV17*> statPtUnfold;
-    std::vector<TUnfoldDensityV17*> statMassUnfold;
+    std::vector<TUnfoldDensity*> statPtUnfold;
+    std::vector<TUnfoldDensity*> statMassUnfold;
 
     // Histogram to save statistical variations for each mass bin
     std::vector<TH1*> meanPtStatVariation;
@@ -102,8 +102,8 @@ private:
     std::vector<TH1*> meanMassPDFVariation_Accept;
 
     // For systematic uncertainty
-    std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysPtUnfold;
-    std::map<TString, std::map<TString, TUnfoldDensityV17*>> sysMassUnfold;
+    std::map<TString, std::map<TString, TUnfoldDensity*>> sysPtUnfold;
+    std::map<TString, std::map<TString, TUnfoldDensity*>> sysMassUnfold;
     
     /*------------------------------------------------------------------------------------- Results: mean values ---------------------------------------------------------------------------------------*/ 
     // Folded level: from TUnfoldDensity (mean from the binned histogram) 

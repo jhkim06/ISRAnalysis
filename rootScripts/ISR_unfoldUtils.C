@@ -569,11 +569,11 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
 
     if( var == "Pt" )
     {
-    	nomPtUnfold = new TUnfoldDensityV17(hmcGenRec,
+    	nomPtUnfold = new TUnfoldDensity(hmcGenRec,
     	                                    TUnfold::kHistMapOutputHoriz,
     	                                    regMode,
     	                                    TUnfold::kEConstraintArea,
-    	                                    TUnfoldDensityV17::kDensityModeBinWidth,
+    	                                    TUnfoldDensity::kDensityModeBinWidth,
     	                                    pt_binning_Gen,pt_binning_Rec);
 
         hPtResponseM = (TH2*) hmcGenRec->Clone("hPtResponseM");
@@ -584,22 +584,22 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
             cout << "Create response matrix for statistical uncertainty..." << endl;
             for(int i = 0; i < statSize; i++)
             {
-                statPtUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
+                statPtUnfold.push_back(new TUnfoldDensity(hmcGenRec,
     	                                                    TUnfold::kHistMapOutputHoriz,
     	                                                    regMode,
     	                                                    TUnfold::kEConstraintArea,
-    	                                                    TUnfoldDensityV17::kDensityModeBinWidth,
+    	                                                    TUnfoldDensity::kDensityModeBinWidth,
     	                                                    pt_binning_Gen,pt_binning_Rec));
             }
         }
     }
     else
     {
-        nomMassUnfold = new TUnfoldDensityV17(hmcGenRec,
+        nomMassUnfold = new TUnfoldDensity(hmcGenRec,
                                               TUnfold::kHistMapOutputHoriz,
                                               regMode,
                                               TUnfold::kEConstraintArea,
-                                              TUnfoldDensityV17::kDensityModeBinWidth,
+                                              TUnfoldDensity::kDensityModeBinWidth,
                                               mass_binning_Gen,mass_binning_Rec);
 
         hMassResponseM = (TH2*) hmcGenRec->Clone("hMassResponseM");
@@ -609,11 +609,11 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
         {
             for(int i = 0; i < statSize; i++)
             {
-                statMassUnfold.push_back(new TUnfoldDensityV17(hmcGenRec,
+                statMassUnfold.push_back(new TUnfoldDensity(hmcGenRec,
                                                                TUnfold::kHistMapOutputHoriz,
                                                                regMode,
                                                                TUnfold::kEConstraintArea,
-                                                               TUnfoldDensityV17::kDensityModeBinWidth,
+                                                               TUnfoldDensity::kDensityModeBinWidth,
                                                                mass_binning_Gen,mass_binning_Rec));
             }
         }
@@ -665,12 +665,12 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
             for(int ith = 0; ith < size; ith++)
             {
                 //cout << "Systematic variation, " << sysMap_previous[it->first][ith] << endl;
-                this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]] = new TUnfoldDensityV17(hPtResponseM,TUnfold::kHistMapOutputHoriz,
-                                                                                                regMode, TUnfold::kEConstraintArea, TUnfoldDensityV17::kDensityModeBinWidth,
+                this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]] = new TUnfoldDensity(hPtResponseM,TUnfold::kHistMapOutputHoriz,
+                                                                                                regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth,
                                                                                                 pt_binning_Gen,pt_binning_Rec);
 
-                this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]] = new TUnfoldDensityV17(hMassResponseM,TUnfold::kHistMapOutputHoriz,
-                                                                                                regMode, TUnfold::kEConstraintArea, TUnfoldDensityV17::kDensityModeBinWidth,
+                this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]] = new TUnfoldDensity(hMassResponseM,TUnfold::kHistMapOutputHoriz,
+                                                                                                regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth,
                                                                                                 mass_binning_Gen, mass_binning_Rec);
 
                 if(!useAccept)
@@ -739,20 +739,20 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirN
     if( var == "Pt" )
     {
         //cout << "sys: " << sysName << " postfix: " << sysPostfix << endl;
-        sysPtUnfold[sysName][sysPostfix] = new TUnfoldDensityV17(hmcGenRec,
+        sysPtUnfold[sysName][sysPostfix] = new TUnfoldDensity(hmcGenRec,
                                                                  TUnfold::kHistMapOutputHoriz,
                                                                  regMode,
                                                                  TUnfold::kEConstraintArea,
-                                                                 TUnfoldDensityV17::kDensityModeBinWidth,
+                                                                 TUnfoldDensity::kDensityModeBinWidth,
                                                                  pt_binning_Gen,pt_binning_Rec);
     }
     else if( var == "Mass" )
     {
-        sysMassUnfold[sysName][sysPostfix] = new TUnfoldDensityV17(hmcGenRec,
+        sysMassUnfold[sysName][sysPostfix] = new TUnfoldDensity(hmcGenRec,
                                                                    TUnfold::kHistMapOutputHoriz,
                                                                    regMode,
                                                                    TUnfold::kEConstraintArea,
-                                                                   TUnfoldDensityV17::kDensityModeBinWidth,
+                                                                   TUnfoldDensity::kDensityModeBinWidth,
                                                                    mass_binning_Gen,mass_binning_Rec);
     }
     else
@@ -2418,7 +2418,7 @@ void ISRUnfold::doISRUnfold(bool doSys, bool doReg)
             nomMassUnfold->DoUnfold(0);
             int istart = pt_binning_Gen->GetGlobalBinNumber(0., 200.);
             int iend = pt_binning_Gen->GetGlobalBinNumber(99., 200.);
-            nomPtUnfold->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
+            nomPtUnfold->RegularizeBins(istart,1,iend-istart+1,TUnfold::kRegModeCurvature);
 
             //TGraph *lcurve;
             //TSpline *logtaux,*logtauy,*logtaucurvature;
@@ -2784,7 +2784,7 @@ int ISRUnfold::setMeanMass(TString filePath, TString dirName)
     int nMassBin = temp_tvecd->GetNrows() - 1;
     const Double_t* massBins = temp_tvecd->GetMatrixArray();
 
-    TUnfoldDensityV17* p_unfold = NULL;
+    TUnfoldDensity* p_unfold = NULL;
     p_unfold = nomMassUnfold;
 
     TH1 * hdetector_mass = p_unfold->GetInput("hdetector_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
@@ -2845,7 +2845,7 @@ int ISRUnfold::setSysMeanMass()
     std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
     while(it != sysMap.end())
     {
-        TUnfoldDensityV17* p_unfold = NULL;
+        TUnfoldDensity* p_unfold = NULL;
 
         //cout << "Unfold for " << it->first << " systematic." << endl;
         int size = (it->second).size();
@@ -3537,7 +3537,7 @@ int ISRUnfold::setMeanPt(TString filePath, TString dirName)
     const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
     int nMassBin = temp_tvecd->GetNrows() - 1;
 
-    TUnfoldDensityV17* p_unfold = NULL;
+    TUnfoldDensity* p_unfold = NULL;
     p_unfold = nomPtUnfold;
 
     // Save mean pt
@@ -3596,7 +3596,7 @@ int ISRUnfold::setSysMeanPt()
     std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
     while(it != sysMap.end())
     {
-        TUnfoldDensityV17* p_unfold = NULL;
+        TUnfoldDensity* p_unfold = NULL;
 
         //cout << "Unfold for " << it->first << " systematic." << endl;
         int size = (it->second).size();
