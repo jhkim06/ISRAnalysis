@@ -1,9 +1,11 @@
 // Author: Stefan Schmitt
 // DESY, 11/08/11
 
-//  Version 17.7, with bug-fix for curvature regularisation
+//  Version 17.9, parallel to changes in TUnfold
 //
 //  History:
+//    Version 17.8, new method GetDXDY()
+//    Version 17.7, with bug-fix for curvature regularisation
 //    Version 17.6, with updated doxygen comments and bug-fixes in TUnfoldBinning
 //    Version 17.5, bug fix in TUnfold also corrects GetEmatrixSysUncorr()
 //    Version 17.4, in parallel to changes in TUnfoldBinning
@@ -12,8 +14,8 @@
 //    Version 17.1, add scan type RhoSquare
 //    Version 17.0, support for density regularisation and complex binning schemes
 
-#ifndef ROOT_TUnfoldDensityV17
-#define ROOT_TUnfoldDensityV17
+#ifndef ROOT_TUnfoldDensity
+#define ROOT_TUnfoldDensity
 
 //////////////////////////////////////////////////////////////////////////
 //                                                                      //
@@ -193,6 +195,8 @@ class TUnfoldDensityV17 : public TUnfoldSysV17 {
 
    TH2 *GetProbabilityMatrix(const char *histogramName,
                            const char *histogramTitle=0,Bool_t useAxisBinning=kTRUE) const; // get matrix of probabilities
+   TH2 *GetDXDY(const char *histogramName,
+                          const char *histogramTitle=0,Bool_t useAxisBinning=kTRUE) const; // get matrix DX/DY
 
    const TUnfoldBinningV17 *GetInputBinning(const char *distributionName=0) const; // find binning scheme for input bins
    const TUnfoldBinningV17 *GetOutputBinning(const char *distributionName=0) const; // find binning scheme for output bins

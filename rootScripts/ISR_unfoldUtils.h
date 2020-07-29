@@ -37,6 +37,7 @@
 #include "TUnfoldBinningXML.h"
 #include "TUnfoldBinning.h"
 #include "TUnfoldDensity.h"
+#include "TUnfoldIterativeEM.h"
 
 using namespace std; 
 const int statSize = 1000;
@@ -78,7 +79,6 @@ private:
     std::map<int, std::map<TString, TH1*>> sysAbsPtHist_unfoldedAcceptMC;
     std::map<TString, TH1*> sysAbsMassHist_unfoldedAcceptMC;
 
-
     // Unfolding
     // For nominal results
     TUnfoldDensity* nomPtUnfold;
@@ -104,6 +104,16 @@ private:
     // For systematic uncertainty
     std::map<TString, std::map<TString, TUnfoldDensity*>> sysPtUnfold;
     std::map<TString, std::map<TString, TUnfoldDensity*>> sysMassUnfold;
+
+    TUnfoldIterativeEM* iterEMPtUnfold;
+    TUnfoldIterativeEM* iterEMMassUnfold;
+
+    int iBest_pt;
+    int iBest_mass;
+    const int NITER_Iterative = 500;
+
+    TGraph *graph_SURE_IterativeSURE_pt,*graph_DFdeviance_IterativeSURE_pt;
+    TGraph *graph_SURE_IterativeSURE_mass,*graph_DFdeviance_IterativeSURE_mass;
     
     /*------------------------------------------------------------------------------------- Results: mean values ---------------------------------------------------------------------------------------*/ 
     // Folded level: from TUnfoldDensity (mean from the binned histogram) 
@@ -185,7 +195,7 @@ public:
         channel_name = channel;
         year = year_;
 
-        nominal_bias = 1.; // 
+        nominal_bias = 1.;  
 
         if(regMode_ == 0)
             regMode = TUnfold::kRegModeNone;
@@ -211,6 +221,7 @@ public:
     ~ISRUnfold(){}
 
     void drawResponseM(TString var, TString sysName = "", TString sysPostfix = "", bool isDetector = true);
+    void checkIterEMUnfold(void);
 
     const TVectorD& checkMatrixCond(TString var = "Mass");
     double getSmearedChi2(TString var, TString filePath, TString dirName, TString steering, bool useAxis, bool divBinWidth = false);

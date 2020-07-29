@@ -1,9 +1,11 @@
 // Author: Stefan Schmitt
 // DESY, 10/08/11
 
-// Version 17.7, bug fix in ExtractHistogram
+//  Version 17.9, parallel to changes in TUnfold
 //
 //  History:
+//    Version 17.8, bug fix in GetNonemptyNode() and non-const access of tree
+//    Version 17.7, bug fix in ExtractHistogram
 //    Version 17.6, bug fix to avoid possible crash in method
 //       CreateHistogramOfMigrations(). Bug fix with NaN in GetGlobalBinNumber()
 //    Version 17.5, in parallel to changes in TUnfold
@@ -13,8 +15,8 @@
 //    Version 17.1, in parallel to TUnfold
 //    Version 17.0, initial version, numbered in parallel to TUnfold
 
-#ifndef ROOT_TUnfoldBinningV17
-#define ROOT_TUnfoldBinningV17
+#ifndef ROOT_TUnfoldBinning
+#define ROOT_TUnfoldBinning
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -105,12 +107,15 @@ class TUnfoldBinningV17 : public TNamed {
    /********************* Navigation **********************/
    /// first daughter node
    inline TUnfoldBinningV17 const *GetChildNode(void) const { return childNode; }
+   inline TUnfoldBinningV17 *GetChildNode(void) { return childNode; }
    /// previous sister node
    inline TUnfoldBinningV17 const *GetPrevNode(void) const { return prevNode; }
    /// next sister node
    inline TUnfoldBinningV17 const *GetNextNode(void) const { return nextNode; }
+   inline TUnfoldBinningV17 *GetNextNode(void) { return nextNode; }
    /// mother node
    inline TUnfoldBinningV17 const *GetParentNode(void) const { return parentNode; }
+   inline TUnfoldBinningV17 *GetParentNode(void) { return parentNode; }
    TUnfoldBinningV17 const *FindNode(char const *name) const; // find node by name
    /// return root node of the binnig scheme
    TUnfoldBinningV17 const *GetRootNode(void) const;
@@ -193,7 +198,8 @@ class TUnfoldBinningV17 : public TNamed {
    Int_t GetTHxxBinning(Int_t maxDim,Int_t *axisBins,Int_t *axisList,const char *axisSteering) const; // get binning information for creating a THxx
    Int_t GetTHxxBinningSingleNode(Int_t maxDim,Int_t *axisBins,Int_t *axisList,const char *axisSteering) const; // get binning information for creating a THxx
    Int_t GetTHxxBinsRecursive(const char *axisSteering) const; // get binning information for creating a THxx
-   const TUnfoldBinningV17 *GetNonemptyNode(void) const; // get the only nodes with non-empty distributions if there are multiple nodes, return 0
+   const TUnfoldBinningV17 *GetNonemptyNode(void) const; // get the single node with non-empty distribution, if there are multiple nodes, return 0
+   const TUnfoldBinningV17 *GetNonemptyNode_r(int &count) const; // get a node with non-empty distributions, count how many exit
    Int_t *CreateBinMap(const TH1 *hist,Int_t nDim,const Int_t *axisList,const char *axisSteering) const; // create mapping from global bins to a histogram
    Int_t FillBinMapRecursive(Int_t startBin,const char *axisSteering,
                             Int_t *binMap) const; // fill bin map recursively

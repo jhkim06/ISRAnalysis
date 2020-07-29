@@ -1,17 +1,19 @@
 // Author: Stefan Schmitt
 // DESY, 10/08/11
 
-//  Version 17.7, in parallel to changes in TUnfold
+//  Version 17.9, parallel to changes in TUnfold
 //
 //  History:
+//    Version 17.8, relaxed DTD definition
+//    Version 17.7, in parallel to changes in TUnfold
 //    Version 17.6, with updated doxygen comments
 //    Version 17.5, in parallel to changes in TUnfold
 //    Version 17.4, in parallel to changes in TUnfoldBinning
 //    Version 17.3, support for repeated bins with the same width
 //    Version 17.2, XML interface for class TUnfoldBinning
 
-#ifndef ROOT_TUnfoldBinningXMLV17
-#define ROOT_TUnfoldBinningXMLV17
+#ifndef ROOT_TUnfoldBinningXML
+#define ROOT_TUnfoldBinningXML
 
 
 //////////////////////////////////////////////////////////////////////////

@@ -1,9 +1,11 @@
 // Author: Stefan Schmitt
 // DESY, 13/10/08
 
-//  Version 17.7, updates in the TUnfold implementation
+//  Version 17.9, add new methods GetDF(), GetSURE(), ScanSURE(), GetSqrtEvEmatrix()
 //
 //  History:
+//    Version 17.8, add new method GetDXDY() for histograms
+//    Version 17.7, updates in the TUnfold implementation
 //    Version 17.6,  updated doxygen-style comments, add one argument for scanLCurve
 //    Version 17.5, fix memory leak and other bugs
 //    Version 17.4, in parallel to changes in TUnfoldBinning
@@ -32,8 +34,8 @@
 //    Version 0, stable version of basic unfolding algorithm
 
 
-#ifndef ROOT_TUnfoldV17
-#define ROOT_TUnfoldV17
+#ifndef ROOT_TUnfold
+#define ROOT_TUnfold
 
 //////////////////////////////////////////////////////////////////////////
 //                                                                      //
@@ -98,7 +100,7 @@
 #include <TObjArray.h>
 #include <TString.h>
 
-#define TUnfold_VERSION "V17.7"
+#define TUnfold_VERSION "V17.9"
 #define TUnfold_CLASS_VERSION 17
 
 #define TUnfold TUnfoldV17
@@ -288,7 +290,14 @@ public:
                             Double_t tauMax,TGraph **lCurve,
 			    TSpline **logTauX=0,TSpline **logTauY=0,
                             TSpline **logTauCurvature=0);
-
+   // minimize Stein's unbiased risk estimator using successive calls to DoUnfold at various tau. Optionally, the contributions to SURE (DF and Chi2A) or the L-curve are saved
+   virtual Int_t ScanSURE(Int_t nPoint,Double_t tauMin,
+                          Double_t tauMax,
+                          TGraph **logTauSURE=0,
+                          TGraph **df_chi2A=0,
+                          TGraph **lCurve=0);
+   // calculate square roots of the Eigenvalues of the Error matrix
+   TVectorD GetSqrtEvEmatrix(void) const;
    // access unfolding results
    Double_t GetTau(void) const;
    void GetOutput(TH1 *output,const Int_t *binMap=0) const;
@@ -296,6 +305,9 @@ public:
    void GetRhoIJ(TH2 *rhoij,const Int_t *binMap=0) const;
    Double_t GetRhoI(TH1 *rhoi,const Int_t *binMap=0,TH2 *invEmat=0) const;
    void GetFoldedOutput(TH1 *folded,const Int_t *binMap=0) const;
+
+   double GetDF(void) const; // effective number of degrees of freedom
+   double GetSURE(void) const; // Stein's unbiased risk estimator
 
    // access input parameters
    void GetProbabilityMatrix(TH2 *A,EHistMap histmap) const;
@@ -308,6 +320,8 @@ public:
    void GetLsquared(TH2 *lsquared) const;
 
    // access various properties of the result
+   /// get matrix connecting input and output changes
+   void GetDXDY(TH2 *dxdy) const;
    /// get maximum global correlation determined in recent unfolding
    inline Double_t GetRhoMax(void) const { return fRhoMax; }
    /// get average global correlation determined in recent unfolding

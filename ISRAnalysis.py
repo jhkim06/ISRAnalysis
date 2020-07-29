@@ -139,7 +139,6 @@ class ISRAnalysis:
                     self.unfold.subBkgs(self.inHistDic['matrix'], fake, isSys, self.binDef, dirName, systName, sysPostfix, isFSR)
         else:
             for fake in fakeList.items():
-                # TODO If sysPostfix is "Nominal", then use self.inHistDic[self.matrix_filekey], self.matrix_dirPath
                 self.unfold.subBkgs(self.inHistDic['fsr_matrix'], fake, isSys, self.binDef, dirName, systName, sysPostfix, isFSR)
 
         
@@ -231,6 +230,9 @@ class ISRAnalysis:
 
     def drawResponseM(self, var = "Mass", sysName = "", sysPostfix = "", isDetector = True):
         self.unfold.drawResponseM(var, sysName, sysPostfix, isDetector)
+
+    def checkIterEMUnfold(self):
+        self.unfold.checkIterEMUnfold()
 
     def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
         if "LepMom" in sysName :
