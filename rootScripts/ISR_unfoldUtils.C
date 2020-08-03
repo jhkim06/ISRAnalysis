@@ -2651,7 +2651,7 @@ void ISRUnfold::doISRUnfold(bool doSys, bool doReg)
         std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
         while(it != sysMap.end())
         {
-            cout << "systematic name: " << it->first << endl;
+            //cout << "systematic name: " << it->first << endl;
             int size = (it->second).size();
             for(int i = 0; i < size; i++)
             {
@@ -3791,8 +3791,8 @@ int ISRUnfold::setMeanPt(TString filePath, TString dirName)
         {
             cout << filePath << endl;
             TH1* hDY = getRawHist("Pt_FineCoarse", filePath, "Detector", DYHistName_, "Signal", "pt[UO];mass[UOC"+ibinMass+"]", true, false);
-            cout << "detector mc, pt: " << hDY->GetMean() << " err: " << hDY->GetMeanError() << endl;
-            cout << "n bins: " << hDY->GetNbinsX() << endl;
+            //cout << "detector mc, pt: " << hDY->GetMean() << " err: " << hDY->GetMeanError() << endl;
+            //cout << "n bins: " << hDY->GetNbinsX() << endl;
             meanPt_mc_folded.push_back(hDY->GetMean());
             meanPtStatErr_mc_folded.push_back(hDY->GetMeanError());
             delete hDY;
