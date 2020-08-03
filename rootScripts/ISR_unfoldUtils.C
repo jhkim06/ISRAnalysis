@@ -640,6 +640,7 @@ void ISRUnfold::drawResponseM(TString var, TString sysName, TString sysPostfix, 
 void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, TString histName, TString binDef)
 {
     //cout << "ISRUnfold::setNomResMatrix set response matrix..." << endl;
+    TH1::AddDirectory(kFALSE);
     TFile* filein = new TFile(filepath);
 
     TString Rec_binName = "Rec_"+var;
@@ -706,7 +707,9 @@ void ISRUnfold::setNomResMatrix(TString var, TString filepath, TString dirName, 
                                               TUnfoldDensity::kDensityModeBinWidth,
                                               mass_binning_Gen,mass_binning_Rec);
 
+        
         hMassResponseM = (TH2*) hmcGenRec->Clone("hMassResponseM");
+        cout << "hMassResponseM: " << hMassResponseM->GetNbinsX() << endl;
 
         // For statistical uncertainty
         if(makeStatUnfold)
@@ -926,11 +929,25 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString var, bool isSys, TString 
         {
             if(var=="Pt")
             {
-                sysPtUnfold[sysName][sysPostfix]->SetInput(unfold->hFullPhasePtData, 1.);
+                if(sysName.Contains("iterEM") && !sysPostfix.Contains("Nominal"))
+                {
+                    iterEMPtUnfold->SetInput(unfold->hFullPhasePtData, 1.);
+                }
+                else    
+                {
+                    sysPtUnfold[sysName][sysPostfix]->SetInput(unfold->hFullPhasePtData, 1.);
+                }
             }
             else
             {
-                sysMassUnfold[sysName][sysPostfix]->SetInput(unfold->hFullPhaseMassData, 1.);
+                if(sysName.Contains("iterEM") && !sysPostfix.Contains("Nominal"))
+                {
+                    iterEMMassUnfold->SetInput(unfold->hFullPhaseMassData, 1.);
+                }
+                else
+                {
+                    sysMassUnfold[sysName][sysPostfix]->SetInput(unfold->hFullPhaseMassData, 1.);
+                }
             }
         }
     }
@@ -1064,7 +1081,7 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
                 hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + histPostfix);
                 hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + histPostfix);
 
-                if(sysName.Contains("iterEM") && !sysName.Contains("Nominal"))
+                if(sysName.Contains("iterEM") && !sysPostfix.Contains("Nominal"))
                 {
                     iterEMPtUnfold->SubtractBackground(hPtRec, bkgInfo.first);
                     iterEMMassUnfold->SubtractBackground(hMassRec, bkgInfo.first);
@@ -1362,7 +1379,6 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
 {
     // If steering == "", then usual TH1 histogram
     // If seering != "", TH1 from TUnfold
-
     double histMin = 5e-1;
 
     setTDRStyle();
@@ -1379,6 +1395,7 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     TH1* hData = NULL;
     TH1* hData_iterEM = NULL;
     TH1* hDY = NULL;
+    TH1* hDY_iterEM = NULL;
     TH1* hRatio = NULL;
 
     if(var.Contains("Pt"))
@@ -1387,6 +1404,8 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
         if(sysName.Contains("iterEM"))
         {
             hData_iterEM = iterEMPtUnfold->GetOutput("hUnfoldedPt",0,0,steering,useAxis);
+            hDY_iterEM = iterEMPtUnfold->GetBias(0,steering,useAxis);
+
         }
         if(!isType3Closure)
             hDY = nomPtUnfold->GetBias("hDYMCPt",0,0,steering,useAxis);
@@ -1399,6 +1418,8 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
         if(sysName.Contains("iterEM"))
         {
             hData_iterEM = iterEMMassUnfold->GetOutput("hUnfoldedMass",0,0,steering,useAxis);
+            hDY_iterEM = iterEMMassUnfold->GetBias(0,steering,useAxis);
+
         }
         if(!isType3Closure)
             hDY = nomMassUnfold->GetBias("hDYMCMass",0,0,steering,useAxis);
@@ -1412,6 +1433,7 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
         if(sysName.Contains("iterEM"))
         {
             divideByBinWidth(hData_iterEM, false);
+            divideByBinWidth(hDY_iterEM, false);
         }
     }
     hRatio = (TH1*) hData->Clone("hRatio");
@@ -1483,6 +1505,14 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
         hData_iterEM->SetMarkerSize(3.2);
         hData_iterEM->SetLineColor(kRed);
         hData_iterEM->SetMarkerColor(kRed);
+
+        cout << "n bin: " << hDY_iterEM->GetNbinsX() << endl;
+        cout << "first bin content in DY (nominal) " << hDY->GetBinContent(1) << endl;
+        hDY_iterEM->Draw("p9e same");
+        hDY_iterEM->SetMarkerStyle(24);
+        hDY_iterEM->SetMarkerSize(4.2);
+        hDY_iterEM->SetLineColor(kRed);
+        hDY_iterEM->SetMarkerColor(kRed);
     }
     pad1->RedrawAxis();
 
@@ -2584,6 +2614,8 @@ void ISRUnfold::doStatUnfold()
             delete statPtUnfold.at(istat);
             delete statMassUnfold.at(istat);
         }
+        statPtUnfold.clear();
+        statMassUnfold.clear();
     }
 }
 

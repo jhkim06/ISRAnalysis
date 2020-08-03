@@ -94,7 +94,11 @@ class ISRAnalysis:
             else :
                 inputHistName = "histo_DYJets"
 
-                temp_filePath = self.inHistDic['hist_accept_drp1']
+                if useMadgraph == False:
+                    temp_filePath = self.inHistDic['hist_accept_drp1']
+
+                else:
+                    temp_filePath = self.inHistDic['hist_accept_drp1_DYMG']
 
                 self.unfold.setUnfInput("Pt",   "Gen_FineCoarse", temp_filePath, dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
                 self.unfold.setUnfInput("Mass", "Gen_FineCoarse", temp_filePath, dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
@@ -172,13 +176,25 @@ class ISRAnalysis:
             else :
                 self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, self.binDef, dirName, systName, sysPostfix)
             
-    def setSystematics(self, sysName, sysHistName):
+    def setSystematics(self, sysName, sysHistName, isFSR = False):
         self.unfold.setSystematics(sysName, sysHistName)
 
         if "Closure" in sysName:
             if sysHistName == "Nominal" :
-                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["matrix"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
-                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["matrix"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                if isFSR == False:
+                    self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["matrix"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                    self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["matrix"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                else :
+                    self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["fsr_matrix"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                    self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["fsr_matrix"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+
+        elif "iterEM" in sysName:
+            if sysHistName == "iterEM" :
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+            else :
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
         
         elif "LepMom" in sysName :
             if sysHistName == "Nominal" :
@@ -192,8 +208,8 @@ class ISRAnalysis:
                 self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
                 self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
             else :
-                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["fsr_matrix_powheg_pythia"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
-                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["fsr_matrix_powheg_pythia"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["fsr_matrix_DYMG"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["fsr_matrix_DYMG"], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
 
         elif "ZptCorr" in sysName :
             if sysHistName == "Nominal" :
