@@ -110,8 +110,13 @@ class ISRAnalysis:
                         self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
                         self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
                     else :
-                        self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist_lepScale'], dirName+"_"+sysPostfix, inputHistName, isSys, sysName, sysPostfix)
-                        self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist_lepScale'], dirName+"_"+sysPostfix, inputHistName, isSys, sysName, sysPostfix)
+                        if "LepMomScale" in sysPostfix:
+                            hist_filekey_temp ="hist_LepScale"
+                        elif "LepMomRes" in sysPostfix:
+                            hist_filekey_temp ="hist_LepResolution"
+
+                        self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic[hist_filekey_temp], dirName+"_"+sysPostfix, inputHistName, isSys, sysName, sysPostfix)
+                        self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic[hist_filekey_temp], dirName+"_"+sysPostfix, inputHistName, isSys, sysName, sysPostfix)
                 else :
                     self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
                     self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic['hist'], dirName, inputHistName, isSys, sysName, sysPostfix)
@@ -133,7 +138,13 @@ class ISRAnalysis:
                     if sysPostfix == "Nominal" : 
                         self.unfold.subBkgs(self.inHistDic['matrix'], fake, isSys, self.binDef, dirName, systName, sysPostfix, isFSR)
                     else :
-                        self.unfold.subBkgs(self.inHistDic['matrix_lepScale'], fake, isSys, self.binDef, dirName+"_"+sysPostfix, systName, sysPostfix, isFSR)
+                        if "LepMomScale" in sysPostfix:
+                            matrix_filekey_temp ="matrix_LepScale"
+                        elif "LepMomRes" in sysPostfix:
+                            matrix_filekey_temp ="matrix_LepResolution"
+
+                        self.unfold.subBkgs(self.inHistDic[matrix_filekey_temp], fake, isSys, self.binDef, dirName+"_"+sysPostfix, systName, sysPostfix, isFSR)
+
                 elif "ZptCorr" in systName : 
                     if sysPostfix == "Nominal" : 
                         self.unfold.subBkgs(self.inHistDic['matrix'], fake, isSys, self.binDef, dirName, systName, sysPostfix, isFSR)
@@ -170,7 +181,13 @@ class ISRAnalysis:
                 if sysPostfix == "Nominal" :
                     self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, self.binDef, dirName, systName, sysPostfix)
                 else : 
-                    self.unfold.subBkgs(self.inHistDic['hist_lepScale'], bkg, doSystematic, self.binDef, dirName+"_"+sysPostfix, systName, sysPostfix)
+                    if "LepMomScale" in sysPostfix:
+                        hist_filekey_temp ="hist_LepScale"
+                    elif "LepMomRes" in sysPostfix:
+                        hist_filekey_temp ="hist_LepResolution"
+
+                    self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], bkg, doSystematic, self.binDef, dirName+"_"+sysPostfix, systName, sysPostfix)
+
             elif "Unfold_det" == systName :
                 self.unfold.subBkgs(self.inHistDic['hist'], bkg, doSystematic, self.binDef, dirName, systName, sysPostfix)
             else :
@@ -201,8 +218,13 @@ class ISRAnalysis:
                 self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
                 self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
             else :
-                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic["matrix_lepScale"], self.matrix_dirPath+"_"+sysHistName, self.matrix_histName, sysName, sysHistName, self.binDef)
-                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic["matrix_lepScale"], self.matrix_dirPath+"_"+sysHistName, self.matrix_histName, sysName, sysHistName, self.binDef)
+                if "LepMomScale" in sysHistName:
+                    matrix_filekey_temp ="matrix_LepScale"
+                elif "LepMomRes" in sysHistName:
+                    matrix_filekey_temp ="matrix_LepResolution"
+
+                self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[matrix_filekey_temp], self.matrix_dirPath+"_"+sysHistName, self.matrix_histName, sysName, sysHistName, self.binDef)
+                self.unfold.setSysTUnfoldDensity("Mass", self.inHistDic[matrix_filekey_temp], self.matrix_dirPath+"_"+sysHistName, self.matrix_histName, sysName, sysHistName, self.binDef)
         elif "Unfold" in sysName :
             if sysHistName == "Nominal" :
                 self.unfold.setSysTUnfoldDensity("Pt",   self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, sysName, sysHistName, self.binDef)
@@ -251,10 +273,12 @@ class ISRAnalysis:
         self.unfold.checkIterEMUnfold()
 
     def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
-        if "LepMom" in sysName :
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_lepScale'])
-        elif "ZptCorr" in sysName :
+        if "ZptCorr" in sysName :
             self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_zptcorr'])
+        elif "LepMomScale" in sysName :
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_LepScale'])
+        elif "LepMomRes" in sysName :
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_LepResolution'])
         else : 
             self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth)
 

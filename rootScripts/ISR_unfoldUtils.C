@@ -830,9 +830,13 @@ void ISRUnfold::setSysTUnfoldDensity(TString var, TString filepath, TString dirN
 
     // FIXME Lets define a flag to use the default matrix
     // Systematics just use the nominal resoponse matrix
-    if(sysName.Contains("LepMom") || sysName.Contains("Unfold") || sysName.Contains("FSR") || sysName.Contains("ZptCorr") || sysName.Contains("Closure") || sysName.Contains("Fake") || sysName.Contains("iterEM"))
+    if(sysName.Contains("Unfold") || sysName.Contains("FSR") || sysName.Contains("ZptCorr") || sysName.Contains("Closure") || sysName.Contains("Fake") || sysName.Contains("iterEM"))
     {
         hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef +"/hmc" + var + "GenRec");
+    }
+    else if(sysName.Contains("LepMom"))
+    {
+        hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef + "_" + sysPostfix + "/hmc" + var + "GenRec");
     }
     else
     {
@@ -961,7 +965,14 @@ void ISRUnfold::setUnfInput(TString var, TString varPostfix, TString filepath, T
     TFile* filein = new TFile(filepath);
     TH1* hRec = NULL;
     //cout << dirName+"/"+var+varPostfix+"/"+histName << endl;
-    hRec = (TH1*)filein->Get(dirName+"/"+var+varPostfix+"/"+histName);
+    if(sysName.Contains("LepMom"))
+    {
+        hRec = (TH1*)filein->Get(dirName+"/"+var+varPostfix+"_"+sysPostfix + "/"+histName);
+    }
+    else        
+    {
+        hRec = (TH1*)filein->Get(dirName+"/"+var+varPostfix+"/"+histName);
+    }
 
     // Use DY MC as unfolding input, i.e. simple closure test
     if(!isFSR)
@@ -1078,9 +1089,16 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
             {
                 TString histPostfix = bkgInfo.first;
 
-                hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + histPostfix);
-                hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + histPostfix);
-
+                if(!(sysName.Contains("LepMom")))
+                {
+                    hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + histPostfix);
+                    hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + histPostfix);
+                }
+                else
+                {
+                    hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"_"+sysPostfix+"/histo_" + histPostfix);
+                    hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"_"+sysPostfix+"/histo_" + histPostfix);
+                }
                 if(sysName.Contains("iterEM") && !sysPostfix.Contains("Nominal"))
                 {
                     iterEMPtUnfold->SubtractBackground(hPtRec, bkgInfo.first);
@@ -1095,7 +1113,7 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
         }
         else
         {
-            if((sysName.Contains("Scale") || sysName.Contains("AlphaS")))
+            if( ((sysName).Contains("Scale") && !(sysName).Contains("Lep")) || sysName.Contains("AlphaS"))
             {
                 TString histPostfix = bkgInfo.first + "_" + sysPostfix;
 
@@ -1815,7 +1833,7 @@ TCanvas* ISRUnfold::drawAcceptCorrHists(TString var, TString filePath, TString b
     }
 
     c_out->cd();
-    if(sysName.Contains("Scale")) sysName = "Scale";
+    if( ((sysName).Contains("Scale") && !(sysName).Contains("Lep"))) sysName = "Scale";
     c_out->SaveAs(outName!=""?output_baseDir+outName+var+sysName+".png":output_baseDir+"unfoldedAccept_"+var+sysName+".png");
     return c_out;
 }
@@ -2182,6 +2200,7 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
 
             TString tempHistName = DYHistName_;
             TString tempDirName = dirName;
+            TString tempVar = var;
             TString tempNewHistName = "Signal"+sysMap[sysName][ith];
 
             if(forMC)
@@ -2196,6 +2215,7 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
                 else
                 {
                     tempDirName = dirName + "_" + sysMap[sysName][ith];
+                    tempVar = var + "_" + sysMap[sysName][ith];
                 }
             }
             else
@@ -2204,13 +2224,15 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
                 if(sysName.Contains("LepMom"))
                 {
                     tempDirName = dirName + "_" + sysMap[sysName][ith];
+                    tempVar = var + "_" + sysMap[sysName][ith]; 
                     tempNewHistName = "Data"+sysMap[sysName][ith];
+                    
                 }
             }
 
             if(sysMap[sysName][ith] != "Nominal")
             {
-                hSYS_temp = getRawHist(var, filePath, tempDirName, tempHistName, tempNewHistName, steering, useAxis, divBinWidth);
+                hSYS_temp = getRawHist(tempVar, filePath, tempDirName, tempHistName, tempNewHistName, steering, useAxis, divBinWidth);
                 hMCtotal_temp = (TH1*) hSYS_temp->Clone("hMCtotal_temp");
                 hRatio_temp = (TH1*) hData->Clone("hRatio_temp");
 
@@ -2222,7 +2244,7 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
                 if(forMC)
                 {
                     //cout << "call setTHStack" << endl;
-                    setTHStack(var, filePath, tempDirName, *hsMC_temp, *hMCtotal_temp, *leg, steering, useAxis, sysMap[sysName][ith], divBinWidth);
+                    setTHStack(tempVar, filePath, tempDirName, *hsMC_temp, *hMCtotal_temp, *leg, steering, useAxis, sysMap[sysName][ith], divBinWidth);
                     delete hsMC_temp;
                     delete leg;
                 }
@@ -2641,8 +2663,8 @@ void ISRUnfold::doISRUnfold(bool doSys, bool doReg)
         std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
         while(it != sysMap.end())
         {
-            //cout << "systematic name: " << it->first << endl;
             int size = (it->second).size();
+            cout << "systematic name: " << it->first << " size: " << size << endl;
             for(int i = 0; i < size; i++)
             {
                 if(!doReg)
@@ -2664,6 +2686,7 @@ void ISRUnfold::doISRUnfold(bool doSys, bool doReg)
                     }
                     else
                     {
+                        cout << "do unfold for systematic " << (it->second).at(i) << endl;
                         sysPtUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
                         sysMassUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
                     }
@@ -2758,7 +2781,7 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys, TStri
                 hSysFullPhasePtData[it->first][(it->second).at(i)]   = sysPtUnfold[it->first][(it->second).at(i)]->GetOutput("hFullPhasePtData"+it->first+(it->second).at(i),0,0, "*[*]", false);
 
                 // Use different acceptance for PDF AlphaS Scale etc
-                if((it->first).Contains("Scale") || (it->first).Contains("PDF") || (it->first).Contains("AlphaS"))
+                if( ((it->first).Contains("Scale") && !(it->first).Contains("Lep")) || (it->first).Contains("PDF") || (it->first).Contains("AlphaS"))
                 {
                     // For mass
                     TH1* hFullPhaseMassMC_raw_sys = (TH1*) filein->Get("Acceptance/MassGen" + binDef + "/histo_DYJets_"+(it->second).at(i));
