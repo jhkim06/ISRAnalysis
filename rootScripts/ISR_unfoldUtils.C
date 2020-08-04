@@ -1137,7 +1137,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
 
     double meanDipt = 0.;
     double meanDipt_bkgsub = 0.;
-    double histMin = 5e-1;
+    double histMin = 5e-2;
 
     setTDRStyle();
     writeExtraText = true;
@@ -1147,7 +1147,6 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     gROOT->ForceStyle();
 
     TH1::AddDirectory(kFALSE);
-    //cout << "ISRUnfold::drawFoldedHists, Draw plot!" << endl;
 
     TFile* filein = new TFile(filePath);
 
@@ -1188,12 +1187,6 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     pad1->Draw();
     pad1->cd();
 
-    if(var.Contains("Mass"))
-    {
-        hData->GetXaxis()->SetRangeUser(massBinEdges.at(0), massBinEdges.at(5));
-        hDY->GetXaxis()->SetRangeUser(massBinEdges.at(0), massBinEdges.at(5));
-    }
-
     hData->SetTitle("");
     hData->SetStats(false);
     hData->GetXaxis()->SetMoreLogLabels(true);
@@ -1206,7 +1199,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
 
     hDY->SetFillColor(kOrange);
 
-    TLegend* leg = new TLegend(0.5, 0.6, 0.95, 0.85,"","brNDC");
+    TLegend* leg = new TLegend(0.7, 0.6, 0.95, 0.85,"","brNDC");
     //leg->SetNColumns(2);
     leg->SetTextFont(43);
     leg->SetTextSize(100);
@@ -1256,7 +1249,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     smearedChi2.SetTextSize(100);
     TString chi2_;
     chi2_.Form("%.2f", getSmearedChi2(var, filePath, dirName, steering,  useAxis, false));
-    smearedChi2.DrawLatexNDC(0.2, 0.6, "#chi^{2}: " + chi2_);
+    //smearedChi2.DrawLatexNDC(0.2, 0.6, "#chi^{2}: " + chi2_);
 
     leg->Draw();
 
@@ -1294,17 +1287,14 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     pad2->SetTopMargin(0.05);
     pad2->SetBottomMargin(0.35);
     if(var.Contains("Mass"))
+    {
         pad2->SetLogx();
+        hRatio->GetXaxis()->SetMoreLogLabels(true);    
+    }
     pad2->SetTicks(1);
     pad2->SetGridy(1);
     pad2->Draw();
     pad2->cd();
-
-    if(var.Contains("Mass"))
-    {
-        hRatio->GetXaxis()->SetRangeUser(massBinEdges.at(0), massBinEdges.at(5));
-        hMCtotal->GetXaxis()->SetRangeUser(massBinEdges.at(0), massBinEdges.at(5));
-    }
 
     hRatio->SetStats(false);
     hRatio->Divide(hMCtotal);
