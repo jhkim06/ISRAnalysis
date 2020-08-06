@@ -1405,6 +1405,7 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     TH1* hDY = NULL;
     TH1* hDY_iterEM = NULL;
     TH1* hRatio = NULL;
+    TH1* hRatio_iterEM = NULL;
 
     if(var.Contains("Pt"))
     {
@@ -1444,7 +1445,14 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
             divideByBinWidth(hDY_iterEM, false);
         }
     }
-    hRatio = (TH1*) hData->Clone("hRatio");
+    if(sysName.Contains("iterEM"))
+    {
+        hRatio = (TH1*) hData_iterEM->Clone("hRatio");
+    }
+    else
+    {
+        hRatio = (TH1*) hData->Clone("hRatio");
+    }
 
     // Create canvas
     TCanvas* c_out ;
@@ -1514,13 +1522,13 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
         hData_iterEM->SetLineColor(kRed);
         hData_iterEM->SetMarkerColor(kRed);
 
-        cout << "n bin: " << hDY_iterEM->GetNbinsX() << endl;
-        cout << "first bin content in DY (nominal) " << hDY->GetBinContent(1) << endl;
-        hDY_iterEM->Draw("p9e same");
-        hDY_iterEM->SetMarkerStyle(24);
-        hDY_iterEM->SetMarkerSize(4.2);
-        hDY_iterEM->SetLineColor(kRed);
-        hDY_iterEM->SetMarkerColor(kRed);
+        //cout << "n bin: " << hDY_iterEM->GetNbinsX() << endl;
+        //cout << "first bin content in DY (nominal) " << hDY->GetBinContent(1) << endl;
+        //hDY_iterEM->Draw("p9e same");
+        //hDY_iterEM->SetMarkerStyle(24);
+        //hDY_iterEM->SetMarkerSize(4.2);
+        //hDY_iterEM->SetLineColor(kRed);
+        //hDY_iterEM->SetMarkerColor(kRed);
     }
     pad1->RedrawAxis();
 
@@ -1570,16 +1578,32 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     pad2->Draw();
     pad2->cd();
 
-    hRatio->SetStats(false);
-    hRatio->Divide(hDY);
-    hRatio->Draw("p9e");
-    hRatio->SetMarkerStyle(20);
-    hRatio->SetMarkerSize(3.2);
-    hRatio->SetLineColor(kBlack);
-    hRatio->GetYaxis()->SetTitle("Unfolded/MC");
+    if(sysName.Contains("iterEM"))
+    {
+        hRatio->Divide(hData);
+        hRatio->Draw("p9e");
+        hRatio->SetMarkerStyle(20);
+        hRatio->SetMarkerSize(3.2);
+        hRatio->SetLineColor(kRed);
+        hRatio->SetMarkerColor(kRed);
+        hRatio->GetYaxis()->SetTitle("#frac{Alternative}{Nominal unfold algo.}");
+        hRatio->GetYaxis()->SetTitleSize(hRatio->GetYaxis()->GetTitleSize() * 0.7);
+        hRatio->SetMinimum(0.9);
+        hRatio->SetMaximum(1.1);
+    }
+    else
+    {
+        hRatio->SetStats(false);
+        hRatio->Divide(hDY);
+        hRatio->Draw("p9e");
+        hRatio->SetMarkerStyle(20);
+        hRatio->SetMarkerSize(3.2);
+        hRatio->SetLineColor(kBlack);
+        hRatio->GetYaxis()->SetTitle("Unfolded/MC");
+        hRatio->SetMinimum(0.5);
+        hRatio->SetMaximum(1.5);
+    }
 
-    hRatio->SetMinimum(0.5);
-    hRatio->SetMaximum(1.5);
 
     setXaxisTitle(hRatio, var, useAxis);
 
@@ -1587,7 +1611,7 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
     TH1* sysBand_ratio_forData = NULL;
     TH1* sysBand_ratio_forMC = NULL;
     TLegend* leg_sys = NULL;
-    if(sysName != "")
+    if(sysName != "" && !sysName.Contains("iterEM"))
     {
         leg_sys = new TLegend(0.5, 0.75, 0.95, 0.85,"","brNDC");
 
@@ -4554,7 +4578,7 @@ void ISRUnfold::drawSystematics(TString var)
     delete c_out;
 }
 
-void ISRUnfold::drawSystematics_Acceptance(TString var)
+void ISRUnfold::drawSystematics_Acceptance(TString var, bool isHistStye)
 {
 
     // Loop over
@@ -4570,22 +4594,34 @@ void ISRUnfold::drawSystematics_Acceptance(TString var)
     const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
     int nMassBin = temp_tvecd->GetNrows() - 1;
     vector<double> v_bins;
+    vector<double> v_bins_error;
+    vector<double> v_dummy_error;
     for(int i = 0; i < nMassBin; i++)
     {
         v_bins.push_back(i+1);
+        v_bins_error.push_back(0.5);
+        v_dummy_error.push_back(0.0);
     }
 
     map<TString, TGraph*> map_sys_graph;
+    map<TString, TGraphErrors*> map_sys_grapherrors;
     std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
+
     while(it != sysMap.end())
     {
         if(var.Contains("Pt"))
         {
-            map_sys_graph[it->first] = new TGraph(nMassBin, &v_bins[0], &meanPt_data_accept_rel_systematic[it->first][0]);
+            if(isHistStye == false)
+                map_sys_graph[it->first] = new TGraph(nMassBin, &v_bins[0], &meanPt_data_accept_rel_systematic[it->first][0]);
+            else
+                map_sys_grapherrors[it->first] = new TGraphErrors(nMassBin, &v_bins[0], &meanPt_data_accept_rel_systematic[it->first][0], &v_bins_error[0], &v_dummy_error[0]);
         }
         else
         {
-            map_sys_graph[it->first] = new TGraph(nMassBin, &v_bins[0], &meanMass_data_accept_rel_systematic[it->first][0]);
+            if(isHistStye == false) 
+                map_sys_graph[it->first] = new TGraph(nMassBin, &v_bins[0], &meanMass_data_accept_rel_systematic[it->first][0]);
+            else
+                map_sys_grapherrors[it->first] = new TGraphErrors(nMassBin, &v_bins[0], &meanMass_data_accept_rel_systematic[it->first][0], &v_bins_error[0], &v_dummy_error[0]);
         }
         it++;
     }
@@ -4593,7 +4629,7 @@ void ISRUnfold::drawSystematics_Acceptance(TString var)
     // Create canvas
     TCanvas* c_out = new TCanvas("relative_uncertainty_"+var, "relative_uncertainty_"+var, 3000, 1800);
     c_out->SetGridy(1);
-    c_out->SetGridx(1);
+    //c_out->SetGridx(1);
     c_out->SetTopMargin(0.08);
     c_out->Draw();
     c_out->cd();
@@ -4619,52 +4655,117 @@ void ISRUnfold::drawSystematics_Acceptance(TString var)
         if(marker == 40) marker = 41;
         if(marker == 42) marker = 47;
         if(marker > 47) marker = 20;
-        map_sys_graph[it->first]->SetMarkerStyle(marker);
-        map_sys_graph[it->first]->SetMarkerSize(markerSize);
-        map_sys_graph[it->first]->SetMarkerColor(markerColor==5?46:markerColor);
-        map_sys_graph[it->first]->SetLineColor(markerColor==5?46:markerColor);
+
+        if(isHistStye == false)  
+        {
+            map_sys_graph[it->first]->SetMarkerStyle(marker);
+            map_sys_graph[it->first]->SetMarkerSize(markerSize);
+            map_sys_graph[it->first]->SetMarkerColor(markerColor==5?46:markerColor);
+            map_sys_graph[it->first]->SetLineColor(markerColor==5?46:markerColor);
+        }
+        else
+        {
+            map_sys_grapherrors[it->first]->SetLineWidth(5);
+            map_sys_grapherrors[it->first]->SetMarkerStyle(marker);
+            map_sys_grapherrors[it->first]->SetMarkerSize(markerSize);
+            map_sys_grapherrors[it->first]->SetMarkerColor(markerColor==5?46:markerColor);
+            map_sys_grapherrors[it->first]->SetLineColor(markerColor==5?46:markerColor);
+        }
         markerColor++;
         marker++;
 
         if(first_draw)
         {
             //map_sys_graph[it->first]->SetTitleOffset(0.02);
-            if(var.Contains("Pt"))
-                map_sys_graph[it->first]->SetTitle("Relative uncertainty on <p_{T}^{\ell\ell}> [%]");
-            else
-                map_sys_graph[it->first]->SetTitle("Relative uncertainty on <Mass^{\ell\ell}> [%]");
+            if(isHistStye == false)
+            {
+                if(var.Contains("Pt"))
+                    map_sys_graph[it->first]->SetTitle("Relative uncertainty on <p_{T}^{\ell\ell}> [%]");
+                else
+                    map_sys_graph[it->first]->SetTitle("Relative uncertainty on <Mass^{\ell\ell}> [%]");
 
-            map_sys_graph[it->first]->GetYaxis()->SetRangeUser(0., 3.);
-            map_sys_graph[it->first]->GetXaxis()->SetLimits(0.5,5.5);
-            map_sys_graph[it->first]->GetYaxis()->SetTitleOffset(1.0);
-            map_sys_graph[it->first]->GetYaxis()->SetTitle("Relative uncertainty [%]");
-            map_sys_graph[it->first]->GetXaxis()->SetTitleOffset(0.7);
-            map_sys_graph[it->first]->GetXaxis()->SetTitle("mass bin");
-            map_sys_graph[it->first]->Draw("APC");
+                map_sys_graph[it->first]->GetYaxis()->SetRangeUser(0., 3.);
+                map_sys_graph[it->first]->GetXaxis()->SetLimits(0.5,5.5);
+                map_sys_graph[it->first]->GetYaxis()->SetTitleOffset(1.0);
+                map_sys_graph[it->first]->GetYaxis()->SetTitle("Relative uncertainty [%]");
+                map_sys_graph[it->first]->GetXaxis()->SetTitleOffset(0.7);
+                map_sys_graph[it->first]->GetXaxis()->SetTitle("mass bin");
+                map_sys_graph[it->first]->Draw("APC");
+            }
+            else
+            {
+                if(var.Contains("Pt"))
+                    map_sys_grapherrors[it->first]->SetTitle("Relative uncertainty on <p_{T}^{\ell\ell}> [%]");
+                else
+                    map_sys_grapherrors[it->first]->SetTitle("Relative uncertainty on <Mass^{\ell\ell}> [%]");
+
+                map_sys_grapherrors[it->first]->GetYaxis()->SetRangeUser(0., 3.);
+                map_sys_grapherrors[it->first]->GetXaxis()->SetLimits(0.5,5.5);
+                map_sys_grapherrors[it->first]->GetYaxis()->SetTitleOffset(1.0);
+                map_sys_grapherrors[it->first]->GetYaxis()->SetTitle("Relative uncertainty [%]");
+                map_sys_grapherrors[it->first]->GetXaxis()->SetTitleOffset(0.7);
+                map_sys_grapherrors[it->first]->GetXaxis()->SetTitle("mass bin");
+                map_sys_grapherrors[it->first]->Draw("AP");
+            }
             first_draw = false;
         }
         else
         {
-            map_sys_graph[it->first]->Draw("PC SAME");
+            if(isHistStye == false) 
+                map_sys_graph[it->first]->Draw("PC SAME");
+            else
+                map_sys_grapherrors[it->first]->Draw("P SAME");
         }
-        leg->AddEntry(map_sys_graph[it->first], it->first, "pl");
+        if(isHistStye == false)
+            leg->AddEntry(map_sys_graph[it->first], it->first, "pl");
+        else
+            leg->AddEntry(map_sys_grapherrors[it->first], it->first, "pl");
         it++;
     }
     // Stat
-    if(var.Contains("Pt"))
+    if(isHistStye == false)   
     {
-        map_sys_graph["Stat."] = new TGraph(nMassBin, &v_bins[0], &meanPtStatRelErr_data_unfolded[0]);
+        if(var.Contains("Pt"))
+        {
+            map_sys_graph["Stat."] = new TGraph(nMassBin, &v_bins[0], &meanPtStatRelErr_data_unfolded[0]);
+        }
+        else
+        {
+            map_sys_graph["Stat."] = new TGraph(nMassBin, &v_bins[0], &meanMassStatRelErr_data_unfolded[0]);
+        }
+
+        map_sys_graph["Stat."]->SetMarkerSize(0);
+        map_sys_graph["Stat."]->SetLineColor(1);
+        map_sys_graph["Stat."]->SetLineStyle(1);
+        map_sys_graph["Stat."]->SetLineWidth(10);
+        map_sys_graph["Stat."]->Draw("PC SAME");
+        leg->AddEntry(map_sys_graph["Stat."], "Statistical", "l");
     }
     else
     {
-        map_sys_graph["Stat."] = new TGraph(nMassBin, &v_bins[0], &meanMassStatRelErr_data_unfolded[0]);
+        if(var.Contains("Pt"))
+        {
+            map_sys_grapherrors["Stat."] = new TGraphErrors(nMassBin, &v_bins[0], &meanPtStatRelErr_data_unfolded[0], &v_bins_error[0], &v_dummy_error[0]);
+        }
+        else
+        {
+            map_sys_grapherrors["Stat."] = new TGraphErrors(nMassBin, &v_bins[0], &meanMassStatRelErr_data_unfolded[0], &v_bins_error[0], &v_dummy_error[0]);
+        }
+
+        map_sys_grapherrors["Stat."]->SetMarkerSize(0);
+        map_sys_grapherrors["Stat."]->SetLineColor(1);
+        map_sys_grapherrors["Stat."]->SetLineStyle(1);
+        map_sys_grapherrors["Stat."]->SetLineWidth(10);
+        map_sys_grapherrors["Stat."]->Draw("P SAME");
+        leg->AddEntry(map_sys_grapherrors["Stat."], "Statistical", "l");
     }
-    map_sys_graph["Stat."]->SetMarkerSize(0);
-    map_sys_graph["Stat."]->SetLineColor(1);
-    map_sys_graph["Stat."]->SetLineStyle(1);
-    map_sys_graph["Stat."]->SetLineWidth(10);
-    map_sys_graph["Stat."]->Draw("PC SAME");
-    leg->AddEntry(map_sys_graph["Stat."], "Statistical", "l");
+
+    int iPeriod_ = 4;
+    if(year == 2017)
+        iPeriod_ = 5;
+    if(year == 2018)
+        iPeriod_ = 6;
+    CMS_lumi(c_out, iPeriod_, 11);
 
     leg->Draw();
     c_out->cd();

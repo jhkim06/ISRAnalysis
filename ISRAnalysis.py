@@ -285,9 +285,9 @@ class ISRAnalysis:
     def drawUnfPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isType3Closure = False):
         self.unfold.drawUnfoldedHists(var, steering, useAxis, sysName, outName, massBin, binWidth, isType3Closure)
 
-    def drawSystematics(self, var = "Pt", isAccept = False) :
+    def drawSystematics(self, var = "Pt", isAccept = False, isHistStyle = False) :
         if isAccept:
-            self.unfold.drawSystematics_Acceptance(var)
+            self.unfold.drawSystematics_Acceptance(var, isHistStyle)
         else :
             self.unfold.drawSystematics(var) 
     # Do unfold! 

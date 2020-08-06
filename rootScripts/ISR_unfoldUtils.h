@@ -350,7 +350,7 @@ public:
     void drawPDFVariation(bool isPt = true, int massBin = 0);
     void drawSysVariation(TString sysName, TString var, int massBin);
     void drawSystematics(TString var);
-    void drawSystematics_Acceptance(TString var);
+    void drawSystematics_Acceptance(TString var, bool isHistStye = false);
 };
 
 #endif
