@@ -1,4 +1,4 @@
-Language: Python + C++ code 
+Language: Python + C++
 
 Make reconstruction level histograms
 
