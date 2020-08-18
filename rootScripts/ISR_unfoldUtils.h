@@ -151,6 +151,8 @@ private:
     // Acceptance correction
     TH1* hFullPhaseMassData; // data after acceptance correction 
     TH1* hFullPhasePtData;  
+    TH1* hFullPhaseMassMC;  
+    TH1* hFullPhasePtMC;  
 
     std::map<TString, std::map<TString, TH1*>> hSysFullPhaseMassData;
     std::map<TString, std::map<TString, TH1*>> hSysFullPhasePtData;
@@ -159,6 +161,9 @@ private:
     
     TH1* hAcceptanceMass;  
     TH1* hAcceptancePt;  
+
+    std::map<TString, std::map<TString, TH1*>> hSysAcceptanceMass;
+    std::map<TString, std::map<TString, TH1*>> hSysAcceptancePt;
 
     vector<Double_t> meanMass_data_acc_corrected, meanMassStatErr_data_acc_corrected, meanMassSysErr_data_acc_corrected, meanMassTotErr_data_acc_corrected;
     vector<Double_t> meanPt_data_acc_corrected,   meanPtStatErr_data_acc_corrected,   meanPtSysErr_data_acc_corrected, meanPtTotErr_data_acc_corrected;
@@ -171,6 +176,9 @@ private:
 
     std::map<TString, vector<double>> meanMass_data_accept_rel_systematic;
     std::map<TString, vector<double>> meanPt_data_accept_rel_systematic;
+
+    vector<Double_t> meanMassRelSysErr_data_acc_corrected;
+    vector<Double_t> meanPtRelSysErr_data_acc_corrected;
 
     bool verbose;
 
@@ -215,7 +223,6 @@ public:
         bkgColors["Top"] = kAzure+1;
 
         verbose = verbose_;
-
     }
     // Destructor
     ~ISRUnfold(){}
@@ -231,7 +238,7 @@ public:
     void setBias(double bias);
 
     // Set nominal TUnfoldDensity 
-    void setNomResMatrix(TString var, TString filepath, TString dirName, TString histName, TString binDef = "");
+    void setNominalRM(TString var, TString filepath, TString dirName, TString histName, TString binDef = "");
 
     void setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept = false);
 
@@ -241,10 +248,10 @@ public:
 
     // Set background histograms
     void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
-                 bool isSys = false, TString binDef = "", TString dirName = "", TString sysName = "", TString sysPostfix = "", bool isFSR = false);
+                 bool isSys = false, TString binDef = "", TString dirName = "", TString sysName = "", TString sysPostfix = "", TString histPostfix = "", bool isFSR = false);
 
     // Set systematic TUnfoldDensity
-    void setSysTUnfoldDensity(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString binDef);
+    void setSystematicRM(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString histPostfix, TString binDef);
 
     void setSystematics(TString sysName, TString sysHistName);
     void inline printSystematics()
@@ -262,6 +269,7 @@ public:
     }
     // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
     TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, TString sysFilePath = "");
+    TCanvas* drawUnfoldedVarHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);
     TCanvas* drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, bool isType3Closure = false);
     TH1* getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, TString sysFilePath = "", int nthMassBin = 0);
     TH1* getUnfoldedSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, int nthMassBin = 0);
@@ -271,6 +279,7 @@ public:
     void writeCutInfo(TPad* pad, TString var, int nthMassBin = 0);
     double getBinnedMean(TH1* hist);
     void divideByBinWidth(TH1* hist, bool norm = false);
+    TString getSysNameToShow(TString sysName);
 
     // Do unfold 
     void doISRUnfold( bool doSys = false, bool doReg = false);
@@ -287,6 +296,7 @@ public:
     TCanvas* drawAcceptCorrHists(TString var, TString filePath, TString binDef, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth); 
     void drawCorrelation(TString var, TString steering, bool useAis, TString outName = "");
     void drawComparisonPlot(TString var, TString plotName, TString topYaxisName, TString bottomYaxisName, TString bottomXaxisName, TH1* h1, TH1* h2, TH1* hratio, TString outName, int nthMassBin = 0);
+    TCanvas* drawAcceptVarHists(TString var, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth = false);
 
     // Get histograms
     TH1* getUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true, bool divBinWidth = false);
@@ -349,8 +359,9 @@ public:
     void drawStatVariation(bool isPt = true, int massBin = 0);
     void drawPDFVariation(bool isPt = true, int massBin = 0);
     void drawSysVariation(TString sysName, TString var, int massBin);
-    void drawSystematics(TString var);
+    void drawSystematics(TString var, bool isHistStye = false);
     void drawSystematics_Acceptance(TString var, bool isHistStye = false);
+    void drawSysVariation_Accept(TString sysName, TString var, int massBin);
 };
 
 #endif

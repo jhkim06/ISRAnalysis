@@ -6,7 +6,9 @@
 *.o
 *.d
 *.pyc
-output/
 *.swp
 *.pdf
+*.png
+*.txt
 *ipynb_checkpoints/
+output/
