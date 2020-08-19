@@ -123,16 +123,17 @@ class ISRAnalysis:
     def setFromPreviousUnfold(self, unfoldObj) :
         self.unfold.setFromPrevUnfResult(unfoldObj, True)
             
-    def subFake(self, isSys = False, dirName = "detector_level_DY_Fake", systName = "nominal", sysPostfix = "", isFSR = False):
+    def subFake(self, isSys = False, dirName = "Detector_DY_Fake", systName = "nominal", sysPostfix = "", histPostfix = "", isFSR = False):
             
         fakeList = {"DYJets": "DY", self.dy10to50HistName:"DY"}
        
+        hist_filekey_temp = "matrix"
+        if isFSR :
+            hist_filekey_temp = "fsr_matrix"
+
         for fake in fakeList.items():
-            hist_filekey_temp = "matrix"
-            histPostfix_temp = sysPostfix
 
             if "LepMom" in systName :
-                histPostfix_temp = ""
                 if "LepMomScale" in sysPostfix:
                     matrix_filekey_temp ="matrix_LepScale"
                 elif "LepMomRes" in sysPostfix:
@@ -142,13 +143,7 @@ class ISRAnalysis:
                 if sysPostfix != "Nominal" : 
                     hist_filekey_temp = 'matrix_zptcorr' 
 
-            elif "Scale" in systName or "AlphaS" in systName: 
-                hist_filekey_temp = 'matrix_pdf_scale'
-
-            elif "iterEM" == systName :
-                histPostfix_temp = ""
-
-            self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], fake, isSys, self.binDef, dirName, systName, sysPostfix, histPostfix_temp, isFSR)
+            self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], fake, isSys, self.binDef, dirName, systName, sysPostfix, histPostfix, isFSR)
 
             #self.unfold.subBkgs(self.inHistDic['fsr_matrix_for_fsr'], fake, isSys, self.binDef, dirName, systName, sysPostfix, histPostfix_temp, isFSR)
 
@@ -181,9 +176,6 @@ class ISRAnalysis:
                     hist_filekey_temp ="hist_LepScale"
                 elif "LepMomRes" in sysPostfix:
                     hist_filekey_temp ="hist_LepResolution"
-
-            elif "Scale" == systName or "AlphaS" in systName:
-                hist_filekey_temp = 'hist_pdf_scale'
 
             elif "iterEM" == systName :
                 histPostfix_temp = ""
@@ -230,9 +222,6 @@ class ISRAnalysis:
         elif "PDF" in sysName:
             matrix_filekey_temp = "fsr_matrix_pdf"
 
-        elif "Scale" in sysName or "AlphaS" in sysName:
-            matrix_filekey_temp = "matrix_pdf_scale"
-
         self.unfold.setSystematicRM("Pt",   self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
         self.unfold.setSystematicRM("Mass", self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
 
@@ -259,7 +248,7 @@ class ISRAnalysis:
         elif "LepMomRes" in sysName :
             self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_LepResolution'])
         elif "Scale" in sysName or "AlphaS" in sysName:
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_pdf_scale'])
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist'])
         else : 
             self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth)
 
@@ -343,22 +332,16 @@ class ISRAnalysis:
             else :
                 self.unfold.drawSysVariation_Accept(sysName, var, ibin)
 
-    def doAcceptance(self, doSys = False, isFSR = False, isForFSRSys = False, outName = "") :
-        if isForFSRSys :
-            if isFSR :
-                self.unfold.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", doSys, outName)
-            else : 
-                self.unfold.doAcceptCorr(self.inHistDic['hist_for_fsr'], "_FineCoarse", doSys, outName)
-        else :
+    def doAcceptance(self, doSys = False, isFSR = False, outName = "") :
+        if isFSR :
+            self.unfold.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys, outName)
+        else : 
             self.unfold.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", doSys, outName)
 
-    def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isFSR = False, isForFSRSys = False): 
-        if isForFSRSys :
-            if isFSR :
-                self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept_drp1'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
-            else :
-                self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_for_fsr'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
-        else : 
+    def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isFSR = False): 
+        if isFSR :
+            self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept_fullPhase'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
+        else :
             self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept_drp1'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
 
     def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):

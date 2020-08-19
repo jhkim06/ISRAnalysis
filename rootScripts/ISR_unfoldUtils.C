@@ -739,39 +739,53 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
     // Loop over sytematics considered in the previous unfold class
     // So first get sysMap map object
     std::map<TString, std::vector<TString>> sysMap_previous = unfold->getSystematicMap();
-
     std::map<TString, std::vector<TString>>::iterator it = sysMap_previous.begin();
     while(it != sysMap_previous.end())
     {
         //cout << "Systematic name: " << it->first << endl;
-
         if(this->sysMap.find(it->first) == this->sysMap.end())
         {
             // Not found in this ISRUnfold class, but exits in the previous one
-            // Systematic not considered in this ISRUnfold class, create TUnfoldDensity using the DEFAULT response matrix
             int size = sysMap_previous[it->first].size();
             for(int ith = 0; ith < size; ith++)
             {
+                // Create TUnfoldDensity using the DEFAULT response matrix
                 //cout << "Systematic variation, " << sysMap_previous[it->first][ith] << endl;
-                this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]] = new TUnfoldDensity(hPtResponseM,TUnfold::kHistMapOutputHoriz,
-                                                                                                regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone,
-                                                                                                pt_binning_Gen,pt_binning_Rec);
-
-                this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]] = new TUnfoldDensity(hMassResponseM,TUnfold::kHistMapOutputHoriz,
-                                                                                                regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone,
-                                                                                                mass_binning_Gen, mass_binning_Rec);
-
-                if(!useAccept)
+                if((it->first).Contains("iterEM") && !(sysMap_previous[it->first][ith]).Contains("Nominal"))
                 {
-                    this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedPt_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
-                    this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedMass_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
-                }
+                    this->iterEMPtUnfold   = new TUnfoldIterativeEM(hPtResponseM,TUnfoldDensity::kHistMapOutputHoriz,pt_binning_Gen,pt_binning_Rec); 
+                    this->iterEMMassUnfold = new TUnfoldIterativeEM(hMassResponseM,TUnfoldDensity::kHistMapOutputHoriz,mass_binning_Gen,mass_binning_Rec);
+
+                    if(!useAccept)
+                    {
+                        this->iterEMPtUnfold->SetInput(unfold->iterEMPtUnfold->GetOutput("hUnfoldedPt_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                        this->iterEMMassUnfold->SetInput(unfold->iterEMMassUnfold->GetOutput("hUnfoldedMass_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                    }
+                    else
+                    {
+                        //cout << "use acceptance corrected output!" << endl;
+                        this->iterEMPtUnfold->SetInput(unfold->hSysFullPhasePtData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                        this->iterEMMassUnfold->SetInput(unfold->hSysFullPhaseMassData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                    }
+                } 
                 else
                 {
-                    //cout << "use acceptance corrected output!" << endl;
-                    this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhasePtData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
-                    this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhaseMassData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                    this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]   = new TUnfoldDensity(hPtResponseM,TUnfold::kHistMapOutputHoriz,regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, pt_binning_Gen,pt_binning_Rec);
+                    this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]] = new TUnfoldDensity(hMassResponseM,TUnfold::kHistMapOutputHoriz,regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone,mass_binning_Gen, mass_binning_Rec);
+
+                    if(!useAccept)
+                    {
+                        this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedPt_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                        this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfoldedMass_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                    }
+                    else
+                    {
+                        //cout << "use acceptance corrected output!" << endl;
+                        this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhasePtData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                        this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhaseMassData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                    }
                 }
+
 
 
                 this->sysMap[it->first].push_back(sysMap_previous[it->first][ith]);
@@ -780,10 +794,8 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
         else
         {
             // Found
-            // Systematic only for this ISRUnfold class
+            // Systematic both considered in this and previous unfolding
             // Loop over systematic varations
-
-            // If previous ISRUnfold class have this systematic result, then use the output as input for this ISRUnfold class
             int size = sysMap_previous[it->first].size();
             for(int ith = 0; ith < size; ith++)
             {
@@ -794,11 +806,19 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
                 }
                 else
                 {
-                    this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhasePtData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
-                    this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhaseMassData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+
+                    if((it->first).Contains("iterEM") && !(sysMap_previous[it->first][ith]).Contains("Nominal"))
+                    {
+                        this->iterEMPtUnfold->SetInput(unfold->hSysFullPhasePtData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                        this->iterEMMassUnfold->SetInput(unfold->hSysFullPhaseMassData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                    } 
+                    else
+                    {
+                        this->sysPtUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhasePtData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                        this->sysMassUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhaseMassData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
+                    }
                 }
             }
-            // Else, use the default input
         }
         it++;
     }
@@ -1026,23 +1046,23 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
     else
     // Systematic
     {
-            TString fullHistName = bkgInfo.first + "_" + sysPostfix;
-            if(histPostfix == "")
-                fullHistName = bkgInfo.first;
+        TString fullHistName = bkgInfo.first + "_" + sysPostfix;
+        if(histPostfix == "")
+            fullHistName = bkgInfo.first;
 
-            hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + fullHistName);
-            hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + fullHistName);
+        hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + fullHistName);
+        hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + fullHistName);
 
-            if(sysName.Contains("iterEM") && !sysPostfix.Contains("Nominal"))
-            {
-                iterEMPtUnfold->SubtractBackground(hPtRec, bkgInfo.first);
-                iterEMMassUnfold->SubtractBackground(hMassRec, bkgInfo.first);
-            }
-            else
-            {
-                sysPtUnfold[sysName][sysPostfix]->SubtractBackground(hPtRec, bkgInfo.first);
-                sysMassUnfold[sysName][sysPostfix]->SubtractBackground(hMassRec, bkgInfo.first);
-            }
+        if(sysName.Contains("iterEM") && !sysPostfix.Contains("Nominal"))
+        {
+            iterEMPtUnfold->SubtractBackground(hPtRec, bkgInfo.first);
+            iterEMMassUnfold->SubtractBackground(hMassRec, bkgInfo.first);
+        }
+        else
+        {
+            sysPtUnfold[sysName][sysPostfix]->SubtractBackground(hPtRec, bkgInfo.first);
+            sysMassUnfold[sysName][sysPostfix]->SubtractBackground(hMassRec, bkgInfo.first);
+        }
     }
 
     filein->Close();
@@ -1074,6 +1094,22 @@ void ISRUnfold::setHistCosmetics(TH1* hist, bool isLogy)
         hist->SetMaximum(hist->GetMaximum() * 2.);
         hist->SetMinimum(1e-5);
     }
+}
+
+TLegend* ISRUnfold::createLegend(double xStartPos_, double yStartPos_ )
+{
+    double xStartPos = xStartPos_;
+    double yStartPos = yStartPos_;
+    double xEndPos = 0.9;
+    double yEndPos = 0.85;
+
+    TLegend* leg = new TLegend(xStartPos, yStartPos, xEndPos, yEndPos,"","brNDC");
+    leg->SetTextFont(43);
+    leg->SetTextSize(70);
+    leg->SetFillStyle(0); // transparent
+    leg->SetBorderSize(0);
+    
+    return leg;
 }
 
 // Draw detector distributions using input root file
@@ -1125,6 +1161,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     c_out->Draw();
     c_out->cd();
 
+    // Create top pad
     TPad *pad1 = new TPad("pad1","pad1",0,0.3,1,1);
     pad1->SetBottomMargin(topPadBottomMargin);
     pad1->SetTopMargin(topPadTopMargin);
@@ -1141,12 +1178,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
 
     hDY->SetFillColor(kOrange);
 
-    TLegend* leg = new TLegend(0.7, 0.6, 0.95, 0.85,"","brNDC");
-    //leg->SetNColumns(2);
-    leg->SetTextFont(43);
-    leg->SetTextSize(100);
-    leg->SetFillStyle(0); // transparent
-    leg->SetBorderSize(0);
+    TLegend* leg = createLegend(0.8, 0.5);
     leg->AddEntry(hData, "Data", "pl");
     leg->AddEntry(hDY, "Drell-Yan", "F");
 
@@ -1739,12 +1771,8 @@ TCanvas* ISRUnfold::drawUnfoldedHists(TString var, TString steering, bool useAxi
         massEdgeLine.DrawLine(hData->GetXaxis()->GetBinLowEdge(ibin), histMin, hData->GetXaxis()->GetBinLowEdge(ibin), hDY->GetBinContent(ibin));
     }
 
-    TLegend* leg = new TLegend(0.55, 0.7, 0.9, 0.92,"","brNDC");
-    //leg->SetNColumns(2);
-    leg->SetTextFont(43);
-    leg->SetTextSize(70);
-    leg->SetFillStyle(0); // transparent
-    leg->SetBorderSize(0);
+    TLegend* leg = createLegend(0.6, 0.7);
+
     if(outName.Contains("Closure"))
     {
         leg->AddEntry(hData, "Unfolded MC", "pl");
@@ -2918,7 +2946,7 @@ void ISRUnfold::doISRUnfold(bool doSys)
         while(it != sysMap.end())
         {
             int size = (it->second).size();
-            //cout << "systematic name: " << it->first << " size: " << size << endl;
+            cout << "systematic name: " << it->first << " size: " << size << endl;
             for(int i = 0; i < size; i++)
             {
                 if(it->first == "iterEM" && (it->second).at(i) != "Nominal")
@@ -3041,10 +3069,18 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys, TStri
             int size = (it->second).size();
             for(int i = 0; i < size; i++)
             {
-                //hSysFullPhaseMassData[it->first][(it->second).at(i)] = sysMassUnfold[it->first][(it->second).at(i)]->GetOutput("hFullPhaseMassData"+it->first+(it->second).at(i),0,0, "*[*]", false);
-                //hSysFullPhasePtData[it->first][(it->second).at(i)]   = sysPtUnfold[it->first][(it->second).at(i)]->GetOutput("hFullPhasePtData"+it->first+(it->second).at(i),0,0, "*[*]", false);
-                hSysFullPhaseMassData[it->first][(it->second).at(i)] = nomMassUnfold->GetOutput("hFullPhaseMassData",0,0, "*[*]", false);
-                hSysFullPhasePtData[it->first][(it->second).at(i)] = nomPtUnfold->GetOutput("hFullPhasePtData",0,0, "*[*]", false);
+                if(it->first == "iterEM" && (it->second).at(i) != "Nominal")
+                {
+                    hSysFullPhaseMassData[it->first][(it->second).at(i)] = iterEMMassUnfold->GetOutput("hFullPhaseMassData"+it->first+(it->second).at(i),0,0, "*[*]", false);
+                    hSysFullPhasePtData[it->first][(it->second).at(i)]   = iterEMPtUnfold->GetOutput("hFullPhasePtData"+it->first+(it->second).at(i),0,0, "*[*]", false);
+                }
+                else    
+                {
+                    hSysFullPhaseMassData[it->first][(it->second).at(i)] = sysMassUnfold[it->first][(it->second).at(i)]->GetOutput("hFullPhaseMassData"+it->first+(it->second).at(i),0,0, "*[*]", false);
+                    hSysFullPhasePtData[it->first][(it->second).at(i)]   = sysPtUnfold[it->first][(it->second).at(i)]->GetOutput("hFullPhasePtData"+it->first+(it->second).at(i),0,0, "*[*]", false);
+                    //hSysFullPhaseMassData[it->first][(it->second).at(i)] = nomMassUnfold->GetOutput("hFullPhaseMassData",0,0, "*[*]", false);
+                    //hSysFullPhasePtData[it->first][(it->second).at(i)] = nomPtUnfold->GetOutput("hFullPhasePtData",0,0, "*[*]", false);
+                }
 
                 // Use different acceptance for PDF AlphaS Scale etc
                 if( ((it->first).Contains("Scale") && !(it->first).Contains("Lep")) || (it->first).Contains("PDF") || (it->first).Contains("AlphaS"))

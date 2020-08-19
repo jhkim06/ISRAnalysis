@@ -287,6 +287,7 @@ public:
     void divideByBinWidth(TH1* hist, bool norm = false);
     TString getSysNameToShow(TString sysName);
     void setHistCosmetics(TH1* hist, bool isLogy = false);
+    TLegend* createLegend(double xStartPos_, double yStartPos_);
 
     // Do unfold 
     void doISRUnfold( bool doSys = false);
