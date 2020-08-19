@@ -40,7 +40,11 @@
 #include "TUnfoldIterativeEM.h"
 
 using namespace std; 
+
 const int statSize = 1000;
+
+const double topPadBottomMargin = 0.03;
+const double topPadTopMargin = 0.1;
 
 class ISRUnfold{
 
@@ -267,22 +271,25 @@ public:
     {
         return sysMap;
     }
-    // Draw folded distribution(before unfolding) using histograms saved in TUnfoldDensity
+    // FIXME combine below three method 
     TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, TString sysFilePath = "");
     TCanvas* drawUnfoldedVarHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);
     TCanvas* drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, bool isType3Closure = false);
+    // FIXME combine below three method
     TH1* getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, TString sysFilePath = "", int nthMassBin = 0);
     TH1* getUnfoldedSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, int nthMassBin = 0);
     TH1* getUnfAcceptSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, int nthMassBin = 0);
+
     void setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "", bool divBinWidth = false);
     void setXaxisTitle(TH1* hist, TString var, bool useAxis, TString title = "");
     void writeCutInfo(TPad* pad, TString var, int nthMassBin = 0);
     double getBinnedMean(TH1* hist);
     void divideByBinWidth(TH1* hist, bool norm = false);
     TString getSysNameToShow(TString sysName);
+    void setHistCosmetics(TH1* hist, bool isLogy = false);
 
     // Do unfold 
-    void doISRUnfold( bool doSys = false, bool doReg = false);
+    void doISRUnfold( bool doSys = false);
     void doStatUnfold(); 
 
     void setStatError();

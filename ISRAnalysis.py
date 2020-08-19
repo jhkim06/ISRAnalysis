@@ -8,7 +8,7 @@ import pyScripts.unfoldUtil as unfoldutil
 
 class ISRAnalysis:
     
-    def __init__(self, year_ = "2016", channel_= "electron", sys_ = False, matrix_filekey_ = "matrix",
+    def __init__(self, year_ = "2016", channel_= "electron", regMode = 0, sys_ = False, matrix_filekey_ = "matrix",
                  matrix_dirPath_ = "Detector_Dressed_DRp1_Fiducial", matrix_histName_ = "Detector_Dressed_DRp1", binDef_ = ""):
         
         # 디텍터 언폴딩 디렉토리 경로 & 매트릭스 이름 
@@ -55,7 +55,7 @@ class ISRAnalysis:
         
         # 언폴딩 컨피규레이션
         self.bias = 1.0
-        self.mode = 0 # 레귤라이제이션 모드
+        self.mode = regMode # 레귤라이제이션 모드
         
         # Create ISRUnfold object
         self.unfold = rt.ISRUnfold(self.channel, int(self.year), int(self.mode), sys_)
@@ -278,8 +278,8 @@ class ISRAnalysis:
         else :
             self.unfold.drawSystematics(var, isHistStyle) 
     # Do unfold! 
-    def doUnfold(self, isSys = False, doRegularize = False):
-        self.unfold.doISRUnfold(isSys, doRegularize)
+    def doUnfold(self, isSys = False):
+        self.unfold.doISRUnfold(isSys)
 
     def doStatUnfold(self):
         print ("doStatUnfold")
