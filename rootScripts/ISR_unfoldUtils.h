@@ -223,8 +223,9 @@ public:
         // Fill colors for backgrounds
         bkgColors["Fake"] = kViolet+6;
         bkgColors["WJets"] = kViolet+1;
-        bkgColors["EWK"] = kOrange+1;
-        bkgColors["Top"] = kAzure+1;
+        bkgColors["VV"] = kOrange+1;
+        bkgColors["DY#rightarrow#tau#tau"] = kOrange+2;
+        bkgColors["t#bar{t}"] = kAzure+1;
 
         verbose = verbose_;
     }
@@ -272,21 +273,25 @@ public:
         return sysMap;
     }
     // FIXME combine below three method 
-    TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, TString sysFilePath = "");
+    TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, TString sysFilePath = "", bool isBkgSubData = false);
+    TCanvas* drawPtDistributions(TString filePath);
+    TCanvas* drawPtBkgRatio(TString filePath);
     TCanvas* drawUnfoldedVarHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);
     TCanvas* drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, bool isType3Closure = false);
     // FIXME combine below three method
-    TH1* getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, TString sysFilePath = "", int nthMassBin = 0);
+    TH1* getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, 
+                                    bool divBinWidth, bool isRatio, bool forMC, TString sysFilePath = "", int nthMassBin = 0, bool isBkgSubData = false);
     TH1* getUnfoldedSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, int nthMassBin = 0);
     TH1* getUnfAcceptSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, int nthMassBin = 0);
 
-    void setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "", bool divBinWidth = false);
+    void setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "", bool divBinWidth = false, bool updateLegend = true, bool doPtCombine = false);
     void setXaxisTitle(TH1* hist, TString var, bool useAxis, TString title = "");
-    void writeCutInfo(TPad* pad, TString var, int nthMassBin = 0);
+    void writeCutInfo(TPad* pad, TString var, int nthMassBin = 0, double x_ = 0.2, double y_ = 0.7, bool showLepCuts = true);
     double getBinnedMean(TH1* hist);
     void divideByBinWidth(TH1* hist, bool norm = false);
     TString getSysNameToShow(TString sysName);
-    void setHistCosmetics(TH1* hist, bool isLogy = false);
+    double setHistCosmetics(TH1* hist, bool isLogy = false);
+    TH1* cloneEmptyHist(TH1* hist, TString histName);
     TLegend* createLegend(double xStartPos_, double yStartPos_);
 
     // Do unfold 

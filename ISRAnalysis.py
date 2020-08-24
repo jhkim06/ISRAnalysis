@@ -143,6 +143,12 @@ class ISRAnalysis:
                 if sysPostfix != "Nominal" : 
                     hist_filekey_temp = 'matrix_zptcorr' 
 
+            elif "FSR" in systName : 
+                histPostfix = ""
+
+            elif "PDF" in systName :
+                hist_filekey_temp = "matrix_pdf"
+
             self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], fake, isSys, self.binDef, dirName, systName, sysPostfix, histPostfix, isFSR)
 
             #self.unfold.subBkgs(self.inHistDic['fsr_matrix_for_fsr'], fake, isSys, self.binDef, dirName, systName, sysPostfix, histPostfix_temp, isFSR)
@@ -156,9 +162,9 @@ class ISRAnalysis:
             #bkgList = {"QCD": "Fake", "WJet": "Fake",\
             bkgList = {
                         "WJets_MG": "WJets",
-                        "DYJets10to50ToTauTau":"EWK", "DYJetsToTauTau":"EWK", 
-                        "WW_pythia": "EWK", "WZ_pythia": "EWK", "ZZ_pythia": "EWK", 
-                        "TTLL_powheg": "Top",
+                        "DYJets10to50ToTauTau":"DY#rightarrow#tau#tau", "DYJetsToTauTau":"DY#rightarrow#tau#tau", 
+                        "WW_pythia": "VV", "WZ_pythia": "VV", "ZZ_pythia": "VV", 
+                        "TTLL_powheg": "t#bar{t}",
                         } 
         else :
             bkgList = {"WJets_MG": "WJets", 
@@ -179,6 +185,9 @@ class ISRAnalysis:
 
             elif "iterEM" == systName :
                 histPostfix_temp = ""
+
+            elif "PDF" in systName :
+                hist_filekey_temp ="hist_pdf"
     
             self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], bkg, isSys, self.binDef, dirName, systName, sysPostfix, histPostfix_temp)
             
@@ -220,7 +229,10 @@ class ISRAnalysis:
                 matrix_filekey_temp = "fsr_matrix_powheg_pythia"
 
         elif "PDF" in sysName:
-            matrix_filekey_temp = "fsr_matrix_pdf"
+            if isFSR :
+                matrix_filekey_temp = "fsr_matrix_pdf"
+            else :
+                matrix_filekey_temp = "matrix_pdf"
 
         self.unfold.setSystematicRM("Pt",   self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
         self.unfold.setSystematicRM("Mass", self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
@@ -240,17 +252,25 @@ class ISRAnalysis:
     def checkIterEMUnfold(self):
         self.unfold.checkIterEMUnfold()
 
-    def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
+    def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isBkgSubData = False):
         if "ZptCorr" in sysName :
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_zptcorr'])
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_zptcorr'], isBkgSubData)
         elif "LepMomScale" in sysName :
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_LepScale'])
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_LepScale'], isBkgSubData)
         elif "LepMomRes" in sysName :
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_LepResolution'])
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_LepResolution'], isBkgSubData)
         elif "Scale" in sysName or "AlphaS" in sysName:
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist'])
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist'], isBkgSubData)
+        elif "PDF" in sysName :
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_pdf'], isBkgSubData)
         else : 
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth)
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, "", isBkgSubData)
+
+    def drawPtDistributions(self) :
+            self.unfold.drawPtDistributions(self.inHistDic['hist'])
+
+    def drawPtBkgRatio(self) :
+            self.unfold.drawPtBkgRatio(self.inHistDic['hist'])
 
     def drawUnfPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isType3Closure = False):
         self.unfold.drawUnfoldedHists(var, steering, useAxis, sysName, outName, massBin, binWidth, isType3Closure)
@@ -340,9 +360,9 @@ class ISRAnalysis:
 
     def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isFSR = False): 
         if isFSR :
-            self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept_fullPhase'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
+            self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", steering, useAxis, sysName, outName, massBin, binWidth)  
         else :
-            self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept_drp1'], self.binDef, steering, useAxis, sysName, outName, massBin, binWidth)  
+            self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept_drp1'], "_FineCoarse", steering, useAxis, sysName, outName, massBin, binWidth)  
 
     def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):
         self.unfold.drawCorrelation(var, steering, useAxis, outName)
