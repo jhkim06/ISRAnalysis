@@ -1172,6 +1172,8 @@ TCanvas* ISRUnfold::drawPtBkgRatio(TString filePath)
     TH1* hWZ = new TH1D("hWZ", "hWZ", nTotalPtBins, &newPtBinVector[0]);;
     TH1* hZZ = new TH1D("hZZ", "hZZ", nTotalPtBins, &newPtBinVector[0]);;
     TH1* hTop = new TH1D("hTop", "hTop", nTotalPtBins, &newPtBinVector[0]);;
+    TH1* hQCD = new TH1D("hQCD", "hQCD", nTotalPtBins, &newPtBinVector[0]);;
+    TH1* hWjet = new TH1D("hWjet", "hWjet", nTotalPtBins, &newPtBinVector[0]);;
     TH1* hMCtotal = new TH1D("hMCtotal", "hMCtotal", nTotalPtBins, &newPtBinVector[0]);
 
     TCanvas* c_out = new TCanvas("detector_level_", "detector_level_", 10000, 2000);
@@ -1181,6 +1183,7 @@ TCanvas* ISRUnfold::drawPtBkgRatio(TString filePath)
     TPad *pad1 = new TPad("pad1","pad1",0,0.0,1,1);
     pad1->SetBottomMargin(topPadBottomMargin * 2.);
     pad1->SetTopMargin(topPadTopMargin);
+    pad1->SetLogy();
     pad1->SetTicks(1);
     pad1->Draw();
     pad1->cd();
@@ -1201,6 +1204,8 @@ TCanvas* ISRUnfold::drawPtBkgRatio(TString filePath)
         TH1* hWZTemp = getRawHist("Pt_FineCoarse", filePath, "Detector", "histo_WZ_pythia", "WZ", "pt[UO];mass[UOC"+massString+"]", true, true);
         TH1* hZZTemp = getRawHist("Pt_FineCoarse", filePath, "Detector", "histo_ZZ_pythia", "ZZ", "pt[UO];mass[UOC"+massString+"]", true, true);
         TH1* hTopTemp = getRawHist("Pt_FineCoarse", filePath, "Detector", "histo_TTLL_powheg", "TT", "pt[UO];mass[UOC"+massString+"]", true, true);
+        TH1* hQCDTemp = getRawHist("Pt_FineCoarse", filePath, "Detector", "histo_QCD", "TT", "pt[UO];mass[UOC"+massString+"]", true, true);
+        TH1* hWjetTemp = getRawHist("Pt_FineCoarse", filePath, "Detector", "histo_WJet", "TT", "pt[UO];mass[UOC"+massString+"]", true, true);
 
         for(int ibin = 1; ibin < hDYTemp->GetNbinsX() + 1; ibin++)
         {
@@ -1221,6 +1226,12 @@ TCanvas* ISRUnfold::drawPtBkgRatio(TString filePath)
 
             hTop->SetBinContent(ibin + nPtBin * iMassBin, hTopTemp->GetBinContent(ibin));        
             hTop->SetBinError(ibin + nPtBin * iMassBin, hTopTemp->GetBinError(ibin));        
+
+            hQCD->SetBinContent(ibin + nPtBin * iMassBin, hQCDTemp->GetBinContent(ibin));        
+            hQCD->SetBinError(ibin + nPtBin * iMassBin, hQCDTemp->GetBinError(ibin));        
+
+            hWjet->SetBinContent(ibin + nPtBin * iMassBin, hWjetTemp->GetBinContent(ibin));        
+            hWjet->SetBinError(ibin + nPtBin * iMassBin, hWjetTemp->GetBinError(ibin));        
         }
         delete hDYTemp;
         delete hDYtauTemp;
@@ -1228,18 +1239,21 @@ TCanvas* ISRUnfold::drawPtBkgRatio(TString filePath)
         delete hWZTemp;
         delete hZZTemp;
         delete hTopTemp;
+        delete hQCDTemp;
+        delete hWjetTemp;
     }
 
     THStack* hsMC = new THStack("hsMC", "hsMC");
     hMCtotal->Add(hDY);
     TLegend* leg = new TLegend(0.17, 0.5, 0.2, 0.89,"","brNDC");
     leg->SetTextFont(43);
-    leg->SetTextSize(70);
+    leg->SetTextSize(100);
     leg->SetFillStyle(0); // transparent
     leg->SetBorderSize(0);
     leg->AddEntry(hDYtautau, "DY#rightarrow#tau#tau", "l");
     leg->AddEntry(hWW, "VV", "l");
     leg->AddEntry(hTop, "t#bar{t}", "l");
+    leg->AddEntry(hQCD, "Fake", "l");
 
     for(int iMassBin = 0; iMassBin < nMassBin; iMassBin++)
     {
@@ -1253,7 +1267,10 @@ TCanvas* ISRUnfold::drawPtBkgRatio(TString filePath)
     hWZ->Divide(hMCtotal);
     hZZ->Divide(hMCtotal);
     hTop->Divide(hMCtotal);
+    hQCD->Divide(hMCtotal);
+    hWjet->Divide(hMCtotal);
 
+    hQCD->Add(hWjet);
     hWW->Add(hWZ);
     hWW->Add(hZZ);
 
@@ -1261,7 +1278,8 @@ TCanvas* ISRUnfold::drawPtBkgRatio(TString filePath)
     hDYtautau->GetYaxis()->SetTitle("Background ratio");
     hDYtautau->GetYaxis()->SetTitleOffset(1.3);
     hDYtautau->GetYaxis()->SetTickLength(hDYtautau->GetYaxis()->GetTickLength()*0.3); 
-    hDYtautau->SetMaximum(.65);
+    hDYtautau->SetMaximum(.5);
+    hDYtautau->SetMinimum(5e-3);
     hDYtautau->SetFillStyle(0);
     hDYtautau->Draw("hist");
     hDYtautau->SetLineColor(kOrange+2);
@@ -1276,6 +1294,11 @@ TCanvas* ISRUnfold::drawPtBkgRatio(TString filePath)
     hTop->Draw("hist same");
     hTop->SetLineColor(kAzure+1);
     hTop->SetLineWidth(5);
+
+    hQCD->SetFillStyle(0);
+    hQCD->Draw("hist same");
+    hQCD->SetLineColor(kViolet+6);
+    hQCD->SetLineWidth(5);
 
     hDYtautau->GetXaxis()->ChangeLabel(2,-1,-1,-1,-1,-1,"100");
     hDYtautau->GetXaxis()->ChangeLabel(3,-1,-1,-1,-1,-1,"100");
@@ -1299,7 +1322,7 @@ TCanvas* ISRUnfold::drawPtBkgRatio(TString filePath)
         {
             if(iMassBin != 0 && ibin == 1) 
             {
-                massEdgeLine.DrawLine(hDYtautau->GetXaxis()->GetBinLowEdge(ibin + nPtBin * iMassBin), 0., hDYtautau->GetXaxis()->GetBinLowEdge(ibin + nPtBin * iMassBin), .65);
+                massEdgeLine.DrawLine(hDYtautau->GetXaxis()->GetBinLowEdge(ibin + nPtBin * iMassBin), 5e-3, hDYtautau->GetXaxis()->GetBinLowEdge(ibin + nPtBin * iMassBin), .5);
             }
         }
     }
@@ -1536,8 +1559,8 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     setTDRStyle();
     writeExtraText = true;
     extraText  = "Work in progress";
-    gStyle->SetLineWidth(1);
-    gStyle->SetFrameLineWidth(1);
+    gStyle->SetLineWidth(5);
+    gStyle->SetFrameLineWidth(5);
     gROOT->ForceStyle();
 
     // For nominal histogram
@@ -1819,7 +1842,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
 
     // Save canvas
     c_out->cd();
-    c_out->SaveAs(outName!=""?output_baseDir+outName+var+sysName+".pdf":output_baseDir+"detector_"+var+sysName+".pdf");
+    c_out->SaveAs(outName!=""?output_baseDir+outName+var+sysName+".png":output_baseDir+"detector_"+var+sysName+".png");
 
     delete filein;
     return c_out;
@@ -3500,8 +3523,18 @@ void ISRUnfold::doISRUnfold(bool doSys)
 
 void ISRUnfold::drawCorrelation(TString var, TString steering, bool useAxis, TString outName)
 {
+
+    setTDRStyle();
+    writeExtraText = true;
+    extraText  = "Work in progress";
+    gStyle->SetLineWidth(5);
+    gStyle->SetFrameLineWidth(5);
     gStyle->SetOptStat(0);
+    gROOT->ForceStyle();
+
     TCanvas* c = new TCanvas("c","c", 2400, 2400);
+    c->SetTopMargin(0.1);
+    c->SetRightMargin(0.15);
     c->cd();
 
     TH2* hCorrelation = NULL;
@@ -3515,9 +3548,30 @@ void ISRUnfold::drawCorrelation(TString var, TString steering, bool useAxis, TSt
         hCorrelation=nomPtUnfold->GetRhoIJtotal("histRho", 0, 0, steering, useAxis);
     }
 
+    gStyle->SetPalette(kRainBow);
     hCorrelation->SetMinimum(-1.);
     hCorrelation->SetMaximum(1.);
+    hCorrelation->SetLineColor(kWhite);
     hCorrelation->Draw("COLZ");
+    
+    TString channel_name_;
+    if(channel_name=="electron") channel_name_ = "ee";
+    else channel_name_ = "#mu#mu";
+
+    if(var.Contains("Pt"))
+    {
+        hCorrelation->GetYaxis()->SetTitle("p_{T}^{" + channel_name_ + "} [GeV]");
+        hCorrelation->GetYaxis()->SetTitleOffset(1.0);
+        hCorrelation->GetXaxis()->SetTitle("p_{T}^{" + channel_name_ + "} [GeV]");
+        hCorrelation->GetXaxis()->SetTitleOffset(1.2);
+    }
+
+    int iPeriod_ = 4;
+    if(year == 2017)
+        iPeriod_ = 5;
+    if(year == 2018)
+        iPeriod_ = 6;
+    CMS_lumi(c, iPeriod_, 11);
 
     c->SaveAs(output_baseDir+"Correlation_"+var+"_"+outName+".png");
     delete hCorrelation;
