@@ -1028,6 +1028,7 @@ void ISRUnfold::setUnfInput(TString var, TString varPostfix, TString filepath, T
 void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, bool isSys, TString binDef, TString dirName, TString sysName, TString sysPostfix, TString histPostfix, bool isFSR)
 {
     TFile* filein = new TFile(filepath);
+    cout << filepath << endl;
     TH1* hPtRec = NULL;
     TH1* hMassRec = NULL;
 
@@ -1052,6 +1053,9 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
 
         hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + fullHistName);
         hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + fullHistName);
+        cout << dirName + "/Pt"+binDef+"/histo_" + fullHistName << endl;
+        cout << sysName << endl;
+        cout << sysPostfix << endl;
 
         if(sysName.Contains("iterEM") && !sysPostfix.Contains("Nominal"))
         {
@@ -1326,7 +1330,7 @@ TCanvas* ISRUnfold::drawPtBkgRatio(TString filePath)
             }
         }
     }
-    c_out->SaveAs("bkg_test.png");
+    c_out->SaveAs(output_baseDir+"BkgRatio_CombinedPt"+".png");
     return c_out;
 }
 
@@ -1540,7 +1544,7 @@ TCanvas* ISRUnfold::drawPtDistributions(TString filePath)
     l_->SetLineStyle(1);
 
     c_out->cd();
-    c_out->SaveAs("test.png");
+    c_out->SaveAs(output_baseDir+"Det_CombinedPt"+".png");
     return c_out;
 }
 
@@ -1559,7 +1563,7 @@ TCanvas* ISRUnfold::drawFoldedHists(TString var, TString filePath, TString dirNa
     setTDRStyle();
     writeExtraText = true;
     extraText  = "Work in progress";
-    gStyle->SetLineWidth(5);
+    gStyle->SetLineWidth(3);
     gStyle->SetFrameLineWidth(5);
     gROOT->ForceStyle();
 
@@ -1862,6 +1866,8 @@ TString ISRUnfold::getSysNameToShow(TString sysName)
         return "#mu_{F}, #mu_{R}";
     else if(sysName == "iterEM")
         return "Unfolding";
+    else if(sysName == "LepMomScale")
+        return "Lepton momentum scale";
     else if(sysName == "totalSys")
         return "sys. unc.";
     else return sysName;
@@ -2985,12 +2991,20 @@ TH1* ISRUnfold::getDetectorSystematicBand(TString var, TString filePath, TString
 
             if(sysName.Contains("LepMom"))
             {
-                tempDYDirName = dirName + "_" + sysMap[sysName][ith];
-                tempDYVar = var + "_" + sysMap[sysName][ith];
-
-                tempDataDirName = dirName + "_" + sysMap[sysName][ith];
-                tempDataVar = var + "_" + sysMap[sysName][ith];
-                tempDataNewHistName = "Data"+sysMap[sysName][ith];
+                if(sysMap[sysName][ith] == "LepMomScaleUp")
+                {
+                    filePath = "/home/jhkim/ISR_Run2/unfolding/TUnfoldISR2016/inFiles/2016/electron/lepton_scale/ScaleUp/unfold_input.root";
+                    tempDYHistName = DYHistName_;
+                    tempDYDirName = dirName; 
+                    tempDYVar = var;
+                }
+                if(sysMap[sysName][ith] == "LepMomScaleDown")
+                {
+                    filePath = "/home/jhkim/ISR_Run2/unfolding/TUnfoldISR2016/inFiles/2016/electron/lepton_scale/ScaleDown/unfold_input.root";
+                    tempDYHistName = DYHistName_;
+                    tempDYDirName = dirName; 
+                    tempDYVar = var;
+                }
             }
             else
             {
