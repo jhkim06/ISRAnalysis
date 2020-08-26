@@ -103,13 +103,14 @@ class ISRAnalysis:
 
         else :
             if useUnfoldOut == False:
-                if "LepMom" in sysName :
-                    if "LepMomScaleUp" == sysPostfix:
-                        hist_filekey_temp ="hist_LepScaleUp"
-                    elif "LepMomScaleDown" == sysPostfix:
-                        hist_filekey_temp ="hist_LepScaleDown"
-                    elif "LepMomRes" in sysPostfix:
-                        hist_filekey_temp ="hist_LepResolution"
+
+                if "LepScale" in sysName :
+                    hist_filekey_temp = "hist_LepScale"
+                    dirName = dirName + "_" + sysPostfix  # FIXME put systematic postfix at the END, ex) Detector_Dressed_DRp1_Fiducial_LepScaleUp 
+
+                elif "LepRes" in sysName :
+                    hist_filekey_temp = "hist_LepRes"
+                    dirName = dirName + "_" + sysPostfix  # FIXME put systematic postfix at the END, ex) Detector_Dressed_DRp1_Fiducial_LepScaleUp 
             
                 self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
                 self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
@@ -131,13 +132,13 @@ class ISRAnalysis:
 
         for fake in fakeList.items():
 
-            if "LepMom" in sysName and not isFSR:
-                if "LepMomScaleUp" == sysPostfix:
-                    hist_filekey_temp ="matrix_LepScaleUp"
-                elif "LepMomScaleDown" == sysPostfix:
-                    hist_filekey_temp ="matrix_LepScaleDown"
-                elif "LepMomRes" in sysPostfix:
-                    hist_filekey_temp ="matrix_LepResolution"
+            if "LepScale" in sysName and not isFSR:
+                hist_filekey_temp ="matrix_LepScale"
+                dirName = "Detector_DY_Fake" + "_" + sysPostfix
+
+            elif "LepRes" in sysName and not isFSR:
+                hist_filekey_temp ="matrix_LepRes"
+                dirName = "Detector_DY_Fake" + "_" + sysPostfix
 
             elif "ZptCorr" in sysName : 
                 if sysPostfix != "Nominal" : 
@@ -147,7 +148,10 @@ class ISRAnalysis:
                 histPostfix = ""
 
             elif "PDF" in sysName :
-                hist_filekey_temp = "matrix_pdf"
+                if isFSR :
+                    hist_filekey_temp = "fsr_matrix_pdf"  
+                else :
+                    hist_filekey_temp = "matrix_pdf"
 
             self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], fake, isSys, self.binDef, dirName, sysName, sysPostfix, histPostfix, isFSR)
         
@@ -172,20 +176,15 @@ class ISRAnalysis:
         for bkg in bkgList.items():
             hist_filekey_temp = "hist"
             histPostfix_temp = sysPostfix
-        
-            _, histType = bkg
 
-            if histType == "Fake" :
+            if "LepScale" in sysName :
+                hist_filekey_temp = "hist_LepScale"
+                dirName = "Detector" + "_" + sysPostfix
                 histPostfix_temp = ""
 
-            if "LepMom" in sysName :
-                if "LepMomScaleUp" == sysPostfix:
-                    hist_filekey_temp ="hist_LepScaleUp"
-                elif "LepMomScaleDown" == sysPostfix:
-                    hist_filekey_temp ="hist_LepScaleDown"
-                elif "LepMomRes" in sysPostfix:
-                    hist_filekey_temp ="hist_LepResolution"
-
+            elif "LepRes" in sysName :
+                hist_filekey_temp = "hist_LepRes"
+                dirName = "Detector" + "_" + sysPostfix
                 histPostfix_temp = ""
 
             elif "iterEM" == sysName :
@@ -194,6 +193,11 @@ class ISRAnalysis:
             elif "PDF" in sysName :
                 hist_filekey_temp ="hist_pdf"
     
+            _, histType = bkg
+            if histType == "Fake" :
+                histPostfix_temp = ""
+                dirName = "Detector"
+
             self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], bkg, isSys, self.binDef, dirName, sysName, sysPostfix, histPostfix_temp)
             
     def setSystematics(self, sysName, sysHistName, isFSR = False):
@@ -203,14 +207,14 @@ class ISRAnalysis:
         dirPath_temp = self.matrix_dirPath
         histPostfix_temp = sysHistName
 
-        if "LepMom" in sysName :
-            if "LepMomScaleUp" == sysHistName:
-                matrix_filekey_temp ="matrix_LepScaleUp"
-            elif "LepMomScaleDown" == sysHistName:
-                matrix_filekey_temp ="matrix_LepScaleDown"
-            elif "LepMomRes" in sysHistName:
-                matrix_filekey_temp ="matrix_LepResolution"
+        if "LepScale" in sysName :
+            matrix_filekey_temp = "matrix_LepScale"
+            dirPath_temp = "Detector_Dressed_DRp1_Fiducial" + "_" + sysHistName  # FIXME put systematic postfix at the END, ex) Detector_Dressed_DRp1_Fiducial_LepScaleUp 
+            histPostfix_temp = ""
 
+        elif "LepRes" in sysName :
+            matrix_filekey_temp = "matrix_LepRes"
+            dirPath_temp = "Detector_Dressed_DRp1_Fiducial" + "_" + sysHistName  # FIXME put systematic postfix at the END, ex) Detector_Dressed_DRp1_Fiducial_LepScaleUp 
             histPostfix_temp = ""
 
         elif "iterEM" in sysName :
@@ -259,8 +263,10 @@ class ISRAnalysis:
         self.unfold.checkIterEMUnfold()
 
     def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isBkgSubData = False):
-        if "ZptCorr" in sysName :
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_zptcorr'], isBkgSubData)
+        if "LepScale" in sysName :
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_LepScale'], isBkgSubData)
+        elif "LepRes" in sysName :
+            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_LepRes'], isBkgSubData)
         elif "Scale" in sysName or "AlphaS" in sysName:
             self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist'], isBkgSubData)
         elif "PDF" in sysName :
