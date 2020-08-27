@@ -1055,8 +1055,8 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
         hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + fullHistName);
         hMassRec = (TH1*)filein->Get(dirName + "/Mass"+binDef+"/histo_" + fullHistName);
 
-        cout << "file path: " << filepath << endl;
-        cout << dirName + "/Pt"+binDef+"/histo_" + fullHistName << endl;
+        //cout << "file path: " << filepath << endl;
+        //cout << dirName + "/Pt"+binDef+"/histo_" + fullHistName << endl;
 
         if(sysName.Contains("iterEM") && !sysPostfix.Contains("Nominal"))
         {
@@ -3681,6 +3681,47 @@ void ISRUnfold::drawCorrelation(TString var, TString steering, bool useAxis, TSt
                 grid_.DrawLine(hCorrelationUseAxis->GetXaxis()->GetBinUpEdge(nPtBinGen * (countMassBin - 2)), binEdge, hCorrelationUseAxis->GetXaxis()->GetBinUpEdge(nPtBinGen * (countMassBin)), binEdge);
             }
         }
+
+    if(var.Contains("Pt"))
+    {
+        hCorrelationUseAxis->GetXaxis()->SetNdivisions(506);
+        hCorrelationUseAxis->GetYaxis()->SetNdivisions(506);
+
+        hCorrelationUseAxis->GetXaxis()->ChangeLabel(2,-1,-1,-1,-1,-1,"100");
+        hCorrelationUseAxis->GetXaxis()->ChangeLabel(3,-1,-1,-1,-1,-1,"100");
+        hCorrelationUseAxis->GetXaxis()->ChangeLabel(4,-1,-1,-1,-1,-1,"100");
+        hCorrelationUseAxis->GetXaxis()->ChangeLabel(5,-1,-1,-1,-1,-1,"100");
+        hCorrelationUseAxis->GetXaxis()->ChangeLabel(6,-1,-1,-1,-1,-1,"100");
+
+        hCorrelationUseAxis->GetYaxis()->ChangeLabel(2,-1,-1,-1,-1,-1,"100");
+        hCorrelationUseAxis->GetYaxis()->ChangeLabel(3,-1,-1,-1,-1,-1,"100");
+        hCorrelationUseAxis->GetYaxis()->ChangeLabel(4,-1,-1,-1,-1,-1,"100");
+        hCorrelationUseAxis->GetYaxis()->ChangeLabel(5,-1,-1,-1,-1,-1,"100");
+        hCorrelationUseAxis->GetYaxis()->ChangeLabel(6,-1,-1,-1,-1,-1,"100");
+
+        TGaxis *xaxisMassLabel = new TGaxis(0,0,500,0,0,500,511,"+LS");
+        xaxisMassLabel->SetTickLength(0);
+        xaxisMassLabel->SetLabelSize(0);
+        xaxisMassLabel->ChangeLabel(2,-1,0.015,-1,kGray+2,62,"50<M<64 GeV");
+        xaxisMassLabel->ChangeLabel(4,-1,0.015,-1,kGray+2,62,"64<M<60 GeV");
+        xaxisMassLabel->ChangeLabel(6,-1,0.015,-1,kGray+2,62,"81<M<101 GeV");
+        xaxisMassLabel->ChangeLabel(8,-1,0.015,-1,kGray+2,62,"101<M<200 GeV");
+        xaxisMassLabel->ChangeLabel(10,-1,0.015,-1,kGray+2,62,"200<M<320 GeV");
+        xaxisMassLabel->SetLabelOffset(0.07);
+        xaxisMassLabel->Draw();
+
+        TGaxis *yaxisMassLabel = new TGaxis(0,0,0,500,0,500,511,"+LS");
+        yaxisMassLabel->SetTickLength(0);
+        yaxisMassLabel->SetLabelSize(0);
+        yaxisMassLabel->ChangeLabel(1,90,0.015,-1,kGray+2,62,"50<M<64 GeV");
+        yaxisMassLabel->ChangeLabel(3,90,0.015,-1,kGray+2,62,"64<M<60 GeV");
+        yaxisMassLabel->ChangeLabel(5,90,0.015,-1,kGray+2,62,"81<M<101 GeV");
+        yaxisMassLabel->ChangeLabel(7,90,0.015,-1,kGray+2,62,"101<M<200 GeV");
+        yaxisMassLabel->ChangeLabel(9,90,0.015,-1,kGray+2,62,"200<M<320 GeV");
+        yaxisMassLabel->SetLabelOffset(-0.07);
+        yaxisMassLabel->CenterLabels();
+        yaxisMassLabel->Draw();
+    }
 
     }
 
