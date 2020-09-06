@@ -76,7 +76,6 @@ class ISRAnalysis:
 
         # For closure test, use MC as unfolding input
         if useMCInput == True:
-            
 
             if isFSR == False:
                 if self.channel == "electron":
@@ -153,16 +152,19 @@ class ISRAnalysis:
                 else :
                     hist_filekey_temp = "matrix_pdf"
 
-            self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], fake, isSys, self.binDef, dirName, sysName, sysPostfix, histPostfix, isFSR)
+            elif "Background" in sysName : 
+                histPostfix = ""
+
+            self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], fake, isSys, self.binDef, dirName, sysName, sysPostfix, histPostfix)
         
     def setUnfoldBkgs(self, isSys = False , dirName = "Detector", sysName = "nominal", sysPostfix = ""):
    
         bkgList = {}
         # 2016 데이터만 single top 샘플을 갖고 있다 
         if self.year == "2016" or self.year == "2017" or self.year == "2018":
-            #bkgList = { "QCD": "Fake", "WJet": "Fake",
-            bkgList = {
-                        "WJets_MG": "WJets",
+            bkgList = { "QCD": "Fake", "WJet": "Fake",
+            #bkgList = {
+            #            "WJets_MG": "WJets",
                         "DYJets10to50ToTauTau":"DY#rightarrow#tau#tau", "DYJetsToTauTau":"DY#rightarrow#tau#tau", 
                         "WW_pythia": "VV", "WZ_pythia": "VV", "ZZ_pythia": "VV", 
                         "TTLL_powheg": "t#bar{t}",
@@ -192,6 +194,9 @@ class ISRAnalysis:
 
             elif "PDF" in sysName :
                 hist_filekey_temp ="hist_pdf"
+
+            elif "Background" in sysName :
+                histPostfix_temp = "" 
     
             _, histType = bkg
             if histType == "Fake" :
@@ -244,6 +249,9 @@ class ISRAnalysis:
             else :
                 matrix_filekey_temp = "matrix_pdf"
 
+        elif "Background" in sysName :
+            histPostfix_temp = ""
+
         self.unfold.setSystematicRM("Pt",   self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
         self.unfold.setSystematicRM("Mass", self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
 
@@ -286,8 +294,8 @@ class ISRAnalysis:
     def drawUnfVarPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
         self.unfold.drawUnfoldedVarHists(var, steering, useAxis, sysName, outName, massBin, binWidth)
 
-    def drawAcceptVarPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
-        self.unfold.drawAcceptVarHists(var, steering, useAxis, sysName, outName, massBin, binWidth)
+    def drawAcceptVarPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, isAccept = False):
+        self.unfold.drawAcceptVarHists(var, steering, useAxis, sysName, outName, massBin, isAccept)
 
     def drawSystematics(self, var = "Pt", isAccept = False, isHistStyle = False) :
         if isAccept:
@@ -305,11 +313,14 @@ class ISRAnalysis:
     def setMeanValues(self, setDetector = False):
         # Set mean mass and pt values
         if setDetector :
-            self.nMassBins = self.unfold.setMeanMass(self.inHistDic['hist'], "Detector")
-            self.unfold.setMeanPt(self.inHistDic['hist'], "Detector")
+            self.nMassBins = self.unfold.setMeanMass(self.inHistDic['hist'])
+            self.unfold.setMeanPt(self.inHistDic['hist'])
         else :
             self.nMassBins = self.unfold.setMeanMass()
             self.unfold.setMeanPt()
+
+    def setTheoryMeanValues(self, binDef = "_FineCoarse"):
+        self.unfold.setTheoryMeanValues(self.inHistDic['hist_accept_fullPhase'], binDef)
 
     def setAcceptMeanValues(self):
         self.unfold.setMeanPt_Accept()
@@ -362,7 +373,7 @@ class ISRAnalysis:
 
     def doAcceptance(self, doSys = False, isFSR = False, outName = "") :
         if isFSR :
-            self.unfold.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys, outName)
+            self.unfold.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys, outName, True)
         else : 
             self.unfold.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", doSys, outName)
 
@@ -451,8 +462,18 @@ class ISRAnalysis:
         meanMass, meanPt = array('d'), array('d')
         meanMassStatErr, meanPtStatErr = array('d'), array('d')
         meanMassSysErr, meanPtSysErr = array('d'), array('d')
+   
+        fileName = "2016.csv" 
+        import csv
+        import os.path
+        from os import path
+        if not path.exists(fileName) :
+            with open(fileName, 'w', newline='') as csvfile:
+                writeMeasurement = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                writeMeasurement.writerow(["Mean mass", "Mean pT", "Mean mass uncertatinty", "Mean pT uncertainty", "Year", "Channel", "Level", "Sample"])
 
         for ibin in range(self.nMassBins):
+            tempRow = list()
           
             if isData: 
                 if whichLevel == "Unfolded":
@@ -480,7 +501,8 @@ class ISRAnalysis:
                     meanPtStatErr.append(self.unfold.getDetMeanPtError(ibin))
                 else :
                     print("Please check phase space name")
-            if isData == False:
+
+            if not isData:
                 if whichLevel == "Detector":
                     meanMass.append(self.unfold.getMCDetMeanMass(ibin))
                     meanPt.append(self.unfold.getMCDetMeanPt(ibin))
@@ -488,11 +510,34 @@ class ISRAnalysis:
                     meanPtStatErr.append(self.unfold.getMCDetMeanPtError(ibin))
                     #print("detector mc check pt", self.unfold.getMCDetMeanPt(ibin))
                     #print("detector mc check mass", self.unfold.getMCDetMeanMass(ibin))
+
+            if doSys :
+                tempRow.extend(list((meanMass[ibin], meanPt[ibin], meanMassSysErr[ibin], meanPtSysErr[ibin])))
+                tempRow.extend(list((self.year, self.channel, whichLevel, "Data")))        
+
+                with open(fileName, 'a', newline='') as csvfile: 
+                    writeMeasurement = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                    writeMeasurement.writerow(tempRow)
  
         if doSys == False:
             gr = rt.TGraphErrors(self.nMassBins, meanMass, meanPt, meanMassStatErr, meanPtStatErr)
         else :
             gr = rt.TGraphErrors(self.nMassBins, meanMass, meanPt, meanMassSysErr, meanPtSysErr)
     
+        gr.SetName(grTitle)
+        return gr
+
+    def getThoryPtVsMassTGraph(self, grTitle = "", sysName = "stat"):
+        meanMass, meanPt       = array('d'), array('d')
+        meanMassErr, meanPtErr = array('d'), array('d')
+
+        for ibin in range(self.nMassBins):
+            meanMass.append(self.unfold.getMCFullPhaseMeanMass(ibin, ""))
+            meanMassErr.append(self.unfold.getMCFullPhaseMeanMass(ibin, sysName))
+
+            meanPt.append(self.unfold.getMCFullPhaseMeanPt(ibin, ""))
+            meanPtErr.append(self.unfold.getMCFullPhaseMeanPt(ibin, sysName))
+ 
+        gr = rt.TGraphErrors(self.nMassBins, meanMass, meanPt, meanMassErr, meanPtErr)
         gr.SetName(grTitle)
         return gr

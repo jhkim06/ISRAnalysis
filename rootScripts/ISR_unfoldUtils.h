@@ -2,6 +2,7 @@
 #define UNFOLDUTILS_H
 
 #include <iostream>
+#include <fstream>
 #include <iomanip> 
 #include <map>
 #include <cmath>
@@ -9,6 +10,7 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TH1.h>
+#include <TProfile.h>
 #include <TExec.h>
 #include <TDOMParser.h>
 #include <TXMLDocument.h>
@@ -43,8 +45,13 @@ using namespace std;
 
 const int statSize = 1000;
 
-const double topPadBottomMargin = 0.03;
+const double topPadBottomMargin = 0.0;
 const double topPadTopMargin = 0.1;
+const double bottomPadBottomMargin = 0.35;
+const double bottomPadTopMargin = 0.0;
+
+const int globalLinedWidth = 5;
+const int globalFrameWidth = 5;
 
 class ISRUnfold{
 
@@ -162,13 +169,20 @@ private:
     std::map<TString, std::map<TString, TH1*>> hSysFullPhasePtData;
     std::map<TString, std::map<TString, TH1*>> hSysFullPhaseMassMC;
     std::map<TString, std::map<TString, TH1*>> hSysFullPhasePtMC;
-    
+
     TH1* hAcceptanceMass;  
     TH1* hAcceptancePt;  
+
+    TH1* hAcceptanceFractionMass;  
+    TH1* hAcceptanceFractionPt;  
 
     std::map<TString, std::map<TString, TH1*>> hSysAcceptanceMass;
     std::map<TString, std::map<TString, TH1*>> hSysAcceptancePt;
 
+    std::map<TString, std::map<TString, TH1*>> hSysAcceptanceFractionMass;
+    std::map<TString, std::map<TString, TH1*>> hSysAcceptanceFractionPt;
+
+    // For data
     vector<Double_t> meanMass_data_acc_corrected, meanMassStatErr_data_acc_corrected, meanMassSysErr_data_acc_corrected, meanMassTotErr_data_acc_corrected;
     vector<Double_t> meanPt_data_acc_corrected,   meanPtStatErr_data_acc_corrected,   meanPtSysErr_data_acc_corrected, meanPtTotErr_data_acc_corrected;
 
@@ -183,6 +197,25 @@ private:
 
     vector<Double_t> meanMassRelSysErr_data_acc_corrected;
     vector<Double_t> meanPtRelSysErr_data_acc_corrected;
+
+    // Theory
+    vector<Double_t> meanMass_theory_acc_corrected, meanMassStatErr_theory_acc_corrected, meanMassSysErr_theory_acc_corrected, meanMassTotErr_theory_acc_corrected;
+    vector<Double_t> meanPt_theory_acc_corrected,   meanPtStatErr_theory_acc_corrected,   meanPtSysErr_theory_acc_corrected, meanPtTotErr_theory_acc_corrected;
+
+    std::map<TString, std::map<TString, vector<double>>> meanMass_theory_accept_sysVariation;
+    std::map<TString, std::map<TString, vector<double>>> meanPt_theory_accept_sysVariation;
+
+    std::map<TString, vector<double>> meanMass_theory_accept_systematic;
+    std::map<TString, vector<double>> meanPt_theory_accept_systematic;
+
+    std::map<TString, vector<double>> meanMass_theory_accept_rel_systematic;
+    std::map<TString, vector<double>> meanPt_theory_accept_rel_systematic;
+
+    std::vector<TH1*> meanPtPDFVariation_theory_Accept;
+    std::vector<TH1*> meanMassPDFVariation_theory_Accept;
+
+    vector<Double_t> meanMassEffRelErr_data, meanPtEffRelErr_data; 
+    vector<Double_t> meanMassAcceptRelErr_data, meanPtAcceptRelErr_data; 
 
     bool verbose;
 
@@ -253,7 +286,7 @@ public:
 
     // Set background histograms
     void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
-                 bool isSys = false, TString binDef = "", TString dirName = "", TString sysName = "", TString sysPostfix = "", TString histPostfix = "", bool isFSR = false);
+                 bool isSys = false, TString binDef = "", TString dirName = "", TString sysName = "", TString sysPostfix = "", TString histPostfix = "");
 
     // Set systematic TUnfoldDensity
     void setSystematicRM(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString histPostfix, TString binDef);
@@ -292,7 +325,9 @@ public:
     TString getSysNameToShow(TString sysName);
     double setHistCosmetics(TH1* hist, bool isLogy = false);
     TH1* cloneEmptyHist(TH1* hist, TString histName);
+    TProfile* cloneHistToTProf(TH1* hist, TString histName);
     TLegend* createLegend(double xStartPos_, double yStartPos_);
+    void varyHistWithStatError(TH1* hist, int sys);
 
     // Do unfold 
     void doISRUnfold( bool doSys = false);
@@ -304,12 +339,12 @@ public:
     void setTotSysError();
     void setTotSysError_Accept();
 
-    void doAcceptCorr(TString filePath, TString binDef, bool doSys = false, TString outName = "");
+    void doAcceptCorr(TString filePath, TString binDef, bool doSys = false, TString outName = "", bool isAccept = false);
     void drawAcceptance(TString var, TH1* hMC, TString outName);
     TCanvas* drawAcceptCorrHists(TString var, TString filePath, TString binDef, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth); 
     void drawCorrelation(TString var, TString steering, bool useAis, TString outName = "");
     void drawComparisonPlot(TString var, TString plotName, TString topYaxisName, TString bottomYaxisName, TString bottomXaxisName, TH1* h1, TH1* h2, TH1* hratio, TString outName, int nthMassBin = 0);
-    TCanvas* drawAcceptVarHists(TString var, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth = false);
+    TCanvas* drawAcceptVarHists(TString var, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool isAccept = false);
 
     // Get histograms
     TH1* getUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true, bool divBinWidth = false);
@@ -322,15 +357,18 @@ public:
     // Helper functions
     void doNorm(TH1* hist, bool norm = true); 
     void drawtext(TGraph* g);
+    TGraphErrors* histToTGraphError(TH1* hist, bool zeroXerror = true);
 
-    int setMeanPt(TString filePath = "", TString dirName = "");
-    int setMeanMass(TString filePath = "", TString dirName = "");
+    void setTheoryMeanValues(TString filePath, TString binDef);
+    int setMeanPt(TString filePath = "");
+    int setMeanMass(TString filePath = "");
     void setMeanPt_Accept();
     void setMeanMass_Accept();
     int setSysMeanPt();
     int setSysMeanMass();
     void setSysMeanPt_Accept();
     void setSysMeanMass_Accept();
+    void setAcceptError();
 
     void fillPtStatVariationHist(int istat);
     void fillMassStatVariationHist(int istat);
@@ -349,6 +387,8 @@ public:
     double getMCDetMeanMass(int ibin);
     double getMCDetMeanPtError(int ibin);
     double getMCDetMeanMassError(int ibin);
+    double getMCFullPhaseMeanPt(int ibin, TString sysName);
+    double getMCFullPhaseMeanMass(int ibin, TString sysName);
     double getUnfMeanPt(int ibin);
     double getUnfMeanMass(int ibin);
     double getUnfMeanPtError(int ibin);
