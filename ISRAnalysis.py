@@ -280,7 +280,7 @@ class ISRAnalysis:
         elif "PDF" in sysName :
             self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_pdf'], isBkgSubData)
         else : 
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, "", isBkgSubData)
+            return self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, "", isBkgSubData)
 
     def drawPtDistributions(self) :
             self.unfold.drawPtDistributions(self.inHistDic['hist'])

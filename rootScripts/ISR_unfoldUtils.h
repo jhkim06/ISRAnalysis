@@ -14,6 +14,7 @@
 #include <TExec.h>
 #include <TDOMParser.h>
 #include <TXMLDocument.h>
+#include <TSystem.h>
 
 #include <TGraphErrors.h>
 #include <TCanvas.h>
@@ -50,8 +51,8 @@ const double topPadTopMargin = 0.1;
 const double bottomPadBottomMargin = 0.35;
 const double bottomPadTopMargin = 0.0;
 
-const int globalLinedWidth = 5;
-const int globalFrameWidth = 5;
+const int globalLinedWidth = 1;
+const int globalFrameWidth = 1;
 
 class ISRUnfold{
 
@@ -306,7 +307,7 @@ public:
         return sysMap;
     }
     // FIXME combine below three method 
-    TCanvas* drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, TString sysFilePath = "", bool isBkgSubData = false);
+    TCanvas& drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, TString sysFilePath = "", bool isBkgSubData = false);
     TCanvas* drawPtDistributions(TString filePath);
     TCanvas* drawPtBkgRatio(TString filePath);
     TCanvas* drawUnfoldedVarHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);

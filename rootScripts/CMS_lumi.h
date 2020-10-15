@@ -17,9 +17,9 @@ float extraTextFont = 53;  // default is helvetica-italics
 
 // text sizes and text offsets with respect to the top frame
 // in unit of the top margin size
-float lumiTextSize     = 35 * 3;
+float lumiTextSize     = 35;
 float lumiTextOffset   = 0.2;
-float cmsTextSize      = 35 * 3;
+float cmsTextSize      = 35;
 float cmsTextOffset    = 0.1;  // only used in outOfFrame version
 
 float relPosX    = 0.045;
