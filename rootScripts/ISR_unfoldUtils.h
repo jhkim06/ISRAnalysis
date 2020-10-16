@@ -378,6 +378,12 @@ public:
     void fillPtPDFVariationHist_Accept(int istat);
     void fillMassPDFVariationHist(int istat);
     void fillMassPDFVariationHist_Accept(int istat);
+
+    vector<double> getUnfoldedMeanMassVectors(TString sysName, TString variationName);
+    vector<double> getUnfoldedMeanPtVectors(TString sysName, TString variationName);
+
+    vector<double> getAccCorrectedMeanMassVectors(TString sysName, TString variationName);
+    vector<double> getAccCorrectedMeanPtVectors(TString sysName, TString variationName);
    
     // Get mean values 
     double getDetMeanPt(int ibin);

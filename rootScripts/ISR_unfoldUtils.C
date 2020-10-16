@@ -3646,10 +3646,11 @@ void ISRUnfold::doISRUnfold(bool doSys)
     TDirectory* massDir;
     TDirectory* ptDir;
 
-    TString fullPath="./UnfoldedHist_"+channel_name+yearStr+".root";
+    TString fullPath="./UnfoldedHist_"+channel_name+"_"+yearStr+".root";
     if(!gSystem->AccessPathName(fullPath, kFileExists))
     {
         f=TFile::Open(fullPath, "UPDATE"); 
+
         topDir=f->GetDirectory("unfolded");
         massDir=f->GetDirectory("unfolded/Mass");
         ptDir=f->GetDirectory("unfolded/Pt");
@@ -3657,6 +3658,7 @@ void ISRUnfold::doISRUnfold(bool doSys)
     else
     {
         f=new TFile(fullPath, "CREATE");
+
         // Create directory
         topDir=f->mkdir("unfolded");
         massDir=topDir->mkdir("Mass");
@@ -5543,6 +5545,47 @@ void ISRUnfold::setSysMeanPt_Accept()
         }
         it++;
     }
+}
+
+vector<double> ISRUnfold::getUnfoldedMeanPtVectors(TString sysName, TString variationName)
+{
+    if(sysName=="")
+    {
+        return meanPt_data_unfolded;
+    }
+    else
+        return meanPt_data_unfolded_sysVariation[sysName][variationName];
+}
+
+vector<double> ISRUnfold::getUnfoldedMeanMassVectors(TString sysName, TString variationName)
+{
+    if(sysName=="")
+    {
+        return meanMass_data_unfolded;
+    }
+    else
+        return meanMass_data_unfolded_sysVariation[sysName][variationName];
+}
+
+
+vector<double> ISRUnfold::getAccCorrectedMeanPtVectors(TString sysName, TString variationName)
+{
+    if(sysName=="")
+    {
+        return meanPt_data_acc_corrected;
+    }
+    else
+        return meanPt_data_accept_sysVariation[sysName][variationName];
+}
+
+vector<double> ISRUnfold::getAccCorrectedMeanMassVectors(TString sysName, TString variationName)
+{
+    if(sysName=="")
+    {
+        return meanMass_data_acc_corrected;
+    }
+    else
+        return meanMass_data_accept_sysVariation[sysName][variationName];
 }
 
 double ISRUnfold::getDetMeanPt(int ibin)

@@ -5,6 +5,7 @@ import ROOT as rt
 import math
 
 import pyScripts.unfoldUtil as unfoldutil
+import pandas as pd
 
 class ISRAnalysis:
     
@@ -456,7 +457,45 @@ class ISRAnalysis:
     
         gr.SetName(grTitle)
         return gr
-             
+        
+    def getMeanVectors(self, whichLevel="Unfolded", var="Mass", sysName="", variationName="") :
+
+        if whichLevel is "Unfolded" : 
+            if var is "Mass" :
+                return self.unfold.getUnfoldedMeanMassVectors(sysName, variationName)     
+            if var is "Pt" :
+                return self.unfold.getUnfoldedMeanPtVectors(sysName, variationName)     
+
+        if whichLevel is "Acceptance" :
+            if var is "Mass" :
+                return self.unfold.getAccCorrectedMeanMassVectors(sysName, variationName)     
+            if var is "Pt" :
+                return self.unfold.getAccCorrectedMeanPtVectors(sysName, variationName)     
+
+    def makeMeanDataFrames(self, whichLevel="Unfolded", systematics=None) :
+
+        nominal_mass_vector=self.getMeanVectors(whichLevel, var="Mass")
+        nominal_pt_vector=self.getMeanVectors(whichLevel, var="Pt")
+        
+        nBin=len(nominal_mass_vector)
+        pd_series_binIndex=pd.Series(range(1,nBin+1), range(1, nBin+1), name="bin_index")
+        
+        pd_mass_mean=pd.DataFrame(index=pd_series_binIndex)
+        pd_pt_mean=pd.DataFrame(index=pd_series_binIndex)
+
+        pd_mass_mean["Nominal"]=nominal_mass_vector
+        pd_pt_mean["Nominal"]=nominal_pt_vector
+       
+        for sysName, postfixs in systematics.items() :
+            for postfix in postfixs :
+                if postfix is "Nominal" : continue
+
+                temp_mass_vector=self.getMeanVectors(whichLevel, "Mass", sysName, postfix)
+                temp_pt_vector=self.getMeanVectors(whichLevel, "Pt", sysName, postfix)
+                pd_mass_mean[postfix]=temp_mass_vector
+                pd_pt_mean[postfix]=temp_pt_vector
+
+        return pd_mass_mean, pd_pt_mean
 
     def getPtVsMassTGraph(self, grTitle = "", isData = True, whichLevel = "Detector", doSys = False):
         meanMass, meanPt = array('d'), array('d')
