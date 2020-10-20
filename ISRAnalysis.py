@@ -460,6 +460,12 @@ class ISRAnalysis:
         
     def getMeanVectors(self, whichLevel="Unfolded", var="Mass", sysName="", variationName="") :
 
+        if whichLevel is "Detector" : 
+            if var is "Mass" :
+                return self.unfold.getFoldedMeanMassVectors(sysName, variationName)     
+            if var is "Pt" :
+                return self.unfold.getFoldedMeanPtVectors(sysName, variationName)     
+
         if whichLevel is "Unfolded" : 
             if var is "Mass" :
                 return self.unfold.getUnfoldedMeanMassVectors(sysName, variationName)     
@@ -492,6 +498,8 @@ class ISRAnalysis:
 
                 temp_mass_vector=self.getMeanVectors(whichLevel, "Mass", sysName, postfix)
                 temp_pt_vector=self.getMeanVectors(whichLevel, "Pt", sysName, postfix)
+                print(postfix)
+                print(len(temp_mass_vector))
                 pd_mass_mean[postfix]=temp_mass_vector
                 pd_pt_mean[postfix]=temp_pt_vector
 
@@ -502,15 +510,6 @@ class ISRAnalysis:
         meanMassStatErr, meanPtStatErr = array('d'), array('d')
         meanMassSysErr, meanPtSysErr = array('d'), array('d')
    
-        fileName = "2016.csv" 
-        import csv
-        import os.path
-        from os import path
-        if not path.exists(fileName) :
-            with open(fileName, 'w', newline='') as csvfile:
-                writeMeasurement = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                writeMeasurement.writerow(["Mean mass", "Mean pT", "Mean mass uncertatinty", "Mean pT uncertainty", "Year", "Channel", "Level", "Sample"])
-
         for ibin in range(self.nMassBins):
             tempRow = list()
           
@@ -554,10 +553,6 @@ class ISRAnalysis:
                 tempRow.extend(list((meanMass[ibin], meanPt[ibin], meanMassSysErr[ibin], meanPtSysErr[ibin])))
                 tempRow.extend(list((self.year, self.channel, whichLevel, "Data")))        
 
-                with open(fileName, 'a', newline='') as csvfile: 
-                    writeMeasurement = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                    writeMeasurement.writerow(tempRow)
- 
         if doSys == False:
             gr = rt.TGraphErrors(self.nMassBins, meanMass, meanPt, meanMassStatErr, meanPtStatErr)
         else :

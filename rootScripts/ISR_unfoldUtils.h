@@ -379,6 +379,9 @@ public:
     void fillMassPDFVariationHist(int istat);
     void fillMassPDFVariationHist_Accept(int istat);
 
+    vector<double> getFoldedMeanMassVectors(TString sysName, TString variationName);
+    vector<double> getFoldedMeanPtVectors(TString sysName, TString variationName);
+
     vector<double> getUnfoldedMeanMassVectors(TString sysName, TString variationName);
     vector<double> getUnfoldedMeanPtVectors(TString sysName, TString variationName);
 

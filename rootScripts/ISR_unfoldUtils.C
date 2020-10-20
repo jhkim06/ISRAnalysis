@@ -4049,101 +4049,102 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys, TStri
             int size = (it->second).size();
             for(int i = 0; i < size; i++)
             {
+                TH1* hFullPhaseMassMC_raw_sys = NULL;
+                TH1* hFullPhasePtMC_raw_sys = NULL;
+
+                TH1* hFiducialPhaseMassMC_sys = NULL;
+                TH1* hFiducialPhasePtMC_sys = NULL;
+                
                 if(it->first == "iterEM" && (it->second).at(i) != "Nominal")
                 {
                     hSysFullPhaseMassData[it->first][(it->second).at(i)] = iterEMMassUnfold->GetOutput("hMassFullPhase_"+it->first+"_"+(it->second).at(i),0,0, "*[*]", false);
                     hSysFullPhasePtData[it->first][(it->second).at(i)]   = iterEMPtUnfold->GetOutput("hPtFullPhase_"+it->first+"_"+(it->second).at(i),0,0, "*[*]", false);
+                    hFiducialPhaseMassMC_sys=hFiducialPhaseMassMC;
+                    hFiducialPhasePtMC_sys=hFiducialPhasePtMC;
                 }
                 else
                 {
                     hSysFullPhaseMassData[it->first][(it->second).at(i)] = sysMassUnfold[it->first][(it->second).at(i)]->GetOutput("hMassFullPhase_"+it->first+"_"+(it->second).at(i),0,0, "*[*]", false);
                     hSysFullPhasePtData[it->first][(it->second).at(i)]   = sysPtUnfold[it->first][(it->second).at(i)]->GetOutput("hPtFullPhase_"+it->first+"_"+(it->second).at(i),0,0, "*[*]", false);
+                    hFiducialPhaseMassMC_sys = sysMassUnfold[it->first][(it->second).at(i)]->GetBias("hFiducialMass_sys", 0, 0, "*[*]", false);
+                    hFiducialPhasePtMC_sys = sysPtUnfold[it->first][(it->second).at(i)]->GetBias("hFiducialPt_sys", 0, 0, "*[*]", false);
                 }
 
-                // Use different acceptance for PDF, AlphaS, Scale etc
+                // For PDF, AlphaS, Scale etc, denominator changed
                 if( (((it->first).Contains("Scale") && !(it->first).Contains("Lep")) || (it->first).Contains("PDF") || (it->first).Contains("AlphaS")) && !(it->first).Contains("_") )
                 {
-                    // For mass
-                    TH1* hFullPhaseMassMC_raw_sys = (TH1*) filein->Get("Acceptance/MassGen" + binDef + "/histo_DYJets_"+(it->second).at(i));
+                    hFullPhaseMassMC_raw_sys = (TH1*) filein->Get("Acceptance/MassGen" + binDef + "/histo_DYJets_"+(it->second).at(i));
                     if(year==2016)
                         hFullPhaseMassMC_raw_sys->Add((TH1*) filein->Get("Acceptance/MassGen" + binDef + "/histo_DYJets10to50_"+(it->second).at(i)));
                     else
                         hFullPhaseMassMC_raw_sys->Add((TH1*) filein->Get("Acceptance/MassGen" + binDef + "/histo_DYJets10to50_MG_"+(it->second).at(i)));
 
-                    TH1* hFiducialPhaseMassMC_sys = sysMassUnfold[it->first][(it->second).at(i)]->GetBias("hFiducialMass_sys", 0, 0, "*[*]", false);
-                    TH1* hAcceptanceMass_sys = (TH1*) hFullPhaseMassMC_raw_sys->Clone("hAcceptanceMass_sys");
-                    hAcceptanceMass_sys->Divide(hFiducialPhaseMassMC_sys);
-
-                    TH1* hAcceptanceFractionMass_sys = (TH1*) hFiducialPhaseMassMC_sys->Clone("hAcceptanceFractionMass_sys");
-                    hAcceptanceFractionMass_sys->Divide(hFullPhaseMassMC_raw_sys);
-                    
-                    hSysFullPhaseMassData[accepCorrOrEffCorr + "_" + it->first][(it->second).at(i)] = nomMassUnfold->GetOutput("hAcceptMassData" +it->first+(it->second).at(i),0,0, "*[*]", false);
-                    hSysFullPhaseMassData[accepCorrOrEffCorr + "_" + it->first][(it->second).at(i)]->Multiply(hAcceptanceMass_sys);
-                    hSysFullPhaseMassMC[accepCorrOrEffCorr + "_" + it->first][(it->second).at(i)] = hFullPhaseMassMC_raw_sys;
-                    sysMapForAcceptance[accepCorrOrEffCorr + "_" + it->first].push_back((it->second).at(i)); // Update sysMapForAcceptance 
-
-                    //hSysAcceptanceMass[it->first][(it->second).at(i)] = (TH1*) hAcceptanceMass_sys->Clone("Mass_" + it->first + "_" + (it->second).at(i));
-                    hSysAcceptanceFractionMass[it->first][(it->second).at(i)] = (TH1*) hAcceptanceFractionMass_sys->Clone("FractionMass_" + it->first + "_" + (it->second).at(i));
-                    delete hAcceptanceMass_sys;
-                    delete hAcceptanceFractionMass_sys;
-
-                    // For pt
-                    TH1* hFullPhasePtMC_raw_sys = (TH1*) filein->Get("Acceptance/PtGen" + binDef + "/histo_DYJets_"+(it->second).at(i));
+                    hFullPhasePtMC_raw_sys = (TH1*) filein->Get("Acceptance/PtGen" + binDef + "/histo_DYJets_"+(it->second).at(i));
                     if(year==2016)
                         hFullPhasePtMC_raw_sys->Add((TH1*) filein->Get("Acceptance/PtGen" + binDef + "/histo_DYJets10to50_"+(it->second).at(i)));
                     else
                         hFullPhasePtMC_raw_sys->Add((TH1*) filein->Get("Acceptance/PtGen" + binDef + "/histo_DYJets10to50_MG_"+(it->second).at(i)));
-
-                    TH1* hFiducialPhasePtMC_sys = sysPtUnfold[it->first][(it->second).at(i)]->GetBias("hFiducialPt_sys", 0, 0, "*[*]", false);
-
-                    TH1* hAcceptancePt_sys = (TH1*) hFullPhasePtMC_raw_sys->Clone("hAcceptancePt_sys");
-                    hAcceptancePt_sys->Divide(hFiducialPhasePtMC_sys);
-
-                    TH1* hAcceptanceFractionPt_sys = (TH1*) hFiducialPhasePtMC_sys->Clone("hAcceptanceFractionPt_sys");
-                    hAcceptanceFractionPt_sys->Divide(hFullPhasePtMC_raw_sys);
-
-                    hSysFullPhasePtData[accepCorrOrEffCorr + "_" + it->first][(it->second).at(i)] = nomPtUnfold->GetOutput("hAcceptPtData" +it->first+(it->second).at(i),0,0, "*[*]", false);
-                    hSysFullPhasePtData[accepCorrOrEffCorr + "_" + it->first][(it->second).at(i)]->Multiply(hAcceptancePt_sys);
-                    hSysFullPhasePtMC[accepCorrOrEffCorr + "_" + it->first][(it->second).at(i)] = hFullPhasePtMC_raw_sys;
-
-                    if((it->first).Contains("PDF"))
-                    {
-                        fillMassPDFVariationHist_Accept(i+1);
-                        fillPtPDFVariationHist_Accept(i+1);
-                    }
-
-                    //hSysAcceptancePt[it->first][(it->second).at(i)] = (TH1*) hAcceptancePt_sys->Clone("Pt_" + it->first + "_" + (it->second).at(i));
-                    hSysAcceptanceFractionPt[it->first][(it->second).at(i)] = (TH1*) hAcceptanceFractionPt_sys->Clone("FractionPt_" + it->first + "_" + (it->second).at(i));
-                    delete hAcceptancePt_sys;
-                    delete hAcceptanceFractionPt_sys;
-
-                    hSysFullPhaseMassData[it->first][(it->second).at(i)]->Multiply(hAcceptanceMass);
-                    hSysFullPhasePtData[it->first][(it->second).at(i)]->Multiply(hAcceptancePt);
-                    hSysFullPhaseMassMC[it->first][(it->second).at(i)] = hFullPhaseMassMC_raw_sys;
-                    hSysFullPhasePtMC[it->first][(it->second).at(i)]   = hFullPhasePtMC_raw_sys;
-
-                    f.cd();
-                    hSysFullPhaseMassData[it->first][(it->second).at(i)]->Write();
-                    hSysFullPhasePtData[it->first][(it->second).at(i)]->Write();
-                    hFullPhaseMassMC_raw_sys->SetName("hMassDYMC_" +it->first+"_"+(it->second).at(i));
-                    hFullPhasePtMC_raw_sys->SetName("hPtDYMC_" +it->first+"_"+(it->second).at(i));
-                    hFullPhaseMassMC_raw_sys->Write();
-                    hFullPhasePtMC_raw_sys->Write();
-
-                    hSysAcceptanceMass[it->first][(it->second).at(i)] = (TH1*) hAcceptanceMass->Clone("Mass_" + it->first + "_" + (it->second).at(i));
-                    hSysAcceptancePt[it->first][(it->second).at(i)] = (TH1*) hFullPhasePtMC->Clone("Pt_" + it->first + "_" + (it->second).at(i));
                 }
                 else
                 {
-                    // Use nominal acceptance
-                    hSysFullPhaseMassData[it->first][(it->second).at(i)]->Multiply(hAcceptanceMass);
-                    hSysFullPhasePtData[it->first][(it->second).at(i)]->Multiply(hAcceptancePt);
-                    hSysFullPhaseMassMC[it->first][(it->second).at(i)] = hFullPhaseMassMC;
-                    hSysFullPhasePtMC[it->first][(it->second).at(i)]   = hFullPhasePtMC;
-
-                    hSysAcceptanceMass[it->first][(it->second).at(i)] = (TH1*) hAcceptanceMass->Clone("Mass_" + it->first + "_" + (it->second).at(i));
-                    hSysAcceptancePt[it->first][(it->second).at(i)] = (TH1*) hFullPhasePtMC->Clone("Pt_" + it->first + "_" + (it->second).at(i));
+                    hFullPhaseMassMC_raw_sys=hFullPhaseMassMC;
+                    hFullPhasePtMC_raw_sys=hFullPhasePtMC;
                 }
+
+                // For mass
+                TH1* hAcceptanceMass_sys = (TH1*) hFullPhaseMassMC_raw_sys->Clone("hAcceptanceMass_sys");
+                hAcceptanceMass_sys->Divide(hFiducialPhaseMassMC_sys);
+
+                TH1* hAcceptanceFractionMass_sys = (TH1*) hFiducialPhaseMassMC_sys->Clone("hAcceptanceFractionMass_sys");
+                hAcceptanceFractionMass_sys->Divide(hFullPhaseMassMC_raw_sys);
+                
+                //hSysFullPhaseMassData[accepCorrOrEffCorr + "_" + it->first][(it->second).at(i)] = nomMassUnfold->GetOutput("hAcceptMassData" +it->first+(it->second).at(i),0,0, "*[*]", false);
+                hSysFullPhaseMassData[it->first][(it->second).at(i)]->Multiply(hAcceptanceMass_sys);
+                hSysFullPhaseMassMC[it->first][(it->second).at(i)] = hFullPhaseMassMC_raw_sys;
+                sysMapForAcceptance[it->first].push_back((it->second).at(i)); // Update sysMapForAcceptance 
+
+                //hSysAcceptanceMass[it->first][(it->second).at(i)] = (TH1*) hAcceptanceMass_sys->Clone("Mass_" + it->first + "_" + (it->second).at(i));
+                hSysAcceptanceFractionMass[it->first][(it->second).at(i)] = (TH1*) hAcceptanceFractionMass_sys->Clone("FractionMass_" + it->first + "_" + (it->second).at(i));
+                delete hAcceptanceMass_sys;
+                delete hAcceptanceFractionMass_sys;
+
+                // For pt
+                TH1* hAcceptancePt_sys = (TH1*) hFullPhasePtMC_raw_sys->Clone("hAcceptancePt_sys");
+                hAcceptancePt_sys->Divide(hFiducialPhasePtMC_sys);
+
+                TH1* hAcceptanceFractionPt_sys = (TH1*) hFiducialPhasePtMC_sys->Clone("hAcceptanceFractionPt_sys");
+                hAcceptanceFractionPt_sys->Divide(hFullPhasePtMC_raw_sys);
+
+                //hSysFullPhasePtData[accepCorrOrEffCorr + "_" + it->first][(it->second).at(i)] = nomPtUnfold->GetOutput("hAcceptPtData" +it->first+(it->second).at(i),0,0, "*[*]", false);
+                hSysFullPhasePtData[it->first][(it->second).at(i)]->Multiply(hAcceptancePt_sys);
+                hSysFullPhasePtMC[it->first][(it->second).at(i)] = hFullPhasePtMC_raw_sys;
+
+                if((it->first).Contains("PDF"))
+                {
+                    fillMassPDFVariationHist_Accept(i+1);
+                    fillPtPDFVariationHist_Accept(i+1);
+                }
+
+                //hSysAcceptancePt[it->first][(it->second).at(i)] = (TH1*) hAcceptancePt_sys->Clone("Pt_" + it->first + "_" + (it->second).at(i));
+                hSysAcceptanceFractionPt[it->first][(it->second).at(i)] = (TH1*) hAcceptanceFractionPt_sys->Clone("FractionPt_" + it->first + "_" + (it->second).at(i));
+                delete hAcceptancePt_sys;
+                delete hAcceptanceFractionPt_sys;
+
+                //hSysFullPhaseMassData[it->first][(it->second).at(i)]->Multiply(hAcceptanceMass);
+                //hSysFullPhasePtData[it->first][(it->second).at(i)]->Multiply(hAcceptancePt);
+                hSysFullPhaseMassMC[it->first][(it->second).at(i)] = hFullPhaseMassMC_raw_sys;
+                hSysFullPhasePtMC[it->first][(it->second).at(i)]   = hFullPhasePtMC_raw_sys;
+
+                f.cd();
+                hSysFullPhaseMassData[it->first][(it->second).at(i)]->Write();
+                hSysFullPhasePtData[it->first][(it->second).at(i)]->Write();
+                hFullPhaseMassMC_raw_sys->SetName("hMassDYMC_" +it->first+"_"+(it->second).at(i));
+                hFullPhasePtMC_raw_sys->SetName("hPtDYMC_" +it->first+"_"+(it->second).at(i));
+                hFullPhaseMassMC_raw_sys->Write();
+                hFullPhasePtMC_raw_sys->Write();
+
+                hSysAcceptanceMass[it->first][(it->second).at(i)] = (TH1*) hAcceptanceMass->Clone("Mass_" + it->first + "_" + (it->second).at(i));
+                hSysAcceptancePt[it->first][(it->second).at(i)] = (TH1*) hFullPhasePtMC->Clone("Pt_" + it->first + "_" + (it->second).at(i));
             }
             it++;
         }
@@ -4151,16 +4152,16 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys, TStri
         // Update sys map
         // Sys. unc. of acceptance correction
         // PDF, alphaS, Scale
-        it = sysMapForAcceptance.begin();
-        while(it != sysMapForAcceptance.end())
-        {
-            int size = (it->second).size();
-            for(int i = 0; i < size; i++)
-            {
-               sysMap[it->first].push_back((it->second).at(i)); 
-            }
-            it++;
-        }
+        //it = sysMapForAcceptance.begin();
+        //while(it != sysMapForAcceptance.end())
+        //{
+        //    int size = (it->second).size();
+        //    for(int i = 0; i < size; i++)
+        //    {
+        //       sysMap[it->first].push_back((it->second).at(i)); 
+        //    }
+        //    it++;
+        //}
   
         // Stat. unc. of acceptance correction
 
@@ -4633,6 +4634,10 @@ int ISRUnfold::setSysMeanMass()
     int nMassBin = temp_tvecd->GetNrows() - 1;
     const Double_t* massBins = temp_tvecd->GetMatrixArray();
 
+    const TVectorD* temp_tvecd_rec = pt_binning_Rec->GetDistributionBinning(1);
+    int nMassBin_rec = temp_tvecd_rec->GetNrows() - 1;
+    const Double_t* massBins_rec = temp_tvecd_rec->GetMatrixArray();
+
     // For systematic
     std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
     while(it != sysMap.end())
@@ -4646,14 +4651,17 @@ int ISRUnfold::setSysMeanMass()
         for(int i = 0; i < size; i++)
         {
             TH1* hunfolded_mass = NULL;
+            TH1* hunfolded_mass_input = NULL;
             if( (it->first).Contains("iterEM") && !((it->second).at(i)).Contains("Nominal"))
             {
                 hunfolded_mass = iterEMMassUnfold->GetOutput("hunfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                hunfolded_mass_input = nomMassUnfold->GetInput("hunfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
             }
             else
             {
                 p_unfold = sysMassUnfold[it->first][(it->second).at(i)];
                 hunfolded_mass = p_unfold->GetOutput("hunfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
+                hunfolded_mass_input = p_unfold->GetInput("hunfolded_mass",0,0,"mass[UO];pt[UOC0]",kTRUE);
             }
 
 
@@ -4662,10 +4670,13 @@ int ISRUnfold::setSysMeanMass()
             {
                 // Set x-axis range
                 hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(massBins[ibin]+0.01), hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
+                hunfolded_mass_input->GetXaxis()->SetRange(hunfolded_mass_input->GetXaxis()->FindBin(massBins_rec[ibin]+0.01), hunfolded_mass_input->GetXaxis()->FindBin(massBins_rec[ibin+1]-0.01));
                 meanMass_data_unfolded_sysVariation[it->first][(it->second).at(i)].push_back(hunfolded_mass->GetMean());
+                meanMass_data_folded_sysVariation[it->first][(it->second).at(i)].push_back(hunfolded_mass_input->GetMean());
                 //cout << it->first << " " << (it->second).at(i) << " " << hunfolded_mass->GetMean() << endl;
             }// End of mass bin loop
             delete hunfolded_mass;
+            delete hunfolded_mass_input;
         }
         it++;
     }
@@ -4678,7 +4689,7 @@ void ISRUnfold::setSysMeanMass_Accept()
     const TVectorD* temp_tvecd = pt_binning_Gen->GetDistributionBinning(1);
     int nMassBin = temp_tvecd->GetNrows() - 1;
     const Double_t* massBins = temp_tvecd->GetMatrixArray();
-
+    //cout << "nMassBin: " << nMassBin << endl;
     // For systematic
     std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
     while(it != sysMap.end())
@@ -4696,7 +4707,7 @@ void ISRUnfold::setSysMeanMass_Accept()
                 // Set x-axis range
                 hunfolded_mass->GetXaxis()->SetRange(hunfolded_mass->GetXaxis()->FindBin(massBins[ibin]+0.01), hunfolded_mass->GetXaxis()->FindBin(massBins[ibin+1]-0.01));
                 meanMass_data_accept_sysVariation[it->first][(it->second).at(i)].push_back(hunfolded_mass->GetMean());
-                //cout << it->first << " " << (it->second).at(i) << " " << hunfolded_mass->GetMean() << endl;
+                //cout << it->first << " " << (it->second).at(i) << " " << hunfolded_mass->GetMean() << " vector size: " << meanMass_data_accept_sysVariation[it->first][(it->second).at(i)].size() << endl;
             }// End of mass bin loop
             delete hunfolded_mass;
         }
@@ -5490,19 +5501,24 @@ int ISRUnfold::setSysMeanPt()
                 ibinMass.Form("%d", j);
 
                 TH1* hunfolded_pt = NULL;
+                TH1* hunfolded_pt_input = NULL;
 
                 // Get histograms to set mean values
                 if((it->first).Contains("iterEM") && !((it->second).at(i)).Contains("Nominal"))
                 {
                     hunfolded_pt = iterEMPtUnfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                    hunfolded_pt_input = nomPtUnfold->GetInput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
                 }
                 else
                 {
                     hunfolded_pt = p_unfold->GetOutput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
+                    hunfolded_pt_input = p_unfold->GetInput("hunfolded_pt_temp",0,0,"pt[UO];mass[UOC"+ibinMass+"]",kTRUE);
                 }
                 meanPt_data_unfolded_sysVariation[it->first][(it->second).at(i)].push_back(hunfolded_pt->GetMean());
+                meanPt_data_folded_sysVariation[it->first][(it->second).at(i)].push_back(hunfolded_pt_input->GetMean());
                 //cout << it->first << " " << (it->second).at(i) << " " << hunfolded_pt->GetMean() << endl;
                 delete hunfolded_pt;
+                delete hunfolded_pt_input;
             }
         }
         it++;
@@ -5546,6 +5562,27 @@ void ISRUnfold::setSysMeanPt_Accept()
         it++;
     }
 }
+
+vector<double> ISRUnfold::getFoldedMeanPtVectors(TString sysName, TString variationName)
+{
+    if(sysName=="")
+    {
+        return meanPt_data_folded;
+    }
+    else
+        return meanPt_data_folded_sysVariation[sysName][variationName];
+}
+
+vector<double> ISRUnfold::getFoldedMeanMassVectors(TString sysName, TString variationName)
+{
+    if(sysName=="")
+    {
+        return meanMass_data_folded;
+    }
+    else
+        return meanMass_data_folded_sysVariation[sysName][variationName];
+}
+
 
 vector<double> ISRUnfold::getUnfoldedMeanPtVectors(TString sysName, TString variationName)
 {
