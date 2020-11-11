@@ -970,28 +970,6 @@ TH1* ISRUnfold::cloneEmptyHist(TH1* hist, TString histName)
 
 }
 
-TGraphErrors* ISRUnfold::histToTGraphError(TH1* hist, bool zeroXerror)
-{
-    const int nPoints = hist->GetNbinsX();
-    double x[nPoints];
-    double y[nPoints];
-    double xError[nPoints];
-    double yError[nPoints];
-    for(int i = 1; i < nPoints + 1; i++)
-    {
-        x[i-1] = hist->GetBinCenter(i);
-        y[i-1] = hist->GetBinContent(i);
-        if(zeroXerror)
-            xError[i-1] = 0.0;
-        else 
-            xError[i-1] = hist->GetBinWidth(i)/2.; 
-        yError[i-1] = hist->GetBinError(i);
-    }
- 
-    TGraphErrors* out = new TGraphErrors(nPoints, x, y, xError, yError);
-    return out;
-}
-
 void ISRUnfold::divideByBinWidth(TH1* hist, bool norm)
 {
     for(int ibin = 1; ibin < hist->GetXaxis()->GetNbins()+1; ibin++)

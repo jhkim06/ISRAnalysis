@@ -167,7 +167,6 @@ public:
 
     // Set nominal TUnfoldDensity 
     void setNominalRM(TString var, TString filepath, TString dirName, TString histName, TString binDef = "");
-
     void setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept = false);
 
     // Set input histogram
@@ -196,7 +195,6 @@ public:
         return sysMap;
     }
 
-    double getBinnedMean(TH1* hist);
     void divideByBinWidth(TH1* hist, bool norm = false);
     TH1* cloneEmptyHist(TH1* hist, TString histName);
     TProfile* cloneHistToTProf(TH1* hist, TString histName);
@@ -219,8 +217,6 @@ public:
 
     // Helper functions
     void doNorm(TH1* hist, bool norm = true); 
-    TGraphErrors* histToTGraphError(TH1* hist, bool zeroXerror = true);
-
 };
 
 #endif
