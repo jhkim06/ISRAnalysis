@@ -1,0 +1,43 @@
+{
+    "plotPrefix": "", 
+    "Analysis": "ISR",
+    "Year": "2017",
+    "Channel": "muon",
+    "HistPrefix": "histo_",
+    "topDirName": "Detector", 
+    "useTUnfoldBin": true,
+    "TUnfoldBinNames": ["Rec_Pt","Rec_Mass"], 
+    "Variables": ["Mass", "Pt_0", "Pt_1", "Pt_2", "Pt_3", "Pt_4"],
+    "VariablePostfix": "FineCoarse",
+    "Steering":
+    {
+        "Mass": "mass[UO];pt[UOC0]",
+        "Pt_0": "pt[UO];mass[UOC0]",
+        "Pt_1": "pt[UO];mass[UOC1]",
+        "Pt_2": "pt[UO];mass[UOC2]",
+        "Pt_3": "pt[UO];mass[UOC3]",
+        "Pt_4": "pt[UO];mass[UOC4]"
+    },
+    "Systematics": {
+       "measurement": {  
+            "Nominal": ["Nominal"],  
+            "IdSF":  ["Up", "Down"],
+            "trgSF": ["Up", "Down"],
+            "PU":    ["Up", "Down"]
+        },
+        "theory": {                                                                                                                                              
+            "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"]                                                                                          
+        }   
+    },
+    "Samples":
+    {
+        "Data_Measured" :    ["DoubleMuon"],
+        "DY_Signal":         ["DYJetsToMuMu", "DYJets10to50ToMuMu"],
+        "DYtautau_Background": ["DYJetsToTauTau", "DYJets10to50ToTauTau"],
+        "VV_Background":       ["ZZ_pythia","WZ_pythia","WW_pythia"],
+        "TTbar_Background":    ["TTLL_powheg"],
+        "QCD_Background":      ["QCD"] 
+    },
+    "StackOrder": ["QCD_Background", "TTbar_Background", "VV_Background", "DYtautau_Background", "DY_Signal"]
+}
+

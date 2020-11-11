@@ -225,6 +225,7 @@ private:
     double nominal_bias;
     
     TString output_baseDir;
+    TString unfold_name;
     TString channel_name;
     int year;
 
@@ -234,10 +235,11 @@ private:
 public:
     
     // Constructor
-    ISRUnfold(TString channel, int year_ = 2016, int regMode_ = 0, bool makeStatUnfold_ = true, bool verbose_ = false)
+    ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool makeStatUnfold_ = true, bool verbose_ = false)
     {
         cout << "ISRUnfold set!" << endl;
 
+        unfold_name = unfold_name_;
         channel_name = channel;
         year = year_;
 
@@ -341,10 +343,8 @@ public:
     void setTotSysError_Accept();
 
     void doAcceptCorr(TString filePath, TString binDef, bool doSys = false, TString outName = "", bool isAccept = false);
-    void drawAcceptance(TString var, TH1* hMC, TString outName);
     TCanvas* drawAcceptCorrHists(TString var, TString filePath, TString binDef, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth); 
     void drawCorrelation(TString var, TString steering, bool useAis, TString outName = "");
-    void drawComparisonPlot(TString var, TString plotName, TString topYaxisName, TString bottomYaxisName, TString bottomXaxisName, TH1* h1, TH1* h2, TH1* hratio, TString outName, int nthMassBin = 0);
     TCanvas* drawAcceptVarHists(TString var, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool isAccept = false);
 
     // Get histograms

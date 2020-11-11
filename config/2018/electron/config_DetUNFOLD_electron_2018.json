@@ -1,0 +1,41 @@
+{
+    "plotPrefix": "Det",
+    "Analysis": "ISR",
+    "Year": "2018",
+    "Channel": "electron",
+    "HistPrefix": "histo_",
+    "topDirName": "unfolded",
+    "useTUnfoldBin": true,
+    "TUnfoldBinNames": ["Gen_Pt","Gen_Mass"], 
+    "Variables": ["Mass", "Pt_0", "Pt_1", "Pt_2", "Pt_3", "Pt_4"],
+    "VariablePostfix": "",
+    "Steering":
+    {
+        "Mass": "mass[UO];pt[UOC0]",
+        "Pt_0": "pt[UO];mass[UOC0]",
+        "Pt_1": "pt[UO];mass[UOC1]",
+        "Pt_2": "pt[UO];mass[UOC2]",
+        "Pt_3": "pt[UO];mass[UOC3]",
+        "Pt_4": "pt[UO];mass[UOC4]"
+    },
+    "Systematics":
+    {
+        "measurement": {
+            "Nominal": ["Nominal"],
+            "IdSF":    ["Up", "Down"],
+            "trgSF":   ["Up", "Down"],
+            "PU":      ["Up", "Down"],
+            "unfold":  ["IterEM", "Nominal"]
+        },
+        "theory": {
+            "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"]
+        }
+    },
+    "Samples":
+    {
+        "Data_Measured" :    ["Data"],
+        "DY_Signal":         ["DY"]
+    },
+    "StackOrder": ["DY_Signal"]
+}
+

@@ -9,10 +9,11 @@ import pandas as pd
 
 class ISRAnalysis:
     
-    def __init__(self, year_ = "2016", channel_= "electron", regMode = 0, sys_ = False, matrix_filekey_ = "matrix",
+    def __init__(self, unfold_name_ = "Detector", year_ = "2016", channel_= "electron", regMode = 0, sys_ = False, matrix_filekey_ = "matrix",
                  matrix_dirPath_ = "Detector_Dressed_DRp1_Fiducial", matrix_histName_ = "Detector_Dressed_DRp1", binDef_ = ""):
         
         # 디텍터 언폴딩 디렉토리 경로 & 매트릭스 이름 
+        self.unfold_name = unfold_name_
         self.matrix_filekey = matrix_filekey_
         self.matrix_dirPath  = matrix_dirPath_
         self.matrix_histName = matrix_histName_
@@ -38,7 +39,7 @@ class ISRAnalysis:
             self.dy10to50HistName += MG_postfix
         
         # 아웃풋 디렉토리
-        self.outDirPath = "output/"+self.year+"/new_"+self.channel+"/"
+        self.outDirPath = "output/"+self.year+"/"+self.channel+"/"
         # 인풋 히스토그램 텍스트파일
         self.inHistPathTxt = "inFiles/"+self.year+"/"+self.channel+"/fhist.txt"
     
@@ -59,7 +60,7 @@ class ISRAnalysis:
         self.mode = regMode # 레귤라이제이션 모드
         
         # Create ISRUnfold object
-        self.unfold = rt.ISRUnfold(self.channel, int(self.year), int(self.mode), sys_)
+        self.unfold = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False)
         self.unfold.setOutputBaseDir(self.outDirPath)
         self.unfold.setBias(self.bias)
         
@@ -190,7 +191,7 @@ class ISRAnalysis:
                 dirName = "Detector" + "_" + sysPostfix
                 histPostfix_temp = ""
 
-            elif "iterEM" == sysName :
+            elif "Unfolding" == sysName :
                 histPostfix_temp = ""
 
             elif "PDF" in sysName :
@@ -223,7 +224,7 @@ class ISRAnalysis:
             dirPath_temp = "Detector_Dressed_DRp1_Fiducial" + "_" + sysHistName  # FIXME put systematic postfix at the END, ex) Detector_Dressed_DRp1_Fiducial_LepScaleUp 
             histPostfix_temp = ""
 
-        elif "iterEM" in sysName :
+        elif "Unfolding" in sysName :
             histPostfix_temp = ""
 
         elif "Unfold" in sysName :
@@ -239,7 +240,7 @@ class ISRAnalysis:
         elif "FSR" in sysName :
             histPostfix_temp = ""
 
-            if sysHistName == "PHOTOS" :
+            if "PHOTOS" in sysHistName :
                 matrix_filekey_temp = "fsr_matrix_powheg_photos"
             else :
                 matrix_filekey_temp = "fsr_matrix_powheg_pythia"
