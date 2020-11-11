@@ -46,14 +46,6 @@ using namespace std;
 
 const int statSize = 1000;
 
-const double topPadBottomMargin = 0.0;
-const double topPadTopMargin = 0.1;
-const double bottomPadBottomMargin = 0.35;
-const double bottomPadTopMargin = 0.0;
-
-const int globalLinedWidth = 1;
-const int globalFrameWidth = 1;
-
 class ISRUnfold{
 
 private:
@@ -70,24 +62,6 @@ private:
     TUnfoldBinning* mass_binning_Gen = NULL;
 
     std::map<TString, vector<TString>> sysMap;
-    std::map<TString, TH1*> sysAbsPtHist_detector;
-
-    std::map<int, std::map<TString, TH1*>> sysRelPtHist_detectorData;
-    std::map<int, std::map<TString, TH1*>> sysRelPtHist_detectorMC;
-    std::map<TString, TH1*> sysRelMassHist_detectorData;
-    std::map<TString, TH1*> sysRelMassHist_detectorMC;
-
-    std::map<int, std::map<TString, TH1*>> sysRelPtHist_unfoldedData;
-    std::map<int, std::map<TString, TH1*>> sysRelPtHist_unfoldedMC;
-    std::map<TString, TH1*> sysRelMassHist_unfoldedData;
-    std::map<TString, TH1*> sysRelMassHist_unfoldedMC;
-
-    std::map<int, std::map<TString, TH1*>> sysRelPtHist_unfoldedAcceptData;
-    std::map<int, std::map<TString, TH1*>> sysRelPtHist_unfoldedAcceptMC;
-    std::map<TString, TH1*> sysRelMassHist_unfoldedAcceptData;
-    std::map<TString, TH1*> sysRelMassHist_unfoldedAcceptMC;
-    std::map<int, std::map<TString, TH1*>> sysAbsPtHist_unfoldedAcceptMC;
-    std::map<TString, TH1*> sysAbsMassHist_unfoldedAcceptMC;
 
     // Unfolding
     // For nominal results
@@ -100,16 +74,6 @@ private:
     // For statistical uncertainty
     std::vector<TUnfoldDensity*> statPtUnfold;
     std::vector<TUnfoldDensity*> statMassUnfold;
-
-    // Histogram to save statistical variations for each mass bin
-    std::vector<TH1*> meanPtStatVariation;
-    std::vector<TH1*> meanMassStatVariation;
-
-    std::vector<TH1*> meanPtPDFVariation;
-    std::vector<TH1*> meanMassPDFVariation;
-
-    std::vector<TH1*> meanPtPDFVariation_Accept;
-    std::vector<TH1*> meanMassPDFVariation_Accept;
 
     // For systematic uncertainty
     std::map<TString, std::map<TString, TUnfoldDensity*>> sysPtUnfold;
@@ -125,39 +89,6 @@ private:
     TGraph *graph_SURE_IterativeSURE_pt,*graph_DFdeviance_IterativeSURE_pt;
     TGraph *graph_SURE_IterativeSURE_mass,*graph_DFdeviance_IterativeSURE_mass;
     
-    /*------------------------------------------------------------------------------------- Results: mean values ---------------------------------------------------------------------------------------*/ 
-    // Folded level: from TUnfoldDensity (mean from the binned histogram) 
-    vector<Double_t> meanMass_data_folded, meanMassStatErr_data_folded, meanMassSysErr_data_folded, meanMassTotErr_data_folded;
-    vector<Double_t> meanPt_data_folded,   meanPtStatErr_data_folded,   meanPtSysErr_data_folded, meanPtTotErr_data_folded;
-    // Mean from raw histograms 
-    vector<Double_t> unbinnedMeanMass_data_folded, unbinnedMeanMassStatErr_data_folded, unbinnedMeanMassSysErr_data_folded, unbinnedMeanMassTotErr_data_folded;
-    vector<Double_t> unbinnedMeanPt_data_folded,   unbinnedMeanPtStatErr_data_folded,   unbinnedMeanPtSysErr_data_folded, unbinnedMeanPtTotErr_data_folded;
-    // Unfolded results
-    vector<Double_t> meanMass_data_unfolded, meanMassStatErr_data_unfolded, meanMassSysErr_data_unfolded, meanMassTotErr_data_unfolded;
-    vector<Double_t> meanPt_data_unfolded,   meanPtStatErr_data_unfolded,   meanPtSysErr_data_unfolded, meanPtTotErr_data_unfolded;
-
-    // Nominal mean mass and pt for MC
-    vector<Double_t> meanMass_mc_folded, meanMassStatErr_mc_folded, meanMassSysErr_mc_folded, meanMassTotErr_mc_folded;
-    vector<Double_t> meanPt_mc_folded, meanPtStatErr_mc_folded, meanPtSysErr_mc_folded, meanPtTotErr_mc_folded;
-
-    vector<Double_t> meanMass_mc_unfolded, meanMassStatErr_mc_unfolded, meanMassSysErr_mc_unfolded, meanMassTotErr_mc_unfolded;
-    vector<Double_t> meanPt_mc_unfolded, meanPtStatErr_mc_unfolded, meanPtSysErr_mc_unfolded, meanPtTotErr_mc_unfolded;
-
-    std::map<TString, std::map<TString, vector<double>>> meanMass_data_folded_sysVariation;
-    std::map<TString, std::map<TString, vector<double>>> meanPt_data_folded_sysVariation;
-
-    std::map<TString, std::map<TString, vector<double>>> meanMass_data_unfolded_sysVariation;
-    std::map<TString, std::map<TString, vector<double>>> meanPt_data_unfolded_sysVariation;
-
-    std::map<TString, vector<double>> meanMass_data_folded_systematic;
-    std::map<TString, vector<double>> meanPt_data_folded_systematic;
-
-    std::map<TString, vector<double>> meanMass_data_folded_rel_systematic;
-    std::map<TString, vector<double>> meanPt_data_folded_rel_systematic;
-    
-    vector<Double_t> meanMassStatRelErr_data_unfolded, meanPtStatRelErr_data_unfolded;
-    /*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-   
     // Acceptance correction
     TH1* hFullPhaseMassData; // data after acceptance correction 
     TH1* hFullPhasePtData;  
@@ -180,41 +111,6 @@ private:
 
     std::map<TString, std::map<TString, TH1*>> hSysAcceptanceFractionMass;
     std::map<TString, std::map<TString, TH1*>> hSysAcceptanceFractionPt;
-
-    // For data
-    vector<Double_t> meanMass_data_acc_corrected, meanMassStatErr_data_acc_corrected, meanMassSysErr_data_acc_corrected, meanMassTotErr_data_acc_corrected;
-    vector<Double_t> meanPt_data_acc_corrected,   meanPtStatErr_data_acc_corrected,   meanPtSysErr_data_acc_corrected, meanPtTotErr_data_acc_corrected;
-
-    std::map<TString, std::map<TString, vector<double>>> meanMass_data_accept_sysVariation;
-    std::map<TString, std::map<TString, vector<double>>> meanPt_data_accept_sysVariation;
-
-    std::map<TString, vector<double>> meanMass_data_accept_systematic;
-    std::map<TString, vector<double>> meanPt_data_accept_systematic;
-
-    std::map<TString, vector<double>> meanMass_data_accept_rel_systematic;
-    std::map<TString, vector<double>> meanPt_data_accept_rel_systematic;
-
-    vector<Double_t> meanMassRelSysErr_data_acc_corrected;
-    vector<Double_t> meanPtRelSysErr_data_acc_corrected;
-
-    // Theory
-    vector<Double_t> meanMass_theory_acc_corrected, meanMassStatErr_theory_acc_corrected, meanMassSysErr_theory_acc_corrected, meanMassTotErr_theory_acc_corrected;
-    vector<Double_t> meanPt_theory_acc_corrected,   meanPtStatErr_theory_acc_corrected,   meanPtSysErr_theory_acc_corrected, meanPtTotErr_theory_acc_corrected;
-
-    std::map<TString, std::map<TString, vector<double>>> meanMass_theory_accept_sysVariation;
-    std::map<TString, std::map<TString, vector<double>>> meanPt_theory_accept_sysVariation;
-
-    std::map<TString, vector<double>> meanMass_theory_accept_systematic;
-    std::map<TString, vector<double>> meanPt_theory_accept_systematic;
-
-    std::map<TString, vector<double>> meanMass_theory_accept_rel_systematic;
-    std::map<TString, vector<double>> meanPt_theory_accept_rel_systematic;
-
-    std::vector<TH1*> meanPtPDFVariation_theory_Accept;
-    std::vector<TH1*> meanMassPDFVariation_theory_Accept;
-
-    vector<Double_t> meanMassEffRelErr_data, meanPtEffRelErr_data; 
-    vector<Double_t> meanMassAcceptRelErr_data, meanPtAcceptRelErr_data; 
 
     bool verbose;
 
@@ -311,10 +207,6 @@ public:
     void doStatUnfold(); 
 
     void setStatError();
-    void setSysError();
-    void setSysError_Accept();
-    void setTotSysError();
-    void setTotSysError_Accept();
 
     void doAcceptCorr(TString filePath, TString binDef, bool doSys = false, TString outName = "", bool isAccept = false);
     void drawCorrelation(TString var, TString steering, bool useAis, TString outName = "");
@@ -329,36 +221,6 @@ public:
     void doNorm(TH1* hist, bool norm = true); 
     TGraphErrors* histToTGraphError(TH1* hist, bool zeroXerror = true);
 
-    void setTheoryMeanValues(TString filePath, TString binDef);
-    int setMeanPt(TString filePath = "");
-    int setMeanMass(TString filePath = "");
-    void setMeanPt_Accept();
-    void setMeanMass_Accept();
-    int setSysMeanPt();
-    int setSysMeanMass();
-    void setSysMeanPt_Accept();
-    void setSysMeanMass_Accept();
-    void setAcceptError();
-
-    void fillPtStatVariationHist(int istat);
-    void fillMassStatVariationHist(int istat);
-
-    void fillPtPDFVariationHist(int istat);
-    void fillPtPDFVariationHist_Accept(int istat);
-    void fillMassPDFVariationHist(int istat);
-    void fillMassPDFVariationHist_Accept(int istat);
-
-    vector<double> getFoldedMeanMassVectors(TString sysName, TString variationName);
-    vector<double> getFoldedMeanPtVectors(TString sysName, TString variationName);
-
-    vector<double> getUnfoldedMeanMassVectors(TString sysName, TString variationName);
-    vector<double> getUnfoldedMeanPtVectors(TString sysName, TString variationName);
-
-    vector<double> getAccCorrectedMeanMassVectors(TString sysName, TString variationName);
-    vector<double> getAccCorrectedMeanPtVectors(TString sysName, TString variationName);
-   
-    void printMeanValues(bool printSys);
-    void printMeanValues_Accept(bool printSys = false);
 };
 
 #endif

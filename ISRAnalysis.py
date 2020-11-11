@@ -257,53 +257,12 @@ class ISRAnalysis:
         self.unfold.setSystematicRM("Pt",   self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
         self.unfold.setSystematicRM("Mass", self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
 
-    def getSystematics(self):
-        self.unfold.printSystematics()
-
-    def printMeanValues(self):
-        self.unfold.printMeanValues(True)
-
-    def printMeanValues_Accept(self):
-        self.unfold.printMeanValues_Accept(True)
-
     def drawResponseM(self, var = "Mass", sysName = "", sysPostfix = "", isDetector = True):
         self.unfold.drawResponseM(var, sysName, sysPostfix, isDetector)
 
     def checkIterEMUnfold(self):
         self.unfold.checkIterEMUnfold()
 
-    def drawDetPlot(self, var = "Mass", dirName = "Detector", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isBkgSubData = False):
-        if "LepScale" in sysName :
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_LepScale'], isBkgSubData)
-        elif "LepRes" in sysName :
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_LepRes'], isBkgSubData)
-        elif "Scale" in sysName or "AlphaS" in sysName:
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist'], isBkgSubData)
-        elif "PDF" in sysName :
-            self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, self.inHistDic['hist_pdf'], isBkgSubData)
-        else : 
-            return self.unfold.drawFoldedHists(var, self.inHistDic['hist'], dirName, steering, useAxis, sysName, outName, massBin, binWidth, "", isBkgSubData)
-
-    def drawPtDistributions(self) :
-            self.unfold.drawPtDistributions(self.inHistDic['hist'])
-
-    def drawPtBkgRatio(self) :
-            self.unfold.drawPtBkgRatio(self.inHistDic['hist'])
-
-    def drawUnfPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isType3Closure = False):
-        self.unfold.drawUnfoldedHists(var, steering, useAxis, sysName, outName, massBin, binWidth, isType3Closure)
-
-    def drawUnfVarPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
-        self.unfold.drawUnfoldedVarHists(var, steering, useAxis, sysName, outName, massBin, binWidth)
-
-    def drawAcceptVarPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, isAccept = False):
-        self.unfold.drawAcceptVarHists(var, steering, useAxis, sysName, outName, massBin, isAccept)
-
-    def drawSystematics(self, var = "Pt", isAccept = False, isHistStyle = False) :
-        if isAccept:
-            self.unfold.drawSystematics_Acceptance(var, isHistStyle)
-        else :
-            self.unfold.drawSystematics(var, isHistStyle) 
     # Do unfold! 
     def doUnfold(self, isSys = False):
         self.unfold.doISRUnfold(isSys)
@@ -312,67 +271,10 @@ class ISRAnalysis:
         print ("doStatUnfold")
         self.unfold.doStatUnfold()
 
-    def setMeanValues(self, setDetector = False):
-        # Set mean mass and pt values
-        if setDetector :
-            self.nMassBins = self.unfold.setMeanMass(self.inHistDic['hist'])
-            self.unfold.setMeanPt(self.inHistDic['hist'])
-        else :
-            self.nMassBins = self.unfold.setMeanMass()
-            self.unfold.setMeanPt()
-
-    def setTheoryMeanValues(self, binDef = "_FineCoarse"):
-        self.unfold.setTheoryMeanValues(self.inHistDic['hist_accept_fullPhase'], binDef)
-
-    def setAcceptMeanValues(self):
-        self.unfold.setMeanPt_Accept()
-        self.unfold.setMeanMass_Accept()
-
-    def setSysMeanValues(self):
-        self.unfold.setSysMeanMass()
-        self.unfold.setSysMeanPt()
-
-    def setAcceptSysMeanValues(self):
-        self.unfold.setSysMeanMass_Accept()
-        self.unfold.setSysMeanPt_Accept()
-
-    def setStatError(self):
-        self.unfold.setStatError()
-
-    def setSysError(self):
-        self.unfold.setSysError()
-
-    def setAcceptSysError(self):
-        self.unfold.setSysError_Accept()
-
-    def setTotSysError(self):
-        self.unfold.setTotSysError()
-
-    def setAcceptTotSysError(self):
-        self.unfold.setTotSysError_Accept()
-    
     def getISRUnfold(self):
         
         return self.unfold
     
-    def drawStatVar(self, isPt = True):
-
-        for ibin in range(self.nMassBins): 
-            self.unfold.drawStatVariation(isPt, ibin)
-
-    def drawPDFVar(self, isPt = True):
-
-        for ibin in range(self.nMassBins): 
-            self.unfold.drawPDFVariation(isPt, ibin)
-
-    def drawSysVar(self, sysName, var = "Pt", isAccept = False):
-
-        for ibin in range(self.nMassBins): 
-            if isAccept == False:
-                self.unfold.drawSysVariation(sysName, var, ibin)
-            else :
-                self.unfold.drawSysVariation_Accept(sysName, var, ibin)
-
     def doAcceptance(self, doSys = False, isFSR = False, outName = "") :
         if isFSR :
             self.unfold.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys, outName, True)
@@ -387,18 +289,6 @@ class ISRAnalysis:
 
     def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):
         self.unfold.drawCorrelation(var, steering, useAxis, outName)
-
-    def getRawHist(self, var = "Mass", histName = "", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
-        self.unfold.getRawHist(var, self.inHistDic['hist'], "Detector", histName, outName, steering, useAxis, binWidth)
-
-    def getUnfInHist(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
-        return self.unfold.getUnfInput(var, steering, useAxis, massBin, binWidth)
-
-    def getUnfHist(self, var = "Mass", outName = "" , steering = None, useAxis = True, binWidth = False):
-        return self.unfold.getUnfoldedHists(var, outName, steering, useAxis, binWidth)
-
-    def getGenMCHist(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False):
-        return self.unfold.getGenMCHist(var, steering, useAxis, massBin, binWidth)
 
     # Get histograms
     def getCDFPtVsMassTGraph(self, grTitle = ""):
