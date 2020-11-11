@@ -63,8 +63,6 @@ private:
     std::vector<TString> bkgNames; // Backgroud Name
     std::vector<TString> bkgTypes; // Backgroud Type
 
-    std::map<TString, int> bkgColors;
-
     // Bin definitions
     TUnfoldBinning* pt_binning_Rec = NULL;
     TUnfoldBinning* pt_binning_Gen = NULL;
@@ -256,13 +254,6 @@ public:
 
         makeStatUnfold = makeStatUnfold_;
 
-        // Fill colors for backgrounds
-        bkgColors["Fake"] = kViolet+6;
-        bkgColors["WJets"] = kViolet+1;
-        bkgColors["VV"] = kOrange+1;
-        bkgColors["DY#rightarrow#tau#tau"] = kOrange+2;
-        bkgColors["t#bar{t}"] = kAzure+1;
-
         verbose = verbose_;
     }
     // Destructor
@@ -308,28 +299,11 @@ public:
     {
         return sysMap;
     }
-    // FIXME combine below three method 
-    TCanvas& drawFoldedHists(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, TString sysFilePath = "", bool isBkgSubData = false);
-    TCanvas* drawPtDistributions(TString filePath);
-    TCanvas* drawPtBkgRatio(TString filePath);
-    TCanvas* drawUnfoldedVarHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false);
-    TCanvas* drawUnfoldedHists(TString var, TString steering, bool useAxis, TString sysName = "", TString outName = "", int nthMassBin = 0, bool divBinWidth = false, bool isType3Closure = false);
-    // FIXME combine below three method
-    TH1* getDetectorSystematicBand(TString var, TString filePath, TString dirName, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hMCtotal, TH1* hRatio, 
-                                    bool divBinWidth, bool isRatio, bool forMC, TString sysFilePath = "", int nthMassBin = 0, bool isBkgSubData = false);
-    TH1* getUnfoldedSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, int nthMassBin = 0);
-    TH1* getUnfAcceptSystematicBand(TString var, TString steering, bool useAxis, TString sysName, TH1* hData, TH1* hDY, TH1* hRatio, bool divBinWidth, bool isRatio, bool forMC, int nthMassBin = 0);
 
-    void setTHStack(TString var, TString filePath, TString dirName, THStack& hs, TH1& hMCtotal, TLegend& leg, TString steering, bool useAxis, TString sysName = "", bool divBinWidth = false, bool updateLegend = true, bool doPtCombine = false);
-    void setXaxisTitle(TH1* hist, TString var, bool useAxis, TString title = "");
-    void writeCutInfo(TPad* pad, TString var, int nthMassBin = 0, double x_ = 0.2, double y_ = 0.7, bool showLepCuts = true);
     double getBinnedMean(TH1* hist);
     void divideByBinWidth(TH1* hist, bool norm = false);
-    TString getSysNameToShow(TString sysName);
-    double setHistCosmetics(TH1* hist, bool isLogy = false);
     TH1* cloneEmptyHist(TH1* hist, TString histName);
     TProfile* cloneHistToTProf(TH1* hist, TString histName);
-    TLegend* createLegend(double xStartPos_, double yStartPos_);
     void varyHistWithStatError(TH1* hist, int sys);
 
     // Do unfold 
@@ -343,21 +317,16 @@ public:
     void setTotSysError_Accept();
 
     void doAcceptCorr(TString filePath, TString binDef, bool doSys = false, TString outName = "", bool isAccept = false);
-    TCanvas* drawAcceptCorrHists(TString var, TString filePath, TString binDef, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool divBinWidth); 
     void drawCorrelation(TString var, TString steering, bool useAis, TString outName = "");
-    TCanvas* drawAcceptVarHists(TString var, TString steering, bool useAxis, TString sysName, TString outName, int nthMassBin, bool isAccept = false);
 
     // Get histograms
     TH1* getUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true, bool divBinWidth = false);
-    TH1* getGenMCHist(TString var, TString steering, bool useAxis = true, int massBin = 0, bool binWidth = false);
-    TH1* getDetHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true);
     TH1* getRawHist(TString var, TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis, bool divBinWidth = false);
 
     TH1* getUnfInput(TString var, TString steering, bool useAxis, int massBin, bool binWidth);
 
     // Helper functions
     void doNorm(TH1* hist, bool norm = true); 
-    void drawtext(TGraph* g);
     TGraphErrors* histToTGraphError(TH1* hist, bool zeroXerror = true);
 
     void setTheoryMeanValues(TString filePath, TString binDef);
@@ -388,43 +357,8 @@ public:
     vector<double> getAccCorrectedMeanMassVectors(TString sysName, TString variationName);
     vector<double> getAccCorrectedMeanPtVectors(TString sysName, TString variationName);
    
-    // Get mean values 
-    double getDetMeanPt(int ibin);
-    double getDetMeanMass(int ibin);
-    double getDetMeanPtError(int ibin);
-    double getDetMeanMassError(int ibin);
-    double getMCDetMeanPt(int ibin);
-    double getMCDetMeanMass(int ibin);
-    double getMCDetMeanPtError(int ibin);
-    double getMCDetMeanMassError(int ibin);
-    double getMCFullPhaseMeanPt(int ibin, TString sysName);
-    double getMCFullPhaseMeanMass(int ibin, TString sysName);
-    double getUnfMeanPt(int ibin);
-    double getUnfMeanMass(int ibin);
-    double getUnfMeanPtError(int ibin);
-    double getUnfMeanMassError(int ibin);
-    double getUnfMeanPtSysError(int ibin);
-    double getUnfMeanMassSysError(int ibin);
-    double getAccMeanPt(int ibin);
-    double getAccMeanPtError(int ibin);
-    double getAccMeanMass(int ibin);
-    double getAccMeanMassError(int ibin);
-    double getAccMeanPtSysError(int ibin);
-    double getAccMeanMassSysError(int ibin);
-    double getAccMeanPtTotError(int ibin);
-    double getAccMeanMassTotError(int ibin);
-
-    double getMCGenMeanMass(int ibin);
-    double getMCGenMeanPt(int ibin);
-
     void printMeanValues(bool printSys);
     void printMeanValues_Accept(bool printSys = false);
-    void drawStatVariation(bool isPt = true, int massBin = 0);
-    void drawPDFVariation(bool isPt = true, int massBin = 0);
-    void drawSysVariation(TString sysName, TString var, int massBin);
-    void drawSystematics(TString var, bool isHistStye = false);
-    void drawSystematics_Acceptance(TString var, bool isHistStye = false);
-    void drawSysVariation_Accept(TString sysName, TString var, int massBin);
 };
 
 #endif
