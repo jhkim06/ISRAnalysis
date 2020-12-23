@@ -1,5 +1,5 @@
 {
-    "plotPrefix": "Det",
+    "plotPrefix": "Det_Efficiency_Corrected",
     "Analysis": "ISR",
     "Year": "2016",
     "Channel": "electron",

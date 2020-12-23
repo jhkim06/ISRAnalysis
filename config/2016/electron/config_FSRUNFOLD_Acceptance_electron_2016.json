@@ -1,5 +1,5 @@
 {
-    "plotPrefix": "FSR",
+    "plotPrefix": "FSR_Acceptance_Corrected",
     "Analysis": "ISR",
     "Year": "2016",
     "Channel": "electron",

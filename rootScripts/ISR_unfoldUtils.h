@@ -196,8 +196,6 @@ public:
     }
 
     void divideByBinWidth(TH1* hist, bool norm = false);
-    TH1* cloneEmptyHist(TH1* hist, TString histName);
-    TProfile* cloneHistToTProf(TH1* hist, TString histName);
     void varyHistWithStatError(TH1* hist, int sys);
 
     // Do unfold 

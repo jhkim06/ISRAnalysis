@@ -1,6 +1,4 @@
 #include "ISR_unfoldUtils.h"
-#include "tdrstyle.C"
-#include "CMS_lumi.C"
 
 void ISRUnfold::setBias(double bias)
 {
@@ -199,7 +197,6 @@ double ISRUnfold::getUnfoldedChi2(TString var, TString steering, bool useAxis, b
 
 void ISRUnfold::checkIterEMUnfold(void)
 {
-    setTDRStyle();
     double yMin=1.;
     double yLine=10.;
     double yMax=graph_SURE_IterativeSURE_pt->GetMaximum();
@@ -946,30 +943,6 @@ void ISRUnfold::setSystematics(TString sysName, TString sysHistName)
     sysMap[sysName].push_back(sysHistName);
 }
 
-TProfile* ISRUnfold::cloneHistToTProf(TH1* hist, TString histName)
-{
-
-  if (hist == NULL) return NULL;
-  TProfile* cloneHist = new TProfile(histName, 
-                             histName, 
-                             hist->GetNbinsX(),
-                             hist->GetXaxis()->GetXbins()->GetArray());
-  return cloneHist;
-
-}
-
-TH1* ISRUnfold::cloneEmptyHist(TH1* hist, TString histName)
-{
-
-  if (hist == NULL) return NULL;
-  TH1F* cloneHist = new TH1F(histName, 
-                             histName, 
-                             hist->GetNbinsX(),
-                             hist->GetXaxis()->GetXbins()->GetArray());
-  return cloneHist;
-
-}
-
 void ISRUnfold::divideByBinWidth(TH1* hist, bool norm)
 {
     for(int ibin = 1; ibin < hist->GetXaxis()->GetNbins()+1; ibin++)
@@ -1172,9 +1145,6 @@ void ISRUnfold::doISRUnfold(bool doSys)
 void ISRUnfold::drawCorrelation(TString var, TString steering, bool useAxis, TString outName)
 {
 
-    setTDRStyle();
-    writeExtraText = true;
-    extraText  = "Work in progress";
     gStyle->SetLineWidth(5);
     gStyle->SetFrameLineWidth(5);
     gStyle->SetOptStat(0);
@@ -1360,7 +1330,6 @@ void ISRUnfold::drawCorrelation(TString var, TString steering, bool useAxis, TSt
             yaxisMassLabel->CenterLabels();
             yaxisMassLabel->Draw();
         }
-
     }
 
     int iPeriod_ = 4;
@@ -1368,7 +1337,6 @@ void ISRUnfold::drawCorrelation(TString var, TString steering, bool useAxis, TSt
         iPeriod_ = 5;
     if(year == 2018)
         iPeriod_ = 6;
-    CMS_lumi(c, iPeriod_, 11);
 
     c->SaveAs(output_baseDir+"Correlation_"+var+"_"+outName+".pdf");
     delete hCorrelation;
