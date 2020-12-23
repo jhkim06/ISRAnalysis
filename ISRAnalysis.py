@@ -60,6 +60,7 @@ class ISRAnalysis:
         self.mode = regMode # 레귤라이제이션 모드
         
         # Create ISRUnfold object
+        # unfold_name : prefix for output plots
         self.unfold = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False)
         self.unfold.setOutputBaseDir(self.outDirPath)
         self.unfold.setBias(self.bias)

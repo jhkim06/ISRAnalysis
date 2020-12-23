@@ -883,9 +883,6 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
     // Nominal histograms
     if(!isSys)
     {
-        bkgNames.push_back(bkgInfo.first);
-        bkgTypes.push_back(bkgInfo.second);
-
         hPtRec = (TH1*)filein->Get(dirName + "/Pt"+binDef+"/histo_" + bkgInfo.first);
         nomPtUnfold->  SubtractBackground(hPtRec, bkgInfo.first);
 

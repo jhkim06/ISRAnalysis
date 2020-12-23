@@ -52,9 +52,6 @@ private:
 
     std::vector<double> massBinEdges;
 
-    std::vector<TString> bkgNames; // Backgroud Name
-    std::vector<TString> bkgTypes; // Backgroud Type
-
     // Bin definitions
     TUnfoldBinning* pt_binning_Rec = NULL;
     TUnfoldBinning* pt_binning_Gen = NULL;
@@ -201,8 +198,6 @@ public:
     // Do unfold 
     void doISRUnfold( bool doSys = false);
     void doStatUnfold(); 
-
-    void setStatError();
 
     void doAcceptCorr(TString filePath, TString binDef, bool doSys = false, TString outName = "", bool isAccept = false);
     void drawCorrelation(TString var, TString steering, bool useAis, TString outName = "");
