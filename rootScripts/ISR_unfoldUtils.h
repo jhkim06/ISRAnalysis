@@ -50,8 +50,6 @@ class ISRUnfold{
 
 private:
 
-    std::vector<double> massBinEdges;
-
     // Bin definitions
     TUnfoldBinning* pt_binning_Rec = NULL;
     TUnfoldBinning* pt_binning_Gen = NULL;
@@ -118,21 +116,22 @@ private:
     TString output_baseDir;
     TString unfold_name;
     TString channel_name;
+    TString var;
     int year;
 
-    void setMassBindEdges();
     bool makeStatUnfold; 
         
 public:
     
     // Constructor
-    ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool makeStatUnfold_ = true, bool verbose_ = false)
+    ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool makeStatUnfold_ = true, bool verbose_ = false, TString var_ = "Mass")
     {
-        cout << "ISRUnfold set!" << endl;
+        cout << "ISRUnfold set! " << var_ << endl;
 
         unfold_name = unfold_name_;
         channel_name = channel;
         year = year_;
+        var = var_;
 
         nominal_bias = 1.;  
 
@@ -152,30 +151,30 @@ public:
     // Destructor
     ~ISRUnfold(){}
 
-    void drawResponseM(TString var, TString sysName = "", TString sysPostfix = "", bool isDetector = true);
+    void drawResponseM(TString sysName = "", TString sysPostfix = "", bool isDetector = true);
     void checkIterEMUnfold(void);
 
-    const TVectorD& checkMatrixCond(TString var = "Mass");
-    double getSmearedChi2(TString var, TString filePath, TString dirName, TString steering, bool useAxis, bool divBinWidth = false);
-    double getUnfoldedChi2(TString var, TString steering, bool useAxis, bool divBinWidth = false);
+    const TVectorD& checkMatrixCond();
+    double getSmearedChi2(TString filePath, TString dirName, TString steering, bool useAxis, bool divBinWidth = false);
+    double getUnfoldedChi2(TString steering, bool useAxis, bool divBinWidth = false);
 
     void setOutputBaseDir(TString outPath);
     void setBias(double bias);
 
     // Set nominal TUnfoldDensity 
-    void setNominalRM(TString var, TString filepath, TString dirName, TString histName, TString binDef = "");
+    void setNominalRM(TString filepath, TString dirName, TString histName, TString binDef = "");
     void setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept = false);
 
     // Set input histogram
-    void setUnfInput(TString var, TString varPostfix = "", TString filepath = "", TString dirName ="", TString histName = "", bool isSys = false, TString sysName = "", TString sysPostfix = "", bool isFSR = false);
-    void setUnfInput(ISRUnfold* unfold, TString var, bool isSys = false, TString sysName = "", TString sysPostfix = "", bool useAccept = false);
+    void setUnfInput(TString varPostfix = "", TString filepath = "", TString dirName ="", TString histName = "", bool isSys = false, TString sysName = "", TString sysPostfix = "", bool isFSR = false);
+    void setUnfInput(ISRUnfold* unfold, bool isSys = false, TString sysName = "", TString sysPostfix = "", bool useAccept = false);
 
     // Set background histograms
     void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
                  bool isSys = false, TString binDef = "", TString dirName = "", TString sysName = "", TString sysPostfix = "", TString histPostfix = "");
 
     // Set systematic TUnfoldDensity
-    void setSystematicRM(TString var, TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString histPostfix, TString binDef);
+    void setSystematicRM(TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString histPostfix, TString binDef);
 
     void setSystematics(TString sysName, TString sysHistName);
     void inline printSystematics()
@@ -200,13 +199,13 @@ public:
     void doStatUnfold(); 
 
     void doAcceptCorr(TString filePath, TString binDef, bool doSys = false, TString outName = "", bool isAccept = false);
-    void drawCorrelation(TString var, TString steering, bool useAis, TString outName = "");
+    void drawCorrelation(TString steering, bool useAis, TString outName = "");
 
     // Get histograms
-    TH1* getUnfoldedHists(TString var, TString outHistName = "", TString steering = "", bool useAxis = true, bool divBinWidth = false);
-    TH1* getRawHist(TString var, TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis, bool divBinWidth = false);
+    TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true, bool divBinWidth = false);
+    TH1* getRawHist(TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis, bool divBinWidth = false);
 
-    TH1* getUnfInput(TString var, TString steering, bool useAxis, int massBin, bool binWidth);
+    TH1* getUnfInput(TString steering, bool useAxis, int massBin, bool binWidth);
 
     // Helper functions
     void doNorm(TH1* hist, bool norm = true); 

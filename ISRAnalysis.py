@@ -61,13 +61,19 @@ class ISRAnalysis:
         
         # Create ISRUnfold object
         # unfold_name : prefix for output plots
-        self.unfold = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False)
-        self.unfold.setOutputBaseDir(self.outDirPath)
-        self.unfold.setBias(self.bias)
+        # Make two ISRUnfold object for mass and pt
+        self.unfold_pt = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Pt")
+        self.unfold_mass = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Mass")
+
+        self.unfold_pt.setOutputBaseDir(self.outDirPath)
+        self.unfold_pt.setBias(self.bias)
+
+        self.unfold_mass.setOutputBaseDir(self.outDirPath)
+        self.unfold_mass.setBias(self.bias)
         
         # Set response matrix
-        self.unfold.setNominalRM("Pt", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, self.binDef)
-        self.unfold.setNominalRM("Mass", self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, self.binDef)
+        self.unfold_pt.setNominalRM(self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, self.binDef)
+        self.unfold_mass.setNominalRM(self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, self.binDef)
        
     def checkMatrixCond(self, var = "Mass"):
         return self.unfold.checkMatrixCond(var)
@@ -89,8 +95,8 @@ class ISRAnalysis:
                 if useMadgraph == True:
                     hist_filekey_temp = "hist_DYMG"
  
-                self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
-                self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
+                self.unfold_pt.setUnfInput(self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
+                self.unfold_mass.setUnfInput(self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
             else :
                 inputHistName = "histo_DYJets"
 
@@ -100,8 +106,8 @@ class ISRAnalysis:
                 else:
                     hist_filekey_temp = "hist_accept_drp1_DYMG"
 
-                self.unfold.setUnfInput("Pt",   "Gen_FineCoarse", self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
-                self.unfold.setUnfInput("Mass", "Gen_FineCoarse", self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
+                self.unfold_pt.setUnfInput("Gen_FineCoarse", self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
+                self.unfold_mass.setUnfInput("Gen_FineCoarse", self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
 
         else :
             if useUnfoldOut == False:
@@ -114,15 +120,17 @@ class ISRAnalysis:
                     hist_filekey_temp = "hist_LepRes"
                     dirName = dirName + "_" + sysPostfix  # FIXME put systematic postfix at the END, ex) Detector_Dressed_DRp1_Fiducial_LepScaleUp 
             
-                self.unfold.setUnfInput("Pt",   self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
-                self.unfold.setUnfInput("Mass", self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
+                self.unfold_pt.setUnfInput(self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
+                self.unfold_mass.setUnfInput(self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
             else:
                 # Set unfold input from previous unfold 
-                self.unfold.setUnfInput(unfoldObj, "Pt",   isSys, sysName, sysPostfix, True)
-                self.unfold.setUnfInput(unfoldObj, "Mass", isSys, sysName, sysPostfix, True)
+                self.unfold_pt.setUnfInput(unfoldObj.getISRUnfold("Pt"), isSys, sysName, sysPostfix, True)
+                self.unfold_mass.setUnfInput(unfoldObj.getISRUnfold("Mass"), isSys, sysName, sysPostfix, True)
 
     def setFromPreviousUnfold(self, unfoldObj) :
-        self.unfold.setFromPrevUnfResult(unfoldObj, True)
+
+        self.unfold_pt.setFromPrevUnfResult(unfoldObj.getISRUnfold("Pt"), True)
+        self.unfold_mass.setFromPrevUnfResult(unfoldObj.getISRUnfold("Mass"), True)
             
     def subFake(self, isSys = False, dirName = "Detector_DY_Fake", sysName = "nominal", sysPostfix = "", histPostfix = "", isFSR = False):
             
@@ -158,7 +166,8 @@ class ISRAnalysis:
             elif "Background" in sysName : 
                 histPostfix = ""
 
-            self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], fake, isSys, self.binDef, dirName, sysName, sysPostfix, histPostfix)
+            self.unfold_pt.subBkgs(self.inHistDic[hist_filekey_temp], fake, isSys, self.binDef, dirName, sysName, sysPostfix, histPostfix)
+            self.unfold_mass.subBkgs(self.inHistDic[hist_filekey_temp], fake, isSys, self.binDef, dirName, sysName, sysPostfix, histPostfix)
         
     def setUnfoldBkgs(self, isSys = False , dirName = "Detector", sysName = "nominal", sysPostfix = ""):
    
@@ -206,10 +215,12 @@ class ISRAnalysis:
                 histPostfix_temp = ""
                 dirName = "Detector"
 
-            self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], bkg, isSys, self.binDef, dirName, sysName, sysPostfix, histPostfix_temp)
+            self.unfold_pt.subBkgs(self.inHistDic[hist_filekey_temp], bkg, isSys, self.binDef, dirName, sysName, sysPostfix, histPostfix_temp)
+            self.unfold_mass.subBkgs(self.inHistDic[hist_filekey_temp], bkg, isSys, self.binDef, dirName, sysName, sysPostfix, histPostfix_temp)
             
     def setSystematics(self, sysName, sysHistName, isFSR = False):
-        self.unfold.setSystematics(sysName, sysHistName)
+        self.unfold_pt.setSystematics(sysName, sysHistName)
+        self.unfold_mass.setSystematics(sysName, sysHistName)
 
         matrix_filekey_temp = self.matrix_filekey
         dirPath_temp = self.matrix_dirPath
@@ -255,8 +266,8 @@ class ISRAnalysis:
         elif "Background" in sysName :
             histPostfix_temp = ""
 
-        self.unfold.setSystematicRM("Pt",   self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
-        self.unfold.setSystematicRM("Mass", self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
+        self.unfold_pt.setSystematicRM(self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
+        self.unfold_mass.setSystematicRM(self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
 
     def drawResponseM(self, var = "Mass", sysName = "", sysPostfix = "", isDetector = True):
         self.unfold.drawResponseM(var, sysName, sysPostfix, isDetector)
@@ -266,21 +277,27 @@ class ISRAnalysis:
 
     # Do unfold! 
     def doUnfold(self, isSys = False):
-        self.unfold.doISRUnfold(isSys)
+        self.unfold_pt.doISRUnfold(isSys)
+        self.unfold_mass.doISRUnfold(isSys)
 
     def doStatUnfold(self):
         print ("doStatUnfold")
         self.unfold.doStatUnfold()
 
-    def getISRUnfold(self):
+    def getISRUnfold(self, var_ = "Mass"):
         
-        return self.unfold
+        if var_ == "Mass" :
+            return self.unfold_mass
+        else :
+            return self.unfold_pt
     
     def doAcceptance(self, doSys = False, isFSR = False, outName = "") :
         if isFSR :
-            self.unfold.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys, outName, True)
+            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys, outName, True)
+            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys, outName, True)
         else : 
-            self.unfold.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", doSys, outName)
+            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", doSys, outName)
+            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", doSys, outName)
 
     def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isFSR = False): 
         if isFSR :
