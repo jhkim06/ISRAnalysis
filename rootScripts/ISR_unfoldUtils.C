@@ -431,17 +431,14 @@ void ISRUnfold::setUnfInput(TString varPostfix, TString filepath, TString dirNam
     hRec = (TH1*)filein->Get(dirName+"/"+var+varPostfix+"/"+histName);
 
     // Use DY MC as unfolding input, i.e. simple closure test
-    if(!isFSR)
+    if(histName.Contains("DYJetsTo"))
     {
-        if(histName.Contains("DYJetsTo"))
+        if(!isFSR)
         {
             histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
             hRec->Add((TH1*)filein->Get(dirName+"/"+var+varPostfix+"/"+histName));
         }
-    }
-    else
-    {
-        if(histName.Contains("DYJets"))
+        else
         {
             histName.ReplaceAll("DYJets", "DYJets10to50");
             hRec->Add((TH1*)filein->Get(dirName+"/"+var+varPostfix+"/"+histName));
@@ -567,7 +564,7 @@ void ISRUnfold::doStatUnfold()
     statisticalTUnfold.clear();
 }
 
-void ISRUnfold::doISRUnfold(bool doSys)
+void ISRUnfold::doISRUnfold()
 {
 
     TString yearStr;
@@ -600,8 +597,7 @@ void ISRUnfold::doISRUnfold(bool doSys)
 
     // cout << "ISRUnfold::doISRUnfold!!" << endl;
     // Nominal
-    if(!doSys)
-    {
+    
         //cout << "Unfold without systematic" << endl;
         // No regularisation
         if(regMode == TUnfold::kRegModeNone)
@@ -646,10 +642,7 @@ void ISRUnfold::doISRUnfold(bool doSys)
         nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false)->Write(); 
         nominalTUnfold->GetBias("histo_DY", 0, 0, "*[*]", false)->Write(); 
        
-    }
     // For systematic
-    else
-    {
         std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
         while(it != sysMap.end())
         {
@@ -686,12 +679,12 @@ void ISRUnfold::doISRUnfold(bool doSys)
             }
             it++;
         }
-    }// Unfold for systematic
+
     topDir->Write();
     f->Close();
 }
 
-void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys, TString outName, bool isAccept)
+void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString outName, bool isAccept)
 {
     TString yearStr;
     yearStr.Form("%d", (int)year);
@@ -731,7 +724,6 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys, TStri
 
     TH1* hFiducialPhaseMC = NULL;
 
-    // Pt
     hFullPhaseMC = (TH1*) filein->Get("Acceptance/"+var+"Gen" + binDef + "/histo_DYJets");
     if(year==2016)
         hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+"Gen" + binDef + "/histo_DYJets10to50"));
@@ -740,11 +732,11 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys, TStri
 
     hFiducialPhaseMC = nominalTUnfold->GetBias("hFiducial"+var, 0, 0, "*[*]", false);
     hAcceptance = (TH1*) hFullPhaseMC->Clone("hAcceptance"+var);
+    hAcceptance->Divide(hFiducialPhaseMC);
 
     hAcceptanceFraction = (TH1*) hFiducialPhaseMC->Clone("hAcceptanceFraction"+var);
     hAcceptanceFraction->Divide(hFullPhaseMC);
 
-    hAcceptance->Divide(hFiducialPhaseMC);
     hFullPhaseData = nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false);
     hFullPhaseData->Multiply(hAcceptance);
 
@@ -754,110 +746,77 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool doSys, TStri
     hFullPhaseMC->Write();
     hAcceptance->Write();
 
-    if(doSys)
+    std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
+    while(it != sysMap.end())
     {
-        std::map<TString, vector<TString>> sysMapForAcceptance;
-
-        std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
-        while(it != sysMap.end())
+        int size = (it->second).size();
+        for(int i = 0; i < size; i++)
         {
-            int size = (it->second).size();
-            for(int i = 0; i < size; i++)
+            TH1* hFullPhaseMC_raw_sys = NULL;
+            TH1* hFiducialPhaseMC_sys = NULL;
+            
+            if((it->first).Contains("Unfolding") && !((it->second).at(i)).Contains("Nominal"))
             {
-                TH1* hFullPhaseMassMC_raw_sys = NULL;
-                TH1* hFullPhaseMC_raw_sys = NULL;
-
-                TH1* hFiducialPhaseMassMC_sys = NULL;
-                TH1* hFiducialPhaseMC_sys = NULL;
-                
-                if((it->first).Contains("Unfolding") && !((it->second).at(i)).Contains("Nominal"))
-                {
-                    hSysFullPhaseData[it->first][(it->second).at(i)]   = iterEMTUnfold->GetOutput("histo_Data_"+(it->second).at(i),0,0, "*[*]", false);
-                    hFiducialPhaseMC_sys=hFiducialPhaseMC;
-                    hFiducialPhaseMC_sys->SetName("histo_DY_"+(it->second).at(i));
-                }
-                else
-                {
-                    hSysFullPhaseData[it->first][(it->second).at(i)]   = systematicTUnfold[it->first][(it->second).at(i)]->GetOutput("histo_Data_"+(it->second).at(i),0,0, "*[*]", false);
-                    hFiducialPhaseMC_sys = systematicTUnfold[it->first][(it->second).at(i)]->GetBias("hFiducial"+var+"_sys"+(it->second).at(i), 0, 0, "*[*]", false);
-                }
-
-                // For PDF, AlphaS, Scale etc, denominator changed
-                if( (((it->first).Contains("Scale") && !(it->first).Contains("Lep")) || (it->first).Contains("PDF") || (it->first).Contains("AlphaS")) && !(it->first).Contains("_") )
-                {
-                    hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "Gen" + binDef + "/histo_DYJets_"+(it->second).at(i));
-                    if(year==2016)
-                        hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+"Gen" + binDef + "/histo_DYJets10to50_"+(it->second).at(i)));
-                    else
-                        hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+"Gen" + binDef + "/histo_DYJets10to50_MG_"+(it->second).at(i)));
-                }
-                else
-                {
-                    hFullPhaseMC_raw_sys=hFullPhaseMC;
-                }
-
-                // For pt
-                TH1* hAcceptance_sys = (TH1*) hFullPhaseMC_raw_sys->Clone("hAcceptance_sys");
-                hAcceptance_sys->Divide(hFiducialPhaseMC_sys);
-
-                TH1* hAcceptanceFraction_sys = (TH1*) hFiducialPhaseMC_sys->Clone("hAcceptanceFraction_sys");
-                hAcceptanceFraction_sys->Divide(hFullPhaseMC_raw_sys);
-
-                //hSysFullPhaseData[accepCorrOrEffCorr + "_" + it->first][(it->second).at(i)] = nominalTUnfold->GetOutput("hAcceptPtData" +it->first+(it->second).at(i),0,0, "*[*]", false);
-                hSysFullPhaseData[it->first][(it->second).at(i)]->Multiply(hAcceptance_sys);
-                hSysFullPhaseMC[it->first][(it->second).at(i)] = hFullPhaseMC_raw_sys;
-                sysMapForAcceptance[it->first].push_back((it->second).at(i)); // Update sysMapForAcceptance 
-
-                //hSysAcceptance[it->first][(it->second).at(i)] = (TH1*) hAcceptance_sys->Clone("Pt_" + it->first + "_" + (it->second).at(i));
-                hSysAcceptanceFraction[it->first][(it->second).at(i)] = (TH1*) hAcceptanceFraction_sys->Clone("Fraction"+var+"_" + it->first + "_" + (it->second).at(i));
-                delete hAcceptance_sys;
-                delete hAcceptanceFraction_sys;
-
-                //hSysFullPhaseMassData[it->first][(it->second).at(i)]->Multiply(hAcceptanceMass);
-                //hSysFullPhaseData[it->first][(it->second).at(i)]->Multiply(hAcceptance);
-                hSysFullPhaseMC[it->first][(it->second).at(i)]   = hFullPhaseMC_raw_sys;
-
-                varDir->cd();
-
-                hSysFullPhaseData[it->first][(it->second).at(i)]->Write();
-                hFullPhaseMC_raw_sys->SetName("histo_DY_"+(it->second).at(i));
-                hFullPhaseMC_raw_sys->Write();
-                hSysAcceptance[it->first][(it->second).at(i)] = (TH1*) hFullPhaseMC->Clone(var + "_" + it->first + "_" + (it->second).at(i));
+                hSysFullPhaseData[it->first][(it->second).at(i)]   = iterEMTUnfold->GetOutput("histo_Data_"+(it->second).at(i),0,0, "*[*]", false);
+                hFiducialPhaseMC_sys=hFiducialPhaseMC;
+                hFiducialPhaseMC_sys->SetName("histo_DY_"+(it->second).at(i));
             }
-            it++;
+            else
+            {
+                hSysFullPhaseData[it->first][(it->second).at(i)]   = systematicTUnfold[it->first][(it->second).at(i)]->GetOutput("histo_Data_"+(it->second).at(i),0,0, "*[*]", false);
+                hFiducialPhaseMC_sys = systematicTUnfold[it->first][(it->second).at(i)]->GetBias("hFiducial"+var+"_sys"+(it->second).at(i), 0, 0, "*[*]", false);
+            }
+
+            // For PDF, AlphaS, Scale etc, nominator (of acceptance) also changes
+            if( (((it->first).Contains("Scale") && !(it->first).Contains("Lep")) || (it->first).Contains("PDF") || (it->first).Contains("AlphaS")) && !(it->first).Contains("_") )
+            {
+                hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "Gen" + binDef + "/histo_DYJets_"+(it->second).at(i));
+                if(year==2016)
+                    hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+"Gen" + binDef + "/histo_DYJets10to50_"+(it->second).at(i)));
+                else
+                    hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+"Gen" + binDef + "/histo_DYJets10to50_MG_"+(it->second).at(i)));
+            }
+            else
+            {
+                hFullPhaseMC_raw_sys=hFullPhaseMC;
+            }
+
+            TH1* hAcceptance_sys = (TH1*) hFullPhaseMC_raw_sys->Clone("hAcceptance_sys");
+            hAcceptance_sys->Divide(hFiducialPhaseMC_sys);
+
+            TH1* hAcceptanceFraction_sys = (TH1*) hFiducialPhaseMC_sys->Clone("hAcceptanceFraction_sys");
+            hAcceptanceFraction_sys->Divide(hFullPhaseMC_raw_sys);
+
+            hSysFullPhaseData[it->first][(it->second).at(i)]->Multiply(hAcceptance_sys);
+            hSysFullPhaseMC[it->first][(it->second).at(i)] = hFullPhaseMC_raw_sys;
+
+            //hSysAcceptanceFraction[it->first][(it->second).at(i)] = (TH1*) hAcceptanceFraction_sys->Clone("Fraction"+var+"_" + it->first + "_" + (it->second).at(i));
+            //hSysAcceptance[it->first][(it->second).at(i)] = (TH1*) hFullPhaseMC->Clone(var + "_" + it->first + "_" + (it->second).at(i));
+            delete hAcceptance_sys;
+            delete hAcceptanceFraction_sys;
+
+            varDir->cd();
+
+            hSysFullPhaseData[it->first][(it->second).at(i)]->Write();
+            hFullPhaseMC_raw_sys->SetName("histo_DY_"+(it->second).at(i));
+            hFullPhaseMC_raw_sys->Write();
         }
-
-        // Update sys map
-        // Sys. unc. of acceptance correction
-        // PDF, alphaS, Scale
-        //it = sysMapForAcceptance.begin();
-        //while(it != sysMapForAcceptance.end())
-        //{
-        //    int size = (it->second).size();
-        //    for(int i = 0; i < size; i++)
-        //    {
-        //       sysMap[it->first].push_back((it->second).at(i)); 
-        //    }
-        //    it++;
-        //}
-  
-        // Stat. unc. of acceptance correction
-
-        hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Up"] = nominalTUnfold->GetOutput("hFullPhaseData"+accepCorrOrEffCorr+"StatUp",0,0, "*[*]", false); 
-        hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Down"] = nominalTUnfold->GetOutput("hFullPhaseData"+accepCorrOrEffCorr+"StatDown",0,0, "*[*]", false); 
-
-        TH1* hAcceptance_statUp = (TH1*) hAcceptance->Clone("h"+accepCorrOrEffCorr+"StatUp"+var); 
-        TH1* hAcceptance_statDown = (TH1*) hAcceptance->Clone("h"+accepCorrOrEffCorr+"StatDown"+var); 
-        varyHistWithStatError(hAcceptance_statUp, 1);
-        varyHistWithStatError(hAcceptance_statDown, -1);
-
-        hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Up"]->Multiply(hAcceptance_statUp);
-        hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Down"]->Multiply(hAcceptance_statDown);
-        hSysFullPhaseMC[accepCorrOrEffCorr + "_Stat"]["Up"] = hFullPhaseMC;
-        hSysFullPhaseMC[accepCorrOrEffCorr + "_Stat"]["Down"] = hFullPhaseMC;
-        //setSystematics(accepCorrOrEffCorr, "StatUp");
-        //setSystematics(accepCorrOrEffCorr, "StatDown");
+        it++;
     }
+
+    // Stat. unc. of acceptance correction
+    hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Up"]   = nominalTUnfold->GetOutput("hFullPhaseData"+accepCorrOrEffCorr+"StatUp",0,0, "*[*]", false); 
+    hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Down"] = nominalTUnfold->GetOutput("hFullPhaseData"+accepCorrOrEffCorr+"StatDown",0,0, "*[*]", false); 
+
+    TH1* hAcceptance_statUp   = (TH1*) hAcceptance->Clone("h"+accepCorrOrEffCorr+"StatUp"+var); 
+    TH1* hAcceptance_statDown = (TH1*) hAcceptance->Clone("h"+accepCorrOrEffCorr+"StatDown"+var); 
+    varyHistWithStatError(hAcceptance_statUp, 1);
+    varyHistWithStatError(hAcceptance_statDown, -1);
+
+    hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Up"]->Multiply(hAcceptance_statUp);
+    hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Down"]->Multiply(hAcceptance_statDown);
+    hSysFullPhaseMC[accepCorrOrEffCorr + "_Stat"]["Up"] = hFullPhaseMC;
+    hSysFullPhaseMC[accepCorrOrEffCorr + "_Stat"]["Down"] = hFullPhaseMC;
 
     topDir->Write();;
     f->Close();

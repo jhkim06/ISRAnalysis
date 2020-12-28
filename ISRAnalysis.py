@@ -62,7 +62,7 @@ class ISRAnalysis:
         # Create ISRUnfold object
         # unfold_name : prefix for output plots
         # Make two ISRUnfold object for mass and pt
-        self.unfold_pt = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Pt")
+        self.unfold_pt   = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Pt")
         self.unfold_mass = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Mass")
 
         self.unfold_pt.setOutputBaseDir(self.outDirPath)
@@ -79,7 +79,7 @@ class ISRAnalysis:
         return self.unfold_pt.checkMatrixCond()
         return self.unfold_mass.checkMatrixCond()
 
-    def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = "", isFSR = False, useMadgraph = False):
+    def setInputHist(self, useMCInput = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = "", isFSR = False, useMadgraph = False):
         
         inputHistName = self.dataHistName
         hist_filekey_temp = "hist"
@@ -111,7 +111,7 @@ class ISRAnalysis:
                 self.unfold_mass.setUnfInput("Gen_FineCoarse", self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix, isFSR)
 
         else :
-            if useUnfoldOut == False:
+            if unfoldObj is None:
 
                 if "LepScale" in sysName :
                     hist_filekey_temp = "hist_LepScale"
@@ -277,9 +277,9 @@ class ISRAnalysis:
         self.unfold.checkIterEMUnfold()
 
     # Do unfold! 
-    def doUnfold(self, isSys = False):
-        self.unfold_pt.doISRUnfold(isSys)
-        self.unfold_mass.doISRUnfold(isSys)
+    def doUnfold(self):
+        self.unfold_pt.doISRUnfold()
+        self.unfold_mass.doISRUnfold()
 
     def doStatUnfold(self):
         print ("doStatUnfold")
@@ -293,13 +293,13 @@ class ISRAnalysis:
         else :
             return self.unfold_pt
     
-    def doAcceptance(self, doSys = False, isFSR = False, outName = "") :
+    def doAcceptance(self, isFSR = False, outName = "") :
         if isFSR :
-            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys, outName, True)
-            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", doSys, outName, True)
+            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", outName, True)
+            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", outName, True)
         else : 
-            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", doSys, outName)
-            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", doSys, outName)
+            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", outName)
+            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", outName)
 
     def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isFSR = False): 
         if isFSR :

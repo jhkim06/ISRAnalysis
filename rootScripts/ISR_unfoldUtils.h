@@ -174,10 +174,10 @@ public:
     void varyHistWithStatError(TH1* hist, int sys);
 
     // Do unfold 
-    void doISRUnfold( bool doSys = false);
+    void doISRUnfold();
     void doStatUnfold(); 
 
-    void doAcceptCorr(TString filePath, TString binDef, bool doSys = false, TString outName = "", bool isAccept = false);
+    void doAcceptCorr(TString filePath, TString binDef, TString outName = "", bool isAccept = false);
 
     // Get histograms
     TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true);
