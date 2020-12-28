@@ -54,16 +54,8 @@ double ISRUnfold::getSmearedChi2(TString filePath, TString dirName, TString stee
 
     TString DYHistName_ = "histo_DYJetsToMuMu";
     if(channel_name == "electron") DYHistName_ = "histo_DYJetsToEE";
-    if(var.Contains("Mass"))
-    {
-        hData = nomMassUnfold->GetInput("hData_"+var, 0, 0, steering, useAxis);
-        hDY = getRawHist(filePath, dirName, DYHistName_, "Signal_"+var, steering, useAxis, divBinWidth); ;
-    }
-    else
-    {
-        hData = nominalTUnfold->GetInput("hData_"+var, 0, 0, steering, useAxis);
-        hDY = getRawHist(filePath, dirName, DYHistName_, "Signal_"+var, steering, useAxis, divBinWidth); ;
-    }
+    hData = nominalTUnfold->GetInput("hData_"+var, 0, 0, steering, useAxis);
+    hDY = getRawHist(filePath, dirName, DYHistName_, "Signal_"+var, steering, useAxis, divBinWidth); ;
 
     for(int i=1;i<=hDY->GetNbinsX();i++)
     {
@@ -97,18 +89,9 @@ double ISRUnfold::getUnfoldedChi2(TString steering, bool useAxis, bool divBinWid
     //TH1 *g_fcnHist=0;
     TMatrixD *g_fcnMatrix=0;
 
-    if(var.Contains("Mass"))
-    {
-        hData = nomMassUnfold->GetOutput("hData_"+var, 0, 0, steering, useAxis);
-        hDY = nomMassUnfold->GetBias("hData_"+var, 0, 0, steering, useAxis);
-        hRho = nomMassUnfold->GetRhoIJtotal("histRho_chi_"+var, 0,0, steering, useAxis);
-    }
-    else
-    {
-        hData = nominalTUnfold->GetOutput("hData_"+var, 0, 0, steering, useAxis);
-        hDY = nominalTUnfold->GetBias("hData_"+var, 0, 0, steering, useAxis);
-        hRho = nominalTUnfold->GetRhoIJtotal("histRho_chi_"+var, 0,0, steering, useAxis);
-    }
+    hData = nominalTUnfold->GetOutput("hData_"+var, 0, 0, steering, useAxis);
+    hDY = nominalTUnfold->GetBias("hData_"+var, 0, 0, steering, useAxis);
+    hRho = nominalTUnfold->GetRhoIJtotal("histRho_chi_"+var, 0,0, steering, useAxis);
 
     // FIXME check if "n" or "n+1"
     int n = hData->GetNbinsX();
