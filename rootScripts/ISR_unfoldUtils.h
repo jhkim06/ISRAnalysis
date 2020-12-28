@@ -135,8 +135,8 @@ public:
     void checkIterEMUnfold(void);
 
     const TVectorD& checkMatrixCond();
-    double getSmearedChi2(TString filePath, TString dirName, TString steering, bool useAxis, bool divBinWidth = false);
-    double getUnfoldedChi2(TString steering, bool useAxis, bool divBinWidth = false);
+    double getSmearedChi2(TString filePath, TString dirName, TString steering, bool useAxis);
+    double getUnfoldedChi2(TString steering, bool useAxis);
 
     void setOutputBaseDir(TString outPath);
     void setBias(double bias);
@@ -171,7 +171,6 @@ public:
         return sysMap;
     }
 
-    void divideByBinWidth(TH1* hist, bool norm = false);
     void varyHistWithStatError(TH1* hist, int sys);
 
     // Do unfold 
@@ -181,10 +180,10 @@ public:
     void doAcceptCorr(TString filePath, TString binDef, bool doSys = false, TString outName = "", bool isAccept = false);
 
     // Get histograms
-    TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true, bool divBinWidth = false);
-    TH1* getRawHist(TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis, bool divBinWidth = false);
+    TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true);
+    TH1* getRawHist(TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis);
 
-    TH1* getUnfInput(TString steering, bool useAxis, int massBin, bool binWidth);
+    TH1* getUnfInput(TString steering, bool useAxis, int massBin);
 
     // Helper functions
     void doNorm(TH1* hist, bool norm = true); 

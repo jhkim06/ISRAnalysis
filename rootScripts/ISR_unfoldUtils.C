@@ -44,7 +44,7 @@ const TVectorD& ISRUnfold::checkMatrixCond()
     return svdProb->GetSig();
 }
 
-double ISRUnfold::getSmearedChi2(TString filePath, TString dirName, TString steering, bool useAxis, bool divBinWidth)
+double ISRUnfold::getSmearedChi2(TString filePath, TString dirName, TString steering, bool useAxis)
 {
     double chi2 = 0.;
     double ndf  = 0.;
@@ -55,7 +55,7 @@ double ISRUnfold::getSmearedChi2(TString filePath, TString dirName, TString stee
     TString DYHistName_ = "histo_DYJetsToMuMu";
     if(channel_name == "electron") DYHistName_ = "histo_DYJetsToEE";
     hData = nominalTUnfold->GetInput("hData_"+var, 0, 0, steering, useAxis);
-    hDY = getRawHist(filePath, dirName, DYHistName_, "Signal_"+var, steering, useAxis, divBinWidth); ;
+    hDY = getRawHist(filePath, dirName, DYHistName_, "Signal_"+var, steering, useAxis); ;
 
     for(int i=1;i<=hDY->GetNbinsX();i++)
     {
@@ -76,9 +76,8 @@ double ISRUnfold::getSmearedChi2(TString filePath, TString dirName, TString stee
     return chi2;
 }
 
-double ISRUnfold::getUnfoldedChi2(TString steering, bool useAxis, bool divBinWidth)
+double ISRUnfold::getUnfoldedChi2(TString steering, bool useAxis)
 {
-    divBinWidth = false;
     double chi2 = 0.;
     double ndf  = 0.;
 
@@ -390,13 +389,13 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, bool isSys, TString sysName, TStr
     {
         if(!isSys)
         {
-            nominalTUnfold->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var, "*[*]", false), 1.);
+            nominalTUnfold->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var, "*[*]"), 1.);
             
         }
         else
         {
             
-            systematicTUnfold[sysName][sysPostfix]->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var+sysName+sysPostfix, "*[*]", false), 1.);
+            systematicTUnfold[sysName][sysPostfix]->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var+sysName+sysPostfix, "*[*]"), 1.);
             
         }
     }
@@ -532,20 +531,6 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
 void ISRUnfold::setSystematics(TString sysName, TString sysHistName)
 {
     sysMap[sysName].push_back(sysHistName);
-}
-
-void ISRUnfold::divideByBinWidth(TH1* hist, bool norm)
-{
-    for(int ibin = 1; ibin < hist->GetXaxis()->GetNbins()+1; ibin++)
-    {
-        double binWidth = hist->GetBinWidth(ibin);
-        hist->SetBinContent(ibin, hist->GetBinContent(ibin)/ binWidth);
-        hist->SetBinError(ibin, hist->GetBinError(ibin)/ binWidth);
-    }
-    if(norm)
-    {
-        hist->Scale(1./ hist->Integral());
-    }
 }
 
 void ISRUnfold::doStatUnfold()
@@ -888,44 +873,14 @@ void ISRUnfold::varyHistWithStatError(TH1* hist, int sys)
     }
 }
 
-void ISRUnfold::doNorm(TH1* hist, bool norm)
-{
-    for(int ibin = 1; ibin < hist->GetXaxis()->GetNbins()+1; ibin++)
-    {
-        double binWidth = hist->GetBinWidth(ibin);
-        hist->SetBinContent(ibin, hist->GetBinContent(ibin)/ binWidth);
-        hist->SetBinError(ibin, hist->GetBinError(ibin)/ binWidth);
-    }
-    if(norm)
-        hist->Scale(1./ hist->Integral());
-}
-
-TH1* ISRUnfold::getUnfoldedHists(TString outHistName, TString steering, bool useAxis, bool binWidth)
+TH1* ISRUnfold::getUnfoldedHists(TString outHistName, TString steering, bool useAxis)
 {
     TH1* outHist = NULL;
-    if(var == "Mass")
-    {
-        outHist = nomMassUnfold->GetOutput(outHistName,0,0,steering,useAxis);
-        if(binWidth)
-        {
-            divideByBinWidth(outHist, false);
-        }
-        return outHist;
-    }
-    else
-    {
-        outHist = nominalTUnfold->GetOutput(outHistName,0,0,steering,useAxis);
-        if(binWidth)
-        {
-            divideByBinWidth(outHist, false);
-        }
-        else
-            return outHist;
-    }
+    outHist = nominalTUnfold->GetOutput(outHistName,0,0,steering,useAxis);
     return outHist;
 }
 
-TH1* ISRUnfold::getRawHist(TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis, bool divBinWidth)
+TH1* ISRUnfold::getRawHist(TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis)
 {
     TH1::AddDirectory(kFALSE);
     TFile* filein = new TFile(filePath);
@@ -958,8 +913,6 @@ TH1* ISRUnfold::getRawHist(TString filePath, TString dirName, TString histName, 
 
     delete filein;
 
-    if(divBinWidth)
-        divideByBinWidth(hist, false);
     return hist;
 }
 
