@@ -51,61 +51,42 @@ class ISRUnfold{
 private:
 
     // Bin definitions
-    TUnfoldBinning* pt_binning_Rec = NULL;
-    TUnfoldBinning* pt_binning_Gen = NULL;
-    TUnfoldBinning* mass_binning_Rec = NULL;
-    TUnfoldBinning* mass_binning_Gen = NULL;
+    TUnfoldBinning* binning_Rec = NULL;
+    TUnfoldBinning* binning_Gen = NULL;
 
     std::map<TString, vector<TString>> sysMap;
 
     // Unfolding
     // For nominal results
-    TUnfoldDensity* nomPtUnfold;
+    TUnfoldDensity* nominalTUnfold;
     TUnfoldDensity* nomMassUnfold;
 
-    TH2* hPtResponseM;
-    TH2* hMassResponseM;
+    TH2* hResponseM;
 
     // For statistical uncertainty
-    std::vector<TUnfoldDensity*> statPtUnfold;
-    std::vector<TUnfoldDensity*> statMassUnfold;
+    std::vector<TUnfoldDensity*> statisticalTUnfold;
 
     // For systematic uncertainty
-    std::map<TString, std::map<TString, TUnfoldDensity*>> sysPtUnfold;
-    std::map<TString, std::map<TString, TUnfoldDensity*>> sysMassUnfold;
+    std::map<TString, std::map<TString, TUnfoldDensity*>> systematicTUnfold;
 
-    TUnfoldIterativeEM* iterEMPtUnfold;
-    TUnfoldIterativeEM* iterEMMassUnfold;
+    TUnfoldIterativeEM* iterEMTUnfold;
 
-    int iBest_pt;
-    int iBest_mass;
+    int iBest;
     const int NITER_Iterative = 500;
 
-    TGraph *graph_SURE_IterativeSURE_pt,*graph_DFdeviance_IterativeSURE_pt;
-    TGraph *graph_SURE_IterativeSURE_mass,*graph_DFdeviance_IterativeSURE_mass;
+    TGraph *graph_SURE_IterativeSURE,*graph_DFdeviance_IterativeSURE;
     
     // Acceptance correction
-    TH1* hFullPhaseMassData; // data after acceptance correction 
-    TH1* hFullPhasePtData;  
-    TH1* hFullPhaseMassMC;  
-    TH1* hFullPhasePtMC;  
+    TH1* hFullPhaseData;  
+    TH1* hFullPhaseMC;  
 
-    std::map<TString, std::map<TString, TH1*>> hSysFullPhaseMassData;
-    std::map<TString, std::map<TString, TH1*>> hSysFullPhasePtData;
-    std::map<TString, std::map<TString, TH1*>> hSysFullPhaseMassMC;
-    std::map<TString, std::map<TString, TH1*>> hSysFullPhasePtMC;
+    std::map<TString, std::map<TString, TH1*>> hSysFullPhaseData;
+    std::map<TString, std::map<TString, TH1*>> hSysFullPhaseMC;
 
-    TH1* hAcceptanceMass;  
-    TH1* hAcceptancePt;  
-
-    TH1* hAcceptanceFractionMass;  
-    TH1* hAcceptanceFractionPt;  
-
-    std::map<TString, std::map<TString, TH1*>> hSysAcceptanceMass;
-    std::map<TString, std::map<TString, TH1*>> hSysAcceptancePt;
-
-    std::map<TString, std::map<TString, TH1*>> hSysAcceptanceFractionMass;
-    std::map<TString, std::map<TString, TH1*>> hSysAcceptanceFractionPt;
+    TH1* hAcceptance;  
+    TH1* hAcceptanceFraction;  
+    std::map<TString, std::map<TString, TH1*>> hSysAcceptance;
+    std::map<TString, std::map<TString, TH1*>> hSysAcceptanceFraction;
 
     bool verbose;
 
@@ -151,7 +132,6 @@ public:
     // Destructor
     ~ISRUnfold(){}
 
-    void drawResponseM(TString sysName = "", TString sysPostfix = "", bool isDetector = true);
     void checkIterEMUnfold(void);
 
     const TVectorD& checkMatrixCond();
@@ -199,7 +179,6 @@ public:
     void doStatUnfold(); 
 
     void doAcceptCorr(TString filePath, TString binDef, bool doSys = false, TString outName = "", bool isAccept = false);
-    void drawCorrelation(TString steering, bool useAis, TString outName = "");
 
     // Get histograms
     TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true, bool divBinWidth = false);

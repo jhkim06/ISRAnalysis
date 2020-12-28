@@ -75,8 +75,9 @@ class ISRAnalysis:
         self.unfold_pt.setNominalRM(self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, self.binDef)
         self.unfold_mass.setNominalRM(self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, self.binDef)
        
-    def checkMatrixCond(self, var = "Mass"):
-        return self.unfold.checkMatrixCond(var)
+    def checkMatrixCond(self):
+        return self.unfold_pt.checkMatrixCond()
+        return self.unfold_mass.checkMatrixCond()
 
     def setInputHist(self, useMCInput = False, useUnfoldOut = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = "", isFSR = False, useMadgraph = False):
         
@@ -282,7 +283,8 @@ class ISRAnalysis:
 
     def doStatUnfold(self):
         print ("doStatUnfold")
-        self.unfold.doStatUnfold()
+        self.unfold_pt.doStatUnfold()
+        self.unfold_mass.doStatUnfold()
 
     def getISRUnfold(self, var_ = "Mass"):
         
