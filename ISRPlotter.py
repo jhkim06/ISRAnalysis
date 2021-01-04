@@ -3,7 +3,7 @@ import json
 import pandas as pd
 import numpy as np
 import ROOT as rt
-from root_numpy import hist2array
+from root_numpy import hist2array, array2hist
 import sys
 
 import matplotlib.pyplot as plt
@@ -300,8 +300,8 @@ class ISRPlotter :
                 # low mass cut, high mass cut, mean value
                 # For Mass, make a DataFrame for all the mass bins
                 # For pT, make a DataFrame for a mass bin
-                out_dict[variable][sample]["rawUnc_meanValue"]=self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
-                out_dict[variable][sample]["refinedUnc_meanValue"]=self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
+                out_dict[variable][sample]["rawUnc_meanValue"]    = self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
+                out_dict[variable][sample]["refinedUnc_meanValue"]= self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
                 
                 for sysCategory in self.systematics.keys() :  
                     for sysName, postfixs in self.systematics[sysCategory].items() :
@@ -328,7 +328,6 @@ class ISRPlotter :
                                 out_dict[variable][sample]["rawUnc_meanValue"][sysName+"_"+postfix]= \
                                 temp_df1["mean"]-temp_df2["mean"]
                                 
-                        
                         if sysName != "PDF" :
                             out_dict[variable][sample]["refinedUnc"][sysName+'_Up']  =out_dict[variable][sample]["rawUnc"].filter(like=sysName).max(axis=1)
                             out_dict[variable][sample]["refinedUnc"][sysName+'_Down']=out_dict[variable][sample]["rawUnc"].filter(like=sysName).min(axis=1)
@@ -338,7 +337,6 @@ class ISRPlotter :
                             out_dict[variable][sample]["refinedUnc_meanValue"][sysName+'_Down']=\
                             out_dict[variable][sample]["rawUnc_meanValue"].filter(like=sysName).min(axis=1)
                         else :
-                            # TODO PDF uncertatinty
                             out_dict[variable][sample]["refinedUnc"][sysName+'_Up']  =np.sqrt(out_dict[variable][sample]["rawUnc"].filter(like=sysName).var(axis=1))/2.
                             out_dict[variable][sample]["refinedUnc"][sysName+'_Down']= -1. * np.sqrt(out_dict[variable][sample]["rawUnc"].filter(like=sysName).var(axis=1))/2.
                             
@@ -444,18 +442,26 @@ class ISRPlotter :
         temp_content, temp_binEdge=hist2array(temp_TH1, return_edges=True)
         binWidth = (temp_binEdge[0][1:] - temp_binEdge[0][:-1])
         nBin=len(temp_binEdge[0])-1
+
+        temp_stat_error = []
+        for ibin in range(1, len(temp_content)+1) :
+            temp_stat_error.append(temp_TH1.GetBinError(ibin))
+            
+        temp_stat_error_array = np.array(temp_stat_error)
         
-        pd_series_binIndex=pd.Series(range(1,nBin+1), range(1, nBin+1), name="bin_index")
-        pd_series_binWidth=pd.Series(binWidth, range(1, nBin+1), name="bin_width")
-        pd_series_lowBinEdge=pd.Series(temp_binEdge[0][0:-1], range(1, nBin+1), name="low_bin_edge")
-        pd_series_highBinEdge=pd.Series(temp_binEdge[0][1:], range(1, nBin+1), name="high_bin_edge")
+        pd_series_binIndex    = pd.Series(range(1,nBin+1), range(1, nBin+1), name="bin_index")
+        pd_series_binWidth    = pd.Series(binWidth, range(1, nBin+1), name="bin_width")
+        pd_series_lowBinEdge  = pd.Series(temp_binEdge[0][0:-1], range(1, nBin+1), name="low_bin_edge")
+        pd_series_highBinEdge = pd.Series(temp_binEdge[0][1:], range(1, nBin+1), name="high_bin_edge")
         
         dict_temp={
             'bin_width': pd_series_binWidth, 
             'low_bin_edge': pd_series_lowBinEdge,
             'high_bin_edge': pd_series_highBinEdge,
             'content': temp_content,
+            'stat_error': temp_stat_error_array,
         }
+
         pd_temp=pd.DataFrame(dict_temp, index=pd_series_binIndex)
         
         return pd_temp
@@ -465,8 +471,10 @@ class ISRPlotter :
                     write_xaxis_title=False, write_yaxis_title=False, showMeanValue=False, setLogx = False) :
         # Get DataFrame
         dataName=""
+        dataTH1 = None
         data_df={}
         totalMC=self.MCTotal[variable]["total"]["refinedUnc"].copy()
+        totalMCTH1=self.rawMCTotal[variable]['total']['Nominal']['Nominal']['TH1'].Clone("total_mc")
         
         channelName = "e^{+}e^{-}"
         if self.channel == "muon" :
@@ -476,6 +484,7 @@ class ISRPlotter :
             if "Data" in combinedName :
                 dataName=combinedName
                 data_df[combinedName]=self.Data[variable][combinedName]["refinedUnc"].copy()
+                dataTH1=self.rawDataMeasured[variable][combinedName]['Nominal']['Nominal']['TH1'].Clone("data")
             if "Signal" in combinedName :
                 data_df[combinedName]=self.MCSignal[variable][combinedName]["refinedUnc"].copy()
             if "Background" in combinedName :
@@ -496,21 +505,23 @@ class ISRPlotter :
         binWidthnumpy = np.asarray([data_df[dataName]['bin_width']/2.])
         binWidthxerr = np.append(binWidthnumpy, binWidthnumpy, axis=0)
         
-        if write_yaxis_title : top_axis.text(0., 1.07, "CMS Work in progress", fontsize=20, transform=top_axis.transAxes)
-        if write_xaxis_title : top_axis.text(1., 1.07, "(13 TeV, " + self.year + ")", fontsize=20, transform=top_axis.transAxes, ha='right')
+        if write_yaxis_title : top_axis.text(0., 1.1, "CMS Work in progress", fontsize=20, transform=top_axis.transAxes)
+        if write_xaxis_title : top_axis.text(1., 1.1, "(13 TeV, " + self.year + ")", fontsize=20, transform=top_axis.transAxes, ha='right')
         if "Pt" in variable :
             nth_bin = int(variable.split("_")[1])
-            top_axis.text(0., 1.01, str(self.massBins[nth_bin][0])+"$ < M^{\mathit{"+channelName+"}} < $"+str(self.massBins[nth_bin][1]), 
+            top_axis.text(-0.05, 1.01, str(self.massBins[nth_bin][0])+"$ < M^{\mathit{"+channelName+"}} < $"+str(self.massBins[nth_bin][1]), 
                           fontsize=10, transform=top_axis.transAxes)
             
         if divde_by_bin_width: 
             if write_yaxis_title: top_axis.set_ylabel('Events/\n 1 GeV', fontsize=20, ha='right', y=1.0)
             totalMC["content"]=totalMC["content"]/data_df[combinedName]['bin_width']
+            totalMC["stat_error"]=totalMC["stat_error"]/data_df[combinedName]['bin_width']
             totalMC["total_Up"]=totalMC["total_Up"]/data_df[combinedName]['bin_width']
             totalMC["total_Down"]=totalMC["total_Down"]/data_df[combinedName]['bin_width']
 
             for combinedName in self.samples :
                 data_df[combinedName]["content"]=data_df[combinedName]["content"]/ data_df[combinedName]['bin_width']
+                data_df[combinedName]["stat_error"]=data_df[combinedName]["stat_error"]/ data_df[combinedName]['bin_width']
                 data_df[combinedName]["total_Up"]=data_df[combinedName]["total_Up"]/ data_df[combinedName]['bin_width']
                 data_df[combinedName]["total_Down"]=data_df[combinedName]["total_Down"]/ data_df[combinedName]['bin_width']
         else :
@@ -518,15 +529,20 @@ class ISRPlotter :
             
         color=iter(cm.rainbow(np.linspace(0,1,len(self.stackOrder))))
         
-        top_axis.scatter(x_bin_centers, data_df[dataName]["content"], marker='o', c='black', s=50, zorder=4, label='Data')
+        #top_axis.scatter(x_bin_centers, data_df[dataName]["content"], marker='o', c='black', s=50, zorder=4, label='Data')
+        #top_axis.errorbar(x_bin_centers, data_df[dataName]["content"], xerr=bin_width/2., yerr=data_df[dataName]["stat_error"], fmt='o', ecolor='black', zorder=4)
+        top_axis.errorbar(x_bin_centers, data_df[dataName]["content"], xerr=bin_width/2., yerr=data_df[dataName]["stat_error"], fmt='ok', ecolor='black', zorder=4)
+
+        if variable == "Mass" :
+            print(data_df[dataName]["stat_error"])
+
         top_axis.set_xlim(x_min, x_max)
         data_abs_systematic=self.makeErrorNumpy(data_df[dataName].total_Up, data_df[dataName].total_Down)
         mc_abs_systematic=self.makeErrorNumpy(totalMC.total_Up, totalMC.total_Down)
         self.make_error_boxes(top_axis, x_bin_centers.values, data_df[dataName]["content"], binWidthxerr, data_abs_systematic, 
-                              showBar=False, alpha=1.0, edgecolor='None', facecolor='white', zorder=2, hatch_style="////")
+                              showBar=False, alpha=0.2, edgecolor='None', facecolor='black', zorder=2)
         self.make_error_boxes(top_axis, x_bin_centers.values, totalMC["content"], binWidthxerr, mc_abs_systematic, 
                               showBar=False, alpha=0.2, edgecolor='None', facecolor='red')
-        
     
         for i, stack in enumerate(self.stackOrder) :
             if i==0 :
@@ -541,7 +557,7 @@ class ISRPlotter :
                 
         if setLogy :
             top_axis.set_yscale("log")
-            top_axis.set_ylim(5e-1, 1e2 * data_df[dataName]["content"].max())
+            top_axis.set_ylim(1e-1* data_df[dataName]["content"].min(), 10. * data_df[dataName]["content"].max())
             top_axis.yaxis.set_major_locator(LogLocator(10, numticks=14))
             top_axis.yaxis.set_minor_locator(LogLocator(10, subs=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9), numticks=14))
         else :
@@ -571,12 +587,23 @@ class ISRPlotter :
             
         if write_xaxis_title : bottom_axis.set_xlabel(varName + " [GeV]", fontsize=20, ha='right', x=1.0)
         if write_yaxis_title : bottom_axis.set_ylabel("MC/\n Data", fontsize=20)
+
+        dataTH1.Divide(dataTH1)
+
+        temp_stat_error = []
+        for ibin in range(1, dataTH1.GetNbinsX()+1) :
+            temp_stat_error.append(dataTH1.GetBinError(ibin))
+            
+        temp_stat_error_array = np.array(temp_stat_error)
+        if variable == "Mass" :
+            print(temp_stat_error_array)
     
         ratio=totalMC.content/ data_df[dataName].content
         one_points=data_df[dataName].content/data_df[dataName].content
         #bottom_axis.scatter(x_bin_centers, ratio, facecolors='red', marker="_", edgecolor='red', s=40, zorder=2)
         bottom_axis.errorbar(x_bin_centers, ratio, xerr=bin_width/2., yerr=0, fmt='r,', ecolor='red', zorder=5)
-        bottom_axis.scatter(x_bin_centers, one_points, facecolors='black', edgecolor='black', s=40, zorder=3)
+        #bottom_axis.scatter(x_bin_centers, one_points, facecolors='black', edgecolor='black', s=40, zorder=3)
+        bottom_axis.errorbar(x_bin_centers, one_points, xerr=0, yerr=temp_stat_error_array, fmt='r,', ecolor='black', zorder=6)
         bottom_axis.axhline(1., color='black', linewidth=1, zorder=1)
         if "Mass" in variable :
             for bin_ in self.massBins[:-1] :
@@ -587,7 +614,7 @@ class ISRPlotter :
         self.make_error_boxes(bottom_axis, x_bin_centers.values, ratio.values, binWidthxerr, systematic, 
                               showBar=False, alpha=0.2, edgecolor='None', facecolor='red', zorder=4)
         self.make_error_boxes(bottom_axis, x_bin_centers.values, one_points, binWidthxerr, data_systematic, 
-                              showBar=False, alpha=1.0, edgecolor='None', facecolor='white', zorder=2, hatch_style="/////")
+                              showBar=False, alpha=0.2, edgecolor='None', facecolor='black', zorder=2)
 
     def drawSubPlotComparison(self, object_, nominator_name, denominator_name, top_axis, bottom_axis, variable, name, divde_by_bin_width = False, setLogy=False, 
                     write_xaxis_title=False, write_yaxis_title=False, showMeanValue=False, setLogx = False, marker_ = 'o', color_ = "black", ratio_max=1.35, ratio_min=0.65) :
@@ -786,7 +813,7 @@ class ISRPlotter :
         
         fig, axes = plt.subplots(2,len(variables), sharex=True, figsize=(10, 6), gridspec_kw={'hspace': 0, 'height_ratios':[1, 0.4]})
         fig.tight_layout()
-        plt.subplots_adjust(left=0.12, right=0.97, bottom=0.15, top=0.9)
+        plt.subplots_adjust(left=0.12, right=0.97, bottom=0.15, top=0.85)
         
         write_xaxis_title = True
         write_yaxis_title = True
@@ -989,7 +1016,7 @@ class ISRPlotter :
         # Create patch collection with specified colour/alpha
         if showBox :
             pc = PatchCollection(errorboxes, facecolor=facecolor, alpha=alpha,
-                                 edgecolor=edgecolor, zorder = zorder, linewidth=0.2, hatch=hatch_style)
+                                 edgecolor=edgecolor, zorder = zorder, linewidth=0.05, hatch=hatch_style)
             # Add collection to axes
             ax.add_collection(pc)
 

@@ -12,11 +12,11 @@
     "Steering":
     {
         "Mass": "mass[UO];pt[UOC0]",
-        "Pt_0": "pt[UO];mass[UOC0]",
-        "Pt_1": "pt[UO];mass[UOC1]",
-        "Pt_2": "pt[UO];mass[UOC2]",
-        "Pt_3": "pt[UO];mass[UOC3]",
-        "Pt_4": "pt[UO];mass[UOC4]"
+        "Pt_0": "pt[];mass[UOC0]",
+        "Pt_1": "pt[];mass[UOC1]",
+        "Pt_2": "pt[];mass[UOC2]",
+        "Pt_3": "pt[];mass[UOC3]",
+        "Pt_4": "pt[];mass[UOC4]"
     },
     "Systematics":
     {
