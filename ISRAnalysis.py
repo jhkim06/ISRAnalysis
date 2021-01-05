@@ -65,10 +65,7 @@ class ISRAnalysis:
         self.unfold_pt   = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Pt")
         self.unfold_mass = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Mass")
 
-        self.unfold_pt.setOutputBaseDir(self.outDirPath)
         self.unfold_pt.setBias(self.bias)
-
-        self.unfold_mass.setOutputBaseDir(self.outDirPath)
         self.unfold_mass.setBias(self.bias)
         
         # Set response matrix
@@ -250,14 +247,18 @@ class ISRAnalysis:
             self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", outName)
             self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", outName)
 
-    def drawAcceptPlot(self, var = "Mass", steering = None, useAxis = True, sysName = "", outName = "", massBin = 0, binWidth = False, isFSR = False): 
-        if isFSR :
-            self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", steering, useAxis, sysName, outName, massBin, binWidth)  
-        else :
-            self.unfold.drawAcceptCorrHists(var, self.inHistDic['hist_accept_drp1'], "_FineCoarse", steering, useAxis, sysName, outName, massBin, binWidth)  
-
     def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):
         self.unfold.drawCorrelation(var, steering, useAxis, outName)
+
+    def combineOutFiles(self) :
+        pt_output_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + "_Pt.root" 
+        mass_output_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + "_Mass.root" 
+        target_file_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + ".root"   
+        os.system('hadd ' + target_file_path + " " + pt_output_path + " " + mass_output_path)
+
+    def closeOutFiles(self) :
+        self.unfold_pt.closeOutFile()
+        self.unfold_mass.closeOutFile()
 
     # Get histograms
     def getCDFPtVsMassTGraph(self, grTitle = ""):

@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <iomanip> 
+#include <iomanip>
 #include <map>
 #include <cmath>
 #include <TMath.h>
@@ -42,7 +42,7 @@
 #include "TUnfoldDensity.h"
 #include "TUnfoldIterativeEM.h"
 
-using namespace std; 
+using namespace std;
 
 const int statSize = 1000;
 
@@ -75,35 +75,39 @@ private:
     const int NITER_Iterative = 500;
 
     TGraph *graph_SURE_IterativeSURE,*graph_DFdeviance_IterativeSURE;
-    
+
     // Acceptance correction
-    TH1* hFullPhaseData;  
-    TH1* hFullPhaseMC;  
+    TH1* hFullPhaseData;
+    TH1* hFullPhaseMC;
 
     std::map<TString, std::map<TString, TH1*>> hSysFullPhaseData;
     std::map<TString, std::map<TString, TH1*>> hSysFullPhaseMC;
 
-    TH1* hAcceptance;  
-    TH1* hAcceptanceFraction;  
+    TH1* hAcceptance;
+    TH1* hAcceptanceFraction;
     std::map<TString, std::map<TString, TH1*>> hSysAcceptance;
     std::map<TString, std::map<TString, TH1*>> hSysAcceptanceFraction;
+
+    TFile* fUnfoldOut;
+
+    TString fUnfoldOutPath;
 
     bool verbose;
 
     // Conditions for unfolding
     TUnfold::ERegMode regMode;
     double nominal_bias;
-    
+
     TString output_baseDir;
     TString unfold_name;
     TString channel_name;
     TString var;
     int year;
 
-    bool makeStatUnfold; 
-        
+    bool makeStatUnfold;
+
 public:
-    
+
     // Constructor
     ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool makeStatUnfold_ = true, bool verbose_ = false, TString var_ = "Mass")
     {
@@ -114,23 +118,46 @@ public:
         year = year_;
         var = var_;
 
-        nominal_bias = 1.;  
+        nominal_bias = 1.;
 
         if(regMode_ == 0)
             regMode = TUnfold::kRegModeNone;
         if(regMode_ == 1)
             regMode = TUnfold::kRegModeSize;
         if(regMode_ == 2)
-            regMode = TUnfold::kRegModeDerivative; 
+            regMode = TUnfold::kRegModeDerivative;
         if(regMode_ == 3)
-            regMode = TUnfold::kRegModeCurvature; 
+            regMode = TUnfold::kRegModeCurvature;
 
         makeStatUnfold = makeStatUnfold_;
 
         verbose = verbose_;
+
+        // Make output root files
+        TString yearStr;
+        yearStr.Form("%d", (int)year);
+
+        output_baseDir = "output/" + yearStr + "/" + channel_name + "/";
+
+        fUnfoldOutPath      = output_baseDir+unfold_name+"_"+channel_name+"_"+yearStr+"_"+var+".root";
+        fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");
+
+        fUnfoldOut->mkdir("unfolded");
+        fUnfoldOut->mkdir("acceptance");
+
+        fUnfoldOut->mkdir("unfolded/" + var);
+        fUnfoldOut->mkdir("acceptance/" + var);
     }
     // Destructor
-    ~ISRUnfold(){}
+    ~ISRUnfold()
+    {
+        fUnfoldOut->Close(); 
+    }
+
+    inline void closeOutFile()
+    {
+        fUnfoldOut->Close();
+    }
 
     void checkIterEMUnfold(void);
 
@@ -138,10 +165,9 @@ public:
     double getSmearedChi2(TString filePath, TString dirName, TString steering, bool useAxis);
     double getUnfoldedChi2(TString steering, bool useAxis);
 
-    void setOutputBaseDir(TString outPath);
     void setBias(double bias);
 
-    // Set nominal TUnfoldDensity 
+    // Set nominal TUnfoldDensity
     void setNominalRM(TString filepath, TString dirName, TString histName, TString binDef = "");
     void setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept = false);
 
@@ -150,7 +176,7 @@ public:
     void setUnfInput(ISRUnfold* unfold, bool isSys = false, TString sysName = "", TString sysPostfix = "", bool useAccept = false);
 
     // Set background histograms
-    void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
+    void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo,
                  bool isSys = false, TString binDef = "", TString dirName = "", TString sysName = "", TString sysPostfix = "", TString histPostfix = "");
 
     // Set systematic TUnfoldDensity
@@ -173,9 +199,9 @@ public:
 
     void varyHistWithStatError(TH1* hist, int sys);
 
-    // Do unfold 
+    // Do unfold
     void doISRUnfold();
-    void doStatUnfold(); 
+    void doStatUnfold();
 
     void doAcceptCorr(TString filePath, TString binDef, TString outName = "", bool isAccept = false);
 
@@ -186,7 +212,7 @@ public:
     TH1* getUnfInput(TString steering, bool useAxis, int massBin);
 
     // Helper functions
-    void doNorm(TH1* hist, bool norm = true); 
+    void doNorm(TH1* hist, bool norm = true);
 };
 
 #endif
