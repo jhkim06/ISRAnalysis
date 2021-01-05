@@ -113,14 +113,6 @@ class ISRAnalysis:
         else :
             if unfoldObj is None:
 
-                if "LepScale" in sysName :
-                    hist_filekey_temp = "hist_LepScale"
-                    dirName = dirName + "_" + sysPostfix  # FIXME put systematic postfix at the END, ex) Detector_Dressed_DRp1_Fiducial_LepScaleUp 
-
-                elif "LepRes" in sysName :
-                    hist_filekey_temp = "hist_LepRes"
-                    dirName = dirName + "_" + sysPostfix  # FIXME put systematic postfix at the END, ex) Detector_Dressed_DRp1_Fiducial_LepScaleUp 
-            
                 self.unfold_pt.setUnfInput(self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
                 self.unfold_mass.setUnfInput(self.binDef, self.inHistDic[hist_filekey_temp], dirName, inputHistName, isSys, sysName, sysPostfix)
             else:
@@ -143,26 +135,12 @@ class ISRAnalysis:
 
         for fake in fakeList.items():
 
-            if "LepScale" in sysName and not isFSR:
-                hist_filekey_temp ="matrix_LepScale"
-                dirName = "Detector_DY_Fake" + "_" + sysPostfix
-
-            elif "LepRes" in sysName and not isFSR:
-                hist_filekey_temp ="matrix_LepRes"
-                dirName = "Detector_DY_Fake" + "_" + sysPostfix
-
-            elif "ZptCorr" in sysName : 
+            if "ZptCorr" in sysName : 
                 if sysPostfix != "Nominal" : 
                     hist_filekey_temp = 'matrix_zptcorr' 
 
             elif "FSR" in sysName : 
                 histPostfix = ""
-
-            elif "PDF" in sysName :
-                if isFSR :
-                    hist_filekey_temp = "fsr_matrix_pdf"  
-                else :
-                    hist_filekey_temp = "matrix_pdf"
 
             elif "Background" in sysName : 
                 histPostfix = ""
@@ -192,21 +170,8 @@ class ISRAnalysis:
             hist_filekey_temp = "hist"
             histPostfix_temp = sysPostfix
 
-            if "LepScale" in sysName :
-                hist_filekey_temp = "hist_LepScale"
-                dirName = "Detector" + "_" + sysPostfix
+            if "Unfolding" == sysName :
                 histPostfix_temp = ""
-
-            elif "LepRes" in sysName :
-                hist_filekey_temp = "hist_LepRes"
-                dirName = "Detector" + "_" + sysPostfix
-                histPostfix_temp = ""
-
-            elif "Unfolding" == sysName :
-                histPostfix_temp = ""
-
-            elif "PDF" in sysName :
-                hist_filekey_temp ="hist_pdf"
 
             elif "Background" in sysName :
                 histPostfix_temp = "" 
@@ -227,17 +192,7 @@ class ISRAnalysis:
         dirPath_temp = self.matrix_dirPath
         histPostfix_temp = sysHistName
 
-        if "LepScale" in sysName :
-            matrix_filekey_temp = "matrix_LepScale"
-            dirPath_temp = "Detector_Dressed_DRp1_Fiducial" + "_" + sysHistName  # FIXME put systematic postfix at the END, ex) Detector_Dressed_DRp1_Fiducial_LepScaleUp 
-            histPostfix_temp = ""
-
-        elif "LepRes" in sysName :
-            matrix_filekey_temp = "matrix_LepRes"
-            dirPath_temp = "Detector_Dressed_DRp1_Fiducial" + "_" + sysHistName  # FIXME put systematic postfix at the END, ex) Detector_Dressed_DRp1_Fiducial_LepScaleUp 
-            histPostfix_temp = ""
-
-        elif "Unfolding" in sysName :
+        if "Unfolding" in sysName :
             histPostfix_temp = ""
 
         elif "Unfold" in sysName :
@@ -257,12 +212,6 @@ class ISRAnalysis:
                 matrix_filekey_temp = "fsr_matrix_powheg_photos"
             else :
                 matrix_filekey_temp = "fsr_matrix_powheg_pythia"
-
-        elif "PDF" in sysName:
-            if isFSR :
-                matrix_filekey_temp = "fsr_matrix_pdf"
-            else :
-                matrix_filekey_temp = "matrix_pdf"
 
         elif "Background" in sysName :
             histPostfix_temp = ""

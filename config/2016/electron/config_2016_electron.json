@@ -6,7 +6,7 @@
     "HistPrefix": "histo_",
     "topDirName": "Detector",
     "useTUnfoldBin": true,
-    "TUnfoldBinNames": ["Rec_Pt","Rec_Mass"], 
+    "TUnfoldBinNames": ["Rec_Pt","Rec_Mass"],
     "Variables": ["Mass", "Pt_0", "Pt_1", "Pt_2", "Pt_3", "Pt_4"],
     "VariablePostfix": "FineCoarse",
     "Steering":
@@ -23,10 +23,14 @@
             "Nominal": ["Nominal"],
             "IdSF":  ["Up", "Down"],
             "trgSF": ["Up", "Down"],
-            "PU":    ["Up", "Down"]
+            "PU":    ["Up", "Down"],
+            "LepRes": ["Up", "Down"],
+            "LepScale": ["Up", "Down"]
         },
         "theory": {
-            "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"]
+            "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"],
+            "AlphaS": ["Up", "Down"],
+            "PDF":   ["error_001","error_100"]
         }
     },
     "Samples":

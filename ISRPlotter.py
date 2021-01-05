@@ -468,7 +468,7 @@ class ISRPlotter :
    
     # Draw data and all MC and the ratio plot between data and total MC 
     def drawSubPlot(self, top_axis, bottom_axis, variable, divde_by_bin_width = False, setLogy=False, 
-                    write_xaxis_title=False, write_yaxis_title=False, showMeanValue=False, setLogx = False) :
+                    write_xaxis_title=False, write_yaxis_title=False, showMeanValue=False, setLogx = False, showLegend = False) :
         # Get DataFrame
         dataName=""
         dataTH1 = None
@@ -533,8 +533,8 @@ class ISRPlotter :
         #top_axis.errorbar(x_bin_centers, data_df[dataName]["content"], xerr=bin_width/2., yerr=data_df[dataName]["stat_error"], fmt='o', ecolor='black', zorder=4)
         top_axis.errorbar(x_bin_centers, data_df[dataName]["content"], xerr=bin_width/2., yerr=data_df[dataName]["stat_error"], fmt='ok', ecolor='black', zorder=4)
 
-        if variable == "Mass" :
-            print(data_df[dataName]["stat_error"])
+        #if variable == "Mass" :
+        #    print(data_df[dataName]["stat_error"])
 
         top_axis.set_xlim(x_min, x_max)
         data_abs_systematic=self.makeErrorNumpy(data_df[dataName].total_Up, data_df[dataName].total_Down)
@@ -547,14 +547,17 @@ class ISRPlotter :
         for i, stack in enumerate(self.stackOrder) :
             if i==0 :
                 if(len(self.stackOrder)==1) :
-                    top_axis.errorbar(x_bin_centers, data_df[stack]['content'], xerr=bin_width/2., yerr=0, fmt='ro', ecolor='red')
+                    top_axis.errorbar(x_bin_centers, data_df[stack]['content'], xerr=bin_width/2., yerr=0, fmt='ro', ecolor='red', label=stack)
                 else :
                     top_axis.bar(x_bin_centers, data_df[stack]['content'], width = bin_width, color=next(color), label=stack)
                 stacks=data_df[stack]['content']
             else :
-                top_axis.bar(x_bin_centers, data_df[stack]['content'], width = bin_width, color=next(color), bottom=stacks, label='Drell-Yan')
+                top_axis.bar(x_bin_centers, data_df[stack]['content'], width = bin_width, color=next(color), bottom=stacks, label=stack)
                 stacks=stacks+data_df[stack]['content']
-                
+
+        if showLegend :
+            top_axis.legend(loc="upper right") 
+        
         if setLogy :
             top_axis.set_yscale("log")
             top_axis.set_ylim(1e-1* data_df[dataName]["content"].min(), 10. * data_df[dataName]["content"].max())
@@ -595,15 +598,15 @@ class ISRPlotter :
             temp_stat_error.append(dataTH1.GetBinError(ibin))
             
         temp_stat_error_array = np.array(temp_stat_error)
-        if variable == "Mass" :
-            print(temp_stat_error_array)
+        #if variable == "Mass" :
+        #    print(temp_stat_error_array)
     
         ratio=totalMC.content/ data_df[dataName].content
         one_points=data_df[dataName].content/data_df[dataName].content
         #bottom_axis.scatter(x_bin_centers, ratio, facecolors='red', marker="_", edgecolor='red', s=40, zorder=2)
         bottom_axis.errorbar(x_bin_centers, ratio, xerr=bin_width/2., yerr=0, fmt='r,', ecolor='red', zorder=5)
         #bottom_axis.scatter(x_bin_centers, one_points, facecolors='black', edgecolor='black', s=40, zorder=3)
-        bottom_axis.errorbar(x_bin_centers, one_points, xerr=0, yerr=temp_stat_error_array, fmt='r,', ecolor='black', zorder=6)
+        bottom_axis.errorbar(x_bin_centers, one_points, xerr=0, yerr=temp_stat_error_array, fmt='k,', ecolor='black', zorder=6)
         bottom_axis.axhline(1., color='black', linewidth=1, zorder=1)
         if "Mass" in variable :
             for bin_ in self.massBins[:-1] :
@@ -818,9 +821,12 @@ class ISRPlotter :
         write_xaxis_title = True
         write_yaxis_title = True
 
+        show_legend = False
+
         for index, variable in enumerate(variables) :
             if len(variables) == 1:
-                self.drawSubPlot(axes[0], axes[1], variable, divde_by_bin_width, setLogy, write_xaxis_title, write_yaxis_title,showMeanValue, setLogx)
+                show_legend = True
+                self.drawSubPlot(axes[0], axes[1], variable, divde_by_bin_width, setLogy, write_xaxis_title, write_yaxis_title,showMeanValue, setLogx, show_legend)
             else :
                 if index > 0 : 
                     write_yaxis_title=False
@@ -828,8 +834,11 @@ class ISRPlotter :
                     write_xaxis_title=False
                 else :
                     write_xaxis_title=True
-                    
-                self.drawSubPlot(axes[0][index], axes[1][index], variable, divde_by_bin_width, setLogy, write_xaxis_title, write_yaxis_title, showMeanValue, setLogx)
+                
+                if len(variables) == index + 1: 
+                    show_legend = True
+ 
+                self.drawSubPlot(axes[0][index], axes[1][index], variable, divde_by_bin_width, setLogy, write_xaxis_title, write_yaxis_title, showMeanValue, setLogx, show_legend)
         
         plt.savefig(self.outDirPath+self.plotPrefix+self.topDirName+"_"+variable+".pdf", format="pdf", dpi=300)
         plt.close(fig)
