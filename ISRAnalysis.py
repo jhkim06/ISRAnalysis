@@ -254,7 +254,7 @@ class ISRAnalysis:
         pt_output_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + "_Pt.root" 
         mass_output_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + "_Mass.root" 
         target_file_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + ".root"   
-        os.system('hadd ' + target_file_path + " " + pt_output_path + " " + mass_output_path)
+        os.system('hadd -f ' + target_file_path + " " + pt_output_path + " " + mass_output_path)
 
     def closeOutFiles(self) :
         self.unfold_pt.closeOutFile()
