@@ -1,5 +1,5 @@
 {
-    "plotPrefix": "FSR",
+    "plotPrefix": "FSR_Acceptance_Corrected",
     "Analysis": "ISR",
     "Year": "2018",
     "Channel": "electron",
@@ -11,7 +11,7 @@
     "VariablePostfix": "",
     "Steering":
     {
-        "Mass": "mass[UO];pt[UOC0]",
+        "Mass": "mass[];pt[C0O]",
         "Pt_0": "pt[];mass[UOC0]",
         "Pt_1": "pt[];mass[UOC1]",
         "Pt_2": "pt[];mass[UOC2]",
@@ -26,12 +26,11 @@
             "trgSF":   ["Up", "Down"],
             "PU":      ["Up", "Down"],
             "unfold":  ["IterEM", "Nominal"],
-            "fsr": ["PHOTOS","PYTHIA"], 
             "Norm": ["Up", "Down"]
         },
-        "theory": {
-            "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"]
-        }
+        "theory": {                                                                                                                                                                                                                                                                                                           
+            "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"]                                                                                                                                                                                                                                                       
+        }  
     },
     "Samples":
     {

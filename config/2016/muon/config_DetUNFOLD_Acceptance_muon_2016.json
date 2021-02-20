@@ -21,14 +21,19 @@
     "Systematics":
     {
         "measurement": {
-            "Nominal": ["Nominal"],
             "IdSF":    ["Up", "Down"],
+            "IsoSF":  ["Up", "Down"], 
             "trgSF":   ["Up", "Down"],
             "PU":      ["Up", "Down"],
-            "unfold":  ["IterEM", "Nominal"]
+            "bveto":    ["Up", "Down"],
+            "L1Prefire":    ["Up", "Down"],
+            "unfold":  ["IterEM", "Nominal"],
+            "LepRes": ["Up", "Down"],
+            "LepScale": ["Up", "Down"]
         },
         "theory": {
             "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"],
+            "AlphaS": ["Up", "Down"],
             "PDF":   ["error_001","error_100"]
         }
     },

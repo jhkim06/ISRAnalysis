@@ -233,9 +233,9 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString histName
 {
     //cout << "ISRUnfold::setNominalRM set response matrix..." << endl;
     TH1::AddDirectory(kFALSE);
-    TFile* filein = new TFile(filepath);
+    TFile* filein = new TFile(filepath, "READ");
 
-    TString fullDirPath = dirName + "/" + var + "_ResMatrix_" + histName + binDef + "/";
+    TString fullDirPath = dirName + "/" + var + "_ResMatrix_" + histName + "_" + binDef + "/";
 
     TString Rec_binName = "Rec_"+var;
     TString Gen_binName = "Gen_"+var;
@@ -252,7 +252,7 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString histName
     hmcGenRec = (TH2*)filein->Get(fullDirPath + "hmc" + var + "GenRec");
 
     nominalTUnfold = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen, binning_Rec);
-    cout << "Check TUnfold version " << nominalTUnfold->GetTUnfoldVersion() << endl;
+    cout << "Used TUnfold version " << nominalTUnfold->GetTUnfoldVersion() << endl;
     hResponseM = (TH2*) hmcGenRec->Clone("hResponseM");
 
     // For statistical uncertainty
@@ -352,14 +352,14 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
 
 void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString histPostfix, TString binDef)
 {
-    TFile* filein = new TFile(filepath);
+    TFile* filein = new TFile(filepath, "READ");
     TH2* hmcGenRec = NULL;
 
     TString fullHistName = "hmc" + var + "GenRec";
     if(histPostfix != "")
         fullHistName = fullHistName + "_" + sysPostfix;
 
-    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + binDef + "/" + fullHistName);
+    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + "_" + binDef + "/" + fullHistName);
 
     
     if(sysName.Contains("Unfolding") && !sysPostfix.Contains("Nominal"))
@@ -422,8 +422,8 @@ void ISRUnfold::setUnfInput(TString varPostfix, TString filepath, TString dirNam
 
     TFile* filein = new TFile(filepath);
     TH1* hRec = NULL;
-    //cout << dirName+"/"+var+varPostfix+"/"+histName << endl;
-    hRec = (TH1*)filein->Get(dirName+"/"+var+varPostfix+"/"+histName);
+    //cout << dirName+"/"+var+ "_" + varPostfix+"/"+histName << endl;
+    hRec = (TH1*)filein->Get(dirName+"/"+var+ "_" + varPostfix+"/"+histName);
 
     // Use DY MC as unfolding input, i.e. simple closure test
     if(histName.Contains("DYJetsTo"))
@@ -431,12 +431,12 @@ void ISRUnfold::setUnfInput(TString varPostfix, TString filepath, TString dirNam
         if(!isFSR)
         {
             histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
-            hRec->Add((TH1*)filein->Get(dirName+"/"+var+varPostfix+"/"+histName));
+            hRec->Add((TH1*)filein->Get(dirName+"/"+var+ "_" + varPostfix+"/"+histName));
         }
         else
         {
             histName.ReplaceAll("DYJets", "DYJets10to50");
-            hRec->Add((TH1*)filein->Get(dirName+"/"+var+varPostfix+"/"+histName));
+            hRec->Add((TH1*)filein->Get(dirName+"/"+var+ "_" + varPostfix+"/"+histName));
         }
     }
 
@@ -476,7 +476,7 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
     // Nominal histograms
     if(!isSys)
     {
-        hRec = (TH1*)filein->Get(dirName + "/" + var + binDef+"/histo_" + bkgInfo.first);
+        hRec = (TH1*)filein->Get(dirName + "/" + var + "_" + binDef+"/histo_" + bkgInfo.first);
         nominalTUnfold->  SubtractBackground(hRec, bkgInfo.first);
     }
     else
@@ -486,7 +486,7 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
         if(histPostfix == "")
             fullHistName = bkgInfo.first;
 
-        hRec = (TH1*)filein->Get(dirName + "/" + var + binDef+"/histo_" + fullHistName);
+        hRec = (TH1*)filein->Get(dirName + "/" + var + "_" + binDef+"/histo_" + fullHistName);
 
         //cout << "file path: " << filepath << endl;
         //cout << dirName + "/Pt"+binDef+"/histo_" + fullHistName << endl;
@@ -628,7 +628,7 @@ void ISRUnfold::doISRUnfold()
             if( (it->first).Contains("Unfolding") && !((it->second).at(i)).Contains("Nominal"))
             {
                 iBest=iterEMTUnfold->ScanSURE(NITER_Iterative, &graph_SURE_IterativeSURE, &graph_DFdeviance_IterativeSURE);
-                //cout << "iBest pt, Mass: " << iBest_pt << " " << iBest_mass << endl;
+                cout << "iBest: " << iBest << endl;
 
                 varDir->cd();
                 iterEMTUnfold->GetOutput("histo_Data_"+(it->second).at(i),0,0, "*[*]", false)->Write(); 
@@ -683,11 +683,11 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString outName, 
 
     TH1* hFiducialPhaseMC = NULL;
 
-    hFullPhaseMC = (TH1*) filein->Get("Acceptance/"+var+"Gen" + binDef + "/histo_DYJets");
+    hFullPhaseMC = (TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets");
     if(year==2016)
-        hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+"Gen" + binDef + "/histo_DYJets10to50"));
+        hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50"));
     else
-        hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+"Gen" + binDef + "/histo_DYJets10to50_MG"));
+        hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_MG"));
 
     hFiducialPhaseMC = nominalTUnfold->GetBias("hFiducial"+var, 0, 0, "*[*]", false);
     hAcceptance = (TH1*) hFullPhaseMC->Clone("hAcceptance"+var);
@@ -729,11 +729,11 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString outName, 
             // For PDF, AlphaS, Scale etc, nominator (of acceptance) also changes
             if( (((it->first).Contains("Scale") && !(it->first).Contains("Lep")) || (it->first).Contains("PDF") || (it->first).Contains("AlphaS")) && !(it->first).Contains("_") )
             {
-                hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "Gen" + binDef + "/histo_DYJets_"+(it->second).at(i));
+                hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_"+(it->second).at(i));
                 if(year==2016)
-                    hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+"Gen" + binDef + "/histo_DYJets10to50_"+(it->second).at(i)));
+                    hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_"+(it->second).at(i)));
                 else
-                    hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+"Gen" + binDef + "/histo_DYJets10to50_MG_"+(it->second).at(i)));
+                    hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_MG_"+(it->second).at(i)));
             }
             else
             {

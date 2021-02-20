@@ -21,12 +21,14 @@
     "Systematics":
     {
         "measurement": {
-            "Nominal": ["Nominal"],
             "IdSF": ["Up", "Down"],
+            "recoSF":  ["Up", "Down"],
             "trgSF": ["Up", "Down"],
+            "trgDZSF": ["Up", "Down"],
             "PU": ["Up", "Down"],
+            "bveto":    ["Up", "Down"],
+            "L1Prefire":    ["Up", "Down"], 
             "unfold":  ["IterEM", "Nominal"],
-            "fsr": ["PHOTOS","PYTHIA"],
             "LepRes": ["Up", "Down"],
             "LepScale": ["Up", "Down"]
         },

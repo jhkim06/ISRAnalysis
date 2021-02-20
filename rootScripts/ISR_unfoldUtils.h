@@ -72,7 +72,7 @@ private:
     TUnfoldIterativeEM* iterEMTUnfold;
 
     int iBest;
-    const int NITER_Iterative = 500;
+    const int NITER_Iterative = 1000;
 
     TGraph *graph_SURE_IterativeSURE,*graph_DFdeviance_IterativeSURE;
 
@@ -109,10 +109,11 @@ private:
 public:
 
     // Constructor
-    ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool makeStatUnfold_ = true, bool verbose_ = false, TString var_ = "Mass")
+    ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool makeStatUnfold_ = true, bool verbose_ = false, TString var_ = "Mass", TString output_baseDir_ = "")
     {
         cout << "ISRUnfold set! " << var_ << endl;
 
+        output_baseDir = output_baseDir_;
         unfold_name = unfold_name_;
         channel_name = channel;
         year = year_;
@@ -137,7 +138,7 @@ public:
         TString yearStr;
         yearStr.Form("%d", (int)year);
 
-        output_baseDir = "output/" + yearStr + "/" + channel_name + "/";
+        //output_baseDir = "output/" + yearStr + "/" + channel_name + "/";
 
         fUnfoldOutPath      = output_baseDir+unfold_name+"_"+channel_name+"_"+yearStr+"_"+var+".root";
         fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");

@@ -10,9 +10,9 @@ import pandas as pd
 class ISRAnalysis:
     
     def __init__(self, unfold_name_ = "Detector", year_ = "2016", channel_= "electron", regMode = 0, sys_ = False, matrix_filekey_ = "matrix",
-                 matrix_dirPath_ = "Detector_Dressed_DRp1_Fiducial", matrix_histName_ = "Detector_Dressed_DRp1", binDef_ = ""):
+                 matrix_dirPath_ = "Detector_Dressed_DRp1_Fiducial", matrix_histName_ = "Detector_Dressed_DRp1", binDef_ = "", channel_postfix_ = ""):
         
-        # 디텍터 언폴딩 디렉토리 경로 & 매트릭스 이름 
+        # Initialize some variables 
         self.unfold_name = unfold_name_
         self.matrix_filekey = matrix_filekey_
         self.matrix_dirPath  = matrix_dirPath_
@@ -38,10 +38,12 @@ class ISRAnalysis:
         if self.year != "2016":
             self.dy10to50HistName += MG_postfix
         
-        # 아웃풋 디렉토리
         self.outDirPath = "output/"+self.year+"/"+self.channel+"/"
-        # 인풋 히스토그램 텍스트파일
         self.inHistPathTxt = "inFiles/"+self.year+"/"+self.channel+"/fhist.txt"
+
+        if channel_postfix_ != "" :
+            self.outDirPath = "output/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/"
+            self.inHistPathTxt = "inFiles/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/fhist.txt"
     
         # Make output directory
         if not os.path.exists(self.outDirPath):
@@ -62,8 +64,8 @@ class ISRAnalysis:
         # Create ISRUnfold object
         # unfold_name : prefix for output plots
         # Make two ISRUnfold object for mass and pt
-        self.unfold_pt   = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Pt")
-        self.unfold_mass = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Mass")
+        self.unfold_pt   = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Pt", self.outDirPath)
+        self.unfold_mass = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Mass", self.outDirPath)
 
         self.unfold_pt.setBias(self.bias)
         self.unfold_mass.setBias(self.bias)
@@ -73,8 +75,8 @@ class ISRAnalysis:
         self.unfold_mass.setNominalRM(self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.matrix_histName, self.binDef)
        
     def checkMatrixCond(self):
-        return self.unfold_pt.checkMatrixCond()
-        return self.unfold_mass.checkMatrixCond()
+        self.unfold_mass.checkMatrixCond()
+        self.unfold_pt.checkMatrixCond()
 
     def setInputHist(self, useMCInput = False, unfoldObj = None, dirName = "Detector", isSys = False, sysName = "nominal", sysPostfix = "", isFSR = False, useMadgraph = False):
         
@@ -182,6 +184,7 @@ class ISRAnalysis:
             self.unfold_mass.subBkgs(self.inHistDic[hist_filekey_temp], bkg, isSys, self.binDef, dirName, sysName, sysPostfix, histPostfix_temp)
             
     def setSystematics(self, sysName, sysHistName, isFSR = False):
+
         self.unfold_pt.setSystematics(sysName, sysHistName)
         self.unfold_mass.setSystematics(sysName, sysHistName)
 
@@ -217,18 +220,21 @@ class ISRAnalysis:
         self.unfold_mass.setSystematicRM(self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
 
     def drawResponseM(self, var = "Mass", sysName = "", sysPostfix = "", isDetector = True):
+
         self.unfold.drawResponseM(var, sysName, sysPostfix, isDetector)
 
     def checkIterEMUnfold(self):
+
         self.unfold.checkIterEMUnfold()
 
     # Do unfold! 
     def doUnfold(self):
+
         self.unfold_pt.doISRUnfold()
         self.unfold_mass.doISRUnfold()
 
     def doStatUnfold(self):
-        print ("doStatUnfold")
+
         self.unfold_pt.doStatUnfold()
         self.unfold_mass.doStatUnfold()
 
@@ -240,14 +246,16 @@ class ISRAnalysis:
             return self.unfold_pt
     
     def doAcceptance(self, isFSR = False, outName = "") :
+
         if isFSR :
-            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", outName, True)
-            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], "_FineCoarse", outName, True)
+            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.binDef, outName, True)
+            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.binDef, outName, True)
         else : 
-            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", outName)
-            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_drp1'], "_FineCoarse", outName)
+            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_drp1'], self.binDef, outName)
+            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_drp1'], self.binDef, outName)
 
     def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):
+
         self.unfold.drawCorrelation(var, steering, useAxis, outName)
 
     def combineOutFiles(self) :
@@ -257,11 +265,13 @@ class ISRAnalysis:
         os.system('hadd -f ' + target_file_path + " " + pt_output_path + " " + mass_output_path)
 
     def closeOutFiles(self) :
+
         self.unfold_pt.closeOutFile()
         self.unfold_mass.closeOutFile()
 
     # Get histograms
     def getCDFPtVsMassTGraph(self, grTitle = ""):
+
         meanMass, meanPt = array('d'), array('d')
         meanMassStatErr, meanPtStatErr = array('d'), array('d')
         meanMassSysErr, meanPtSysErr = array('d'), array('d')
