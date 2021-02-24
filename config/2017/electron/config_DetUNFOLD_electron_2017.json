@@ -11,24 +11,29 @@
     "VariablePostfix": "",
     "Steering":
     {
-        "Mass": "mass[UO];pt[UOC0]",
-        "Pt_0": "pt[UO];mass[UOC0]",
-        "Pt_1": "pt[UO];mass[UOC1]",
-        "Pt_2": "pt[UO];mass[UOC2]",
-        "Pt_3": "pt[UO];mass[UOC3]",
-        "Pt_4": "pt[UO];mass[UOC4]"
+        "Mass": "mass[];pt[C0O]",
+        "Pt_0": "pt[];mass[UOC0]",
+        "Pt_1": "pt[];mass[UOC1]",
+        "Pt_2": "pt[];mass[UOC2]",
+        "Pt_3": "pt[];mass[UOC3]",
+        "Pt_4": "pt[];mass[UOC4]"
     },
     "Systematics": 
     {
         "measurement": {    
-            "Nominal": ["Nominal"],
             "IdSF":    ["Up", "Down"],
+            "recoSF":  ["Up", "Down"],
             "trgSF":   ["Up", "Down"],
             "PU":      ["Up", "Down"],
-            "unfold":  ["IterEM", "Nominal"]
+            "bveto":    ["Up", "Down"],
+            "L1Prefire":    ["Up", "Down"],
+            "unfold":  ["IterEM", "Nominal"],
+            "LepRes": ["Up", "Down"],
+            "LepScale": ["Up", "Down"]
         },
         "theory": {  
             "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"],
+            "AlphaS": ["Up", "Down"],
             "PDF":   ["error_001","error_100"]
         }
     },

@@ -40,10 +40,10 @@
     {
         "Data_Measured" :    ["DoubleMuon"],
         "DY_Signal":         ["DYJetsToMuMu", "DYJets10to50ToMuMu"],
-        "DYtautau_Background": ["DYJetsToTauTau", "DYJets10to50ToTauTau"],
+        "DY #tau#tau_Background": ["DYJetsToTauTau", "DYJets10to50ToTauTau"],
         "VV_Background":       ["ZZ_pythia","WZ_pythia","WW_pythia"],
         "TTbar_Background":    ["TTLL_powheg"]
     },
-    "StackOrder": ["TTbar_Background", "VV_Background", "DYtautau_Background", "DY_Signal"]
+    "StackOrder": [ "TTbar_Background", "VV_Background", "DY #tau#tau_Background", "DY_Signal"]
 }
 

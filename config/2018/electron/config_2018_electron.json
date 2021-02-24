@@ -20,13 +20,18 @@
     },
     "Systematics": {
         "measurement": {
-            "Nominal": ["Nominal"],
             "IdSF":  ["Up", "Down"],
+            "recoSF":  ["Up", "Down"],
             "trgSF": ["Up", "Down"],
-            "PU":    ["Up", "Down"]
+            "PU":    ["Up", "Down"],
+            "bveto":    ["Up", "Down"],
+            "unfold":  ["IterEM", "Nominal"],  
+            "LepRes": ["Up", "Down"],
+            "LepScale": ["Up", "Down"] 
         },
         "theory": {
-            "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"]   
+            "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"],
+            "AlphaS": ["Up", "Down"]
         }
     },
     "Samples":
@@ -35,9 +40,8 @@
         "DY_Signal":         ["DYJetsToEE", "DYJets10to50ToEE"],
         "DYtautau_Background": ["DYJetsToTauTau", "DYJets10to50ToTauTau"],
         "VV_Background":       ["ZZ_pythia","WZ_pythia","WW_pythia"],
-        "TTbar_Background":    ["TTLL_powheg"],
-        "QCD_Background":      ["QCD"] 
+        "TTbar_Background":    ["TTLL_powheg"]
     },
-    "StackOrder": ["QCD_Background", "TTbar_Background", "VV_Background", "DYtautau_Background", "DY_Signal"]
+    "StackOrder": ["TTbar_Background", "VV_Background", "DYtautau_Background", "DY_Signal"]
 }
 

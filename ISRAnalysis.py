@@ -150,20 +150,13 @@ class ISRAnalysis:
     def setUnfoldBkgs(self, isSys = False , dirName = "Detector", sysName = "nominal", sysPostfix = ""):
    
         bkgList = {}
-        # 2016 데이터만 single top 샘플을 갖고 있다 
-        if self.year == "2016" or self.year == "2017" or self.year == "2018":
-            #bkgList = { "QCD": "Fake", "WJet": "Fake",
-            bkgList = {
-                        "WJets_MG": "WJets",
-                        "DYJets10to50ToTauTau":"DY#rightarrow#tau#tau", "DYJetsToTauTau":"DY#rightarrow#tau#tau", 
-                        "WW_pythia": "VV", "WZ_pythia": "VV", "ZZ_pythia": "VV", 
-                        "TTLL_powheg": "t#bar{t}",
-                      } 
-        else :
-            bkgList = {"WJets_MG": "WJets", 
-                       "WW_pythia": "EWK", "WZ_pythia": "EWK", "ZZ_pythia": "EWK", 
-                       "DYJets10to50ToTauTau":"EWK", "DYJetsToTauTau":"EWK", 
-                       "TTLL_powheg": "Top"}
+        bkgList = { "QCD": "Fake", "WJet": "Fake",
+        #bkgList = {
+        #            "WJets_MG": "WJets",
+                    "DYJets10to50ToTauTau":"DY#rightarrow#tau#tau", "DYJetsToTauTau":"DY#rightarrow#tau#tau", 
+                    "WW_pythia": "VV", "WZ_pythia": "VV", "ZZ_pythia": "VV", 
+                    "TTLL_powheg": "t#bar{t}",
+                  } 
         
         for bkg in bkgList.items():
             hist_filekey_temp = "hist"

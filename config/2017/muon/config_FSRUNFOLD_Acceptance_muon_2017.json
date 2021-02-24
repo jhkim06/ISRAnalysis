@@ -35,8 +35,8 @@
     "Samples":
     {
         "Data_Measured" :    ["Data"],
-        "DY_Signal":         ["DY"]
+        "MC@NLO(CP5)_Signal":         ["DY"]
     },
-    "StackOrder": ["DY_Signal"]
+    "StackOrder": ["MC@NLO(CP5)_Signal"]
 }
 

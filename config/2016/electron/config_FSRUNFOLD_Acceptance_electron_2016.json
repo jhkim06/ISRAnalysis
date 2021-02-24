@@ -41,8 +41,8 @@
     "Samples":
     {
         "Data_Measured" :    ["Data"],
-        "DY_Signal":         ["DY"]
+        "MC@NLO(CUETP8M1)_Signal":         ["DY"]
     },
-    "StackOrder": ["DY_Signal"]
+    "StackOrder": ["MC@NLO(CUETP8M1)_Signal"]
 }
 

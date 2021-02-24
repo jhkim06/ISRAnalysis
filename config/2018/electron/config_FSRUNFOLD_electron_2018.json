@@ -6,7 +6,7 @@
     "HistPrefix": "histo_",
     "topDirName": "unfolded",
     "useTUnfoldBin": true,
-    "TUnfoldBinNames": ["Gen_Pt","Gen_Mass"], 
+    "TUnfoldBinNames": ["Gen_Pt","Gen_Mass"],
     "Variables": ["Mass", "Pt_0", "Pt_1", "Pt_2", "Pt_3", "Pt_4"],
     "VariablePostfix": "",
     "Steering":
@@ -21,16 +21,20 @@
     "Systematics":
     {
         "measurement": {
-            "Nominal": ["Nominal"],
             "IdSF":    ["Up", "Down"],
+            "recoSF":  ["Up", "Down"],
             "trgSF":   ["Up", "Down"],
             "PU":      ["Up", "Down"],
+            "bveto":    ["Up", "Down"],
             "unfold":  ["IterEM", "Nominal"],
-            "fsr": ["PHOTOS","PYTHIA"]   
+            "LepRes": ["Up", "Down"],
+            "LepScale": ["Up", "Down"]
         },
-        "theory": {                                                                                                                                                                                                                                                                                                           
-            "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"]                                                                                                                                                                                                                                                       
-        }  
+        "theory": {
+            "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"],
+            "AlphaS": ["Up", "Down"],
+            "PDF":   ["error_001","error_100"]
+        }
     },
     "Samples":
     {

@@ -21,7 +21,6 @@
     "Systematics":                                                                                                                                               
     {                                                                                                                                                            
         "measurement": {                                                                                                                                         
-            "Nominal": ["Nominal"],                                                                                                                              
             "IdSF":    ["Up", "Down"],                                                                                                                           
             "trgSF":   ["Up", "Down"],                                                                                                                           
             "PU":      ["Up", "Down"],                                                                                                                           

@@ -33,8 +33,7 @@
         },
         "theory": {
             "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"],
-            "AlphaS": ["Up", "Down"],
-            "PDF":   ["error_001","error_100"]
+            "AlphaS": ["Up", "Down"]
         }
     },
     "Samples":
