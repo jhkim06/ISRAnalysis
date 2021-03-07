@@ -9,7 +9,7 @@ import pandas as pd
 
 class ISRAnalysis:
     
-    def __init__(self, unfold_name_ = "Detector", year_ = "2016", channel_= "electron", regMode = 0, sys_ = False, matrix_filekey_ = "matrix",
+    def __init__(self, unfold_name_ = "Detector", year_ = "2016", channel_= "electron", regMode_ = 0, sys_ = False, matrix_filekey_ = "matrix",
                  matrix_dirPath_ = "Detector_Dressed_DRp1_Fiducial", matrix_histName_ = "Detector_Dressed_DRp1", binDef_ = "", channel_postfix_ = ""):
         
         # Initialize some variables 
@@ -57,9 +57,9 @@ class ISRAnalysis:
             modifiedPath = path.lstrip(' ').rstrip(' ').rstrip('\n')
             self.inHistDic[modifiedPath.split()[1]] = modifiedPath.split()[2]
         
-        # 언폴딩 컨피규레이션
+        # Unfolding configuration
         self.bias = 1.0
-        self.mode = regMode # 레귤라이제이션 모드
+        self.mode = regMode_ # 레귤라이제이션 모드
         
         # Create ISRUnfold object
         # unfold_name : prefix for output plots
@@ -149,9 +149,8 @@ class ISRAnalysis:
         
     def setUnfoldBkgs(self, isSys = False , dirName = "Detector", sysName = "nominal", sysPostfix = ""):
    
-        bkgList = {}
-        bkgList = { "QCD": "Fake", "WJet": "Fake",
-        #bkgList = {
+        #bkgList = { "QCD": "Fake", "WJet": "Fake",
+        bkgList = {
         #            "WJets_MG": "WJets",
                     "DYJets10to50ToTauTau":"DY#rightarrow#tau#tau", "DYJetsToTauTau":"DY#rightarrow#tau#tau", 
                     "WW_pythia": "VV", "WZ_pythia": "VV", "ZZ_pythia": "VV", 
@@ -212,10 +211,6 @@ class ISRAnalysis:
         self.unfold_pt.setSystematicRM(self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
         self.unfold_mass.setSystematicRM(self.inHistDic[matrix_filekey_temp], dirPath_temp, self.matrix_histName, sysName, sysHistName, histPostfix_temp, self.binDef)
 
-    def drawResponseM(self, var = "Mass", sysName = "", sysPostfix = "", isDetector = True):
-
-        self.unfold.drawResponseM(var, sysName, sysPostfix, isDetector)
-
     def checkIterEMUnfold(self):
 
         self.unfold.checkIterEMUnfold()
@@ -252,6 +247,7 @@ class ISRAnalysis:
         self.unfold.drawCorrelation(var, steering, useAxis, outName)
 
     def combineOutFiles(self) :
+
         pt_output_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + "_Pt.root" 
         mass_output_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + "_Mass.root" 
         target_file_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + ".root"   

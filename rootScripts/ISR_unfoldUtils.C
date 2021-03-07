@@ -287,7 +287,7 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
             {
                 // Create TUnfoldDensity using the DEFAULT response matrix
                 //cout << "Systematic variation, " << sysMap_previous[it->first][ith] << endl;
-                if((it->first).Contains("Unfolding") && !(sysMap_previous[it->first][ith]).Contains("Nominal"))
+                if((it->first).Contains("iterEM"))
                 {
                     this->iterEMTUnfold   = new TUnfoldIterativeEM(hResponseM,TUnfoldDensity::kHistMapOutputHoriz,binning_Gen,binning_Rec);
 
@@ -303,7 +303,7 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
                 }
                 else
                 {
-                    this->systematicTUnfold[it->first][sysMap_previous[it->first][ith]]   = new TUnfoldDensity(hResponseM,TUnfold::kHistMapOutputHoriz,regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen,binning_Rec);
+                    this->systematicTUnfold[it->first][sysMap_previous[it->first][ith]] = new TUnfoldDensity(hResponseM,TUnfold::kHistMapOutputHoriz,regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen,binning_Rec);
 
                     if(!useAccept)
                     {
@@ -334,7 +334,7 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
                 else
                 {
 
-                    if((it->first).Contains("Unfolding") && !(sysMap_previous[it->first][ith]).Contains("Nominal"))
+                    if((it->first).Contains("iterEM"))
                     {
                         this->iterEMTUnfold->SetInput(unfold->hSysFullPhaseData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
                     }
@@ -350,24 +350,26 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
     // Loop over variations of event selection efficiency correction
 }
 
+// Option for unfold options
 void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString histPostfix, TString binDef)
 {
     TFile* filein = new TFile(filepath, "READ");
     TH2* hmcGenRec = NULL;
 
-    TString fullHistName = "hmc" + var + "GenRec";
+    TString histNameWithSystematic = "hmc" + var + "GenRec";
     if(histPostfix != "")
-        fullHistName = fullHistName + "_" + sysPostfix;
+        histNameWithSystematic = histNameWithSystematic + "_" + sysPostfix;
 
-    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + "_" + binDef + "/" + fullHistName);
+    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + "_" + binDef + "/" + histNameWithSystematic);
 
     
-    if(sysName.Contains("Unfolding") && !sysPostfix.Contains("Nominal"))
+    if(sysName.Contains("iterEM"))
     {
         iterEMTUnfold = new TUnfoldIterativeEM(hmcGenRec,TUnfoldDensity::kHistMapOutputHoriz,binning_Gen,binning_Rec);
     }
     else
     {
+        // FIXME option for variation on setting a TUnfold object
         systematicTUnfold[sysName][sysPostfix] = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen, binning_Rec);
     }
 
@@ -403,7 +405,7 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, bool isSys, TString sysName, TStr
         }
         else
         {
-            if(sysName.Contains("Unfolding") && !sysPostfix.Contains("Nominal"))
+            if(sysName.Contains("iterEM"))
             {
                 iterEMTUnfold->SetInput(unfold->hFullPhaseData, 1.);
             }
@@ -454,7 +456,7 @@ void ISRUnfold::setUnfInput(TString varPostfix, TString filepath, TString dirNam
     else
     // Systematic histograms
     {
-        if(sysName.Contains("Unfolding") && !sysPostfix.Contains("Nominal"))
+        if(sysName.Contains("iterEM"))
         {
             iterEMTUnfold->SetInput(hRec, nominal_bias);
         }
@@ -482,16 +484,16 @@ void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, 
     else
     // Systematic
     {
-        TString fullHistName = bkgInfo.first + "_" + sysPostfix;
+        TString histNameWithSystematic = bkgInfo.first + "_" + sysPostfix;
         if(histPostfix == "")
-            fullHistName = bkgInfo.first;
+            histNameWithSystematic = bkgInfo.first;
 
-        hRec = (TH1*)filein->Get(dirName + "/" + var + "_" + binDef+"/histo_" + fullHistName);
+        hRec = (TH1*)filein->Get(dirName + "/" + var + "_" + binDef+"/histo_" + histNameWithSystematic);
 
         //cout << "file path: " << filepath << endl;
-        //cout << dirName + "/Pt"+binDef+"/histo_" + fullHistName << endl;
+        //cout << dirName + "/Pt"+binDef+"/histo_" + histNameWithSystematic << endl;
 
-        if(sysName.Contains("Unfolding") && !sysPostfix.Contains("Nominal"))
+        if(sysName.Contains("iterEM"))
         {
             iterEMTUnfold->SubtractBackground(hRec, bkgInfo.first);
         }
@@ -625,7 +627,7 @@ void ISRUnfold::doISRUnfold()
         int size = (it->second).size();
         for(int i = 0; i < size; i++)
         {
-            if( (it->first).Contains("Unfolding") && !((it->second).at(i)).Contains("Nominal"))
+            if( (it->first).Contains("iterEM"))
             {
                 iBest=iterEMTUnfold->ScanSURE(NITER_Iterative, &graph_SURE_IterativeSURE, &graph_DFdeviance_IterativeSURE);
                 cout << "iBest: " << iBest << endl;
@@ -714,7 +716,7 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString outName, 
             TH1* hFullPhaseMC_raw_sys = NULL;
             TH1* hFiducialPhaseMC_sys = NULL;
             
-            if((it->first).Contains("Unfolding") && !((it->second).at(i)).Contains("Nominal"))
+            if((it->first).Contains("iterEM"))
             {
                 hSysFullPhaseData[it->first][(it->second).at(i)]   = iterEMTUnfold->GetOutput("histo_Data_"+(it->second).at(i),0,0, "*[*]", false);
                 hFiducialPhaseMC_sys=hFiducialPhaseMC;

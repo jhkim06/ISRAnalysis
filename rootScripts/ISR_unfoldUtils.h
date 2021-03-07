@@ -140,7 +140,7 @@ public:
 
         //output_baseDir = "output/" + yearStr + "/" + channel_name + "/";
 
-        fUnfoldOutPath      = output_baseDir+unfold_name+"_"+channel_name+"_"+yearStr+"_"+var+".root";
+        fUnfoldOutPath = output_baseDir+unfold_name+"_"+channel_name+"_"+yearStr+"_"+var+".root";
         fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");
 
         fUnfoldOut->mkdir("unfolded");

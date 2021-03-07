@@ -7,16 +7,16 @@
     "topDirName": "unfolded",
     "useTUnfoldBin": true,
     "TUnfoldBinNames": ["Gen_Pt","Gen_Mass"],
-    "Variables": ["Mass", "Pt_0", "Pt_1", "Pt_2", "Pt_3", "Pt_4"],
+    "Variables": ["Mass", "Pt__0", "Pt__1", "Pt__2", "Pt__3", "Pt__4"],
     "VariablePostfix": "",
     "Steering":
     {
         "Mass": "mass[];pt[C0O]",
-        "Pt_0": "pt[];mass[UOC0]",
-        "Pt_1": "pt[];mass[UOC1]",
-        "Pt_2": "pt[];mass[UOC2]",
-        "Pt_3": "pt[];mass[UOC3]",
-        "Pt_4": "pt[];mass[UOC4]"
+        "Pt__0": "pt[];mass[UOC0]",
+        "Pt__1": "pt[];mass[UOC1]",
+        "Pt__2": "pt[];mass[UOC2]",
+        "Pt__3": "pt[];mass[UOC3]",
+        "Pt__4": "pt[];mass[UOC4]"
     },
     "Systematics":
     {
@@ -28,7 +28,7 @@
             "PU": ["Up", "Down"],
             "bveto":    ["Up", "Down"],
             "L1Prefire":    ["Up", "Down"], 
-            "unfold":  ["IterEM", "Nominal"],
+            "unfold":  ["IterEM"],
             "LepRes": ["Up", "Down"],
             "LepScale": ["Up", "Down"]
         },

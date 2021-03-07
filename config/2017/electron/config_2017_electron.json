@@ -6,29 +6,30 @@
     "HistPrefix": "histo_",
     "topDirName": "Detector",
     "useTUnfoldBin": true,
-    "TUnfoldBinNames": ["Rec_Pt","Rec_Mass"], 
-    "Variables": ["Mass", "Pt_0", "Pt_1", "Pt_2", "Pt_3", "Pt_4"],
+    "TUnfoldBinNames": ["Rec_Pt","Rec_Mass"],
+    "Variables": ["Mass", "Pt__0", "Pt__1", "Pt__2", "Pt__3", "Pt__4"],
     "VariablePostfix": "FineCoarse",
     "Steering":
     {
         "Mass": "mass[];pt[C0O]",
-        "Pt_0": "pt[];mass[UOC0]",
-        "Pt_1": "pt[];mass[UOC1]",
-        "Pt_2": "pt[];mass[UOC2]",
-        "Pt_3": "pt[];mass[UOC3]",
-        "Pt_4": "pt[];mass[UOC4]"
+        "Pt__0": "pt[];mass[UOC0]",
+        "Pt__1": "pt[];mass[UOC1]",
+        "Pt__2": "pt[];mass[UOC2]",
+        "Pt__3": "pt[];mass[UOC3]",
+        "Pt__4": "pt[];mass[UOC4]"
     },
     "Systematics": {
         "measurement": {
             "IdSF":  ["Up", "Down"],
             "recoSF":  ["Up", "Down"],
             "trgSF": ["Up", "Down"],
+            "trgDZSF": ["Up", "Down"],
             "PU":    ["Up", "Down"],
             "bveto":    ["Up", "Down"],
-            "L1Prefire":    ["Up", "Down"], 
+            "L1Prefire":    ["Up", "Down"],
             "unfold":  ["IterEM", "Nominal"],
-            "LepRes": ["Up", "Down"],
-            "LepScale": ["Up", "Down"] 
+            "LepMomRes": ["Up", "Down"],
+            "LepMomScale": ["Up", "Down"]
         },
         "theory": {
             "Scale": ["ABUp", "ABDown", "AUp", "ADown", "BUp", "BDown"],
@@ -39,10 +40,11 @@
     {
         "Data_Measured" :      ["DoubleEG"],
         "DY_Signal":           ["DYJetsToEE", "DYJets10to50ToEE"],
-        "DYtautau_Background": ["DYJetsToTauTau", "DYJets10to50ToTauTau"],
+        "DY $\\tau\\tau$_Background": ["DYJetsToTauTau", "DYJets10to50ToTauTau"],
         "VV_Background":       ["ZZ_pythia","WZ_pythia","WW_pythia"],
-        "TTbar_Background":    ["TTLL_powheg"]
+        "TTbar_Background":    ["TTLL_powheg"],
+        "tW_Background":    ["SingleTop_tW_antitop_NoFullyHad", "SingleTop_tW_top_NoFullyHad"]
     },
-    "StackOrder":              ["TTbar_Background", "VV_Background", "DYtautau_Background", "DY_Signal"]
+    "StackOrder":              ["tW_Background", "TTbar_Background", "VV_Background", "DY $\\tau\\tau$_Background", "DY_Signal"]
 }
 
