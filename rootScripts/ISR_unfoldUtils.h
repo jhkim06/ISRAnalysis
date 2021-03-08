@@ -169,19 +169,18 @@ public:
     void setBias(double bias);
 
     // Set nominal TUnfoldDensity
-    void setNominalRM(TString filepath, TString dirName, TString histName, TString binDef = "");
+    void setNominalRM(TString filepath, TString dirName, TString binDef = "");
     void setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept = false);
 
     // Set input histogram
-    void setUnfInput(TString varPostfix = "", TString filepath = "", TString dirName ="", TString histName = "", bool isSys = false, TString sysName = "", TString sysPostfix = "", bool isFSR = false);
+    void setUnfInput(TString filepath = "", TString dirName = "", TString binDef = "", TString histName = "", TString sysType = "", TString sysName = "", TString histPostfix = "", bool isFSR = false);
     void setUnfInput(ISRUnfold* unfold, bool isSys = false, TString sysName = "", TString sysPostfix = "", bool useAccept = false);
 
     // Set background histograms
-    void subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo,
-                 bool isSys = false, TString binDef = "", TString dirName = "", TString sysName = "", TString sysPostfix = "", TString histPostfix = "");
+    void subBkgs(TString filepath, TString dirName = "",  TString binDef = "", TString bkgName = "", TString sysType = "", TString sysName = "", TString histPostfix = "");
 
     // Set systematic TUnfoldDensity
-    void setSystematicRM(TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString histPostfix, TString binDef);
+    void setSystematicRM(TString filepath, TString dirName,  TString binDef, TString sysType, TString sysName, TString histPostfix);
 
     void setSystematics(TString sysName, TString sysHistName);
     void inline printSystematics()

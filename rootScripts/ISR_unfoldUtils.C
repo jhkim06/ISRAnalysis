@@ -229,13 +229,14 @@ void ISRUnfold::checkIterEMUnfold(void)
 }
 
 // Set the nominal response matrix
-void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString histName, TString binDef)
+void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
 {
     //cout << "ISRUnfold::setNominalRM set response matrix..." << endl;
     TH1::AddDirectory(kFALSE);
     TFile* filein = new TFile(filepath, "READ");
 
-    TString fullDirPath = dirName + "/" + var + "_ResMatrix_" + histName + "_" + binDef + "/";
+    TString fullDirPath = dirName + "/" + var + "_ResMatrix_" + binDef + "/";
+    cout << "ISRUnfold::setNominalRM fullDirPath : " << fullDirPath << endl;
 
     TString Rec_binName = "Rec_"+var;
     TString Gen_binName = "Gen_"+var;
@@ -248,8 +249,8 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString histName
 
     // Set response matrix
     // First, get the response matrix
-    TH2* hmcGenRec;
-    hmcGenRec = (TH2*)filein->Get(fullDirPath + "hmc" + var + "GenRec");
+    TH2* hmcGenRec = (TH2*)filein->Get(fullDirPath + "hmc" + var + "GenRec");
+    cout << fullDirPath + "hmc" + var + "GenRec" << endl;
 
     nominalTUnfold = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen, binning_Rec);
     cout << "Used TUnfold version " << nominalTUnfold->GetTUnfoldVersion() << endl;
@@ -351,17 +352,13 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
 }
 
 // Option for unfold options
-void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString histName, TString sysName, TString sysPostfix, TString histPostfix, TString binDef)
+void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString binDef, TString sysType, TString sysName, TString histPostfix)
 {
     TFile* filein = new TFile(filepath, "READ");
     TH2* hmcGenRec = NULL;
 
-    TString histNameWithSystematic = "hmc" + var + "GenRec";
-    if(histPostfix != "")
-        histNameWithSystematic = histNameWithSystematic + "_" + sysPostfix;
-
-    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + histName + "_" + binDef + "/" + histNameWithSystematic);
-
+    TString histNameWithSystematic = "hmc" + var + "GenRec" + histPostfix;
+    hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + binDef + "/" + histNameWithSystematic);
     
     if(sysName.Contains("iterEM"))
     {
@@ -370,7 +367,7 @@ void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString histN
     else
     {
         // FIXME option for variation on setting a TUnfold object
-        systematicTUnfold[sysName][sysPostfix] = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen, binning_Rec);
+        systematicTUnfold[sysType][sysName] = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen, binning_Rec);
     }
 
     filein->Close();
@@ -418,14 +415,14 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, bool isSys, TString sysName, TStr
 }
 
 // Set input histogram from root file
-void ISRUnfold::setUnfInput(TString varPostfix, TString filepath, TString dirName, TString histName, bool isSys, TString sysName, TString sysPostfix, bool isFSR)
+void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, TString histName, TString sysType, TString sysName, TString histPostfix, bool isFSR)
 {
     TH1::AddDirectory(kFALSE);
 
     TFile* filein = new TFile(filepath);
     TH1* hRec = NULL;
-    //cout << dirName+"/"+var+ "_" + varPostfix+"/"+histName << endl;
-    hRec = (TH1*)filein->Get(dirName+"/"+var+ "_" + varPostfix+"/"+histName);
+    //cout << dirName+"/"+var+ "_" + binDef+"/"+histName << endl;
+    hRec = (TH1*)filein->Get(dirName+"/"+var+ "_" + binDef+"/"+histName + histPostfix);
 
     // Use DY MC as unfolding input, i.e. simple closure test
     if(histName.Contains("DYJetsTo"))
@@ -433,12 +430,12 @@ void ISRUnfold::setUnfInput(TString varPostfix, TString filepath, TString dirNam
         if(!isFSR)
         {
             histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
-            hRec->Add((TH1*)filein->Get(dirName+"/"+var+ "_" + varPostfix+"/"+histName));
+            hRec->Add((TH1*)filein->Get(dirName+"/"+var+ "_" + binDef+"/"+histName));
         }
         else
         {
             histName.ReplaceAll("DYJets", "DYJets10to50");
-            hRec->Add((TH1*)filein->Get(dirName+"/"+var+ "_" + varPostfix+"/"+histName));
+            hRec->Add((TH1*)filein->Get(dirName+"/"+var+ "_" + binDef+"/"+histName));
         }
     }
 
@@ -449,20 +446,20 @@ void ISRUnfold::setUnfInput(TString varPostfix, TString filepath, TString dirNam
     //TH2* hCov_pt = (TH2*) fcov_pt->Get("cov");
 
     // Nominal
-    if(!isSys)
+    if(sysType == "Type_0")
     {
-        nominalTUnfold->SetInput(hRec,   nominal_bias, 0);
+        nominalTUnfold->SetInput(hRec, nominal_bias, 0);
     }
     else
     // Systematic histograms
     {
-        if(sysName.Contains("iterEM"))
+        if(sysName.Contains("iterEM")) // FIXME 
         {
             iterEMTUnfold->SetInput(hRec, nominal_bias);
         }
         else
         {
-            systematicTUnfold[sysName][sysPostfix]->SetInput(hRec, nominal_bias);
+            systematicTUnfold[sysType][sysName]->SetInput(hRec, nominal_bias);
         }
     }
 
@@ -470,50 +467,48 @@ void ISRUnfold::setUnfInput(TString varPostfix, TString filepath, TString dirNam
     delete filein;
 }
 
-void ISRUnfold::subBkgs(TString filepath, std::pair<TString, TString>& bkgInfo, bool isSys, TString binDef, TString dirName, TString sysName, TString sysPostfix, TString histPostfix)
+void ISRUnfold::subBkgs(TString filepath, TString dirName, TString binDef, TString bkgName, TString sysType, TString sysName, TString histPostfix)
 {
     TFile* filein = new TFile(filepath);
     TH1* hRec = NULL;
 
+    hRec = (TH1*)filein->Get(dirName + "/" + var + "_" + binDef+"/histo_" + bkgName + histPostfix);
+
     // Nominal histograms
-    if(!isSys)
+    if(sysType=="Type_0")
     {
-        hRec = (TH1*)filein->Get(dirName + "/" + var + "_" + binDef+"/histo_" + bkgInfo.first);
-        nominalTUnfold->  SubtractBackground(hRec, bkgInfo.first);
+        nominalTUnfold->  SubtractBackground(hRec, bkgName);
     }
     else
     // Systematic
     {
-        TString histNameWithSystematic = bkgInfo.first + "_" + sysPostfix;
-        if(histPostfix == "")
-            histNameWithSystematic = bkgInfo.first;
-
-        hRec = (TH1*)filein->Get(dirName + "/" + var + "_" + binDef+"/histo_" + histNameWithSystematic);
-
         //cout << "file path: " << filepath << endl;
         //cout << dirName + "/Pt"+binDef+"/histo_" + histNameWithSystematic << endl;
 
         if(sysName.Contains("iterEM"))
         {
-            iterEMTUnfold->SubtractBackground(hRec, bkgInfo.first);
+            iterEMTUnfold->SubtractBackground(hRec, bkgName);
         }
         else
         {
             // FIXME temporary method for background systematic
             if(sysName.Contains("Background"))
             {
-                if(sysPostfix.Contains("Up"))
+                if(sysName.Contains("Up"))
                 {
-                    systematicTUnfold[sysName][sysPostfix]->SubtractBackground(hRec, bkgInfo.first, 1.05);
+                    systematicTUnfold[sysType][sysName]->SubtractBackground(hRec, bkgName, 1.05);
                 }
-                if(sysPostfix.Contains("Down"))
+                if(sysName.Contains("Down"))
                 {
-                    systematicTUnfold[sysName][sysPostfix]->SubtractBackground(hRec, bkgInfo.first, 0.95);
+                    systematicTUnfold[sysType][sysName]->SubtractBackground(hRec, bkgName, 0.95);
                 }
             }
             else
             {
-                systematicTUnfold[sysName][sysPostfix]->SubtractBackground(hRec, bkgInfo.first);
+                //cout << "ISRUnfold::subBkgs bkgName: " << bkgName << endl;
+                //cout << dirName + "/" + var + "_" + binDef+"/histo_" + bkgName + histPostfix << endl;
+                //cout << "histPostfix: " << histPostfix << endl;
+                systematicTUnfold[sysType][sysName]->SubtractBackground(hRec, bkgName);
             }
         }
     }
