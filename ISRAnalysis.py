@@ -9,7 +9,7 @@ import pandas as pd
 
 class ISRAnalysis:
     
-    def __init__(self, unfold_name_ = "Detector", year_ = "2016", channel_= "electron", regMode_ = 0, sys_ = False, matrix_filekey_ = "matrix",
+    def __init__(self, unfold_name_ = "Detector", year_ = "2016", channel_= "electron", regMode_ = 0, doInputStat_ = False, doRMStat_ = False, matrix_filekey_ = "matrix",
                  matrix_dirPath_ = "Detector_Dressed_DRp1_Fiducial",  binDef_ = "", channel_postfix_ = ""):
         
         # Initialize some variables 
@@ -63,8 +63,8 @@ class ISRAnalysis:
         # Create ISRUnfold object
         # unfold_name : prefix for output plots
         # Make two ISRUnfold object for mass and pt
-        self.unfold_pt   = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Pt", self.outDirPath)
-        self.unfold_mass = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), sys_, False, "Mass", self.outDirPath)
+        self.unfold_pt   = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), doInputStat_, doRMStat_, False, "Pt", self.outDirPath)
+        self.unfold_mass = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), doInputStat_, doRMStat_, False, "Mass", self.outDirPath)
 
         self.unfold_pt.setBias(self.bias)
         self.unfold_mass.setBias(self.bias)

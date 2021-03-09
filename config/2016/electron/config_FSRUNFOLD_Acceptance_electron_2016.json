@@ -29,6 +29,8 @@
             "bveto":    ["Up", "Down"],
             "L1Prefire":    ["Up", "Down"], 
             "unfold":  ["IterEM"],
+            "UnfoldingInput":  ["Stat_000", "Stat_999"],
+            "UnfoldingMatrix":  ["Stat_000", "Stat_999"],
             "LepScale": ["Up", "Down"],
             "LepRes": ["Up", "Down"]
         },

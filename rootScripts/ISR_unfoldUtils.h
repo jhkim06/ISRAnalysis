@@ -64,7 +64,8 @@ private:
     TH2* hResponseM;
 
     // For statistical uncertainty
-    std::vector<TUnfoldDensity*> statisticalTUnfold;
+    std::vector<TUnfoldDensity*> UnfoldingInputStatTUnfold;
+    std::vector<TUnfoldDensity*> UnfoldingMatrixStatTUnfold;
 
     // For systematic uncertainty
     std::map<TString, std::map<TString, TUnfoldDensity*>> systematicTUnfold;
@@ -104,12 +105,13 @@ private:
     TString var;
     int year;
 
-    bool makeStatUnfold;
+    bool doInputStatUnc;
+    bool doRMStatUnc;
 
 public:
 
     // Constructor
-    ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool makeStatUnfold_ = true, bool verbose_ = false, TString var_ = "Mass", TString output_baseDir_ = "")
+    ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool doInputStatUnc_ = true, bool doRMStatUnc_ = false, bool verbose_ = false, TString var_ = "Mass", TString output_baseDir_ = "")
     {
         cout << "ISRUnfold set! " << var_ << endl;
 
@@ -130,7 +132,8 @@ public:
         if(regMode_ == 3)
             regMode = TUnfold::kRegModeCurvature;
 
-        makeStatUnfold = makeStatUnfold_;
+        doInputStatUnc = doInputStatUnc_;
+        doRMStatUnc = doRMStatUnc_; 
 
         verbose = verbose_;
 
@@ -201,8 +204,8 @@ public:
 
     // Do unfold
     void doISRUnfold();
-    void doStatUnfold();
 
+    // Acceptance correction
     void doAcceptCorr(TString filePath, TString binDef, TString outName = "", bool isAccept = false);
 
     // Get histograms
