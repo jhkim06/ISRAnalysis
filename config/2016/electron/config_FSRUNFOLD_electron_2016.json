@@ -11,7 +11,7 @@
     "VariablePostfix": "",
     "Steering":
     {
-        "Mass": "mass[];pt[C0O]",
+        "Mass": "mass[]",
         "Pt__0": "pt[];mass[UOC0]",
         "Pt__1": "pt[];mass[UOC1]",
         "Pt__2": "pt[];mass[UOC2]",

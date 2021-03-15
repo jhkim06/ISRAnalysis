@@ -54,7 +54,7 @@ private:
     TUnfoldBinning* binning_Rec = NULL;
     TUnfoldBinning* binning_Gen = NULL;
 
-    std::map<TString, vector<TString>> sysMap;
+    vector<TString> sysVector;
 
     // Unfolding
     // For nominal results
@@ -68,7 +68,8 @@ private:
     std::vector<TUnfoldDensity*> UnfoldingMatrixStatTUnfold;
 
     // For systematic uncertainty
-    std::map<TString, std::map<TString, TUnfoldDensity*>> systematicTUnfold;
+    //std::map<TString, std::map<TString, TUnfoldDensity*>> systematicTUnfold;
+    std::map<TString, TUnfoldDensity*> systematicTUnfold;
 
     TUnfoldIterativeEM* iterEMTUnfold;
 
@@ -81,8 +82,8 @@ private:
     TH1* hFullPhaseData;
     TH1* hFullPhaseMC;
 
-    std::map<TString, std::map<TString, TH1*>> hSysFullPhaseData;
-    std::map<TString, std::map<TString, TH1*>> hSysFullPhaseMC;
+    std::map<TString, TH1*> hSysFullPhaseData;
+    std::map<TString, TH1*> hSysFullPhaseMC;
 
     TH1* hAcceptance;
     TH1* hAcceptanceFraction;
@@ -177,27 +178,27 @@ public:
 
     // Set input histogram
     void setUnfInput(TString filepath = "", TString dirName = "", TString binDef = "", TString histName = "", TString sysType = "", TString sysName = "", TString histPostfix = "", bool isFSR = false);
-    void setUnfInput(ISRUnfold* unfold, bool isSys = false, TString sysName = "", TString sysPostfix = "", bool useAccept = false);
+    void setUnfInput(ISRUnfold* unfold,  TString thisSysType = "", TString sysName = "", bool useAccept = false);
 
     // Set background histograms
     void subBkgs(TString filepath, TString dirName = "",  TString binDef = "", TString bkgName = "", TString sysType = "", TString sysName = "", TString histPostfix = "");
 
     // Set systematic TUnfoldDensity
-    void setSystematicRM(TString filepath, TString dirName,  TString binDef, TString sysType, TString sysName, TString histPostfix);
+    void setSystematicRM(TString filepath, TString dirName,  TString binDef,  TString sysName, TString histPostfix);
 
-    void setSystematics(TString sysName, TString sysHistName);
+    void setSystematics(TString sysHistName);
     void inline printSystematics()
     {
-        std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
-        while(it != sysMap.end())
+        std::vector<TString>::iterator it = sysVector.begin();
+        while(it != sysVector.end())
         {
-            cout << "Systematic name: " << it->first << endl;
+            cout << "Systematic name: " << *it << endl;
             it++;
         }
     }
-    inline std::map<TString, std::vector<TString>>& getSystematicMap()
+    inline std::vector<TString>& getSystematicVector()
     {
-        return sysMap;
+        return sysVector;
     }
 
     void varyHistWithStatError(TH1* hist, int sys);
@@ -206,7 +207,7 @@ public:
     void doISRUnfold();
 
     // Acceptance correction
-    void doAcceptCorr(TString filePath, TString binDef, TString outName = "", bool isAccept = false);
+    void doAcceptCorr(TString filePath, TString binDef, bool isAccept = false);
 
     // Get histograms
     TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true);

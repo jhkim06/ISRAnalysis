@@ -236,7 +236,7 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     TFile* filein = new TFile(filepath, "READ");
 
     TString fullDirPath = dirName + "/" + var + "_ResMatrix_" + binDef + "/";
-    cout << "ISRUnfold::setNominalRM fullDirPath : " << fullDirPath << endl;
+    //cout << "ISRUnfold::setNominalRM fullDirPath : " << fullDirPath << endl;
 
     TString Rec_binName = "Rec_"+var;
     TString Gen_binName = "Gen_"+var;
@@ -295,77 +295,48 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
 {
     //cout << "setFromPrevUnfResult(), useAccept? " << useAccept << endl;
     // Loop over sytematics considered in the previous unfold class
-    // So first get sysMap map object
-    std::map<TString, std::vector<TString>> sysMap_previous = unfold->getSystematicMap();
-    std::map<TString, std::vector<TString>>::iterator it = sysMap_previous.begin();
-    while(it != sysMap_previous.end())
+    // So first get sysVector map object
+    std::vector<TString> sysVector_previous = unfold->getSystematicVector();
+    std::vector<TString>::iterator it = sysVector_previous.begin();
+    while(it != sysVector_previous.end())
     {
         //cout << "Systematic name: " << it->first << endl;
-        if(this->sysMap.find(it->first) == this->sysMap.end())
+        std::vector<TString>::iterator found = find(this->sysVector.begin(), this->sysVector.end(), *it);
+        if(found == this->sysVector.end())
+        //if(this->sysVector.find(it->first) == this->sysVector.end())
         {
             // Not found in this ISRUnfold class, but exits in the previous one
-            int size = sysMap_previous[it->first].size();
-            for(int ith = 0; ith < size; ith++)
+            // Create TUnfoldDensity using the DEFAULT response matrix
+            //cout << "Systematic variation, " << sysVector_previous[it->first][ith] << endl;
+            if((*it).Contains("iterEM"))
             {
-                // Create TUnfoldDensity using the DEFAULT response matrix
-                //cout << "Systematic variation, " << sysMap_previous[it->first][ith] << endl;
-                if((it->first).Contains("iterEM"))
-                {
-                    this->iterEMTUnfold   = new TUnfoldIterativeEM(hResponseM,TUnfoldDensity::kHistMapOutputHoriz,binning_Gen,binning_Rec);
+                this->iterEMTUnfold   = new TUnfoldIterativeEM(hResponseM,TUnfoldDensity::kHistMapOutputHoriz,binning_Gen,binning_Rec);
 
-                    if(!useAccept)
-                    {
-                        this->iterEMTUnfold->SetInput(unfold->iterEMTUnfold->GetOutput("hUnfolded" + var + "_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
-                    }
-                    else
-                    {
-                        //cout << "use acceptance corrected output!" << endl;
-                        this->iterEMTUnfold->SetInput(unfold->hSysFullPhaseData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
-                    }
-                }
-                else
-                {
-                    this->systematicTUnfold[it->first][sysMap_previous[it->first][ith]] = new TUnfoldDensity(hResponseM,TUnfold::kHistMapOutputHoriz,regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen,binning_Rec);
-
-                    if(!useAccept)
-                    {
-                         this->systematicTUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->systematicTUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfolded" + var + "_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
-                    }
-                    else
-                    {
-                        //cout << "use acceptance corrected output!" << endl;
-                        this->systematicTUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhaseData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
-                    }
-                }
-
-                this->sysMap[it->first].push_back(sysMap_previous[it->first][ith]);
-            }
-        }
-        else
-        {
-            // Found
-            // Systematic both considered in this and previous unfolding
-            // Loop over systematic varations
-            int size = sysMap_previous[it->first].size();
-            for(int ith = 0; ith < size; ith++)
-            {
                 if(!useAccept)
                 {
-                    this->systematicTUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->systematicTUnfold[it->first][sysMap_previous[it->first][ith]]->GetOutput("hUnfolded"+var+"_"+ it->first + "_" + sysMap_previous[it->first][ith],0,0,"*[*]",false), nominal_bias);
+                    this->iterEMTUnfold->SetInput(unfold->iterEMTUnfold->GetOutput("hUnfolded" + var + "_"+ *it + "_" + *it,0,0,"*[*]",false), nominal_bias);
                 }
                 else
                 {
-
-                    if((it->first).Contains("iterEM"))
-                    {
-                        this->iterEMTUnfold->SetInput(unfold->hSysFullPhaseData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
-                    }
-                    else
-                    {
-                        this->systematicTUnfold[it->first][sysMap_previous[it->first][ith]]->SetInput(unfold->hSysFullPhaseData[it->first][sysMap_previous[it->first][ith]], nominal_bias);
-                    }
+                    //cout << "use acceptance corrected output!" << endl;
+                    this->iterEMTUnfold->SetInput(unfold->hSysFullPhaseData[*it], nominal_bias);
                 }
             }
+            else
+            {
+                this->systematicTUnfold[*it] = new TUnfoldDensity(hResponseM,TUnfold::kHistMapOutputHoriz,regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen,binning_Rec);
+
+                if(!useAccept)
+                {
+                     this->systematicTUnfold[*it]->SetInput(unfold->systematicTUnfold[*it]->GetOutput("hUnfolded" + var + "_"+ *it + "_" + *it,0,0,"*[*]",false), nominal_bias);
+                }
+                else
+                {
+                    //cout << "use acceptance corrected output!" << endl;
+                    this->systematicTUnfold[*it]->SetInput(unfold->hSysFullPhaseData[*it], nominal_bias);
+                }
+            }
+            this->sysVector.push_back(*it);
         }
         it++;
     }
@@ -373,13 +344,14 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
 }
 
 // Option for unfold options
-void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString binDef, TString sysType, TString sysName, TString histPostfix)
+void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString binDef, TString sysName, TString histPostfix)
 {
     TFile* filein = new TFile(filepath, "READ");
     TH2* hmcGenRec = NULL;
 
     TString histNameWithSystematic = "hmc" + var + "GenRec" + histPostfix;
     hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + binDef + "/" + histNameWithSystematic);
+    cout << "ISRUnfold::setSystematicRM " << filepath << " " << dirName + "/" + var + "_ResMatrix_" + binDef + "/" + histNameWithSystematic << endl;
 
     if(sysName.Contains("iterEM"))
     {
@@ -387,48 +359,48 @@ void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString binDe
     }
     else
     {
-        systematicTUnfold[sysType][sysName] = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen, binning_Rec);
+        systematicTUnfold[sysName] = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen, binning_Rec);
     }
 
     filein->Close();
     delete filein;
 }
 
-// Set input histogram from unfolding output
-void ISRUnfold::setUnfInput(ISRUnfold* unfold, bool isSys, TString sysName, TString sysPostfix, bool useAccept)
+// Set input histogram using the nominal output of the previous unfolding 
+void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString thisSysType, TString sysName, bool useAccept)
 {
     TH1::AddDirectory(kFALSE);
 
     if(!useAccept)
     {
-        if(!isSys)
+        if(thisSysType=="Type_0")
         {
             nominalTUnfold->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var, "*[*]"), 1.);
-
         }
         else
         {
-
-            systematicTUnfold[sysName][sysPostfix]->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var+sysName+sysPostfix, "*[*]"), 1.);
-
+            // FIXME
+            systematicTUnfold[sysName]->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var+thisSysType+sysName, "*[*]"), 1.);
         }
     }
     else
     {
         //cout << "set from previous unfold class, isSys " << isSys << endl;
-        if(!isSys)
+        if(thisSysType=="Type_0")
         {
             nominalTUnfold->SetInput(unfold->hFullPhaseData, 1.);
         }
         else
         {
+            //
             if(sysName.Contains("iterEM"))
             {
                 iterEMTUnfold->SetInput(unfold->hFullPhaseData, 1.);
             }
             else
             {
-                systematicTUnfold[sysName][sysPostfix]->SetInput(unfold->hFullPhaseData, 1.);
+                TH1* htemp = unfold->hSysFullPhaseData[sysName];
+                systematicTUnfold[sysName]->SetInput(htemp, 1.);
             }
         }
     }
@@ -479,7 +451,7 @@ void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, T
         }
         else
         {
-            systematicTUnfold[sysType][sysName]->SetInput(hRec, nominal_bias);
+            systematicTUnfold[sysName]->SetInput(hRec, nominal_bias);
         }
     }
 
@@ -516,11 +488,11 @@ void ISRUnfold::subBkgs(TString filepath, TString dirName, TString binDef, TStri
             {
                 if(sysName.Contains("Up"))
                 {
-                    systematicTUnfold[sysType][sysName]->SubtractBackground(hRec, bkgName, 1.05);
+                    systematicTUnfold[sysName]->SubtractBackground(hRec, bkgName, 1.05);
                 }
                 if(sysName.Contains("Down"))
                 {
-                    systematicTUnfold[sysType][sysName]->SubtractBackground(hRec, bkgName, 0.95);
+                    systematicTUnfold[sysName]->SubtractBackground(hRec, bkgName, 0.95);
                 }
             }
             else
@@ -528,7 +500,7 @@ void ISRUnfold::subBkgs(TString filepath, TString dirName, TString binDef, TStri
                 //cout << "ISRUnfold::subBkgs bkgName: " << bkgName << endl;
                 //cout << dirName + "/" + var + "_" + binDef+"/histo_" + bkgName + histPostfix << endl;
                 //cout << "histPostfix: " << histPostfix << endl;
-                systematicTUnfold[sysType][sysName]->SubtractBackground(hRec, bkgName);
+                systematicTUnfold[sysName]->SubtractBackground(hRec, bkgName);
             }
         }
     }
@@ -537,9 +509,9 @@ void ISRUnfold::subBkgs(TString filepath, TString dirName, TString binDef, TStri
     delete filein;
 }
 
-void ISRUnfold::setSystematics(TString sysName, TString sysHistName)
+void ISRUnfold::setSystematics(TString sysHistName)
 {
-    sysMap[sysName].push_back(sysHistName);
+    sysVector.push_back(sysHistName);
 }
 
 void ISRUnfold::doISRUnfold()
@@ -651,39 +623,35 @@ void ISRUnfold::doISRUnfold()
     }
 
     // For systematic
-    std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
-    while(it != sysMap.end())
+    std::vector<TString>::iterator it = sysVector.begin();
+    while(it != sysVector.end())
     {
-        int size = (it->second).size();
-        for(int i = 0; i < size; i++)
+        if( (*it).Contains("iterEM"))
         {
-            if( (it->first).Contains("iterEM"))
-            {
-                iBest=iterEMTUnfold->ScanSURE(NITER_Iterative, &graph_SURE_IterativeSURE, &graph_DFdeviance_IterativeSURE);
-                cout << "iBest: " << iBest << endl;
+            iBest=iterEMTUnfold->ScanSURE(NITER_Iterative, &graph_SURE_IterativeSURE, &graph_DFdeviance_IterativeSURE);
+            cout << "iBest: " << iBest << endl;
 
-                varDir->cd();
-                iterEMTUnfold->GetOutput("histo_Data_"+(it->second).at(i),0,0, "*[*]", false)->Write();
-                nominalTUnfold->GetBias("histo_DY_"+(it->second).at(i), 0, 0, "*[*]", false)->Write();
+            varDir->cd();
+            iterEMTUnfold->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false)->Write();
+            nominalTUnfold->GetBias("histo_DY_"+(*it), 0, 0, "*[*]", false)->Write();
+        }
+        else
+        {
+
+            if(regMode == TUnfold::kRegModeNone)
+            {
+                systematicTUnfold[*it]->DoUnfold(0);
             }
             else
             {
-
-                if(regMode == TUnfold::kRegModeNone)
-                {
-                    systematicTUnfold[it->first][(it->second).at(i)]->DoUnfold(0);
-                }
-                else
-                {
-                    double tauMin=1.e-4;
-                    double tauMax=1.e-1;
-                    systematicTUnfold[it->first][(it->second).at(i)]->ScanLcurve(100, tauMin, tauMax, 0);
-                }
-
-                varDir->cd();
-                systematicTUnfold[it->first][(it->second).at(i)]->GetOutput("histo_Data_"+(it->second).at(i),0,0, "*[*]", false)->Write();
-                systematicTUnfold[it->first][(it->second).at(i)]->GetBias("histo_DY_"+(it->second).at(i), 0, 0, "*[*]", false)->Write();
+                double tauMin=1.e-4;
+                double tauMax=1.e-1;
+                systematicTUnfold[*it]->ScanLcurve(100, tauMin, tauMax, 0);
             }
+
+            varDir->cd();
+            systematicTUnfold[*it]->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false)->Write();
+            systematicTUnfold[*it]->GetBias("histo_DY_"+(*it), 0, 0, "*[*]", false)->Write();
         }
         it++;
     }
@@ -691,7 +659,7 @@ void ISRUnfold::doISRUnfold()
     topDir->Write();
 }
 
-void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString outName, bool isAccept)
+void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
 {
     TDirectory* topDir;
     TDirectory* varDir;
@@ -745,8 +713,6 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString outName, 
             nth_.Form("%d", istat);
 
 
-            // FIXME read from root file
-            //hFullPhaseDataTemp=UnfoldingInputStatTUnfold.at(istat)->GetOutput("histo_Data_UnfoldingInputStat_" + nth_, 0, 0, "*[*]", false);
             hFullPhaseDataTemp=(TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_Data_UnfoldingInputStat_" + nth_);
             hFullPhaseDataTemp->Multiply(hAcceptance);
 
@@ -777,77 +743,57 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString outName, 
         }
     }
 
-    std::map<TString, std::vector<TString>>::iterator it = sysMap.begin();
-    while(it != sysMap.end())
+    std::vector<TString>::iterator it = sysVector.begin();
+    while(it != sysVector.end())
     {
-        int size = (it->second).size();
-        for(int i = 0; i < size; i++)
+        TH1* hFullPhaseMC_raw_sys = NULL;
+        TH1* hFiducialPhaseMC_sys = NULL;
+
+        if((*it).Contains("iterEM"))
         {
-            TH1* hFullPhaseMC_raw_sys = NULL;
-            TH1* hFiducialPhaseMC_sys = NULL;
-
-            if((it->first).Contains("iterEM"))
-            {
-                hSysFullPhaseData[it->first][(it->second).at(i)]   = iterEMTUnfold->GetOutput("histo_Data_"+(it->second).at(i),0,0, "*[*]", false);
-                hFiducialPhaseMC_sys=hFiducialPhaseMC;
-                hFiducialPhaseMC_sys->SetName("histo_DY_"+(it->second).at(i));
-            }
-            else
-            {
-                hSysFullPhaseData[it->first][(it->second).at(i)]   = systematicTUnfold[it->first][(it->second).at(i)]->GetOutput("histo_Data_"+(it->second).at(i),0,0, "*[*]", false);
-                hFiducialPhaseMC_sys = systematicTUnfold[it->first][(it->second).at(i)]->GetBias("hFiducial"+var+"_sys"+(it->second).at(i), 0, 0, "*[*]", false);
-            }
-
-            // For PDF, AlphaS, Scale etc, nominator (of acceptance) also changes
-            if( (((it->first).Contains("Scale") && !(it->first).Contains("Lep")) || (it->first).Contains("PDF") || (it->first).Contains("AlphaS")) && !(it->first).Contains("_") )
-            {
-                hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_"+(it->second).at(i));
-                if(year==2016)
-                    hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_"+(it->second).at(i)));
-                else
-                    hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_MG_"+(it->second).at(i)));
-            }
-            else
-            {
-                hFullPhaseMC_raw_sys=hFullPhaseMC;
-            }
-
-            TH1* hAcceptance_sys = (TH1*) hFullPhaseMC_raw_sys->Clone("hAcceptance_sys");
-            hAcceptance_sys->Divide(hFiducialPhaseMC_sys);
-
-            TH1* hAcceptanceFraction_sys = (TH1*) hFiducialPhaseMC_sys->Clone("hAcceptanceFraction_sys");
-            hAcceptanceFraction_sys->Divide(hFullPhaseMC_raw_sys);
-
-            hSysFullPhaseData[it->first][(it->second).at(i)]->Multiply(hAcceptance_sys);
-            hSysFullPhaseMC[it->first][(it->second).at(i)] = hFullPhaseMC_raw_sys;
-
-            //hSysAcceptanceFraction[it->first][(it->second).at(i)] = (TH1*) hAcceptanceFraction_sys->Clone("Fraction"+var+"_" + it->first + "_" + (it->second).at(i));
-            //hSysAcceptance[it->first][(it->second).at(i)] = (TH1*) hFullPhaseMC->Clone(var + "_" + it->first + "_" + (it->second).at(i));
-            delete hAcceptance_sys;
-            delete hAcceptanceFraction_sys;
-
-            varDir->cd();
-
-            hSysFullPhaseData[it->first][(it->second).at(i)]->Write();
-            hFullPhaseMC_raw_sys->SetName("histo_DY_"+(it->second).at(i));
-            hFullPhaseMC_raw_sys->Write();
+            hSysFullPhaseData[*it]   = iterEMTUnfold->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false);
+            hFiducialPhaseMC_sys=hFiducialPhaseMC;
+            hFiducialPhaseMC_sys->SetName("histo_DY_"+(*it));
         }
+        else
+        {
+            hSysFullPhaseData[*it]   = systematicTUnfold[*it]->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false);
+            hFiducialPhaseMC_sys = systematicTUnfold[*it]->GetBias("hFiducial"+var+"_sys"+(*it), 0, 0, "*[*]", false);
+        }
+
+        // For PDF, AlphaS, Scale etc, nominator (of acceptance) also changes
+        if( ( ((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) && !(*it).Contains("_") )
+        {
+            hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_"+(*it));
+            if(year==2016)
+                hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_"+(*it)));
+            else
+                hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_MG_"+(*it)));
+        }
+        else
+        {
+            hFullPhaseMC_raw_sys=hFullPhaseMC;
+        }
+
+        TH1* hAcceptance_sys = (TH1*) hFullPhaseMC_raw_sys->Clone("hAcceptance_sys");
+        hAcceptance_sys->Divide(hFiducialPhaseMC_sys);
+
+        TH1* hAcceptanceFraction_sys = (TH1*) hFiducialPhaseMC_sys->Clone("hAcceptanceFraction_sys");
+        hAcceptanceFraction_sys->Divide(hFullPhaseMC_raw_sys);
+
+        hSysFullPhaseData[*it]->Multiply(hAcceptance_sys);
+        hSysFullPhaseMC[*it] = hFullPhaseMC_raw_sys;
+
+        delete hAcceptance_sys;
+        delete hAcceptanceFraction_sys;
+
+        varDir->cd();
+
+        hSysFullPhaseData[*it]->Write();
+        hFullPhaseMC_raw_sys->SetName("histo_DY_"+(*it));
+        hFullPhaseMC_raw_sys->Write();
         it++;
     }
-
-    // Stat. unc. of acceptance correction
-    hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Up"]   = nominalTUnfold->GetOutput("hFullPhaseData"+accepCorrOrEffCorr+"StatUp",0,0, "*[*]", false);
-    hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Down"] = nominalTUnfold->GetOutput("hFullPhaseData"+accepCorrOrEffCorr+"StatDown",0,0, "*[*]", false);
-
-    TH1* hAcceptance_statUp   = (TH1*) hAcceptance->Clone("h"+accepCorrOrEffCorr+"StatUp"+var);
-    TH1* hAcceptance_statDown = (TH1*) hAcceptance->Clone("h"+accepCorrOrEffCorr+"StatDown"+var);
-    varyHistWithStatError(hAcceptance_statUp, 1);
-    varyHistWithStatError(hAcceptance_statDown, -1);
-
-    hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Up"]->Multiply(hAcceptance_statUp);
-    hSysFullPhaseData[accepCorrOrEffCorr + "_Stat"]["Down"]->Multiply(hAcceptance_statDown);
-    hSysFullPhaseMC[accepCorrOrEffCorr + "_Stat"]["Up"] = hFullPhaseMC;
-    hSysFullPhaseMC[accepCorrOrEffCorr + "_Stat"]["Down"] = hFullPhaseMC;
 
     topDir->Write();;
 

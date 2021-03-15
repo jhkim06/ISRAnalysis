@@ -7,11 +7,11 @@
     "topDirName": "Detector",
     "useTUnfoldBin": true,
     "TUnfoldBinNames": ["Rec_Pt","Rec_Mass"],
+    "VariablePostfix": ["FineCoarseWoUO", "FineCoarseWoUO1D"],
     "Variables": ["Mass", "Pt__0", "Pt__1", "Pt__2", "Pt__3", "Pt__4"],
-    "VariablePostfix": "FineCoarse",
     "Steering":
     {
-        "Mass": "mass[];pt[C0O]",
+        "Mass": "mass[]",
         "Pt__0": "pt[];mass[UOC0]",
         "Pt__1": "pt[];mass[UOC1]",
         "Pt__2": "pt[];mass[UOC2]",

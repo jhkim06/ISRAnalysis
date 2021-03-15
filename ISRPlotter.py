@@ -118,12 +118,14 @@ class ISRPlotter :
         self.inRootFile=rt.TFile.Open(inputHistFilePath, 'READ')
 
         if self.useTUnfoldBin :
-            for binName in self.tunfoldBinNames :
+            for index, binName in enumerate(self.tunfoldBinNames) :
                 varDirName = binName.split("_")[1]
                 if len(self.variablePostfix) > 0 :
-                    varDirName = varDirName + "_" + self.variablePostfix
+                    
+                    varDirName = varDirName + "_" + self.variablePostfix[index]
 
                 self.binDef[binName.split("_")[1]]=self.inRootFile.Get(self.topDirName+"/"+varDirName+"/"+binName)
+                print (self.topDirName+"/"+varDirName+"/"+binName)
 
             # Set massBins
             temp_tvecd=self.binDef["Pt"].GetDistributionBinning(1)
@@ -151,7 +153,11 @@ class ISRPlotter :
             if self.useTUnfoldBin :
                 varDir=variable.split("_")[0] # In case, TUnfoldBinning used
                 if len(self.variablePostfix)>0 :
-                    varDir=varDir+"_"+self.variablePostfix
+
+                    if varDir == "Mass" :
+                        varDir=varDir+"_"+self.variablePostfix[1]
+                    if varDir == "Pt" :
+                        varDir=varDir+"_"+self.variablePostfix[0]
 
             # dict[variable][sample]
             for combinedName in self.samples :
@@ -1121,7 +1127,10 @@ class ISRPlotter :
         varName, unit = self.setXaxisLabel(variable)
 
         if len(axis) == 1 :
-            if write_xaxis_title : top_axis.set_xlabel(varName + " " + unit, fontsize='xx-large', ha='right', x=1.0, labelpad=10) 
+            if draw_mode == 5 :
+                if write_xaxis_title : top_axis.set_xlabel('Relative Uncertainty', fontsize='xx-large', ha='right', x=1.0, labelpad=10)
+            else :
+                if write_xaxis_title : top_axis.set_xlabel(varName + " " + unit, fontsize='xx-large', ha='right', x=1.0, labelpad=10) 
 
         if len(axis) == 2 :
 
