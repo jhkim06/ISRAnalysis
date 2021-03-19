@@ -29,25 +29,20 @@ class ISRPlotter :
         self.binDef={} # dictionary of TUnfoldBinning object
         self.massBins=[] # list of tuple,  ex) [(40.,64.), (64., 81.), (81., 101.), (101., 200.), (200., 320.)]
 
+
+        self.histTypes=["Measured", "MeasuredBkgSubtracted", "Signal", "Background", "MCTotal", "Histogram"]
+
         # Dictionary of raw histograms according DataFrames
         self.rawHistsDict = {}
 
-        self.rawHistsDict["Measured"] = {}
-        self.rawHistsDict["MeasuredBkgSubtracted"] = {}
-        self.rawHistsDict["Signal"] = {}
-        self.rawHistsDict["Background"] = {}
-        self.rawHistsDict["MCTotal"] = {}
-        self.rawHistsDict["Histogram"] = {}
- 
+        for histType in self.histTypes :
+            self.rawHistsDict[histType] = dict()
+    
         # Dictionary of DataFrames containing nominal and systematic histogram content
         self.dfs = {} # self.dfs["Measured"] self.dfs["DataBkgSubtracted"] self.dfs["Signal"] self.dfs["Background"] self.dfs["MCTotal"]
 
-        self.dfs["Measured"]=dict()
-        self.dfs["MeasuredBkgSubtracted"]=dict()
-        self.dfs["Signal"]=dict()
-        self.dfs["Background"]=dict()
-        self.dfs["MCTotal"]=dict()
-        self.dfs["Histogram"]=dict()
+        for histType in self.histTypes :
+            self.dfs[histType] = dict()
 
         self.normalisation = 1.
         self.bkgUsed = False
@@ -254,63 +249,26 @@ class ISRPlotter :
         if self.bkgUsed : self.setBkgSubtractedDataHis() # background mc only
 
         # DataFrame
-        self.createDataFrameWithUnc("Measured")
-        self.createDataFrameWithUnc("Signal")
-        if self.bkgUsed :
-            self.createDataFrameWithUnc("MeasuredBkgSubtracted")
-            self.createDataFrameWithUnc("Background")
-        self.createDataFrameWithUnc("MCTotal")
-        self.createDataFrameWithUnc("Histogram")
 
-        self.calculateCombinedUnc("Measured", "total")
-        self.calculateCombinedUnc("Measured", "theory")
-        self.calculateCombinedUnc("Measured", "measurement")
+        for histType in self.histTypes :
+        
+            if "MeasuredBkgSubtracted" == histType or "Background" == histType : 
+                if self.bkgUsed == False : continue
+            
+            self.createDataFrameWithUnc(histType)
 
-        self.calculateCombinedUnc("Measured", "total", "upDownUnc_meanValue")
-        self.calculateCombinedUnc("Measured", "theory", "upDownUnc_meanValue")
-        self.calculateCombinedUnc("Measured", "measurement", "upDownUnc_meanValue")
+        for histType in self.histTypes :
+        
+            if "MeasuredBkgSubtracted" == histType or "Background" == histType : 
+                if self.bkgUsed == False : continue
 
-        if self.bkgUsed :
+            self.calculateCombinedUnc(histType, "total")
+            self.calculateCombinedUnc(histType, "theory")
+            self.calculateCombinedUnc(histType, "measurement")
 
-            self.calculateCombinedUnc("MeasuredBkgSubtracted", "total")
-            self.calculateCombinedUnc("MeasuredBkgSubtracted", "theory")
-            self.calculateCombinedUnc("MeasuredBkgSubtracted", "measurement")
-
-            self.calculateCombinedUnc("Background", "total")
-            self.calculateCombinedUnc("Background", "theory")
-            self.calculateCombinedUnc("Background", "measurement")
-
-            self.calculateCombinedUnc("MeasuredBkgSubtracted", "total", "upDownUnc_meanValue")
-            self.calculateCombinedUnc("MeasuredBkgSubtracted", "theory", "upDownUnc_meanValue")
-            self.calculateCombinedUnc("MeasuredBkgSubtracted", "measurement", "upDownUnc_meanValue")
-
-            self.calculateCombinedUnc("Background", "total", "upDownUnc_meanValue")
-            self.calculateCombinedUnc("Background", "theory", "upDownUnc_meanValue")
-            self.calculateCombinedUnc("Background", "measurement", "upDownUnc_meanValue")
-
-        self.calculateCombinedUnc("Signal", "total")
-        self.calculateCombinedUnc("Signal", "theory")
-        self.calculateCombinedUnc("Signal", "measurement")
-
-        self.calculateCombinedUnc("Signal", "total", "upDownUnc_meanValue")
-        self.calculateCombinedUnc("Signal", "theory", "upDownUnc_meanValue")
-        self.calculateCombinedUnc("Signal", "measurement", "upDownUnc_meanValue")
-
-        self.calculateCombinedUnc("MCTotal", "total")
-        self.calculateCombinedUnc("MCTotal", "theory")
-        self.calculateCombinedUnc("MCTotal", "measurement")
-
-        self.calculateCombinedUnc("MCTotal", "total", "upDownUnc_meanValue")
-        self.calculateCombinedUnc("MCTotal", "theory", "upDownUnc_meanValue")
-        self.calculateCombinedUnc("MCTotal", "measurement", "upDownUnc_meanValue")
-
-        self.calculateCombinedUnc("Histogram", "total")
-        self.calculateCombinedUnc("Histogram", "theory")
-        self.calculateCombinedUnc("Histogram", "measurement")
-
-        self.calculateCombinedUnc("Histogram", "total", "upDownUnc_meanValue")
-        self.calculateCombinedUnc("Histogram", "theory", "upDownUnc_meanValue")
-        self.calculateCombinedUnc("Histogram", "measurement", "upDownUnc_meanValue")
+            self.calculateCombinedUnc(histType, "total", "upDownUnc_meanValue")
+            self.calculateCombinedUnc(histType, "theory", "upDownUnc_meanValue")
+            self.calculateCombinedUnc(histType, "measurement", "upDownUnc_meanValue")
 
     def getOutBaseDir(self) :
         return self.outDirPath
@@ -323,7 +281,6 @@ class ISRPlotter :
         for variable in self.variables :
             self.rawHistsDict["MeasuredBkgSubtracted"][variable]=dict()
             self.rawHistsDict["MeasuredBkgSubtracted"][variable]["total"]=dict()
-
 
             sysName = "Nominal" 
             postfix = "Nominal"
@@ -690,7 +647,7 @@ class ISRPlotter :
 
     # Draw data and all MC and the ratio plot between data and total MC
     def drawSubPlot(self, *axis, variable, divde_by_bin_width = False, setLogy=False,
-                    write_xaxis_title=False, write_yaxis_title=False, showMeanValue=False, setLogx = False, showLegend = False,
+                    write_xaxis_title=False, write_yaxis_title=False, setLogx = False, showLegend = False,
                     ratio_max = 1.35, ratio_min = 0.65, optimzeXrange=False, minimum_content=1, show_ratio=False, ext_objects=None, ext_names=None, 
                     denominator="Data_Measured", internal_names=None, draw_mode=0,
                     setRatioLogy = False, showNEvents=False, showChi2=False, ratioName=None, normNominator=False) :
@@ -709,8 +666,8 @@ class ISRPlotter :
 
         No stack below options
         1. Comparisons between the samples defined in the configuration file and in the external objects.
-        4. Show relative uncertatinty of the measurement  
         2. Comparisons between a sample defined in this object and ones in the external object.
+        4. Show relative uncertatinty of the measurement  
         '''
         #print("variable ", variable)
         # Get DataFrame
@@ -895,7 +852,6 @@ class ISRPlotter :
                     ratio_.replace(np.inf, 0, inplace=True)
                     additional_ratios.append(ratio_)
 
-
             # Set basic histogram configuration
             x_bin_centers= denominator_df['low_bin_edge'] + denominator_df['bin_width']/2.
             x_bins=denominator_df['low_bin_edge'].values
@@ -984,6 +940,12 @@ class ISRPlotter :
 
             else :
                 if write_yaxis_title: top_axis.set_ylabel('Events/Bin', fontsize='xx-large', ha='right', y=1.0, labelpad=25)
+
+            #################################################################################
+            #
+            #  Now draw...
+            #
+            #################################################################################
 
             fmt_denominator="ok"
             if "Measured" not in denominator :
@@ -1103,7 +1065,6 @@ class ISRPlotter :
 
                     color_list.append(color_)
                     label_list.append(sysName)
-                     
 
         if showLegend :
 
@@ -1157,14 +1118,6 @@ class ISRPlotter :
         if "Mass" in variable and x_max > 200. :
             for bin_ in self.massBins[:-1] :
                 top_axis.axvline(bin_[1], color='black', linestyle=":", linewidth=0.5, zorder=3)
-
-        if showMeanValue :
-            temp_denominator_mean_df=self.Data[variable]["total"]["upDownUnc_meanValue"]
-            if "Mass" in variable :
-                for i in temp_denominator_mean_df.index :
-                    top_axis.axvline(temp_denominator_mean_df["mean"][i], color='black', linewidth=1, linestyle=":")
-            if "Pt" in variable :
-                top_axis.axvline(temp_denominator_mean_df["mean"][0], color='black', linewidth=1, linestyle=":")
 
         varName, unit = self.setXaxisLabel(variable)
 
@@ -1273,7 +1226,7 @@ class ISRPlotter :
         del data_df
         gc.collect()
 
-    def drawHistPlot(self, *variables, divde_by_bin_width = False, setLogy=False, showMeanValue=False, setLogx=False,
+    def drawHistPlot(self, *variables, divde_by_bin_width = False, setLogy=False, setLogx=False,
                     ratio_max=1.35, ratio_min=0.65, optimzeXrange=False, minimum_content=1, figSize=(10,6), show_ratio=True, ext_object_list=None, ext_names_list=None,
                     denominator="Data_Measured", internal_names=None, draw_mode=0, setRatioLogy=False, showNEvents=False, showChi2=False, outPdfPostfix=None, ratioName=None, 
                     normNominator=False) :
@@ -1300,11 +1253,11 @@ class ISRPlotter :
                 show_legend = True
                 if show_ratio : 
 
-                    self.drawSubPlot(axes[0], axes[1], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,showMeanValue=showMeanValue, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
+                    self.drawSubPlot(axes[0], axes[1], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
 
                 else : 
 
-                    self.drawSubPlot(axes, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,showMeanValue=showMeanValue, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents)
+                    self.drawSubPlot(axes, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents)
 
             else :
                 if index > 0 :
@@ -1319,11 +1272,11 @@ class ISRPlotter :
 
                 if show_ratio :
 
-                    self.drawSubPlot(axes[0][index], axes[1][index], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,showMeanValue=showMeanValue, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
+                    self.drawSubPlot(axes[0][index], axes[1][index], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
 
                 else :
 
-                    self.drawSubPlot(axes[index], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,showMeanValue=showMeanValue, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents)
+                    self.drawSubPlot(axes[index], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents)
 
         outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+".pdf" 
         if outPdfPostfix is not None :
