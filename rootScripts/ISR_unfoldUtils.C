@@ -5,11 +5,38 @@ void ISRUnfold::setBias(double bias)
    nominal_bias = bias;
 }
 
-const TVectorD& ISRUnfold::checkMatrixCond()
+TMatrixD ISRUnfold::makeMatrixFromHist(TH2F*hist)
 {
-    TH2D* hProb = NULL;
-    hProb = (TH2D*) nominalTUnfold->GetProbabilityMatrix("hProb_"+var);
+    int nBinsX = hist->GetNbinsX();
+    int nBinsY = hist->GetNbinsY();
+    TMatrixD matrix(nBinsY,nBinsX);
+    for(int i=1;i<=nBinsX;i++){
+        for(int j=1;j<=nBinsY;j++){
+            matrix(j-1,i-1) = hist->GetBinContent(i,j);
+        }
+    }
+    return matrix;
+}//end makeMatrixFromHist
 
+void ISRUnfold::checkMatrixCond()
+{
+    TH2F* hProb = NULL;
+    hProb = (TH2F*) nominalTUnfold->GetProbabilityMatrix("hProb_"+var);
+
+    int nBinsX = hProb->GetNbinsX();
+    int nBinsY = hProb->GetNbinsY();
+    TMatrixD matrix = makeMatrixFromHist(hProb);
+
+    TDecompSVD decomp(matrix);
+    double condition = decomp.Condition();
+    cout << "The condition number for " << ": " << condition << endl;
+
+    double determinant;
+    TMatrixD mInverse = matrix.Invert(&determinant);
+    cout << "The determinant of " << " is " << determinant << endl;
+    //return condition;
+
+/*
     // TODO check hProb->GetNbinsY()+2,hProb->GetNbinsX()+2 without "F"
     TMatrixD* mProb=new TMatrixD(hProb->GetNbinsX()+2,hProb->GetNbinsY()+2,hProb->GetArray(),"F"); // +2 for under/overflow bins
     TMatrixD* mtProb=new TMatrixD(hProb->GetNbinsY()+2,hProb->GetNbinsX()+2);
@@ -37,6 +64,7 @@ const TVectorD& ISRUnfold::checkMatrixCond()
         }
     }
     return svdProb->GetSig();
+*/
 }
 
 double ISRUnfold::getSmearedChi2(TString filePath, TString dirName, TString steering, bool useAxis)
@@ -252,7 +280,7 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     TH2* hmcGenRec = (TH2*)filein->Get(fullDirPath + "hmc" + var + "GenRec");
     cout << fullDirPath + "hmc" + var + "GenRec" << endl;
 
-    nominalTUnfold = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen, binning_Rec);
+    nominalTUnfold = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth, binning_Gen, binning_Rec);
     cout << "Used TUnfold version " << nominalTUnfold->GetTUnfoldVersion() << endl;
     hResponseM = (TH2*) hmcGenRec->Clone("hResponseM");
 
@@ -262,7 +290,7 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
         // cout << "Create response matrix for statistical uncertainty..." << endl;
         for(int i = 0; i < statSize; i++)
         {
-            UnfoldingInputStatTUnfold.push_back(new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen, binning_Rec));
+            UnfoldingInputStatTUnfold.push_back(new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth, binning_Gen, binning_Rec));
         }
     }
     if(doRMStatUnc)
@@ -283,9 +311,36 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
                 }
             }
 
-            UnfoldingMatrixStatTUnfold.push_back(new TUnfoldDensity(tempRM, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen, binning_Rec));
+            UnfoldingMatrixStatTUnfold.push_back(new TUnfoldDensity(tempRM, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth, binning_Gen, binning_Rec));
         }
     }
+
+    // Save migration and response matrix
+    TDirectory* topDir;
+    TDirectory* varDir;
+
+    topDir=fUnfoldOut->GetDirectory("matrix");
+    varDir=fUnfoldOut->GetDirectory("matrix/"+var);
+    varDir->cd();
+    binning_Gen->Write();
+    binning_Rec->Write();
+
+    TH2F* hResponseM = (TH2F*) nominalTUnfold->GetProbabilityMatrix("hResponseM"); 
+    hResponseM->Write();
+    hmcGenRec->SetName("hMigrationM");
+    hmcGenRec->Write();
+
+    // Save projection of the migration matrix
+
+    topDir=fUnfoldOut->GetDirectory("unfolded");
+    varDir=fUnfoldOut->GetDirectory("unfolded/"+var);
+    varDir->cd();
+
+    TH1D* hProjectedTruth = (TH1D*) hmcGenRec->ProjectionX("histo_ProjectedTruth", 0, -1, "e");  //
+    TH1D* hProjectedReco = (TH1D*) hmcGenRec->ProjectionY("histo_ProjectedReco", 1, -1, "e");  //
+
+    hProjectedTruth->Write();
+    hProjectedReco->Write();
 
     filein->Close();
     delete filein;
@@ -308,7 +363,7 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
             // Not found in this ISRUnfold class, but exits in the previous one
             // Create TUnfoldDensity using the DEFAULT response matrix
             //cout << "Systematic variation, " << sysVector_previous[it->first][ith] << endl;
-            if((*it).Contains("iterEM"))
+            if((*it).Contains("IterEM"))
             {
                 this->iterEMTUnfold   = new TUnfoldIterativeEM(hResponseM,TUnfoldDensity::kHistMapOutputHoriz,binning_Gen,binning_Rec);
 
@@ -324,7 +379,7 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
             }
             else
             {
-                this->systematicTUnfold[*it] = new TUnfoldDensity(hResponseM,TUnfold::kHistMapOutputHoriz,regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen,binning_Rec);
+                this->systematicTUnfold[*it] = new TUnfoldDensity(hResponseM,TUnfold::kHistMapOutputHoriz,regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth, binning_Gen,binning_Rec);
 
                 if(!useAccept)
                 {
@@ -353,13 +408,13 @@ void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString binDe
     hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + binDef + "/" + histNameWithSystematic);
     cout << "ISRUnfold::setSystematicRM " << filepath << " " << dirName + "/" + var + "_ResMatrix_" + binDef + "/" + histNameWithSystematic << endl;
 
-    if(sysName.Contains("iterEM"))
+    if(sysName.Contains("IterEM"))
     {
         iterEMTUnfold = new TUnfoldIterativeEM(hmcGenRec,TUnfoldDensity::kHistMapOutputHoriz,binning_Gen,binning_Rec);
     }
     else
     {
-        systematicTUnfold[sysName] = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeNone, binning_Gen, binning_Rec);
+        systematicTUnfold[sysName] = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth, binning_Gen, binning_Rec);
     }
 
     filein->Close();
@@ -393,7 +448,7 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString thisSysType, TString sysN
         else
         {
             //
-            if(sysName.Contains("iterEM"))
+            if(sysName.Contains("IterEM"))
             {
                 iterEMTUnfold->SetInput(unfold->hFullPhaseData, 1.);
             }
@@ -445,7 +500,7 @@ void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, T
     else
     // Systematic histograms
     {
-        if(sysName.Contains("iterEM")) // FIXME
+        if(sysName.Contains("IterEM")) // FIXME
         {
             iterEMTUnfold->SetInput(hRec, nominal_bias);
         }
@@ -477,7 +532,7 @@ void ISRUnfold::subBkgs(TString filepath, TString dirName, TString binDef, TStri
         //cout << "file path: " << filepath << endl;
         //cout << dirName + "/Pt"+binDef+"/histo_" + histNameWithSystematic << endl;
 
-        if(sysName.Contains("iterEM"))
+        if(sysName.Contains("IterEM"))
         {
             iterEMTUnfold->SubtractBackground(hRec, bkgName);
         }
@@ -565,6 +620,15 @@ void ISRUnfold::doISRUnfold()
     }
     */
     varDir->cd();
+
+    bool useAxisBinning = true; 
+    if(var == "Pt")
+    {
+        useAxisBinning = false;   
+    }  
+
+    nominalTUnfold->GetInput("histo_UnfoldInput", 0, 0, 0, false)->Write();
+    nominalTUnfold->GetRhoIJtotal("hCorrelation", 0, 0, 0, useAxisBinning)->Write();
     nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false)->Write();
     nominalTUnfold->GetBias("histo_DY", 0, 0, "*[*]", false)->Write();
 
@@ -626,7 +690,7 @@ void ISRUnfold::doISRUnfold()
     std::vector<TString>::iterator it = sysVector.begin();
     while(it != sysVector.end())
     {
-        if( (*it).Contains("iterEM"))
+        if( (*it).Contains("IterEM"))
         {
             iBest=iterEMTUnfold->ScanSURE(NITER_Iterative, &graph_SURE_IterativeSURE, &graph_DFdeviance_IterativeSURE);
             cout << "iBest: " << iBest << endl;
@@ -749,7 +813,7 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
         TH1* hFullPhaseMC_raw_sys = NULL;
         TH1* hFiducialPhaseMC_sys = NULL;
 
-        if((*it).Contains("iterEM"))
+        if((*it).Contains("IterEM"))
         {
             hSysFullPhaseData[*it]   = iterEMTUnfold->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false);
             hFiducialPhaseMC_sys=hFiducialPhaseMC;

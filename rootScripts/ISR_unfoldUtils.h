@@ -147,9 +147,11 @@ public:
         fUnfoldOutPath = output_baseDir+unfold_name+"_"+channel_name+"_"+yearStr+"_"+var+".root";
         fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");
 
+        fUnfoldOut->mkdir("matrix");
         fUnfoldOut->mkdir("unfolded");
         fUnfoldOut->mkdir("acceptance");
 
+        fUnfoldOut->mkdir("matrix/" + var);
         fUnfoldOut->mkdir("unfolded/" + var);
         fUnfoldOut->mkdir("acceptance/" + var);
     }
@@ -166,7 +168,8 @@ public:
 
     void checkIterEMUnfold(void);
 
-    const TVectorD& checkMatrixCond();
+    TMatrixD makeMatrixFromHist(TH2F*hist);
+    void checkMatrixCond();
     double getSmearedChi2(TString filePath, TString dirName, TString steering, bool useAxis);
     double getUnfoldedChi2(TString steering, bool useAxis);
 

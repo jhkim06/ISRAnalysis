@@ -24,17 +24,20 @@ from matplotlib.lines import Line2D
 
 # root TH1 to DataFrame and plot using matplotlib
 class ISRPlotter :
-    def __init__ (self, inputHistFilePath, jasonConfigFilePath, verbose=True) :
+    def __init__ (self, inputHistFilePath, jasonConfigFilePath, doSystematic=False, verbose=True) :
         # Set using self.binDef
         self.binDef={} # dictionary of TUnfoldBinning object
         self.massBins=[] # list of tuple,  ex) [(40.,64.), (64., 81.), (81., 101.), (101., 200.), (200., 320.)]
 
         # Dictionary of raw histograms according DataFrames
-        self.rawDataMeasured = {}
-        self.rawDataBkgSubtracted = {}
-        self.rawMCSignal = {}
-        self.rawMCBackground = {}
-        self.rawMCTotal = {}
+        self.rawHistsDict = {}
+
+        self.rawHistsDict["Measured"] = {}
+        self.rawHistsDict["MeasuredBkgSubtracted"] = {}
+        self.rawHistsDict["Signal"] = {}
+        self.rawHistsDict["Background"] = {}
+        self.rawHistsDict["MCTotal"] = {}
+        self.rawHistsDict["Histogram"] = {}
  
         # Dictionary of DataFrames containing nominal and systematic histogram content
         self.dfs = {} # self.dfs["Measured"] self.dfs["DataBkgSubtracted"] self.dfs["Signal"] self.dfs["Background"] self.dfs["MCTotal"]
@@ -44,6 +47,7 @@ class ISRPlotter :
         self.dfs["Signal"]=dict()
         self.dfs["Background"]=dict()
         self.dfs["MCTotal"]=dict()
+        self.dfs["Histogram"]=dict()
 
         self.normalisation = 1.
         self.bkgUsed = False
@@ -72,7 +76,31 @@ class ISRPlotter :
             self.variables=self.config["Variables"]
             self.variablePostfix=self.config["VariablePostfix"]
             self.steeringTUnfold=self.config['Steering']
-            self.systematics=self.config['Systematics']
+            if doSystematic : 
+                self.systematics=self.config['Systematics']
+
+                if "UnfoldingInput" in self.systematics["measurement"] :
+                    n_max=int(((self.systematics["measurement"]["UnfoldingInput"][1]).split("_"))[1])
+                    prefix=((self.systematics["measurement"]["UnfoldingInput"][1]).split("_"))[0]
+
+                    self.systematics["measurement"]["UnfoldingInput"].pop()
+                    self.systematics["measurement"]["UnfoldingInput"]=[prefix+"_{}".format(str(i)) for i in range(0,n_max+1)]
+
+                if "UnfoldingMatrix" in self.systematics["measurement"] :
+                    n_max=int(((self.systematics["measurement"]["UnfoldingMatrix"][1]).split("_"))[1])
+                    prefix=((self.systematics["measurement"]["UnfoldingMatrix"][1]).split("_"))[0]
+
+                    self.systematics["measurement"]["UnfoldingMatrix"].pop()
+                    self.systematics["measurement"]["UnfoldingMatrix"]=[prefix+"_{}".format(str(i)) for i in range(0,n_max+1)]
+
+                if "PDF" in self.systematics["theory"] :
+                    n_max=int(((self.systematics["theory"]["PDF"][1]).split("_"))[1])
+                    pdf_prefix=((self.systematics["theory"]["PDF"][1]).split("_"))[0]
+
+                    self.systematics["theory"]["PDF"].pop()
+                    self.systematics["theory"]["PDF"]=[pdf_prefix+"{:0>3}".format(str(i)) for i in range(1,n_max+1)]
+            else :
+                self.systematics=dict()
             self.samples=self.config['Samples']
             self.stackOrder=self.config['StackOrder']
 
@@ -84,26 +112,6 @@ class ISRPlotter :
             if not os.path.exists(self.outDirPath) :
                 os.makedirs(self.outDirPath)
 
-        if "UnfoldingInput" in self.systematics["measurement"] :
-            n_max=int(((self.systematics["measurement"]["UnfoldingInput"][1]).split("_"))[1])
-            prefix=((self.systematics["measurement"]["UnfoldingInput"][1]).split("_"))[0]
-
-            self.systematics["measurement"]["UnfoldingInput"].pop()
-            self.systematics["measurement"]["UnfoldingInput"]=[prefix+"_{}".format(str(i)) for i in range(0,n_max+1)]
-
-        if "UnfoldingMatrix" in self.systematics["measurement"] :
-            n_max=int(((self.systematics["measurement"]["UnfoldingMatrix"][1]).split("_"))[1])
-            prefix=((self.systematics["measurement"]["UnfoldingMatrix"][1]).split("_"))[0]
-
-            self.systematics["measurement"]["UnfoldingMatrix"].pop()
-            self.systematics["measurement"]["UnfoldingMatrix"]=[prefix+"_{}".format(str(i)) for i in range(0,n_max+1)]
-
-        if "PDF" in self.systematics["theory"] :
-            n_max=int(((self.systematics["theory"]["PDF"][1]).split("_"))[1])
-            pdf_prefix=((self.systematics["theory"]["PDF"][1]).split("_"))[0]
-
-            self.systematics["theory"]["PDF"].pop()
-            self.systematics["theory"]["PDF"]=[pdf_prefix+"{:0>3}".format(str(i)) for i in range(1,n_max+1)]
 
         if verbose==True :
             print('This is {} {} data of {} analysis...'.format(self.year, self.channel, self.analysis))
@@ -144,11 +152,6 @@ class ISRPlotter :
         for variable in self.variables :
             
             # dict[variable]
-            self.rawDataMeasured[variable]=dict()
-            self.rawMCSignal[variable]=dict()
-            self.rawMCBackground[variable]=dict()
-            self.rawMCTotal[variable]=dict()
-
             varDir=variable
             if self.useTUnfoldBin :
                 varDir=variable.split("_")[0] # In case, TUnfoldBinning used
@@ -161,11 +164,19 @@ class ISRPlotter :
 
             # dict[variable][sample]
             for combinedName in self.samples :
-                if "Measured" in combinedName : temp_dict=self.rawDataMeasured[variable]
-                if "Signal" in combinedName : temp_dict=self.rawMCSignal[variable]
-                if "Background" in combinedName :
-                    temp_dict=self.rawMCBackground[variable]
-                    self.bkgUsed = True
+
+                if variable not in self.rawHistsDict[combinedName.split("_")[1]] : 
+                    self.rawHistsDict[combinedName.split("_")[1]][variable] = dict() 
+                    temp_dict=self.rawHistsDict[combinedName.split("_")[1]][variable]
+                    if "Background" in combinedName : 
+                        self.bkgUsed = True
+
+                else :
+                    temp_dict=self.rawHistsDict[combinedName.split("_")[1]][variable]
+               
+
+                if variable not in self.rawHistsDict["MCTotal"] :
+                    self.rawHistsDict["MCTotal"][variable]=dict()
 
                 temp_dict[combinedName]=dict()
                 first_sample=True # first sample in the combinedName
@@ -231,14 +242,13 @@ class ISRPlotter :
                                     temp_dict[combinedName][sysName][postfix]["DataFrame"].loc[:,"content":]= \
                                     temp_dict[combinedName][sysName][postfix]["DataFrame"].loc[:,"content":]+self.convertTH1toDataFrame(temp_TH1).loc[:,"content":]
 
+
                     count_nSystematics = False
-
                     first_sample=False
-            
 
-        self.combineHists(self.rawDataMeasured)
-        self.combineHists(self.rawMCSignal)
-        if self.bkgUsed : self.combineHists(self.rawMCBackground)
+        self.combineHists(self.rawHistsDict["Measured"])
+        self.combineHists(self.rawHistsDict["Signal"])
+        if self.bkgUsed : self.combineHists(self.rawHistsDict["Background"])
 
         self.setMCTotalHists() # signal + background mc
         if self.bkgUsed : self.setBkgSubtractedDataHis() # background mc only
@@ -250,6 +260,7 @@ class ISRPlotter :
             self.createDataFrameWithUnc("MeasuredBkgSubtracted")
             self.createDataFrameWithUnc("Background")
         self.createDataFrameWithUnc("MCTotal")
+        self.createDataFrameWithUnc("Histogram")
 
         self.calculateCombinedUnc("Measured", "total")
         self.calculateCombinedUnc("Measured", "theory")
@@ -293,26 +304,37 @@ class ISRPlotter :
         self.calculateCombinedUnc("MCTotal", "theory", "upDownUnc_meanValue")
         self.calculateCombinedUnc("MCTotal", "measurement", "upDownUnc_meanValue")
 
+        self.calculateCombinedUnc("Histogram", "total")
+        self.calculateCombinedUnc("Histogram", "theory")
+        self.calculateCombinedUnc("Histogram", "measurement")
+
+        self.calculateCombinedUnc("Histogram", "total", "upDownUnc_meanValue")
+        self.calculateCombinedUnc("Histogram", "theory", "upDownUnc_meanValue")
+        self.calculateCombinedUnc("Histogram", "measurement", "upDownUnc_meanValue")
+
+    def getOutBaseDir(self) :
+        return self.outDirPath
+
     def loglinear_func(self, p, x):
         return 2.*p[0]*np.log(x)+p[1]
 
     def setBkgSubtractedDataHis(self) :
 
         for variable in self.variables :
-            self.rawDataBkgSubtracted[variable]=dict()
-            self.rawDataBkgSubtracted[variable]["total"]=dict()
+            self.rawHistsDict["MeasuredBkgSubtracted"][variable]=dict()
+            self.rawHistsDict["MeasuredBkgSubtracted"][variable]["total"]=dict()
 
 
             sysName = "Nominal" 
             postfix = "Nominal"
     
-            self.rawDataBkgSubtracted[variable]["total"][sysName]=dict()
-            self.rawDataBkgSubtracted[variable]["total"][sysName][postfix]=dict() 
+            self.rawHistsDict["MeasuredBkgSubtracted"][variable]["total"][sysName]=dict()
+            self.rawHistsDict["MeasuredBkgSubtracted"][variable]["total"][sysName][postfix]=dict() 
 
-            temp_dict=self.rawDataBkgSubtracted[variable]["total"][sysName][postfix]
+            temp_dict=self.rawHistsDict["MeasuredBkgSubtracted"][variable]["total"][sysName][postfix]
 
-            data_dict=self.rawDataMeasured[variable]["total"][sysName][postfix]
-            mc_bkg_dict=self.rawMCBackground[variable]["total"][sysName][postfix]
+            data_dict=self.rawHistsDict["Measured"][variable]["total"][sysName][postfix]
+            mc_bkg_dict=self.rawHistsDict["Background"][variable]["total"][sysName][postfix]
 
             temp_dict["TH1"]=data_dict["TH1"].Clone("data_bkg_subtracted")
             temp_dict["TH1"].Add(mc_bkg_dict["TH1"], -1)
@@ -323,13 +345,13 @@ class ISRPlotter :
 
             for sysCategory in self.systematics.keys() :
                 for sysName, postfixs in self.systematics[sysCategory].items() :
-                    self.rawDataBkgSubtracted[variable]["total"][sysName]=dict()
+                    self.rawHistsDict["MeasuredBkgSubtracted"][variable]["total"][sysName]=dict()
                     for postfix in postfixs :
-                        self.rawDataBkgSubtracted[variable]["total"][sysName][postfix]=dict()
-                        temp_dict=self.rawDataBkgSubtracted[variable]["total"][sysName][postfix]
+                        self.rawHistsDict["MeasuredBkgSubtracted"][variable]["total"][sysName][postfix]=dict()
+                        temp_dict=self.rawHistsDict["MeasuredBkgSubtracted"][variable]["total"][sysName][postfix]
 
-                        data_dict=self.rawDataMeasured[variable]["total"][sysName][postfix]
-                        mc_bkg_dict=self.rawMCBackground[variable]["total"][sysName][postfix]
+                        data_dict=self.rawHistsDict["Measured"][variable]["total"][sysName][postfix]
+                        mc_bkg_dict=self.rawHistsDict["Background"][variable]["total"][sysName][postfix]
 
                         temp_dict["TH1"]=data_dict["TH1"].Clone("data_bkg_subtracted")
                         temp_dict["TH1"].Add(mc_bkg_dict["TH1"], -1)
@@ -339,7 +361,7 @@ class ISRPlotter :
 
     def setMCTotalHists(self) :
 
-        temp_dict = self.rawMCTotal
+        temp_dict = self.rawHistsDict["MCTotal"]
         for variable in self.variables :
             # dict[variable]
             #temp_dict[variable]=dict()
@@ -354,14 +376,14 @@ class ISRPlotter :
 
             # Lets combine MC histograms
             temp_dict[variable]["total"][sysName][postfix]["TH1"] = \
-            self.rawMCSignal[variable]["total"][sysName][postfix]["TH1"].Clone("Clone_"+variable+sysName+postfix)
+            self.rawHistsDict["Signal"][variable]["total"][sysName][postfix]["TH1"].Clone("Clone_"+variable+sysName+postfix)
             temp_dict[variable]["total"][sysName][postfix]["DataFrame"] = \
-            self.rawMCSignal[variable]["total"][sysName][postfix]["DataFrame"].copy()
+            self.rawHistsDict["Signal"][variable]["total"][sysName][postfix]["DataFrame"].copy()
 
             if self.bkgUsed :
-                temp_dict[variable]["total"][sysName][postfix]["TH1"].Add(self.rawMCBackground[variable]["total"][sysName][postfix]["TH1"])
+                temp_dict[variable]["total"][sysName][postfix]["TH1"].Add(self.rawHistsDict["Background"][variable]["total"][sysName][postfix]["TH1"])
                 temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content= \
-                self.rawMCBackground[variable]["total"][sysName][postfix]["DataFrame"].content+temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content
+                self.rawHistsDict["Background"][variable]["total"][sysName][postfix]["DataFrame"].content+temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content
 
             for sysCategory in self.systematics.keys() :
                 for sysName, postfixs in self.systematics[sysCategory].items() :
@@ -371,28 +393,18 @@ class ISRPlotter :
 
                         # Lets combine MC histograms
                         temp_dict[variable]["total"][sysName][postfix]["TH1"] = \
-                        self.rawMCSignal[variable]["total"][sysName][postfix]["TH1"].Clone("Clone_"+variable+sysName+postfix)
+                        self.rawHistsDict["Signal"][variable]["total"][sysName][postfix]["TH1"].Clone("Clone_"+variable+sysName+postfix)
                         temp_dict[variable]["total"][sysName][postfix]["DataFrame"] = \
-                        self.rawMCSignal[variable]["total"][sysName][postfix]["DataFrame"].copy()
+                        self.rawHistsDict["Signal"][variable]["total"][sysName][postfix]["DataFrame"].copy()
 
                         if self.bkgUsed :
-                            temp_dict[variable]["total"][sysName][postfix]["TH1"].Add(self.rawMCBackground[variable]["total"][sysName][postfix]["TH1"])
+                            temp_dict[variable]["total"][sysName][postfix]["TH1"].Add(self.rawHistsDict["Background"][variable]["total"][sysName][postfix]["TH1"])
                             temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content= \
-                            self.rawMCBackground[variable]["total"][sysName][postfix]["DataFrame"].content+temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content
+                            self.rawHistsDict["Background"][variable]["total"][sysName][postfix]["DataFrame"].content+temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content
 
     def createDataFrameWithUnc(self, dictName="Measured") :
 
-        if dictName == "Measured" :
-            in_dict=self.rawDataMeasured
-        if dictName == "MeasuredBkgSubtracted" :
-            in_dict=self.rawDataBkgSubtracted
-        if dictName == "Signal" :
-            in_dict=self.rawMCSignal
-        if dictName == "Background" :
-            in_dict=self.rawMCBackground
-        if dictName == "MCTotal" :
-            in_dict=self.rawMCTotal
-
+        in_dict=self.rawHistsDict[dictName]
         out_dict=self.dfs[dictName]
 
         for variable in in_dict.keys() :
@@ -679,8 +691,9 @@ class ISRPlotter :
     # Draw data and all MC and the ratio plot between data and total MC
     def drawSubPlot(self, *axis, variable, divde_by_bin_width = False, setLogy=False,
                     write_xaxis_title=False, write_yaxis_title=False, showMeanValue=False, setLogx = False, showLegend = False,
-                    ratio_max = 1.35, ratio_min = 0.65, optimzeXrange=False, minimum_content=1, show_ratio=False, ext_objects=None, ext_names=None, denominator="Data_Measured", internal_names=None, draw_mode=0,
-                    setRatioLogy = False, showNEvents=False) :
+                    ratio_max = 1.35, ratio_min = 0.65, optimzeXrange=False, minimum_content=1, show_ratio=False, ext_objects=None, ext_names=None, 
+                    denominator="Data_Measured", internal_names=None, draw_mode=0,
+                    setRatioLogy = False, showNEvents=False, showChi2=False, ratioName=None, normNominator=False) :
 
         if len(axis) == 2 :
             top_axis = axis[0]
@@ -704,23 +717,25 @@ class ISRPlotter :
         # len(denominator.split("_")) == 2 -> to draw combined plot as defined in the configuration file
         # len(denominator.split("_")) == 3 -> to draw a element sample plot of the combined sample as defined in the configuration file 
         #or to draw a modified plot such as a background subtracted data or total barckground mc 
-        if len(denominator.split("_")) == 3 :
-            denominator_name = denominator.split("_")[2]
+        if len(denominator.split("_")) > 2 :
+            denominator_name = "_".join(denominator.split("_")[2:])
         else :  
             denominator_name=denominator
 
-        denominator_print_name = denominator_name.split("_")[0]
+        denominator_print_name = denominator.split("_")[0]
         if "Measured" in denominator :
             denominator_print_name = "Data"
         if "BkgSubtracted" in denominator :
             denominator_print_name = denominator_print_name + " (Bkg. subtracted)"
-        if len(denominator.split("_")) == 3 : # ex) "Data bkg. subtracted_MeasuredBkgSubtracted_total"
+        if len(denominator.split("_")) > 2 : # ex) "Data bkg. subtracted_MeasuredBkgSubtracted_total"
             denominator_print_name = denominator.split("_")[0]
 
         denominator_df=None
+        denominator_hist=None
         default_nominator_name="MCTotal"
+        default_nominator_hist=None
         data_df={}
-        additional_df=[] # FIXME ext_df -> additional_names
+        additional_df=[] 
         additional_handle=[]
         additional_names=[]
 
@@ -736,72 +751,97 @@ class ISRPlotter :
             df_filter = self.dfs[denominator.split("_")[1]][variable][denominator_name]["upDownUnc"]['content'] > minimum_content
             denominator_df=self.dfs[denominator.split("_")[1]][variable][denominator_name]["upDownUnc"][df_filter].copy()
             nEvents[denominator_print_name]=denominator_df["content"].sum()
+            denominator_hist=self.rawHistsDict[denominator.split("_")[1]][variable][denominator_name]["Nominal"]["Nominal"]["TH1"]
 
             for combinedName in self.samples :
                 data_df[combinedName]=self.dfs[combinedName.split("_")[1]][variable][combinedName]["upDownUnc"][df_filter].copy() 
 
         if draw_mode == 0 :
             default_nominator=self.dfs[default_nominator_name][variable]["total"]["upDownUnc"][df_filter].copy()
+            default_nominator_hist=self.rawHistsDict[default_nominator_name][variable]["total"]["Nominal"]["Nominal"]["TH1"]
             
         if draw_mode == 1:
 
-            default_nominator_name=internal_names[0].split("_")[1] 
-            default_nominator=self.dfs[default_nominator_name][variable][internal_names[0]]["upDownUnc"][df_filter].copy()
+            if len(internal_names[0].split("_")) > 2 :
+                default_nominator_name = "_".join(internal_names[0].split("_")[2:])
+            else :  
+                default_nominator_name=internal_names[0]
+
+            default_nominator=self.dfs[internal_names[0].split("_")[1]][variable][default_nominator_name]["upDownUnc"][df_filter].copy()
             default_nominator_print_name=internal_names[0].split("_")[0]
             nEvents[default_nominator_print_name]=default_nominator['content'].sum()
+            default_nominator_hist=self.rawHistsDict[internal_names[0].split("_")[1]][variable][default_nominator_name]["Nominal"]["Nominal"]["TH1"]
 
             if len(internal_names) > 1 :
                 for index in range(1, len(internal_names)) :
-                    additional_df.append(self.dfs[internal_names[index].split("_")[1]][variable][internal_names[index]]["upDownUnc"][df_filter].copy()) 
+
+                    if len(internal_names[0].split("_")) > 2 :
+                        temp_nominator_name = "_".join(internal_names[index].split("_")[2:])
+                    else :  
+                        temp_nominator_name=internal_names[index]
+
+                    additional_df.append(self.dfs[internal_names[index].split("_")[1]][variable][temp_nominator_name]["upDownUnc"][df_filter].copy()) 
 
                     temp_nominator_print_name=internal_names[index].split("_")[0]
                     additional_names.append(temp_nominator_print_name)
                 
             if ext_names is not None :
                 for index in range(0, len(ext_names)) :
-                    additional_df.append(ext_objects[i].dfs[ext_names[index].split("_")[1]][variable][ext_names[index]]["upDownUnc"][df_filter].copy())
+
+                    if len(ext_names[index].split("_")) > 2 :
+                        temp_nominator_name = "_".join(ext_names[index].split("_")[2:])
+                    else :  
+                        temp_nominator_name=ext_names[index]
+
+                    additional_df.append(ext_objects[i].dfs[ext_names[index].split("_")[1]][variable][temp_nominator_name]["upDownUnc"][df_filter].copy())
 
                     temp_nominator_print_name=ext_names[index].split("_")[0]
                     additional_names.append(temp_nominator_print_name)
 
         if draw_mode == 2 :
 
-            if len(ext_names[0].split("_")) == 3 :
-                default_nominator_name = ext_names[0].split("_")[2]
+            if len(ext_names[0].split("_")) > 2 :
+                default_nominator_name = "_".join(ext_names[0].split("_")[2:])
             else :  
                 default_nominator_name=ext_names[0]
 
             default_nominator=ext_objects[0].dfs[ext_names[0].split("_")[1]][variable][default_nominator_name]["upDownUnc"][df_filter].copy()
-            normalisation =  denominator_df["content"].sum() / default_nominator["content"].sum()
-            default_nominator.loc[:, "content":]=default_nominator.loc[:, "content":] * normalisation
+            default_nominator_print_name=ext_names[0].split("_")[0]
 
-            if len(ext_names[0].split("_")) == 3 : # ex) "Data bkg. subtracted_MeasuredBkgSubtracted_total"
-                default_nominator_print_name = ext_names[0].split("_")[0] + "(x{:.2f})".format(normalisation)  
-            else :
-                default_nominator_print_name=ext_names[0].split("_")[0] + "(x{:.2f})".format(normalisation)
+            if normNominator :
+                normalisation =  denominator_df["content"].sum() / default_nominator["content"].sum()
+                default_nominator.loc[:, "content":]=default_nominator.loc[:, "content":] * normalisation
 
+                if len(ext_names[0].split("_")) > 2 : # ex) "Data bkg. subtracted_MeasuredBkgSubtracted_total"
+                    default_nominator_print_name = "_".join(ext_names[0].split("_")[2:]) + "(x{:.2f})".format(normalisation)  
+                else :
+                    default_nominator_print_name=ext_names[0].split("_")[0] + "(x{:.2f})".format(normalisation)
+
+            default_nominator_hist=ext_objects[0].rawHistsDict[ext_names[0].split("_")[1]][variable][default_nominator_name]["Nominal"]["Nominal"]["TH1"]
             nEvents[default_nominator_print_name]=default_nominator['content'].sum()
 
             if len(ext_names) > 1 :
                 for index in range(1, len(ext_names)) :
 
-                    if len(ext_names[index].split("_")) == 3 :
-                        temp_nominator_name = ext_names[index].split("_")[2]
+                    if len(ext_names[index].split("_")) > 2 :
+                        temp_nominator_name = "_".join(ext_names[index].split("_")[2:])
                     else :  
                         temp_nominator_name=ext_names[index]
 
                     temp_df = ext_objects[index].dfs[ext_names[index].split("_")[1]][variable][temp_nominator_name]["upDownUnc"][df_filter].copy()
-                    normalisation =  denominator_df["content"].sum() / temp_df["content"].sum()
-                    temp_df.loc[:, "content":]=temp_df.loc[:, "content":] * normalisation
+                    temp_nominator_print_name=ext_names[index].split("_")[0]
+    
+                    if normNominator :
+                        normalisation =  denominator_df["content"].sum() / temp_df["content"].sum()
+                        temp_df.loc[:, "content":]=temp_df.loc[:, "content":] * normalisation
+
+                        if len(ext_names[index].split("_")) > 2 : # ex) "Data bkg. subtracted_MeasuredBkgSubtracted_total"
+                            temp_nominator_print_name = "_".join(ext_names[index].split("_")[2:]) + "(x{:.2f})".format(normalisation)  
+                        else :
+                            temp_nominator_print_name=ext_names[index].split("_")[0] + "(x{:.2f})".format(normalisation)
                     additional_df.append(temp_df)
 
-                    if len(ext_names[index].split("_")) == 3 : # ex) "Data bkg. subtracted_MeasuredBkgSubtracted_total"
-                        temp_nominator_print_name = ext_names[index].split("_")[0] + "(x{:.2f})".format(normalisation)  
-                    else :
-                        temp_nominator_print_name=ext_names[index].split("_")[0] + "(x{:.2f})".format(normalisation)
-
                     nEvents[temp_nominator_print_name]=temp_df['content'].sum()
-
                     additional_names.append(temp_nominator_print_name)
 
         if draw_mode == 4 :
@@ -962,6 +1002,8 @@ class ISRPlotter :
                                       showBar=False, alpha=0.2, edgecolor='None', facecolor='black', zorder=2, hatch_style="/////")
 
             if draw_mode == 0 : 
+
+                top_axis.errorbar(x_bin_centers, default_nominator["content"], xerr=bin_width/2., yerr=default_nominator["stat_error"], fmt=",r", ecolor='red', zorder=4)
 
                 mc_abs_systematic=self.makeErrorNumpy(default_nominator.total_Up, default_nominator.total_Down)
                 self.make_error_boxes(top_axis, x_bin_centers.values, default_nominator["content"], binWidthxerr, mc_abs_systematic,
@@ -1126,16 +1168,34 @@ class ISRPlotter :
 
         varName, unit = self.setXaxisLabel(variable)
 
+        if showChi2 :
+    
+            nbins=denominator_hist.GetNbinsX()
+            res = np.zeros(nbins)
+            chi2=denominator_hist.Chi2Test(default_nominator_hist, "CHI2/NDF", res)
+            top_axis.text(0.05, 0.9,'Chi2/NDF= {:.2f}'.format(chi2), fontsize='medium', transform=top_axis.transAxes)
+
         if len(axis) == 1 :
             if draw_mode == 5 :
                 if write_xaxis_title : top_axis.set_xlabel('Relative Uncertainty', fontsize='xx-large', ha='right', x=1.0, labelpad=10)
             else :
                 if write_xaxis_title : top_axis.set_xlabel(varName + " " + unit, fontsize='xx-large', ha='right', x=1.0, labelpad=10) 
 
+        ###################################################################
+        #
+        #
+        #               Bottom plot
+        #
+        ###################################################################
+
         if len(axis) == 2 :
 
             if write_xaxis_title : bottom_axis.set_xlabel(varName + " " + unit, fontsize='xx-large', ha='right', x=1.0, labelpad=10)
-            if write_yaxis_title : bottom_axis.set_ylabel("MC/Data", fontsize='xx-large', labelpad=25)
+            if write_yaxis_title : 
+                if ratioName is None : 
+                    bottom_axis.set_ylabel("MC/Data", fontsize='xx-large', labelpad=25)
+                else :
+                    bottom_axis.set_ylabel(ratioName, fontsize='xx-large', labelpad=25)
 
             #dataTH1.Divide(dataTH1)
             #temp_stat_error = []
@@ -1215,18 +1275,19 @@ class ISRPlotter :
 
     def drawHistPlot(self, *variables, divde_by_bin_width = False, setLogy=False, showMeanValue=False, setLogx=False,
                     ratio_max=1.35, ratio_min=0.65, optimzeXrange=False, minimum_content=1, figSize=(10,6), show_ratio=True, ext_object_list=None, ext_names_list=None,
-                    denominator="Data_Measured", internal_names=None, draw_mode=0, setRatioLogy=False, showNEvents=False) :
+                    denominator="Data_Measured", internal_names=None, draw_mode=0, setRatioLogy=False, showNEvents=False, showChi2=False, outPdfPostfix=None, ratioName=None, 
+                    normNominator=False) :
 
         variable=variables[0]
         if show_ratio == True :
             num_rows = 2
-            fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize, gridspec_kw={'height_ratios':[1, 0.4]})
+            fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize, gridspec_kw={'height_ratios':[1, 0.3]})
         else :
             num_rows = 1
             fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize)
 
         plt.tight_layout()
-        plt.subplots_adjust(left=0.15, right=0.97, bottom=0.1, top=0.9)
+        plt.subplots_adjust(left=0.15, right=0.97, bottom=0.1, top=0.9, hspace=0.05)
 
         write_xaxis_title = True
         write_yaxis_title = True
@@ -1234,12 +1295,17 @@ class ISRPlotter :
         show_legend = False
 
         for index, variable in enumerate(variables) :
+
             if len(variables) == 1:
                 show_legend = True
                 if show_ratio : 
-                    self.drawSubPlot(axes[0], axes[1], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,showMeanValue=showMeanValue, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents)
+
+                    self.drawSubPlot(axes[0], axes[1], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,showMeanValue=showMeanValue, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
+
                 else : 
+
                     self.drawSubPlot(axes, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,showMeanValue=showMeanValue, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents)
+
             else :
                 if index > 0 :
                     write_yaxis_title=False
@@ -1253,12 +1319,17 @@ class ISRPlotter :
 
                 if show_ratio :
 
-                    self.drawSubPlot(axes[0][index], axes[1][index], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,showMeanValue=showMeanValue, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents)
+                    self.drawSubPlot(axes[0][index], axes[1][index], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,showMeanValue=showMeanValue, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
+
                 else :
 
                     self.drawSubPlot(axes[index], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,showMeanValue=showMeanValue, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents)
 
-        plt.savefig(self.outDirPath+self.plotPrefix+self.topDirName+"_"+variable+".pdf", format="pdf", dpi=300)
+        outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+".pdf" 
+        if outPdfPostfix is not None :
+            outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+"_"+outPdfPostfix+".pdf" 
+        
+        plt.savefig(outPdfName, format="pdf", dpi=300)
         plt.close(fig)
 
     def combinedPtDataFrame(self, name="Measured") :
@@ -1368,7 +1439,7 @@ class ISRPlotter :
         ax.legend(tuple(legend_handle), tuple(label_handle), loc='upper left', fancybox=False, framealpha=0.0, ncol=2, fontsize=5)
 
         plt.tight_layout()
-        plt.savefig(self.outDirPath+self.plotPrefix+"ISRUncertainty.pdf", format="pdf", dpi=300)
+        plt.savefig(self.outDirPath+self.plotPrefix+"_ISRUncertainty.pdf", format="pdf", dpi=300)
         plt.close(fig)
 
     def drawISRPlot(self, *list_to_plot, do_linear_fit=False, ymin=13, ymax=30, xmin=30, xmax=4e2) :
@@ -1417,7 +1488,7 @@ class ISRPlotter :
 
         ax.legend(loc='lower right', fontsize=15, fancybox=False, framealpha=0.0)
 
-        plt.savefig(self.outDirPath+self.plotPrefix+"ISR.pdf", format="pdf", dpi=300)
+        plt.savefig(self.outDirPath+self.plotPrefix+"_ISR.pdf", format="pdf", dpi=300)
         plt.close(fig)
 
     def drawISRPlots(self, *objects_to_plot, names_in_objects, do_linear_fit=None, labels=None, markers=None, colors=None, facecolor_list = None, ymin=13, ymax=30, xmin=30, xmax=4e2) :
@@ -1538,16 +1609,7 @@ class ISRPlotter :
         return UpDown
 
     def getRawDict(self, dictName) :
-        if dictName == "Measured" :
-            return self.rawDataMeasured
-        if dictName == "MeasuredBkgSubtracted" :
-            return self.rawDataBkgSubtracted
-        if dictName == "Signal" :
-            return self.rawMCSignal
-        if dictName == "Background" :
-            return self.rawMCBackground
-        if dictName == "MCTotal" :
-            return self.rawMCTotal
+        return self.rawHistsDict[dictName]
 
     def getDict(self, dictName="Measured") :
         return self.dfs[dictName]
