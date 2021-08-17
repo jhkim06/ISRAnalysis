@@ -264,7 +264,7 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     TFile* filein = new TFile(filepath, "READ");
 
     TString fullDirPath = dirName + "/" + var + "_ResMatrix_" + binDef + "/";
-    //cout << "ISRUnfold::setNominalRM fullDirPath : " << fullDirPath << endl;
+    cout << "ISRUnfold::setNominalRM fullDirPath : " << fullDirPath << endl;
 
     TString Rec_binName = "Rec_"+var;
     TString Gen_binName = "Gen_"+var;
@@ -315,32 +315,77 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
         }
     }
 
+    TH2* hmcGenRec_wo_binZero = NULL;
+    if(ignoreBinZero)
+    {
+        hmcGenRec_wo_binZero = (TH2*) hmcGenRec->Clone("matrix_wo_binzero");
+        for(int xbin=0; xbin <= hmcGenRec_wo_binZero->GetXaxis()->GetNbins(); xbin++)
+        {
+            hmcGenRec_wo_binZero->SetBinContent(xbin, 0, 0);
+            hmcGenRec_wo_binZero->SetBinError(xbin, 0, 0);
+        }
+        ignoreBinZeroTUnfold = new TUnfoldDensity(hmcGenRec_wo_binZero, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth, binning_Gen, binning_Rec);
+    }
+
+    if(doModelUnc)
+    {
+        modelUncertaintyTUnfold = new TUnfoldDensity(hReweightSF, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth, binning_Gen, binning_Rec);
+    }
+
     // Save migration and response matrix
     TDirectory* topDir;
     TDirectory* varDir;
 
+
+    TDirectory* topDirForReco;
+    TDirectory* varDirForReco;
+
+    topDirForReco=fUnfoldOut->GetDirectory("folded");
+    varDirForReco=fUnfoldOut->GetDirectory("folded/"+var);
+    //varDirForReco->cd();
     topDir=fUnfoldOut->GetDirectory("matrix");
     varDir=fUnfoldOut->GetDirectory("matrix/"+var);
     varDir->cd();
     binning_Gen->Write();
     binning_Rec->Write();
 
-    TH2F* hResponseM = (TH2F*) nominalTUnfold->GetProbabilityMatrix("hResponseM"); 
+    TH2F* hResponseM = (TH2F*) nominalTUnfold->GetProbabilityMatrix("hResponseM");
     hResponseM->Write();
     hmcGenRec->SetName("hMigrationM");
     hmcGenRec->Write();
 
     // Save projection of the migration matrix
-
     topDir=fUnfoldOut->GetDirectory("unfolded");
     varDir=fUnfoldOut->GetDirectory("unfolded/"+var);
     varDir->cd();
 
-    TH1D* hProjectedTruth = (TH1D*) hmcGenRec->ProjectionX("histo_ProjectedTruth", 0, -1, "e");  //
+    TH1D* hProjectedTruth = (TH1D*) hmcGenRec->ProjectionX("histo_DY", 0, -1, "e");  //
+    TH1D* hProjectedBinZero = (TH1D*) hmcGenRec->ProjectionX("histo_ProjectedBinZero", 0, 0, "e");  //
+
     TH1D* hProjectedReco = (TH1D*) hmcGenRec->ProjectionY("histo_ProjectedReco", 1, -1, "e");  //
 
+    if(ignoreBinZero)
+    {
+        TH1D* hProjectedBinZeroWoBinZero = (TH1D*)hmcGenRec_wo_binZero->ProjectionX("histo_ProjectedBinZeroWoBinZero", 0, 0, "e");
+        TH1D* hProjectedTruthWoBinZero = (TH1D*)hmcGenRec_wo_binZero->ProjectionX("histo_ProjectedTruthWoBinZero", 0, -1, "e");
+        TH1D* hProjectedRecoWoBinZero = (TH1D*)hmcGenRec_wo_binZero->ProjectionY("histo_ProjectedRecoWoBinZero", 1, -1, "e");
+
+
+        hProjectedBinZeroWoBinZero->Write();
+        hProjectedTruthWoBinZero->Write();
+
+        varDirForReco->cd();
+        hProjectedRecoWoBinZero->Write();
+        varDir->cd();
+    }
+
     hProjectedTruth->Write();
+    hProjectedBinZero->Write();
+
+    varDirForReco->cd();
+    binning_Rec->Write();
     hProjectedReco->Write();
+    varDir->cd();
 
     filein->Close();
     delete filein;
@@ -348,6 +393,12 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
 
 void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
 {
+    TDirectory* topDir;
+    TDirectory* varDir;
+
+    topDir=fUnfoldOut->GetDirectory("unfolded");
+    varDir=fUnfoldOut->GetDirectory("unfolded/"+var);
+    varDir->cd();
     //cout << "setFromPrevUnfResult(), useAccept? " << useAccept << endl;
     // Loop over sytematics considered in the previous unfold class
     // So first get sysVector map object
@@ -380,6 +431,8 @@ void ISRUnfold::setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept)
             else
             {
                 this->systematicTUnfold[*it] = new TUnfoldDensity(hResponseM,TUnfold::kHistMapOutputHoriz,regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth, binning_Gen,binning_Rec);
+                TH1D* hProjectedTruth = (TH1D*) hResponseM->ProjectionX("histo_DY_"+(*it), 0, -1, "e");
+                hProjectedTruth->Write();
 
                 if(!useAccept)
                 {
@@ -408,6 +461,13 @@ void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString binDe
     hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + binDef + "/" + histNameWithSystematic);
     cout << "ISRUnfold::setSystematicRM " << filepath << " " << dirName + "/" + var + "_ResMatrix_" + binDef + "/" + histNameWithSystematic << endl;
 
+    TDirectory* topDir;
+    TDirectory* varDir;
+
+    topDir=fUnfoldOut->GetDirectory("unfolded");
+    varDir=fUnfoldOut->GetDirectory("unfolded/"+var);
+    varDir->cd();
+
     if(sysName.Contains("IterEM"))
     {
         iterEMTUnfold = new TUnfoldIterativeEM(hmcGenRec,TUnfoldDensity::kHistMapOutputHoriz,binning_Gen,binning_Rec);
@@ -416,12 +476,15 @@ void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString binDe
     {
         systematicTUnfold[sysName] = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth, binning_Gen, binning_Rec);
     }
+    TH1D* hProjectedTruth = (TH1D*) hmcGenRec->ProjectionX("histo_DY_"+sysName, 0, -1, "e");  //
+    hProjectedTruth->Write();
 
     filein->Close();
     delete filein;
+    delete hProjectedTruth;
 }
 
-// Set input histogram using the nominal output of the previous unfolding 
+// Set input histogram using the nominal output of the previous unfolding
 void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString thisSysType, TString sysName, bool useAccept)
 {
     TH1::AddDirectory(kFALSE);
@@ -430,12 +493,12 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString thisSysType, TString sysN
     {
         if(thisSysType=="Type_0")
         {
-            nominalTUnfold->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var, "*[*]"), 1.);
+            nominalTUnfold->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var, "*[*]"), nominal_bias);
         }
         else
         {
             // FIXME
-            systematicTUnfold[sysName]->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var+thisSysType+sysName, "*[*]"), 1.);
+            systematicTUnfold[sysName]->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var+thisSysType+sysName, "*[*]"), nominal_bias);
         }
     }
     else
@@ -443,7 +506,7 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString thisSysType, TString sysN
         //cout << "set from previous unfold class, isSys " << isSys << endl;
         if(thisSysType=="Type_0")
         {
-            nominalTUnfold->SetInput(unfold->hFullPhaseData, 1.);
+            nominalTUnfold->SetInput(unfold->hFullPhaseData, nominal_bias);
         }
         else
         {
@@ -454,8 +517,13 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString thisSysType, TString sysN
             }
             else
             {
-                TH1* htemp = unfold->hSysFullPhaseData[sysName];
-                systematicTUnfold[sysName]->SetInput(htemp, 1.);
+                if(sysName.Contains("fsr"))
+                    systematicTUnfold[sysName]->SetInput(unfold->hFullPhaseData, nominal_bias);
+                else
+                {
+                    TH1* htemp = unfold->hSysFullPhaseData[sysName];
+                    systematicTUnfold[sysName]->SetInput(htemp, nominal_bias);
+                }
             }
         }
     }
@@ -472,7 +540,7 @@ void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, T
     hRec = (TH1*)filein->Get(dirName+"/"+var+ "_" + binDef+"/"+histName + histPostfix);
 
     // Use DY MC as unfolding input, i.e. simple closure test
-    if(histName.Contains("DYJetsTo"))
+    if(histName.Contains("DYJets"))
     {
         if(!isFSR)
         {
@@ -481,7 +549,14 @@ void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, T
         }
         else
         {
-            histName.ReplaceAll("DYJets", "DYJets10to50");
+            //cout << "closure input" << endl;
+            //cout << "filepath: " << filepath << endl;
+            if(year==2016)  
+                histName.ReplaceAll("DYJets", "DYJets10to50");
+            else
+            {
+                histName.ReplaceAll("DYJets", "DYJets10to50_MG");
+            }
             hRec->Add((TH1*)filein->Get(dirName+"/"+var+ "_" + binDef+"/"+histName));
         }
     }
@@ -495,14 +570,14 @@ void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, T
     // Nominal
     if(sysType == "Type_0")
     {
-        nominalTUnfold->SetInput(hRec, nominal_bias, 0);
+        nominalTUnfold->SetInput(hRec, nominal_bias, nominal_bias);
     }
     else
     // Systematic histograms
     {
         if(sysName.Contains("IterEM")) // FIXME
         {
-            iterEMTUnfold->SetInput(hRec, nominal_bias);
+            iterEMTUnfold->SetInput(hRec, 1.);
         }
         else
         {
@@ -525,13 +600,25 @@ void ISRUnfold::subBkgs(TString filepath, TString dirName, TString binDef, TStri
     if(sysType=="Type_0")
     {
         nominalTUnfold->  SubtractBackground(hRec, bkgName);
+        
+        // Save Unfolding fake histogram in folded directory
+        if(dirName.Contains("Fake"))
+        {
+            TDirectory* topDirForReco;
+            TDirectory* varDirForReco;
+
+            topDirForReco=fUnfoldOut->GetDirectory("folded");
+            varDirForReco=fUnfoldOut->GetDirectory("folded/"+var);
+            varDirForReco->cd();
+
+            hRec->SetName("histo_Fake"+bkgName);
+            hRec->Write();
+        }
     }
     else
     // Systematic
     {
         //cout << "file path: " << filepath << endl;
-        //cout << dirName + "/Pt"+binDef+"/histo_" + histNameWithSystematic << endl;
-
         if(sysName.Contains("IterEM"))
         {
             iterEMTUnfold->SubtractBackground(hRec, bkgName);
@@ -552,9 +639,6 @@ void ISRUnfold::subBkgs(TString filepath, TString dirName, TString binDef, TStri
             }
             else
             {
-                //cout << "ISRUnfold::subBkgs bkgName: " << bkgName << endl;
-                //cout << dirName + "/" + var + "_" + binDef+"/histo_" + bkgName + histPostfix << endl;
-                //cout << "histPostfix: " << histPostfix << endl;
                 systematicTUnfold[sysName]->SubtractBackground(hRec, bkgName);
             }
         }
@@ -586,51 +670,48 @@ void ISRUnfold::doISRUnfold()
     if(regMode == TUnfold::kRegModeNone)
     {
         // Nominal unfolding
-        nominalTUnfold->DoUnfold(0);
+        nominalTUnfold->DoUnfold(tau);
     }
-    /*
     else
     {
-        nomMassUnfold->DoUnfold(0);
-
-        if(var=="Pt")
-        {
-        int istart = binning_Gen->GetGlobalBinNumber(0., 200.);
-        int iend = binning_Gen->GetGlobalBinNumber(99., 200.);
-        nominalTUnfold->RegularizeBins(istart, 1, iend-istart+1, regMode);
-
-        double tauMin=1.e-4;
-        double tauMax=1.e-1;
-        nominalTUnfold->ScanLcurve(100, tauMin, tauMax, 0);
-
-        TH2 *histL= nominalTUnfold->GetL("L");
-        if(histL)
-        {
-            for(Int_t j=1;j<=histL->GetNbinsY();j++)
-            {
-                cout<<"L["<<nominalTUnfold->GetLBinning()->GetBinName(j)<<"]";
-                for(Int_t i=1;i<=histL->GetNbinsX();i++) {
-                    Double_t c=histL->GetBinContent(i,j);
-                    if(c!=0.0) cout<<" ["<<i<<"]="<<c;
-                }
-                cout<<"\n";
-            }
-        }
-        }
+        Int_t nScan=30; //This number chosen only because it was given in the tutorial
+        Double_t tauMin = 1e-2; //If tauMin=tauMax, TUnfold automatically chooses a range
+        Double_t tauMax = 1e-1; //Not certain how they choose the range
+        iBest_nominal=nominalTUnfold->ScanLcurve(nScan,tauMin,tauMax,&lCurve,&logTauX,&logTauY);
+        tau=nominalTUnfold->GetTau(); // Use this tau for systematic unfolding
+        cout<< "tau=" << nominalTUnfold->GetTau() << endl;
+        cout<<"chi**2="<<nominalTUnfold->GetChi2A()<<"+"<<nominalTUnfold->GetChi2L()<<" / "<<nominalTUnfold->GetNdf()<<"\n";
+        Double_t t[1],x[1],y[1];
+        logTauX->GetKnot(iBest_nominal,t[0],x[0]);
+        logTauY->GetKnot(iBest_nominal,t[0],y[0]);
+        bestLcurve=new TGraph(1,x,y);
+        bestLogTauLogChi2=new TGraph(1,t,x);
     }
-    */
+
     varDir->cd();
 
-    bool useAxisBinning = true; 
+    bool useAxisBinning = false;
     if(var == "Pt")
     {
-        useAxisBinning = false;   
-    }  
+        useAxisBinning = false;
+    }
+
+    nominalTUnfold->GetRhoIJtotal("hCorrelation", 0, 0, 0, useAxisBinning)->Write();
+    nominalTUnfold->GetEmatrixTotal("hCovariance", 0, 0, 0, useAxisBinning)->Write();
+    nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false)->Write();
+
+    // Save unfolding input histogram
+    TDirectory* topDirForReco;
+    TDirectory* varDirForReco;
+
+    topDirForReco=fUnfoldOut->GetDirectory("folded");
+    varDirForReco=fUnfoldOut->GetDirectory("folded/"+var);
+    varDirForReco->cd();
 
     nominalTUnfold->GetInput("histo_UnfoldInput", 0, 0, 0, false)->Write();
-    nominalTUnfold->GetRhoIJtotal("hCorrelation", 0, 0, 0, useAxisBinning)->Write();
-    nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false)->Write();
-    nominalTUnfold->GetBias("histo_DY", 0, 0, "*[*]", false)->Write();
+
+    varDir->cd();
+
 
     if(doInputStatUnc)
     {
@@ -654,7 +735,7 @@ void ISRUnfold::doISRUnfold()
             }
 
             UnfoldingInputStatTUnfold.at(istat)->SetInput(tempInput, nominal_bias);
-            UnfoldingInputStatTUnfold.at(istat)->DoUnfold(0);
+            UnfoldingInputStatTUnfold.at(istat)->DoUnfold(tau);
 
             varDir->cd();
             UnfoldingInputStatTUnfold.at(istat)->GetOutput("histo_Data_UnfoldingInputStat_" + nth_, 0, 0, "*[*]", false)->Write();
@@ -675,7 +756,7 @@ void ISRUnfold::doISRUnfold()
             nth_.Form("%d", istat);
 
             UnfoldingMatrixStatTUnfold.at(istat)->SetInput(tempInput, nominal_bias);
-            UnfoldingMatrixStatTUnfold.at(istat)->DoUnfold(0);
+            UnfoldingMatrixStatTUnfold.at(istat)->DoUnfold(tau);
 
             varDir->cd();
             UnfoldingMatrixStatTUnfold.at(istat)->GetOutput("histo_Data_UnfoldingMatrixStat_" + nth_, 0, 0, "*[*]", false)->Write();
@@ -686,6 +767,32 @@ void ISRUnfold::doISRUnfold()
         UnfoldingMatrixStatTUnfold.clear();
     }
 
+    if(ignoreBinZero)
+    {
+
+        TH1* tempInput = nominalTUnfold->GetInput("BkgSubtractedInput", 0, 0, 0, false);
+
+        ignoreBinZeroTUnfold->SetInput(tempInput, nominal_bias);
+        ignoreBinZeroTUnfold->DoUnfold(tau);
+
+        varDir->cd();
+        ignoreBinZeroTUnfold->GetOutput("histo_DataNoBinZeroTUnfold", 0, 0, "*[*]", false)->Write();
+
+        delete tempInput;
+    }
+
+    if(doModelUnc)
+    {
+        TH1* temp_modelUncInput = nominalTUnfold->GetInput("modelUncertainty_input", 0, 0, 0, false);
+
+        modelUncertaintyTUnfold->SetInput(temp_modelUncInput, nominal_bias);
+        modelUncertaintyTUnfold->DoUnfold(tau);
+
+        varDir->cd();
+        modelUncertaintyTUnfold->GetOutput("histo_Data_UnfoldModel", 0, 0, "*[*]", false)->Write();
+
+        delete temp_modelUncInput;
+    }
     // For systematic
     std::vector<TString>::iterator it = sysVector.begin();
     while(it != sysVector.end())
@@ -697,25 +804,14 @@ void ISRUnfold::doISRUnfold()
 
             varDir->cd();
             iterEMTUnfold->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false)->Write();
-            nominalTUnfold->GetBias("histo_DY_"+(*it), 0, 0, "*[*]", false)->Write();
         }
         else
         {
 
-            if(regMode == TUnfold::kRegModeNone)
-            {
-                systematicTUnfold[*it]->DoUnfold(0);
-            }
-            else
-            {
-                double tauMin=1.e-4;
-                double tauMax=1.e-1;
-                systematicTUnfold[*it]->ScanLcurve(100, tauMin, tauMax, 0);
-            }
+            systematicTUnfold[*it]->DoUnfold(tau);
 
             varDir->cd();
             systematicTUnfold[*it]->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false)->Write();
-            systematicTUnfold[*it]->GetBias("histo_DY_"+(*it), 0, 0, "*[*]", false)->Write();
         }
         it++;
     }
@@ -751,9 +847,12 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
     else
         hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_MG"));
 
-    hFiducialPhaseMC = nominalTUnfold->GetBias("hFiducial"+var, 0, 0, "*[*]", false);
+
+    //hFiducialPhaseMC = nominalTUnfold->GetBias("hFiducial"+var, 0, 0, "*[*]", false);
+    hFiducialPhaseMC = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY");
     hAcceptance = (TH1*) hFullPhaseMC->Clone("hAcceptance"+var);
     hAcceptance->Divide(hFiducialPhaseMC);
+
 
     hAcceptanceFraction = (TH1*) hFiducialPhaseMC->Clone("hAcceptanceFraction"+var);
     hAcceptanceFraction->Divide(hFullPhaseMC);
@@ -771,19 +870,18 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
     {
         TH1::AddDirectory(kFALSE);
         TH1* hFullPhaseDataTemp = NULL;
-        for(int istat = 0; istat < statSize; istat++) 
+        for(int istat = 0; istat < statSize; istat++)
         {
             TString nth_;
             nth_.Form("%d", istat);
-
 
             hFullPhaseDataTemp=(TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_Data_UnfoldingInputStat_" + nth_);
             hFullPhaseDataTemp->Multiply(hAcceptance);
 
             varDir->cd();
-            hFullPhaseDataTemp->Write(); 
-           
-            delete hFullPhaseDataTemp; 
+            hFullPhaseDataTemp->Write();
+
+            delete hFullPhaseDataTemp;
         }
     }
 
@@ -791,7 +889,7 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
     {
         TH1::AddDirectory(kFALSE);
         TH1* hFullPhaseDataTemp = NULL;
-        for(int istat = 0; istat < statSize; istat++) 
+        for(int istat = 0; istat < statSize; istat++)
         {
             TString nth_;
             nth_.Form("%d", istat);
@@ -801,15 +899,16 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
             hFullPhaseDataTemp->Multiply(hAcceptance);
 
             varDir->cd();
-            hFullPhaseDataTemp->Write(); 
-           
-            delete hFullPhaseDataTemp; 
+            hFullPhaseDataTemp->Write();
+
+            delete hFullPhaseDataTemp;
         }
     }
 
     std::vector<TString>::iterator it = sysVector.begin();
     while(it != sysVector.end())
     {
+        //cout << (*it) << endl;
         TH1* hFullPhaseMC_raw_sys = NULL;
         TH1* hFiducialPhaseMC_sys = NULL;
 
@@ -822,7 +921,8 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
         else
         {
             hSysFullPhaseData[*it]   = systematicTUnfold[*it]->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false);
-            hFiducialPhaseMC_sys = systematicTUnfold[*it]->GetBias("hFiducial"+var+"_sys"+(*it), 0, 0, "*[*]", false);
+            //hFiducialPhaseMC_sys = systematicTUnfold[*it]->GetBias("hFiducial"+var+"_sys"+(*it), 0, 0, "*[*]", false);
+            hFiducialPhaseMC_sys = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY_"+(*it));
         }
 
         // For PDF, AlphaS, Scale etc, nominator (of acceptance) also changes
@@ -860,7 +960,6 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
     }
 
     topDir->Write();;
-
     delete hFiducialPhaseMC;
 }
 

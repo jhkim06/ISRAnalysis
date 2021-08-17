@@ -44,7 +44,7 @@
 
 using namespace std;
 
-const int statSize = 1000;
+const int statSize = 100;
 
 class ISRUnfold{
 
@@ -59,13 +59,14 @@ private:
     // Unfolding
     // For nominal results
     TUnfoldDensity* nominalTUnfold;
-    TUnfoldDensity* nomMassUnfold;
 
     TH2* hResponseM;
 
     // For statistical uncertainty
     std::vector<TUnfoldDensity*> UnfoldingInputStatTUnfold;
     std::vector<TUnfoldDensity*> UnfoldingMatrixStatTUnfold;
+    TUnfoldDensity* modelUncertaintyTUnfold;
+    TUnfoldDensity* ignoreBinZeroTUnfold;
 
     // For systematic uncertainty
     //std::map<TString, std::map<TString, TUnfoldDensity*>> systematicTUnfold;
@@ -91,6 +92,8 @@ private:
     std::map<TString, std::map<TString, TH1*>> hSysAcceptanceFraction;
 
     TFile* fUnfoldOut;
+    TFile* fUnfoldReweight;
+    TH2* hReweightSF;
 
     TString fUnfoldOutPath;
 
@@ -100,6 +103,14 @@ private:
     TUnfold::ERegMode regMode;
     double nominal_bias;
 
+    double tau;
+
+    Int_t iBest_nominal;
+    TSpline *logTauX,*logTauY;
+    TGraph *lCurve;
+    TGraph*bestLcurve;
+    TGraph*bestLogTauLogChi2;
+
     TString output_baseDir;
     TString unfold_name;
     TString channel_name;
@@ -108,11 +119,14 @@ private:
 
     bool doInputStatUnc;
     bool doRMStatUnc;
+    bool ignoreBinZero;
+    bool doModelUnc;
 
 public:
 
     // Constructor
-    ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool doInputStatUnc_ = true, bool doRMStatUnc_ = false, bool verbose_ = false, TString var_ = "Mass", TString output_baseDir_ = "")
+    ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool doInputStatUnc_ = true, bool doRMStatUnc_ = false, bool ignoreBinZero_ = false, 
+              bool verbose_ = false, TString var_ = "Mass", TString output_baseDir_ = "", TString matrix_reweight_file_ = "", bool doModelUnc_ = false)
     {
         cout << "ISRUnfold set! " << var_ << endl;
 
@@ -123,6 +137,7 @@ public:
         var = var_;
 
         nominal_bias = 1.;
+        tau = 0.;
 
         if(regMode_ == 0)
             regMode = TUnfold::kRegModeNone;
@@ -135,6 +150,8 @@ public:
 
         doInputStatUnc = doInputStatUnc_;
         doRMStatUnc = doRMStatUnc_; 
+        ignoreBinZero = ignoreBinZero_;
+        doModelUnc = doModelUnc_;
 
         verbose = verbose_;
 
@@ -148,17 +165,34 @@ public:
         fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");
 
         fUnfoldOut->mkdir("matrix");
+        fUnfoldOut->mkdir("folded");
         fUnfoldOut->mkdir("unfolded");
         fUnfoldOut->mkdir("acceptance");
 
         fUnfoldOut->mkdir("matrix/" + var);
+        fUnfoldOut->mkdir("folded/" + var);
         fUnfoldOut->mkdir("unfolded/" + var);
         fUnfoldOut->mkdir("acceptance/" + var);
+
+        // open reweight file
+        if(doModelUnc && matrix_reweight_file_ != "")
+        {
+            fUnfoldReweight = new TFile(matrix_reweight_file_);
+            if(var == "Pt")
+            {
+                hReweightSF = (TH2*) fUnfoldReweight->Get("reweighted_pt_matrix");
+            }
+            if(var == "Mass")
+            {
+                hReweightSF = (TH2*) fUnfoldReweight->Get("reweighted_mass_matrix");
+            }
+        }
     }
     // Destructor
     ~ISRUnfold()
     {
         fUnfoldOut->Close(); 
+        fUnfoldReweight->Close();
     }
 
     inline void closeOutFile()
