@@ -103,6 +103,7 @@ class ISRPlotter :
                     self.systematics["theory"]["PDF"]=[pdf_prefix+"{:0>3}".format(str(i)) for i in range(1,n_max+1)]
             else :
                 self.systematics=dict()
+
             self.samples=self.config['Samples']
             self.stackOrder=self.config['StackOrder']
 
@@ -166,7 +167,6 @@ class ISRPlotter :
                     if varDir == "Pt" :
                         varDir=varDir+"_"+self.variablePostfix[0]
 
-
             # dict[variable][sample]
             for combinedName in self.samples :
 
@@ -179,12 +179,12 @@ class ISRPlotter :
                 else :
                     temp_dict=self.rawHistsDict[combinedName.split("_")[1]][variable]
                
-
                 if variable not in self.rawHistsDict["MCTotal"] :
                     self.rawHistsDict["MCTotal"][variable]=dict()
 
-                temp_dict[combinedName]=dict() # combined histogram
+                temp_dict[combinedName]=dict() # combined histogram TODO use name?
                 first_sample=True # first sample in the combinedName
+
                 for sampleName in self.samples[combinedName] :
                     temp_dict[sampleName]=dict()
 
@@ -210,8 +210,7 @@ class ISRPlotter :
                         temp_dict[combinedName][sysName][postfix]["DataFrame"]=self.convertTH1toDataFrame(temp_TH1)
                     else :
                         temp_dict[combinedName][sysName][postfix]["TH1"].Add(temp_TH1.Clone("Clone_"+combinedName+sampleName))
-                        temp_dict[combinedName][sysName][postfix]["DataFrame"].loc[:,"content":]= \
-                        temp_dict[combinedName][sysName][postfix]["DataFrame"].loc[:,"content":]+self.convertTH1toDataFrame(temp_TH1).loc[:,"content":]
+                        self.convertTH1toDataFrame(temp_dict[combinedName][sysName][postfix]["TH1"], temp_dict[combinedName][sysName][postfix]["DataFrame"])
 
                     del temp_TH1
                     # Set systemaitc histograms
@@ -245,8 +244,8 @@ class ISRPlotter :
                                     temp_dict[combinedName][sysName][postfix]["DataFrame"]=self.convertTH1toDataFrame(temp_TH1)
                                 else :
                                     temp_dict[combinedName][sysName][postfix]["TH1"].Add(temp_TH1.Clone("Clone_"+combinedName+sampleName))
-                                    temp_dict[combinedName][sysName][postfix]["DataFrame"].loc[:,"content":]= \
-                                    temp_dict[combinedName][sysName][postfix]["DataFrame"].loc[:,"content":]+self.convertTH1toDataFrame(temp_TH1).loc[:,"content":]
+                                    self.convertTH1toDataFrame(temp_dict[combinedName][sysName][postfix]["TH1"], temp_dict[combinedName][sysName][postfix]["DataFrame"]) 
+
                                 del temp_TH1
 
                     count_nSystematics = False
@@ -265,9 +264,13 @@ class ISRPlotter :
 
         self.combineHists(self.rawHistsDict["Measured"])
         self.combineHists(self.rawHistsDict["Signal"])
-        if self.bkgUsed : self.combineHists(self.rawHistsDict["Background"])
+        if self.bkgUsed : 
+            self.combineHists(self.rawHistsDict["Background"])
         self.setMCTotalHists() # signal + background mc
-        if self.bkgUsed : self.setBkgSubtractedDataHis() # background mc only
+        if self.bkgUsed : 
+            self.setBkgSubtractedDataHis() # background mc only
+        if self.rawHistsDict["Histogram"] != 0 : 
+            self.combineHists(self.rawHistsDict["Histogram"])    
 
         end_time = time.time()
         print("DONE")
@@ -663,7 +666,7 @@ class ISRPlotter :
                                 mc_dict[variable]["total"][sysName][postfix]["DataFrame"].content+mc_dict[variable][sample][sysName][postfix]["DataFrame"].content
 
 
-    def convertTH1toDataFrame(self, temp_TH1) :
+    def convertTH1toDataFrame(self, temp_TH1, existing_df = None) :
 
         temp_content, temp_binEdge=hist2array(temp_TH1, return_edges=True)
         binWidth = (temp_binEdge[0][1:] - temp_binEdge[0][:-1])
@@ -690,7 +693,12 @@ class ISRPlotter :
 
         pd_temp=pd.DataFrame(dict_temp, index=pd_series_binIndex)
 
-        return pd_temp
+        if existing_df is None :
+            return pd_temp
+        else :
+            existing_df.update(pd_temp)
+            del pd_temp
+            return None
 
     def setXaxisLabel(self, variable) :
 
@@ -760,7 +768,7 @@ class ISRPlotter :
         return output_source
 
     # Draw data and all MC and the ratio plot between data and total MC
-    def drawSubPlot(self, *axis, variable, divde_by_bin_width = False, setLogy=False,
+    def drawSubPlot(self, axis, variable, divde_by_bin_width = False, setLogy=False,
                     write_xaxis_title=False, write_yaxis_title=False, setLogx = False, showLegend = False,
                     ratio_max = 1.35, ratio_min = 0.65, optimzeXrange=False, minimum_content=1, show_ratio=False, ext_objects=None, ext_names=None, 
                     denominator="Data_Measured", internal_names=None, draw_mode=0,
@@ -769,8 +777,7 @@ class ISRPlotter :
         if len(axis) == 2 :
             top_axis = axis[0]
             bottom_axis = axis[1]
-
-        if len(axis) == 1 :
+        else :
             top_axis = axis[0] 
 
         '''
@@ -819,6 +826,7 @@ class ISRPlotter :
             nominal_mean_mass_df=self.dfs[denominator.split("_")[1]]["Mass"][denominator_name]["upDownUnc_meanValue"].iloc[mass_bin].copy() 
 
         else :
+
             df_filter = self.dfs[denominator.split("_")[1]][variable][denominator_name]["upDownUnc"]['content'] > minimum_content
             denominator_df=self.dfs[denominator.split("_")[1]][variable][denominator_name]["upDownUnc"][df_filter].copy()
             nEvents[denominator_print_name]=denominator_df["content"].sum()
@@ -828,6 +836,7 @@ class ISRPlotter :
                 data_df[combinedName]=self.dfs[combinedName.split("_")[1]][variable][combinedName]["upDownUnc"][df_filter].copy() 
 
         if draw_mode == 0 :
+
             default_nominator=self.dfs[default_nominator_name][variable]["total"]["upDownUnc"][df_filter].copy()
             default_nominator_hist=self.rawHistsDict[default_nominator_name][variable]["total"]["Nominal"]["Nominal"]["TH1"]
             
@@ -874,7 +883,6 @@ class ISRPlotter :
 
                     else :
                         additional_df.append(ext_objects[index].dfs[ext_names[index].split("_")[1]][variable][temp_nominator_name]["upDownUnc"][df_filter].copy())
-
 
                     temp_nominator_print_name=ext_names[index].split("_")[0]
                     additional_names.append(temp_nominator_print_name)
@@ -1329,8 +1337,8 @@ class ISRPlotter :
             self.make_error_boxes(bottom_axis, x_bin_centers.values, ratio.values, binWidthxerr, mc_statistic,
                                   showBox=False, showBar=True, alpha=0.2, edgecolor='None', facecolor=color, zorder=2)
 
-            print("x bin centers: ", x_bin_centers.values)
-            print("ratio: ", ratio.values)
+            #print("x bin centers: ", x_bin_centers.values)
+            #print("ratio: ", ratio.values)
 
             for index in range(len(additional_df)) :
 
@@ -1376,6 +1384,7 @@ class ISRPlotter :
                     denominator="Data_Measured", internal_names=None, draw_mode=0, setRatioLogy=False, showNEvents=False, showChi2=False, outPdfPostfix=None, ratioName=None, 
                     normNominator=False) :
 
+        #
         variable=variables[0]
         if show_ratio == True :
             num_rows = 2
@@ -1396,17 +1405,19 @@ class ISRPlotter :
 
             if len(variables) == 1:
                 show_legend = True
+
                 if show_ratio : 
+                    axes_tuple = (axes[0], axes[1])
 
-                    self.drawSubPlot(axes[0], axes[1], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
+                else :
+                    axes_tuple = (axes, )
 
-                else : 
-
-                    self.drawSubPlot(axes, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents)
+                self.drawSubPlot(axes_tuple, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
 
             else :
                 if index > 0 :
                     write_yaxis_title=False
+
                 if index < len(variables)-1 :
                     write_xaxis_title=False
                 else :
@@ -1415,13 +1426,14 @@ class ISRPlotter :
                 if len(variables) == index + 1:
                     show_legend = True
 
-                if show_ratio :
 
-                    self.drawSubPlot(axes[0][index], axes[1][index], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
+                if show_ratio : 
+                    axes_tuple = (axes[0][index], axes[1][index])
 
                 else :
+                    axes_tuple = (axes[index], )
 
-                    self.drawSubPlot(axes[index], variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents)
+                self.drawSubPlot(axes_tuple, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
 
         outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+".pdf" 
         if outPdfPostfix is not None :
