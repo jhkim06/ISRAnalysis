@@ -772,7 +772,8 @@ class ISRPlotter :
                     write_xaxis_title=False, write_yaxis_title=False, setLogx = False, showLegend = False,
                     ratio_max = 1.35, ratio_min = 0.65, optimzeXrange=False, minimum_content=1, show_ratio=False, ext_objects=None, ext_names=None, 
                     denominator="Data_Measured", internal_names=None, draw_mode=0,
-                    setRatioLogy = False, showNEvents=False, showChi2=False, ratioName=None, normNominator=False) :
+                    setRatioLogy = False, showNEvents=False, showChi2=False, ratioName=None, normNominator=False,
+                    oneColumn=False, setMarker="o", setColor='red') :
 
         if len(axis) == 2 :
             top_axis = axis[0]
@@ -805,6 +806,7 @@ class ISRPlotter :
             denominator_print_name = "Data"
         if "BkgSubtracted" in denominator :
             denominator_print_name = denominator_print_name + " (Bkg. subtracted)"
+
         if len(denominator.split("_")) > 2 : # ex) "Data bkg. subtracted_MeasuredBkgSubtracted_total"
             denominator_print_name = denominator.split("_")[0]
 
@@ -964,8 +966,9 @@ class ISRPlotter :
         if write_yaxis_title : top_axis.text(0., 1.07, "CMS Work in progress", fontsize='large', transform=top_axis.transAxes)
         if write_xaxis_title : top_axis.text(1., 1.07, "(13 TeV, " + self.lumi[self.year] + " " + self.year + ")", fontsize='large', transform=top_axis.transAxes, ha='right')
 
+        # print mass range top right
         if not variable.isalpha() :
-            
+
             #num_index = [x.isdigit() for x in variable].index(True)
             num_str = variable.split("__")[1]
             nth_bin = int(num_str)
@@ -1081,6 +1084,36 @@ class ISRPlotter :
             else :
                 if write_yaxis_title: top_axis.set_ylabel('Events/Bin', fontsize='xx-large', ha='right', y=1.0, labelpad=25)
 
+            if oneColumn :  
+
+                default_nominator_sum = default_nominator["content"].sum()
+                default_nominator["content"]/=default_nominator_sum
+                default_nominator["stat_error"]/=default_nominator_sum
+                default_nominator["total_Up"]/=default_nominator_sum
+                default_nominator["total_Down"]/=default_nominator_sum
+
+                denominator_df_sum = denominator_df["content"].sum()
+                denominator_df["content"]/=denominator_df_sum
+                denominator_df["stat_error"]/=denominator_df_sum
+                denominator_df["total_Up"]/=denominator_df_sum
+                denominator_df["total_Down"]/=denominator_df_sum  
+
+                for combinedName in self.samples :
+
+                    temp_sum = data_df[combinedName]["content"].sum()
+                    data_df[combinedName]["content"]/=temp_sum
+                    data_df[combinedName]["stat_error"]/=temp_sum
+                    data_df[combinedName]["total_Up"]/=temp_sum
+                    data_df[combinedName]["total_Down"]/=temp_sum
+
+                for index in range(len(additional_df)) :
+                
+                    temp_sum = additional_df[combinedName]["content"].sum()
+                    additional_df[index]["content"]/=temp_sum
+                    additional_df[index]["stat_error"]/=temp_sum
+                    additional_df[index]["total_Up"]/=temp_sum
+                    additional_df[index]["total_Down"]/=temp_sum
+
             #################################################################################
             #
             #  Now draw...
@@ -1098,7 +1131,10 @@ class ISRPlotter :
                                       showBar=False, alpha=0.2, edgecolor='None', facecolor='black', zorder=2, hatch_style="///")
 
             else :
-                denominator_handle = top_axis.errorbar(x_bin_centers, denominator_df["content"], xerr=bin_width/2., yerr=denominator_df["stat_error"], fmt=fmt_denominator, ecolor='black', zorder=4)
+                if oneColumn :
+                    denominator_handle = top_axis.errorbar(x_bin_centers, denominator_df["content"], xerr=bin_width/2., yerr=denominator_df["stat_error"], fmt=setMarker + "k", fillstyle='none', ecolor="black", markersize=15, zorder=4)
+                else :
+                    denominator_handle = top_axis.errorbar(x_bin_centers, denominator_df["content"], xerr=bin_width/2., yerr=denominator_df["stat_error"], fmt=fmt_denominator, ecolor='black', zorder=4)
 
                 denominator_abs_systematic=self.makeErrorNumpy(denominator_df.total_Up, denominator_df.total_Down)
                 self.make_error_boxes(top_axis, x_bin_centers.values, denominator_df["content"], binWidthxerr, denominator_abs_systematic,
@@ -1106,11 +1142,11 @@ class ISRPlotter :
 
             if draw_mode == 0 : 
 
-                top_axis.errorbar(x_bin_centers, default_nominator["content"], xerr=bin_width/2., yerr=default_nominator["stat_error"], fmt=",r", ecolor='red', markersize=0, zorder=4)
+                top_axis.errorbar(x_bin_centers, default_nominator["content"], xerr=bin_width/2., yerr=default_nominator["stat_error"], fmt=",", ecolor=setColor, markersize=0, zorder=4)
 
                 mc_abs_systematic=self.makeErrorNumpy(default_nominator.total_Up, default_nominator.total_Down)
                 self.make_error_boxes(top_axis, x_bin_centers.values, default_nominator["content"], binWidthxerr, mc_abs_systematic,
-                                      showBar=False, alpha=0.2, edgecolor='None', facecolor='red')
+                                      showBar=False, alpha=0.2, edgecolor='None', facecolor=setColor)
 
             color=iter(cm.rainbow(np.linspace(0,1,len(self.stackOrder))))
 
@@ -1239,8 +1275,8 @@ class ISRPlotter :
 
         if setLogy :
             top_axis.set_yscale("log")
-            ymin = 1e-3* denominator_df["content"].min()
-            ymax = 1e3 * denominator_df["content"].max()
+            ymin = 1e-1* denominator_df["content"].min()
+            ymax = 1e1 * denominator_df["content"].max()
             if ymin <= 0 : ymin = 1e-1
             
             top_axis.set_ylim(ymin, ymax)
@@ -1317,7 +1353,7 @@ class ISRPlotter :
             #bottom_axis.errorbar(x_bin_centers, ratio, xerr=bin_width/2., yerr=0, fmt='.', ecolor='red', zorder=1)
 
             color='red'
-            bottom_axis.hist(x_bin_centers, bins=x_bins, weights=ratio, histtype = 'step', color=color, linewidth=1.5)
+            bottom_axis.hist(x_bin_centers, bins=x_bins, weights=ratio, histtype = 'step', color=setColor, linewidth=1.5)
 
             denominator_systematic = self.makeErrorNumpy(denominator_df.total_Up/denominator_df.content, denominator_df.total_Down/denominator_df.content)
             denominator_statistic = self.makeErrorNumpy(denominator_df.stat_error/denominator_df.content, denominator_df.stat_error/denominator_df.content)
@@ -1332,10 +1368,10 @@ class ISRPlotter :
             mc_statistic = self.makeErrorNumpy(default_nominator.stat_error/denominator_df.content, default_nominator.stat_error/denominator_df.content)
 
             self.make_error_boxes(bottom_axis, x_bin_centers.values, ratio.values, binWidthxerr, mc_systematic,
-                                  showBar=False, alpha=0.2, edgecolor='None', facecolor=color, zorder=4)
+                                  showBar=False, alpha=0.2, edgecolor='None', facecolor=setColor, zorder=4)
 
             self.make_error_boxes(bottom_axis, x_bin_centers.values, ratio.values, binWidthxerr, mc_statistic,
-                                  showBox=False, showBar=True, alpha=0.2, edgecolor='None', facecolor=color, zorder=2)
+                                  showBox=False, showBar=True, alpha=0.2, edgecolor='None', facecolor=setColor, zorder=2)
 
             #print("x bin centers: ", x_bin_centers.values)
             #print("ratio: ", ratio.values)
@@ -1382,16 +1418,32 @@ class ISRPlotter :
     def drawHistPlot(self, *variables, divde_by_bin_width = False, setLogy=False, setLogx=False,
                     ratio_max=1.35, ratio_min=0.65, optimzeXrange=False, minimum_content=1, figSize=(10,6), show_ratio=True, ext_object_list=None, ext_names_list=None,
                     denominator="Data_Measured", internal_names=None, draw_mode=0, setRatioLogy=False, showNEvents=False, showChi2=False, outPdfPostfix=None, ratioName=None, 
-                    normNominator=False) :
+                    normNominator=False, oneColumn=False) :
 
         #
         variable=variables[0]
         if show_ratio == True :
             num_rows = 2
-            fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize, gridspec_kw={'height_ratios':[1, 0.3]})
+            if oneColumn :
+        
+                heights = []
+
+                for i in range(len(variables) + 1) :
+
+                    if i == 0 :
+                        heights.append(0.4)
+                    else :
+                        heights.append(0.4/len(variables))
+                        
+                fig, axes = plt.subplots(len(variables) + 1, 1, sharex=False, figsize=figSize, gridspec_kw={'height_ratios': heights})
+            else :
+                fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize, gridspec_kw={'height_ratios':[1, 0.3]})
         else :
             num_rows = 1
-            fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize)
+            if oneColumn : 
+                fig, axes = plt.subplots(num_rows, 1, sharex=False, figsize=figSize)
+            else :
+                fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize)
 
         plt.tight_layout()
         plt.subplots_adjust(left=0.15, right=0.97, bottom=0.1, top=0.9, hspace=0.05)
@@ -1401,6 +1453,7 @@ class ISRPlotter :
 
         show_legend = False
 
+        color=iter(cm.rainbow(np.linspace(0,1,len(variables))))
         for index, variable in enumerate(variables) :
 
             if len(variables) == 1:
@@ -1412,7 +1465,8 @@ class ISRPlotter :
                 else :
                     axes_tuple = (axes, )
 
-                self.drawSubPlot(axes_tuple, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
+                c=next(color)
+                self.drawSubPlot(axes_tuple, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator, oneColumn=oneColumn, setMarker=Line2D.filled_markers[index], setColor=c)
 
             else :
                 if index > 0 :
@@ -1426,14 +1480,20 @@ class ISRPlotter :
                 if len(variables) == index + 1:
                     show_legend = True
 
-
                 if show_ratio : 
-                    axes_tuple = (axes[0][index], axes[1][index])
+                    if oneColumn :
+                        axes_tuple = (axes[0], axes[index+1]) 
+                    else :
+                        axes_tuple = (axes[0][index], axes[1][index])
 
                 else :
-                    axes_tuple = (axes[index], )
+                    if oneColumn :
+                        axes_tuple = (axes,) 
+                    else :
+                        axes_tuple = (axes[index], )
 
-                self.drawSubPlot(axes_tuple, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator)
+                c=next(color)
+                self.drawSubPlot(axes_tuple, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator, oneColumn=oneColumn, setMarker=Line2D.filled_markers[index], setColor=c)
 
         outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+".pdf" 
         if outPdfPostfix is not None :

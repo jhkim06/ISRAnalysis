@@ -336,7 +336,6 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     TDirectory* topDir;
     TDirectory* varDir;
 
-
     TDirectory* topDirForReco;
     TDirectory* varDirForReco;
 
@@ -369,7 +368,6 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
         TH1D* hProjectedBinZeroWoBinZero = (TH1D*)hmcGenRec_wo_binZero->ProjectionX("histo_ProjectedBinZeroWoBinZero", 0, 0, "e");
         TH1D* hProjectedTruthWoBinZero = (TH1D*)hmcGenRec_wo_binZero->ProjectionX("histo_ProjectedTruthWoBinZero", 0, -1, "e");
         TH1D* hProjectedRecoWoBinZero = (TH1D*)hmcGenRec_wo_binZero->ProjectionY("histo_ProjectedRecoWoBinZero", 1, -1, "e");
-
 
         hProjectedBinZeroWoBinZero->Write();
         hProjectedTruthWoBinZero->Write();
@@ -784,14 +782,17 @@ void ISRUnfold::doISRUnfold()
     if(doModelUnc)
     {
         TH1* temp_modelUncInput = nominalTUnfold->GetInput("modelUncertainty_input", 0, 0, 0, false);
+        TH1D* temp_projectedTruthReweighted = (TH1D*) hReweightSF->ProjectionX("histo_DY_reweighted", 0, -1, "e");  //
 
         modelUncertaintyTUnfold->SetInput(temp_modelUncInput, nominal_bias);
         modelUncertaintyTUnfold->DoUnfold(tau);
 
         varDir->cd();
         modelUncertaintyTUnfold->GetOutput("histo_Data_UnfoldModel", 0, 0, "*[*]", false)->Write();
+        temp_projectedTruthReweighted->Write();
 
         delete temp_modelUncInput;
+        delete temp_projectedTruthReweighted;
     }
     // For systematic
     std::vector<TString>::iterator it = sysVector.begin();
@@ -903,6 +904,19 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
 
             delete hFullPhaseDataTemp;
         }
+    }
+
+    if(doModelUnc)
+    {
+        TH1::AddDirectory(kFALSE);
+        TH1* hFullPhaseDataTemp = NULL;
+
+        hFullPhaseDataTemp=(TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_Data_UnfoldModel");   
+        hFullPhaseDataTemp->Multiply(hAcceptance);
+
+        varDir->cd(); 
+        hFullPhaseDataTemp->Write(); 
+        delete hFullPhaseDataTemp; 
     }
 
     std::vector<TString>::iterator it = sysVector.begin();
