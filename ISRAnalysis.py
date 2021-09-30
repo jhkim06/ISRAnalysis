@@ -58,25 +58,28 @@ class ISRAnalysis:
         
         # Unfolding configuration
         self.bias = 0.0
-        self.mode = regMode_ # 레귤라이제이션 모드
+        self.mode = regMode_ 
         
         # Create ISRUnfold object
         # unfold_name : prefix for output plots
         # Make two ISRUnfold object for mass and pt
-        print("Creat ISRUnfold objects...")
+        print("Create ISRUnfold objects...")
 
-        model_sys_file = "matrix_reweightSF"
-        if "FSR" in self.unfold_name :
-            model_sys_file = "fsr_matrix_reweightSF"
-
-        self.unfold_pt   = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), doInputStat_, doRMStat_, ignoreBinZero_, False, "Pt", self.outDirPath,   self.inHistDic[model_sys_file], doModelUnc_)
-        self.unfold_mass = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), doInputStat_, doRMStat_, ignoreBinZero_, False, "Mass", self.outDirPath, self.inHistDic[model_sys_file], doModelUnc_)
+        if doModelUnc_ :
+            model_sys_file_path = self.inHistDic["matrix_reweightSF"]
+            if "FSR" in self.unfold_name :
+                model_sys_file_path = self.inHistDic["fsr_matrix_reweightSF"]
+        else :
+            model_sys_file_path = ""
+            
+        self.unfold_pt   = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), doInputStat_, doRMStat_, ignoreBinZero_, False, "Pt", self.outDirPath,   model_sys_file_path, doModelUnc_)
+        self.unfold_mass = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), doInputStat_, doRMStat_, ignoreBinZero_, False, "Mass", self.outDirPath, model_sys_file_path, doModelUnc_)
 
         self.unfold_pt.setBias(self.bias)
         self.unfold_mass.setBias(self.bias)
         
         # Set response matrix
-        print(self.binDef)
+        #print(self.binDef)
         self.unfold_pt.setNominalRM(self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.binDef[0])
         self.unfold_mass.setNominalRM(self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.binDef[1])
        
@@ -84,7 +87,7 @@ class ISRAnalysis:
         self.unfold_mass.checkMatrixCond()
         self.unfold_pt.checkMatrixCond()
 
-    def setInputHist(self, useMCInput = False, unfoldObj = None, dirName = "Detector", sys_type = "Type_0", sys_name = "", isFSR = False, useMadgraph = False, inputBinDef = None):
+    def setInputHist(self, useMCInput = False, unfoldObj = None, dirName = "Detector", sys_type = "Type_0", sys_name = "", isFSR = False, useMadgraph = False, inputBinDef = None, inputHistName=""):
         
         input_hist_name = self.data_hist_name
         hist_filekey_temp = "hist"
@@ -109,9 +112,15 @@ class ISRAnalysis:
                 if useMadgraph == True:
                     hist_filekey_temp = "hist_DYMG"
 
+                if inputHistName != "" :
+                    input_hist_name = inputHistName
+
             else :
                 input_hist_name = "histo_DYJets"
                 hist_filekey_temp = "hist_accept_drp1"
+
+                if inputHistName != "" :
+                    input_hist_name = inputHistName
 
             self.unfold_pt.setUnfInput(self.inHistDic[hist_filekey_temp], dirName, pt_mass_bin_def, input_hist_name, sys_type, sys_name, hist_postfix, isFSR)
             self.unfold_mass.setUnfInput(self.inHistDic[hist_filekey_temp], dirName, mass_bin_def, input_hist_name, sys_type, sys_name, hist_postfix, isFSR)
@@ -165,17 +174,19 @@ class ISRAnalysis:
             bkgList = ["DYJets10to50ToTauTau", "DYJetsToTauTau", "WW_pythia", "WZ_pythia", "ZZ_pythia", "TTLL_powheg", "SingleTop_tW_antitop_NoFullyHad", "SingleTop_tW_top_NoFullyHad"] 
 
         histPostfix_temp = self.makeSysHistPostfix(1, sys_type, sys_name) 
-        print(histPostfix_temp)
+        #print(histPostfix_temp)
         
         for bkg_name in bkgList:
             hist_filekey_temp = "hist"
+            if "SingleTop" in bkg_name and "AlphaS" in sys_name : # FIXME
+                histPostfix_temp = self.makeSysHistPostfix(1, "Type_3", sys_name) 
 
             self.unfold_pt.subBkgs(self.inHistDic[hist_filekey_temp], dirName, self.binDef[0], bkg_name, sys_type, sys_name, histPostfix_temp)
             self.unfold_mass.subBkgs(self.inHistDic[hist_filekey_temp], dirName, self.binDef[1], bkg_name, sys_type, sys_name, histPostfix_temp)
             
     def setSystematics(self, sys_type, sys_name, isFSR = False):
 
-        print("setSystematics")
+        #print("setSystematics")
         self.unfold_pt.setSystematics(sys_name)
         self.unfold_mass.setSystematics(sys_name)
 
@@ -264,11 +275,13 @@ class ISRAnalysis:
 
         self.unfold.drawCorrelation(var, steering, useAxis, outName)
 
-    def combineOutFiles(self) :
+    def combineOutFiles(self, prefix = "") :
 
         pt_output_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + "_Pt.root" 
         mass_output_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + "_Mass.root" 
         target_file_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + ".root"   
+        if prefix != "" :
+            target_file_path = self.outDirPath + self.unfold_name + "_" + self.channel + "_" + self.year + "_" + prefix + ".root"
         os.system('hadd -f ' + target_file_path + " " + pt_output_path + " " + mass_output_path)
 
     def closeOutFiles(self) :

@@ -264,7 +264,7 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     TFile* filein = new TFile(filepath, "READ");
 
     TString fullDirPath = dirName + "/" + var + "_ResMatrix_" + binDef + "/";
-    cout << "ISRUnfold::setNominalRM fullDirPath : " << fullDirPath << endl;
+    //cout << "ISRUnfold::setNominalRM fullDirPath : " << fullDirPath << endl;
 
     TString Rec_binName = "Rec_"+var;
     TString Gen_binName = "Gen_"+var;
@@ -457,7 +457,7 @@ void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString binDe
 
     TString histNameWithSystematic = "hmc" + var + "GenRec" + histPostfix;
     hmcGenRec = (TH2*)filein->Get(dirName + "/" + var + "_ResMatrix_" + binDef + "/" + histNameWithSystematic);
-    cout << "ISRUnfold::setSystematicRM " << filepath << " " << dirName + "/" + var + "_ResMatrix_" + binDef + "/" + histNameWithSystematic << endl;
+    //cout << "ISRUnfold::setSystematicRM " << filepath << " " << dirName + "/" + var + "_ResMatrix_" + binDef + "/" + histNameWithSystematic << endl;
 
     TDirectory* topDir;
     TDirectory* varDir;
@@ -472,6 +472,8 @@ void ISRUnfold::setSystematicRM(TString filepath, TString dirName, TString binDe
     }
     else
     {
+        //cout << sysName << " crate TUnfoldDensity..." << endl;
+        if(hmcGenRec == NULL) cout << "check input file" << endl; 
         systematicTUnfold[sysName] = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth, binning_Gen, binning_Rec);
     }
     TH1D* hProjectedTruth = (TH1D*) hmcGenRec->ProjectionX("histo_DY_"+sysName, 0, -1, "e");  //
@@ -668,13 +670,61 @@ void ISRUnfold::doISRUnfold()
     if(regMode == TUnfold::kRegModeNone)
     {
         // Nominal unfolding
-        nominalTUnfold->DoUnfold(tau);
+        //nominalTUnfold->DoUnfold(tau);
+        if(var == "Mass")
+            nominalTUnfold->DoUnfold(tau);
+        else 
+        {
+            //nominalTUnfold->DoUnfold(tau);
+
+            int istart=binning_Gen->GetGlobalBinNumber(0,320);
+            int iend=binning_Gen->GetGlobalBinNumber(100-0.01,320);
+            cout << "RegularizeBins, " << istart << " " <<  iend << "\n";
+            nominalTUnfold->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
+            /*
+            TH1D* hProjectedTruth = (TH1D*) hResponseM->ProjectionX("histo_DY_temp", 0, -1, "e");
+
+            int nSkip = 2;
+            int step = 1;
+            int nbin = iend-istart+1;
+            int i0 = istart;
+            int i1 = i0 + step;
+            int i2 = i1 + step;
+            for(int i = nSkip; i < nbin; i++)
+            { 
+                double i0_content = hProjectedTruth->GetBinContent(i0);
+                double i2_content = hProjectedTruth->GetBinContent(i2);
+                nominalTUnfold->RegularizeCurvature(i0, i1, i2, -1./ i0_content, -1./i2_content);
+                
+                i0 = i1;
+                i1 = i2;
+                i2 += step;
+            }
+
+            TH2 *histL=nominalTUnfold->GetL("L");
+            for(Int_t j=1;j<=histL->GetNbinsY();j++) {
+                cout<<"L["<<nominalTUnfold->GetLBinning()->GetBinName(j)<<"]";
+                for(Int_t i=1;i<=histL->GetNbinsX();i++) {
+                    Double_t c=histL->GetBinContent(i,j);
+                    cout<<" ["<<i<<"]="<<c;
+                }
+                cout<<"\n";
+            }
+            */
+            TGraph *lcurve;
+            TSpline *logtaux,*logtauy,*logtaucurvature;
+            int ibest=nominalTUnfold->ScanLcurve(20,0,0,&lcurve,&logtaux,&logtauy,&logtaucurvature);
+            tau = nominalTUnfold->GetTau();
+
+            //delete hProjectedTruth;
+        }
+
     }
     else
     {
         Int_t nScan=30; //This number chosen only because it was given in the tutorial
         Double_t tauMin = 1e-2; //If tauMin=tauMax, TUnfold automatically chooses a range
-        Double_t tauMax = 1e-1; //Not certain how they choose the range
+        Double_t tauMax = 1.; //Not certain how they choose the range
         iBest_nominal=nominalTUnfold->ScanLcurve(nScan,tauMin,tauMax,&lCurve,&logTauX,&logTauY);
         tau=nominalTUnfold->GetTau(); // Use this tau for systematic unfolding
         cout<< "tau=" << nominalTUnfold->GetTau() << endl;
@@ -754,7 +804,16 @@ void ISRUnfold::doISRUnfold()
             nth_.Form("%d", istat);
 
             UnfoldingMatrixStatTUnfold.at(istat)->SetInput(tempInput, nominal_bias);
-            UnfoldingMatrixStatTUnfold.at(istat)->DoUnfold(tau);
+            if(var == "Mass")
+                UnfoldingMatrixStatTUnfold.at(istat)->DoUnfold(tau);
+            else
+            {
+                //UnfoldingMatrixStatTUnfold.at(istat)->DoUnfold(tau);
+                int istart=binning_Gen->GetGlobalBinNumber(0,320);
+                int iend=binning_Gen->GetGlobalBinNumber(100-0.01,320);
+                UnfoldingMatrixStatTUnfold.at(istat)->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
+                UnfoldingMatrixStatTUnfold.at(istat)->DoUnfold(tau);
+            }
 
             varDir->cd();
             UnfoldingMatrixStatTUnfold.at(istat)->GetOutput("histo_Data_UnfoldingMatrixStat_" + nth_, 0, 0, "*[*]", false)->Write();
@@ -785,7 +844,16 @@ void ISRUnfold::doISRUnfold()
         TH1D* temp_projectedTruthReweighted = (TH1D*) hReweightSF->ProjectionX("histo_DY_reweighted", 0, -1, "e");  //
 
         modelUncertaintyTUnfold->SetInput(temp_modelUncInput, nominal_bias);
-        modelUncertaintyTUnfold->DoUnfold(tau);
+        if(var == "Mass")
+            modelUncertaintyTUnfold->DoUnfold(tau);
+        else
+        {
+            //modelUncertaintyTUnfold->DoUnfold(tau);
+            int istart=binning_Gen->GetGlobalBinNumber(0,320);
+            int iend=binning_Gen->GetGlobalBinNumber(100-0.01,320);
+            modelUncertaintyTUnfold->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
+            modelUncertaintyTUnfold->DoUnfold(tau);
+        }
 
         varDir->cd();
         modelUncertaintyTUnfold->GetOutput("histo_Data_UnfoldModel", 0, 0, "*[*]", false)->Write();
@@ -801,15 +869,26 @@ void ISRUnfold::doISRUnfold()
         if( (*it).Contains("IterEM"))
         {
             iBest=iterEMTUnfold->ScanSURE(NITER_Iterative, &graph_SURE_IterativeSURE, &graph_DFdeviance_IterativeSURE);
-            cout << "iBest: " << iBest << endl;
+            //cout << "iBest: " << iBest << endl;
 
             varDir->cd();
             iterEMTUnfold->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false)->Write();
         }
         else
         {
+            if(var == "Mass")
+                systematicTUnfold[*it]->DoUnfold(tau);
 
+            else
+            {
+            //systematicTUnfold[*it]->DoUnfold(tau);
+            //cout << "Unfold for " << *it << endl;
+            //if (systematicTUnfold[*it] == NULL) cout << "check" << endl;
+            int istart=binning_Gen->GetGlobalBinNumber(0,320);
+            int iend=binning_Gen->GetGlobalBinNumber(100-0.01,320);
+            systematicTUnfold[*it]->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
             systematicTUnfold[*it]->DoUnfold(tau);
+            }
 
             varDir->cd();
             systematicTUnfold[*it]->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false)->Write();
@@ -853,6 +932,13 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
     hFiducialPhaseMC = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY");
     hAcceptance = (TH1*) hFullPhaseMC->Clone("hAcceptance"+var);
     hAcceptance->Divide(hFiducialPhaseMC);
+
+    //if(unfold_name=="DetUNFOLD" and var == "Pt")
+    //{
+    //    cout << "acceptance of 69 th bin, bf : " << hAcceptance->GetBinContent(69) << endl;
+    //    hAcceptance->SetBinContent(69, 1.4);
+    //    cout << "acceptance of 69 th bin, af : " << hAcceptance->GetBinContent(69) << endl;
+    //}
 
 
     hAcceptanceFraction = (TH1*) hFiducialPhaseMC->Clone("hAcceptanceFraction"+var);

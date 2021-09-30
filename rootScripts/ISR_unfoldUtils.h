@@ -192,7 +192,8 @@ public:
     ~ISRUnfold()
     {
         fUnfoldOut->Close(); 
-        fUnfoldReweight->Close();
+        if(doModelUnc)
+            fUnfoldReweight->Close();
     }
 
     inline void closeOutFile()
