@@ -1143,7 +1143,7 @@ class ISRPlotter :
             if draw_mode == 4 :
                 denominator_abs_systematic=self.makeErrorNumpy(denominator_df.stat_error, denominator_df.stat_error)
                 self.make_error_boxes(top_axis, x_bin_centers.values, denominator_df["content"], binWidthxerr, denominator_abs_systematic,
-                                      showBar=False, alpha=0.2, edgecolor='None', facecolor='black', zorder=2, hatch_style="///")
+                                      showBar=False, alpha=0.2, edgecolor='None', facecolor='black', zorder=2, hatch_style="//////")
 
             else :
                 if oneColumn :
@@ -1153,7 +1153,7 @@ class ISRPlotter :
 
                 denominator_abs_systematic=self.makeErrorNumpy(denominator_df.total_Up, denominator_df.total_Down)
                 self.make_error_boxes(top_axis, x_bin_centers.values, denominator_df["content"], binWidthxerr, denominator_abs_systematic,
-                                      showBar=False, alpha=0.2, edgecolor='None', facecolor='black', zorder=2, hatch_style="///")
+                                      showBar=False, alpha=0.2, edgecolor='None', facecolor='black', zorder=2, hatch_style="//////")
 
             if draw_mode == 0 : 
 
@@ -1477,7 +1477,7 @@ class ISRPlotter :
                 fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize)
 
         plt.tight_layout()
-        plt.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9, hspace=0.05)
+        plt.subplots_adjust(left=0.12, right=0.97, bottom=0.1, top=0.9, hspace=0.05)
 
         write_xaxis_title = True
         write_yaxis_title = True
@@ -1752,7 +1752,7 @@ class ISRPlotter :
         plt.close(fig)
 
     def drawISRPlots(self, *objects_to_plot, names_in_objects, do_linear_fit=None, labels=None, markers=None, colors=None, facecolor_list = None, ymin=13, ymax=30, xmin=30, xmax=4e2,
-                    outPdfPostfix=None) :
+                    outPdfPostfix=None, years = None, both_lepton = False) :
 
         print("draw isr plot, do_linear_fit {}".format(do_linear_fit))
         color=iter(cm.rainbow(np.linspace(0,1,len(names_in_objects))))
@@ -1761,16 +1761,26 @@ class ISRPlotter :
         fig, ax = plt.subplots(figsize=(10, 6))
         plt.subplots_adjust(left=0.12, right=0.97, bottom=0.15, top=0.9)
         ax.text(0., 1.05, "CMS Work in progress", fontsize=20, transform=ax.transAxes)
-        #ax.text(1., 1.05, "(13 TeV, " + self.year + ")", fontsize=20, transform=ax.transAxes, ha='right')
-        ax.text(1., 1.05, "(13 TeV, 2016, 2017, 2018)", fontsize=20, transform=ax.transAxes, ha='right')
+        ax.text(1., 1.05, "(13 TeV, " + self.year + ")", fontsize=20, transform=ax.transAxes, ha='right')
+        if years is not None :
+            ax.text(1., 1.05, "(13 TeV " + years + ")", fontsize=20, transform=ax.transAxes, ha='right')
 
         ax.set_xlim(xmin,xmax)
         ax.set_ylim(ymin,ymax)
         ax.set_xscale("log")
         ax.xaxis.set_minor_formatter(FormatStrFormatter("%.0f"))
 
-        ax.set_xlabel("Mean $M^{ll}$ [GeV]", fontsize=20, ha='right', x=1.0)
-        ax.set_ylabel("Mean $p_{T}^{ll}$ [GeV]", fontsize=20, ha='right', y=1.0)
+
+        channelName = "e^{+}e^{-}"
+        if self.channel == "muon" :
+            channelName = "\mu^{+}\mu^{-}"
+
+        ax.set_xlabel("Mean $M^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', x=1.0)
+        ax.set_ylabel("Mean $p_{T}^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', y=1.0)
+
+        if both_lepton :
+            ax.set_xlabel("Mean $M^{ll}$ [GeV]", fontsize=20, ha='right', x=1.0)
+            ax.set_ylabel("Mean $p_{T}^{ll}$ [GeV]", fontsize=20, ha='right', y=1.0)
 
         for index, name in enumerate(names_in_objects) :
 

@@ -265,10 +265,10 @@ class ISRAnalysis:
     def doAcceptance(self, isFSR = False, outName = "") :
 
         if isFSR :
-            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.binDef[0],  True)
-            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.binDef[1],  True)
+            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.binDef[0])
+            self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.binDef[1])
         else : 
-            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_drp1'], self.binDef[0])
+            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_drp1'], self.binDef[0], self.inHistDic['hist_updated_accept'])
             self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_drp1'], self.binDef[1])
 
     def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):

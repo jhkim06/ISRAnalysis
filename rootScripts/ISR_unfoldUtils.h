@@ -49,17 +49,16 @@ const int statSize = 100;
 class ISRUnfold{
 
 private:
+    bool verbose;
 
     // Bin definitions
     TUnfoldBinning* binning_Rec = NULL;
     TUnfoldBinning* binning_Gen = NULL;
 
-    vector<TString> sysVector;
 
     // Unfolding
     // For nominal results
     TUnfoldDensity* nominalTUnfold;
-
     TH2* hResponseM;
 
     // For statistical uncertainty
@@ -69,7 +68,7 @@ private:
     TUnfoldDensity* ignoreBinZeroTUnfold;
 
     // For systematic uncertainty
-    //std::map<TString, std::map<TString, TUnfoldDensity*>> systematicTUnfold;
+    vector<TString> sysVector;
     std::map<TString, TUnfoldDensity*> systematicTUnfold;
 
     TUnfoldIterativeEM* iterEMTUnfold;
@@ -87,17 +86,13 @@ private:
     std::map<TString, TH1*> hSysFullPhaseMC;
 
     TH1* hAcceptance;
-    TH1* hAcceptanceFraction;
     std::map<TString, std::map<TString, TH1*>> hSysAcceptance;
-    std::map<TString, std::map<TString, TH1*>> hSysAcceptanceFraction;
 
     TFile* fUnfoldOut;
     TFile* fUnfoldReweight;
     TH2* hReweightSF;
 
     TString fUnfoldOutPath;
-
-    bool verbose;
 
     // Conditions for unfolding
     TUnfold::ERegMode regMode;
@@ -193,7 +188,9 @@ public:
     {
         fUnfoldOut->Close(); 
         if(doModelUnc)
+        {
             fUnfoldReweight->Close();
+        }
     }
 
     inline void closeOutFile()
@@ -225,6 +222,7 @@ public:
     void setSystematicRM(TString filepath, TString dirName,  TString binDef,  TString sysName, TString histPostfix);
 
     void setSystematics(TString sysHistName);
+
     void inline printSystematics()
     {
         std::vector<TString>::iterator it = sysVector.begin();
@@ -245,16 +243,12 @@ public:
     void doISRUnfold();
 
     // Acceptance correction
-    void doAcceptCorr(TString filePath, TString binDef, bool isAccept = false);
+    void doAcceptCorr(TString filePath, TString binDef, TString filePath_for_accept = "");
 
     // Get histograms
     TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true);
     TH1* getRawHist(TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis);
 
-    TH1* getUnfInput(TString steering, bool useAxis, int massBin);
-
-    // Helper functions
-    void doNorm(TH1* hist, bool norm = true);
 };
 
 #endif

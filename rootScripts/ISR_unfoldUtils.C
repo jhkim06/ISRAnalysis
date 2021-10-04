@@ -348,8 +348,8 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     binning_Gen->Write();
     binning_Rec->Write();
 
-    TH2F* hResponseM = (TH2F*) nominalTUnfold->GetProbabilityMatrix("hResponseM");
-    hResponseM->Write();
+    TH2F* hMigrationM = (TH2F*) nominalTUnfold->GetProbabilityMatrix("hMigrationM");
+    hMigrationM->Write();
     hmcGenRec->SetName("hMigrationM");
     hmcGenRec->Write();
 
@@ -561,12 +561,6 @@ void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, T
         }
     }
 
-    // Very preliminary test for input covariance using ID SF
-    //TFile* fcov = new TFile("/home/jhkim/ISR_Run2/unfolding/TUnfoldISR2016/rootScripts/covariance.root");
-    //TFile* fcov_pt = new TFile("/home/jhkim/ISR_Run2/unfolding/TUnfoldISR2016/rootScripts/covariance_pt.root");
-    //TH2* hCov = (TH2*) fcov->Get("cov");
-    //TH2* hCov_pt = (TH2*) fcov_pt->Get("cov");
-
     // Nominal
     if(sysType == "Type_0")
     {
@@ -575,7 +569,7 @@ void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, T
     else
     // Systematic histograms
     {
-        if(sysName.Contains("IterEM")) // FIXME
+        if(sysName.Contains("IterEM"))
         {
             iterEMTUnfold->SetInput(hRec, 1.);
         }
@@ -899,10 +893,13 @@ void ISRUnfold::doISRUnfold()
     topDir->Write();
 }
 
-void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
+void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString filePath_for_accept)
 {
     TDirectory* topDir;
     TDirectory* varDir;
+
+    TH1* hAcceptance_raw = NULL;
+    TFile* filein = new TFile(filePath);
 
     //if(!gSystem->AccessPathName(fullPath, kFileExists))
     topDir=fUnfoldOut->GetDirectory("acceptance");
@@ -910,14 +907,6 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
     varDir->cd();
     binning_Gen->Write();
     topDir->cd();
-
-    TFile* filein = new TFile(filePath);
-
-    TString accepCorrOrEffCorr;
-    if(isAccept)
-        accepCorrOrEffCorr = "Acceptance";
-    else
-        accepCorrOrEffCorr = "Efficiency";
 
     TH1* hFiducialPhaseMC = NULL;
 
@@ -927,22 +916,72 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
     else
         hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_MG"));
 
+    // full phase histogram from mass binned sample
+    TString mass_binned_sample_prefix[9] = {"M-100to200", "M-200to400", "M-400to500", "M-500to700", "M-700to800", 
+                                            "M-800to1000", "M-1000to1500", "M-1500to2000", "M-2000to3000"};
+    TH1* hFullPhaseMC_massBinned = NULL;
+    for(int i = 0; i < 9; i++)
+    {
+        if(i==0)
+        {
+            hFullPhaseMC_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
+        }
+        else
+        {
+            hFullPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
+        }
+    }
+
+    // 
+    int istart = binning_Gen->GetGlobalBinNumber(0, 200); 
+    for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
+    {
+        hFullPhaseMC->SetBinContent(j, hFullPhaseMC_massBinned->GetBinContent(j));
+        hFullPhaseMC->SetBinError(j,   hFullPhaseMC_massBinned->GetBinError(j));
+    }
+
+
+    // fiducial phase histogram from mass binned sample
+    TH1* hFiducialPhaseMC_massBinned = NULL;
+    for(int i = 0; i < 9; i++)
+    {
+        if(i==0)
+        {
+            hFiducialPhaseMC_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
+        }
+        else
+        {
+            hFiducialPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
+        }
+            
+    }
+
 
     //hFiducialPhaseMC = nominalTUnfold->GetBias("hFiducial"+var, 0, 0, "*[*]", false);
     hFiducialPhaseMC = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY");
-    hAcceptance = (TH1*) hFullPhaseMC->Clone("hAcceptance"+var);
-    hAcceptance->Divide(hFiducialPhaseMC);
+    for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
+    {
+        hFiducialPhaseMC->SetBinContent(j, hFiducialPhaseMC_massBinned->GetBinContent(j));
+        hFiducialPhaseMC->SetBinError(j,   hFiducialPhaseMC_massBinned->GetBinError(j));
+    }
 
-    //if(unfold_name=="DetUNFOLD" and var == "Pt")
-    //{
-    //    cout << "acceptance of 69 th bin, bf : " << hAcceptance->GetBinContent(69) << endl;
-    //    hAcceptance->SetBinContent(69, 1.4);
-    //    cout << "acceptance of 69 th bin, af : " << hAcceptance->GetBinContent(69) << endl;
-    //}
+    if(filePath_for_accept != "")
+    {
+        TFile* filein_temp = new TFile(filePath_for_accept);
 
+        hAcceptance = (TH1*) filein_temp->Get("updated_accept_hist");
+        filein_temp->Close();
 
-    hAcceptanceFraction = (TH1*) hFiducialPhaseMC->Clone("hAcceptanceFraction"+var);
-    hAcceptanceFraction->Divide(hFullPhaseMC);
+        hAcceptance_raw = (TH1*) hFullPhaseMC->Clone("hAcceptance_raw");
+        hAcceptance_raw->Divide(hFiducialPhaseMC);
+    }
+    else
+    {
+        hAcceptance = (TH1*) hFullPhaseMC->Clone("hAcceptance"+var);
+        hAcceptance->Divide(hFiducialPhaseMC); // Nominal acceptance factor
+
+        hAcceptance_raw = (TH1*) hAcceptance->Clone("hAcceptance_raw");
+    }
 
     hFullPhaseData = nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false);
     hFullPhaseData->Multiply(hAcceptance);
@@ -1021,8 +1060,9 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
         else
         {
             hSysFullPhaseData[*it]   = systematicTUnfold[*it]->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false);
-            //hFiducialPhaseMC_sys = systematicTUnfold[*it]->GetBias("hFiducial"+var+"_sys"+(*it), 0, 0, "*[*]", false);
-            hFiducialPhaseMC_sys = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY_"+(*it));
+            //hFiducialPhaseMC_sys = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY_"+(*it));
+            hFiducialPhaseMC_sys = hFiducialPhaseMC;
+            hFiducialPhaseMC_sys->SetName("histo_DY_"+(*it));
         }
 
         // For PDF, AlphaS, Scale etc, nominator (of acceptance) also changes
@@ -1033,6 +1073,25 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
                 hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_"+(*it)));
             else
                 hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_MG_"+(*it)));
+
+            TH1* hFullPhaseMC_sys_massBinned = NULL;
+            for(int i = 0; i < 9; i++)
+            {
+                if(i==0)
+                {
+                    hFullPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
+                }
+                else
+                {
+                    hFullPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
+                }
+            }
+            for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
+            {
+                hFullPhaseMC_raw_sys->SetBinContent(j, hFullPhaseMC_sys_massBinned->GetBinContent(j));
+                hFullPhaseMC_raw_sys->SetBinError(j,   hFullPhaseMC_sys_massBinned->GetBinError(j));
+            }
+            
         }
         else
         {
@@ -1040,16 +1099,17 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
         }
 
         TH1* hAcceptance_sys = (TH1*) hFullPhaseMC_raw_sys->Clone("hAcceptance_sys");
-        hAcceptance_sys->Divide(hFiducialPhaseMC_sys);
+        hAcceptance_sys->Divide(hFiducialPhaseMC_sys); // systematic acceptance
 
-        TH1* hAcceptanceFraction_sys = (TH1*) hFiducialPhaseMC_sys->Clone("hAcceptanceFraction_sys");
-        hAcceptanceFraction_sys->Divide(hFullPhaseMC_raw_sys);
+        // update 
+        hAcceptance_sys->Add(hAcceptance_raw, -1); // systematic - raw 
+        hAcceptance_sys->Add(hAcceptance, 1); // nominal + detla 
+
 
         hSysFullPhaseData[*it]->Multiply(hAcceptance_sys);
         hSysFullPhaseMC[*it] = hFullPhaseMC_raw_sys;
 
         delete hAcceptance_sys;
-        delete hAcceptanceFraction_sys;
 
         varDir->cd();
 
@@ -1060,6 +1120,7 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, bool isAccept)
     }
 
     topDir->Write();;
+    delete hAcceptance_raw;
     delete hFiducialPhaseMC;
 }
 
