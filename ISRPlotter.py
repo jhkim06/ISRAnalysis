@@ -977,7 +977,7 @@ class ISRPlotter :
         if self.channel == "muon" :
             channelName = "\mu^{+}\mu^{-}"
 
-        if write_yaxis_title : top_axis.text(0., 1.07, "CMS Work in progress", fontsize='large', transform=top_axis.transAxes)
+        if write_yaxis_title : top_axis.text(0., 1.07, "CMS Work in progress", fontsize='xx-large', transform=top_axis.transAxes)
         if write_xaxis_title : top_axis.text(1., 1.07, "(13 TeV, " + self.lumi[self.year] + " " + self.year + ")", fontsize='large', transform=top_axis.transAxes, ha='right')
 
         # print mass range top right
@@ -1623,7 +1623,7 @@ class ISRPlotter :
 
         fig, ax = plt.subplots(figsize=(8, 6))
         plt.subplots_adjust(left=0.12, right=0.97, bottom=0.15, top=0.9)
-        ax.text(0., 1.05, "CMS Work in progress", fontsize=20, transform=ax.transAxes)
+        ax.text(0., 1.05, "CMS Work in progress", fontsize='xx-large', transform=ax.transAxes)
         ax.text(1., 1.05, "(13 TeV, " + self.year + ")", fontsize=20, transform=ax.transAxes, ha='right')
 
         ax.tick_params(bottom=True, left=True, right=True, which="both", direction='in')  
@@ -1689,7 +1689,7 @@ class ISRPlotter :
 
         fig, ax = plt.subplots(figsize=(10, 6))
         plt.subplots_adjust(left=0.12, right=0.97, bottom=0.15, top=0.9)
-        ax.text(0., 1.05, "CMS Work in progress", fontsize=20, transform=ax.transAxes)
+        ax.text(0., 1.05, "CMS Work in progress", fontsize='xx-large', transform=ax.transAxes)
         ax.text(1., 1.05, "(13 TeV, " + self.year + ")", fontsize=20, transform=ax.transAxes, ha='right')
 
         ax.set_xlim(xmin,xmax)
