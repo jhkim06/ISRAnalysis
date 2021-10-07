@@ -978,7 +978,7 @@ class ISRPlotter :
             channelName = "\mu^{+}\mu^{-}"
 
         if write_yaxis_title : top_axis.text(0., 1.07, "CMS Work in progress", fontsize='xx-large', transform=top_axis.transAxes)
-        if write_xaxis_title : top_axis.text(1., 1.07, "(13 TeV, " + self.lumi[self.year] + " " + self.year + ")", fontsize='large', transform=top_axis.transAxes, ha='right')
+        if write_xaxis_title : top_axis.text(1., 1.07, "(13 TeV, " + self.lumi[self.year] + " " + self.year + ")", fontsize='xx-large', transform=top_axis.transAxes, ha='right')
 
         # print mass range top right
         if not variable.isalpha() :
@@ -988,7 +988,7 @@ class ISRPlotter :
             nth_bin = int(num_str)
             if not oneColumn :
                 top_axis.text(0.05, .9, "{:.0f}".format(self.massBins[nth_bin][0])  + "$ < M^{\mathit{"+channelName+"}} < $" + "{:.0f} GeV".format(self.massBins[nth_bin][1]),
-                              fontsize='large', transform=top_axis.transAxes, horizontalalignment='left')
+                              fontsize='xx-large', transform=top_axis.transAxes, horizontalalignment='left')
 
         label_list = []
         plot_list = []
@@ -1157,42 +1157,28 @@ class ISRPlotter :
 
             if draw_mode == 0 : 
 
-                handle = top_axis.errorbar(x_bin_centers, default_nominator["content"], xerr=bin_width/2., yerr=default_nominator["stat_error"], fmt=",", color = setColor, ecolor=setColor, markersize=0, zorder=4)
-                default_nominator_handle = handle
+                default_nominator_color = setColor
 
                 mc_abs_systematic=self.makeErrorNumpy(default_nominator.total_Up, default_nominator.total_Down)
                 self.make_error_boxes(top_axis, x_bin_centers.values, default_nominator["content"], binWidthxerr, mc_abs_systematic,
                                       showBar=False, alpha=0.2, edgecolor='None', facecolor=setColor)
 
-            color=iter(cm.rainbow(np.linspace(0,1,len(self.stackOrder))))
-
-            if draw_mode == 0 :
+                color=iter(cm.rainbow(np.linspace(0,1,len(self.stackOrder))))
+        
+                stacks = 0
                 for i, stack in enumerate(self.stackOrder) :
 
                     label_name = stack.split("_")[0]
 
-                    if i==0 :
-
-                        if(len(self.stackOrder)==1) :
-
-                            handle = top_axis.errorbar(x_bin_centers, data_df[stack]['content'], xerr=bin_width/2., yerr=0, fmt=',', color=setColor)
-                            plot_list.append(handle)
-                            label_list.append(label_name)
-
-                        else :
-
-                            handle = top_axis.bar(x_bin_centers, data_df[stack]['content'], width = bin_width, color=next(color))
-                            plot_list.append(handle)
-                            label_list.append(label_name)
-
-                        stacks=data_df[stack]['content']
-
+                    if len(self.stackOrder) == 1 :
+                        temp_color = setColor
                     else :
+                        temp_color = next(color)
 
-                        handle = top_axis.bar(x_bin_centers, data_df[stack]['content'], width = bin_width, color=next(color), bottom=stacks)
-                        plot_list.append(handle)
-                        label_list.append(label_name)
-                        stacks=stacks+data_df[stack]['content']
+                    handle = top_axis.bar(x_bin_centers, data_df[stack]['content'], width = bin_width, color=temp_color, bottom=stacks)
+                    plot_list.append(handle)
+                    label_list.append(label_name)
+                    stacks=stacks+data_df[stack]['content']
 
             elif draw_mode == 4 :
                  
@@ -1212,10 +1198,10 @@ class ISRPlotter :
 
             else :
 
-                handle=top_axis.errorbar(x_bin_centers, default_nominator['content'], xerr=bin_width/2., yerr=0, fmt='o', color='red')
+                handle=top_axis.errorbar(x_bin_centers, default_nominator['content'], xerr=bin_width/2., yerr=0, fmt='o', color=setColor)
                 plot_list.append(handle)
 
-                default_nominator_handle = handle
+                default_nominator_color = setColor
 
                 if showNEvents :
                     label_list.append(default_nominator_print_name + ": {:.1f}".format(nEvents[default_nominator_print_name])) 
@@ -1245,6 +1231,7 @@ class ISRPlotter :
                     self.make_error_boxes(top_axis, x_bin_centers.values, additional_df[index]["content"], binWidthxerr, ext_abs_systematic,
                                           showBar=False, alpha=0.2, edgecolor='None', facecolor=color)
 
+        # draw_mode == 5 
         else :
             temp_mass_series = pd.Series(nominal_mean_mass_df.stat_error)
             abs_mass_stat=self.makeErrorNumpy(temp_mass_series, temp_mass_series)
@@ -1383,7 +1370,7 @@ class ISRPlotter :
             #bottom_axis.errorbar(x_bin_centers, ratio, xerr=bin_width/2., yerr=0, fmt='.', ecolor='red', zorder=1)
 
             #color='red'
-            color=default_nominator_handle[0].get_color()
+            color = default_nominator_color
             bottom_axis.hist(x_bin_centers, bins=x_bins, weights=ratio, histtype = 'step', color=color, linewidth=1.5)
 
             denominator_systematic = self.makeErrorNumpy(denominator_df.total_Up/denominator_df.content, denominator_df.total_Down/denominator_df.content)
@@ -1393,7 +1380,7 @@ class ISRPlotter :
                                   showBar=False, alpha=0.1, edgecolor='None', facecolor='black', zorder=2)
 
             self.make_error_boxes(bottom_axis, x_bin_centers.values, one_points, binWidthxerr, denominator_statistic,
-                                  showBox=False, showBar=True, alpha=0.1, edgecolor='None', facecolor='black', zorder=2)
+                                  showBox=False, showBar=True, alpha=0.1, edgecolor='None', facecolor='black', barFmt=".k", zorder=2)
 
             mc_systematic      = self.makeErrorNumpy(default_nominator.total_Up/ denominator_df.content, default_nominator.total_Down/ denominator_df.content)
             mc_statistic = self.makeErrorNumpy(default_nominator.stat_error/denominator_df.content, default_nominator.stat_error/denominator_df.content)
@@ -1452,7 +1439,6 @@ class ISRPlotter :
                     normNominator=False, oneColumn=False) :
 
         #
-        variable=variables[0]
         if show_ratio == True :
             num_rows = 2
             if oneColumn :
@@ -1496,14 +1482,6 @@ class ISRPlotter :
                 else :
                     axes_tuple = (axes, )
 
-                c=next(color)
-                self.drawSubPlot(axes_tuple, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, 
-                                 write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title,setLogx=setLogx, 
-                                 showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, 
-                                 minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, 
-                                 denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, 
-                                 showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator, oneColumn=oneColumn, setMarker=Line2D.filled_markers[index], setColor=c,)
-
             else :
                 if index > 0 :
                     write_yaxis_title=False
@@ -1531,13 +1509,14 @@ class ISRPlotter :
                     else :
                         axes_tuple = (axes[index], )
 
-                c=next(color)
-                self.drawSubPlot(axes_tuple, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, 
-                                 write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, 
-                                 showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, 
-                                 minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, 
-                                 denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, 
-                                 showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator, oneColumn=oneColumn, setMarker=Line2D.filled_markers[index], setColor=c,)
+            
+            c=next(color)
+            self.drawSubPlot(axes_tuple, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy, 
+                             write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, 
+                             showLegend=show_legend, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange, 
+                             minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, 
+                             denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, 
+                             showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator, oneColumn=oneColumn, setMarker=Line2D.filled_markers[index], setColor=c,)
 
         outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+".pdf" 
         if outPdfPostfix is not None :
@@ -1859,7 +1838,7 @@ class ISRPlotter :
         plt.close(fig)
 
     def make_error_boxes(self, ax, xdata, ydata, xerror, yerror,
-                         showBox=True, showBar=False, facecolor='red', edgecolor='None', alpha=0.5, zorder=5, hatch_style=None):
+                         showBox=True, showBar=False, facecolor='red', edgecolor='None', alpha=0.5, zorder=5, hatch_style=None, barFmt="None"):
 
         # Loop over data points; create box from errors at each point
         try :
@@ -1888,7 +1867,7 @@ class ISRPlotter :
         if showBar :
             # Plot errorbars
             artists = ax.errorbar(xdata, ydata, xerr=xerror, yerr=yerror,
-                                  fmt='None', ecolor=facecolor, linewidth=0.1)
+                                  fmt=barFmt, ecolor=facecolor, linewidth=0.1)
         #return artists
 
     def makeErrorNumpy(self, Up, Down) :
