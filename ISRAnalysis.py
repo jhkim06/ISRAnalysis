@@ -7,6 +7,7 @@ import math
 import pyScripts.unfoldUtil as unfoldutil
 import pandas as pd
 
+
 class ISRAnalysis:
     
     def __init__(self, unfold_name_ = "Detector", year_ = "2016", channel_= "electron", regMode_ = 0, doInputStat_ = False, doRMStat_ = False, ignoreBinZero_ = False, matrix_filekey_ = "matrix",
@@ -57,7 +58,7 @@ class ISRAnalysis:
             self.inHistDic[modifiedPath.split()[1]] = modifiedPath.split()[2]
         
         # Unfolding configuration
-        self.bias = 0.0
+        self.bias = 1.
         self.mode = regMode_ 
         
         # Create ISRUnfold object
@@ -72,6 +73,7 @@ class ISRAnalysis:
         else :
             model_sys_file_path = ""
             
+        # Create ISRUnfold object
         self.unfold_pt   = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), doInputStat_, doRMStat_, ignoreBinZero_, False, "Pt", self.outDirPath,   model_sys_file_path, doModelUnc_)
         self.unfold_mass = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), int(self.mode), doInputStat_, doRMStat_, ignoreBinZero_, False, "Mass", self.outDirPath, model_sys_file_path, doModelUnc_)
 
@@ -87,7 +89,7 @@ class ISRAnalysis:
         self.unfold_mass.checkMatrixCond()
         self.unfold_pt.checkMatrixCond()
 
-    def setInputHist(self, useMCInput = False, unfoldObj = None, dirName = "Detector", sys_type = "Type_0", sys_name = "", isFSR = False, useMadgraph = False, inputBinDef = None, inputHistName=""):
+    def setInputHist(self, useMCInput = False, unfoldObj = None, dirName = "Detector", sys_type = "Type_0", sys_name = "", isFSR = False, useMadgraph = False, inputBinDef = None, inputHistName="", useAccept=True):
         
         input_hist_name = self.data_hist_name
         hist_filekey_temp = "hist"
@@ -135,8 +137,8 @@ class ISRAnalysis:
             else:
 
                 # Set unfold input from previous unfold 
-                self.unfold_pt.setUnfInput(unfoldObj.getISRUnfold("Pt"),   sys_type, sys_name, True) 
-                self.unfold_mass.setUnfInput(unfoldObj.getISRUnfold("Mass"),sys_type, sys_name, True)
+                self.unfold_pt.setUnfInput(unfoldObj.getISRUnfold("Pt"),   sys_type, sys_name, useAccept) 
+                self.unfold_mass.setUnfInput(unfoldObj.getISRUnfold("Mass"),sys_type, sys_name,useAccept)
 
     def setFromPreviousUnfold(self, unfoldObj) :
 
@@ -149,7 +151,7 @@ class ISRAnalysis:
         hist_filekey_temp = "matrix" # FIXME save DY fake in the histogram file
 
         if isFSR :
-            hist_filekey_temp = "hist_accept_drp1"
+            hist_filekey_temp = "fsr_matrix"
 
         if inputBinDef is not None :
             pt_mass_bin_def = inputBinDef[0]
@@ -198,9 +200,9 @@ class ISRAnalysis:
         if sys_name == "UnfoldingModel" :
             matrix_filekey_temp = "matrix_mg"
         if "fsrPHOTOS" in sys_name :
-            matrix_filekey_temp = "fsr_matrix_powheg_pythia"
+            matrix_filekey_temp = "fsr_matrix_pythia"
         if "fsrPYTHIA" in sys_name :
-            matrix_filekey_temp = "fsr_matrix_powheg_photos"
+            matrix_filekey_temp = "fsr_matrix_photos"
 
         # make a function to make a full histogram name with systematic
         #print("setSystematics", sys_name, hist_postfix_temp)
@@ -245,10 +247,10 @@ class ISRAnalysis:
         self.unfold.checkIterEMUnfold()
 
     # Do unfold! 
-    def doUnfold(self):
+    def doUnfold(self, partialReg=True):
 
-        self.unfold_pt.doISRUnfold()
-        self.unfold_mass.doISRUnfold()
+        self.unfold_pt.doISRUnfold(partialReg)
+        self.unfold_mass.doISRUnfold(partialReg)
 
     def doStatUnfold(self):
 
@@ -262,13 +264,25 @@ class ISRAnalysis:
         else :
             return self.unfold_pt
     
-    def doAcceptance(self, isFSR = False, outName = "") :
+    def doAcceptance(self, isFSR = False, outName = "", useMassBinned = False) :
 
         if isFSR :
-            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.binDef[0])
+        
+            if useMassBinned :  
+                self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.binDef[0], self.inHistDic['hist_updated_accept'])
+                pass
+            else :
+                self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.binDef[0])
+                pass
             self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.binDef[1])
         else : 
-            self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_drp1'], self.binDef[0], self.inHistDic['hist_updated_accept'])
+            if useMassBinned :
+                self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_drp1'], self.binDef[0], self.inHistDic['hist_updated_accept'])
+                pass
+            else :
+                self.unfold_pt.doAcceptCorr(self.inHistDic['hist_accept_drp1'], self.binDef[0])
+                pass
+                
             self.unfold_mass.doAcceptCorr(self.inHistDic['hist_accept_drp1'], self.binDef[1])
 
     def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):
@@ -288,63 +302,3 @@ class ISRAnalysis:
 
         self.unfold_pt.closeOutFile()
         self.unfold_mass.closeOutFile()
-
-    # Get histograms
-    def getCDFPtVsMassTGraph(self, grTitle = ""):
-
-        meanMass, meanPt = array('d'), array('d')
-        meanMassStatErr, meanPtStatErr = array('d'), array('d')
-        meanMassSysErr, meanPtSysErr = array('d'), array('d')
-
-        # Muon
-        cdf_muon_mass      = [47.72, 70.66, 90.99, 115.29, 243.33]
-        cdf_muon_mass_stat = [0.05, 0.04, 0.01, 0.18, 1.63]
-        cdf_muon_mass_sys  = [0.04, 0.07, 0.08, 0.14, 0.40]
-        cdf_muon_mass_tot  = []
-
-        cdf_electron_mass      = [47.83, 70.76, 90.98, 115.11, 245.46]
-        cdf_electron_mass_stat = [0.05, 0.04, 0.01, 0.13, 1.29]
-        cdf_electron_mass_sys  = [0.07, 0.04, 0.07, 0.14, 0.21]
-        cdf_electron_mass_tot  = []
-        
-        # Electron
-        cdf_muon_pt      = [9.12, 10.81, 11.84, 13.17, 16.18]
-        cdf_muon_pt_stat = [0.09, 0.08, 0.03, 0.12, 0.61]
-        cdf_muon_pt_sys  = [0.12, 0.14, 0.03, 0.12, 0.45]
-        cdf_muon_pt_tot  = []
-
-        cdf_electron_pt      = [9.10, 10.84, 11.79, 12.93, 16.41]
-        cdf_electron_pt_stat = [0.13, 0.08, 0.02, 0.09, 0.56]
-        cdf_electron_pt_sys  = [0.18, 0.10, 0.01, 0.09, 0.35]
-        cdf_electron_pt_tot  = []
-
-        for i in range(5):
-            cdf_muon_mass_tot.append(math.sqrt(math.pow(cdf_muon_mass_sys[i], 2) + math.pow(cdf_muon_mass_stat[i], 2)))
-            cdf_electron_mass_tot.append(math.sqrt(math.pow(cdf_electron_mass_sys[i], 2) + math.pow(cdf_electron_mass_stat[i], 2)))
-
-            cdf_muon_pt_tot.append(math.sqrt(math.pow(cdf_muon_pt_stat[i], 2) + math.pow(cdf_muon_pt_sys[i], 2)))
-            cdf_electron_pt_tot.append(math.sqrt(math.pow(cdf_electron_pt_stat[i], 2) + math.pow(cdf_electron_pt_sys[i], 2)))
-
-        for ibin in range(5):
-            if self.channel == "electron":
-                    meanMass.append(cdf_electron_mass[ibin])
-                    meanPt.append(cdf_electron_pt[ibin])
-                    meanMassStatErr.append(cdf_electron_mass_stat[ibin])
-                    meanPtStatErr.append(cdf_electron_pt_stat[ibin])
-
-                    meanMassSysErr.append(cdf_electron_mass_tot[ibin])
-                    meanPtSysErr.append(cdf_electron_pt_tot[ibin])
-                                 
-            if self.channel == "muon":
-                    meanMass.append(cdf_muon_mass[ibin])
-                    meanPt.append(cdf_muon_pt[ibin])
-                    meanMassStatErr.append(cdf_muon_mass_stat[ibin])
-                    meanPtStatErr.append(cdf_muon_pt_stat[ibin])
-
-                    meanMassSysErr.append(cdf_muon_mass_tot[ibin])
-                    meanPtSysErr.append(cdf_muon_pt_tot[ibin])
-
-        gr = rt.TGraphErrors(self.nMassBins, meanMass, meanPt, meanMassSysErr, meanPtSysErr)
-    
-        gr.SetName(grTitle)
-        return gr

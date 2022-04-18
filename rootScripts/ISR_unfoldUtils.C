@@ -10,8 +10,10 @@ TMatrixD ISRUnfold::makeMatrixFromHist(TH2F*hist)
     int nBinsX = hist->GetNbinsX();
     int nBinsY = hist->GetNbinsY();
     TMatrixD matrix(nBinsY,nBinsX);
-    for(int i=1;i<=nBinsX;i++){
-        for(int j=1;j<=nBinsY;j++){
+    for(int i=1;i<=nBinsX;i++)
+    {
+        for(int j=1;j<=nBinsY;j++)
+        {
             matrix(j-1,i-1) = hist->GetBinContent(i,j);
         }
     }
@@ -67,6 +69,192 @@ void ISRUnfold::checkMatrixCond()
 */
 }
 
+void ISRUnfold::drawChi2Reco()
+{
+    double chi2 = 0.;
+    int ndf = 0;
+
+    TH1* hDataInput;
+    TH1* hSigMC;
+       
+    TString steering;
+    bool useAxis = true;
+    if(var=="Pt")
+        steering = "pt[O]"; 
+    else 
+        steering = "mass[UO]";
+
+    hDataInput = nominalTUnfold->GetInput("hDataInput", 0, 0, steering, useAxis);
+    hSigMC = (TH1D*) hResponseM->ProjectionY("hSigMC", 1, -1, "e");
+    hSigMC = binning_Rec->ExtractHistogram("hSigMC_extracted", hSigMC, 0, useAxis, steering);
+
+    for(int i=1;i<=hSigMC->GetNbinsX();i++)
+    {
+        ndf += 1.;
+        if(hDataInput->GetBinError(i) == 0)
+        {
+          std::cout << "unfolded " << i << " bin: " << hDataInput->GetBinContent(i) << std::endl;
+          std::cout << "error is zero in the " << i << " bin..." << std::endl;
+          std::cout << "so skip this bin" << std::endl;
+          continue;
+        }
+        // TODO add option to use input covariance matrix
+        double pull=(hDataInput->GetBinContent(i)-hSigMC->GetBinContent(i))/hDataInput->GetBinError(i);
+        //cout << "data: " << hDataInput->GetBinContent(i) << " mc: " << hSigMC->GetBinContent(i) << " data error: " << hDataInput->GetBinError(i) << endl;
+        chi2+= pull*pull;
+    }
+    
+    TCanvas* c1 = new TCanvas("c1", "c1", 800, 800);
+    c1->cd();
+    hDataInput->SetMarkerStyle(20);
+    hDataInput->Draw("p9e");
+    hSigMC->SetLineColor(kRed);
+    hSigMC->Draw("HIST SAME E");
+
+    TLegend *legRec=new TLegend(0.4,0.5,0.68,0.85);
+    legRec->AddEntry((TObject*)0,TString::Format("#chi^{2}=%.1f ndf=%d",chi2,ndf),"");
+    legRec->Draw();
+
+    TDirectory* topDirForReco;
+    TDirectory* varDirForReco;
+
+    topDirForReco=fUnfoldOut->GetDirectory("folded");
+    varDirForReco=fUnfoldOut->GetDirectory("folded/"+var);
+    varDirForReco->cd();
+
+    c1->Write();
+    delete c1;
+}
+
+void ISRUnfold::drawChi2Truth()
+{
+
+    double chi2 = 0.;
+    int ndf  = 0;
+
+    TH1* hUnfoldedData; // 
+    TH1* hSigGen; // DY MC
+    TH2* hRho;
+
+    TString steering;
+    bool useAxis = true;
+    if(var=="Pt")
+        steering = "pt[O]"; 
+    else 
+        steering = "mass[UO]";
+
+    //TH1 *g_fcnHist=0;
+    TMatrixD *g_fcnMatrix=0;
+
+    //hUnfoldedData = nominalTUnfold->GetOutput("hUnfoldedData", 0, 0, steering, useAxis);
+    hUnfoldedData = (TH1*) fUnfoldOut->Get("unfolded/" + var + "/histo_Data");
+    hUnfoldedData = binning_Gen->ExtractHistogram("hUnfoldedData_extracted", hUnfoldedData, 0, useAxis, steering);
+    hSigGen = (TH1D*) hResponseM->ProjectionX("hSigGen", 0, -1, "e");
+
+    hSigGen = binning_Gen->ExtractHistogram("hSigGen_extracted", hSigGen, 0, useAxis, steering);
+    hRho = nominalTUnfold->GetRhoIJtotal("histRhoIJ", 0,0, steering, useAxis);
+/*
+    // FIXME check if "n" or "n+1"
+    int n = hUnfoldedData->GetNbinsX();
+    TMatrixDSym v(n);
+    for(int i=0;i<n;i++)
+    {
+       for(int j=0;j<n;j++)
+        {
+            v(i,j)=hRho->GetBinContent(i+1,j+1)*(hUnfoldedData->GetBinError(i+1)*hUnfoldedData->GetBinError(j+1));
+        }
+    }
+
+    TMatrixDSymEigen ev(v);
+    TMatrixD d(n,n);
+    TVectorD di(ev.GetEigenValues());
+    for(int i=0;i<n;i++) {
+       if(di(i)>0.0) {
+          d(i,i)=1./di(i);
+       } else {
+          cout<<"bad eigenvalue i="<<i<<" di="<<di(i)<<"\n";
+          exit(0);
+       }
+    }
+
+    TMatrixD O(ev.GetEigenVectors());
+    TMatrixD DOT(d,TMatrixD::kMultTranspose,O);
+    g_fcnMatrix=new TMatrixD(O,TMatrixD::kMult,DOT);
+    TMatrixD test(*g_fcnMatrix,TMatrixD::kMult,v);
+    int error=0;
+
+    for(int i=0;i<n;i++)
+    {
+        if(TMath::Abs(test(i,i)-1.0)>1.E-7)
+        {
+            error++;
+        }
+        for(int j=0;j<n;j++)
+        {
+            if(i==j) continue;
+            if(TMath::Abs(test(i,j)>1.E-7)) error++;
+        }
+    }
+*/
+    //// Calculate chi2
+    //for(int i=0;i<hUnfoldedData->GetNbinsX();i++)
+    //{
+    //    double di_=hUnfoldedData->GetBinContent(i+1)-hSigGen->GetBinContent(i+1);
+    //    if(g_fcnMatrix)
+    //    {
+    //        for(int j=0;j<hUnfoldedData->GetNbinsX();j++)
+    //        {
+    //            double dj=hUnfoldedData->GetBinContent(j+1)-hSigGen->GetBinContent(j+1);
+    //            chi2+=di_*dj*(*g_fcnMatrix)(i,j);
+    //        }
+    //    }
+    //    else
+    //    {
+    //        double pull=di_/hUnfoldedData->GetBinError(i+1);
+    //        chi2+=pull*pull;
+    //    }
+    //    ndf+=1;
+    //}
+
+    for(int i=1;i<=hUnfoldedData->GetNbinsX();i++)
+    {
+        ndf += 1;
+        if(hUnfoldedData->GetBinError(i) == 0)
+        {
+          std::cout << "unfolded " << i << " bin: " << hSigGen->GetBinContent(i) << std::endl;
+          std::cout << "error is zero in the " << i << " bin..." << std::endl;
+          std::cout << "so skip this bin" << std::endl;
+          continue;
+        }
+        // TODO add option to use input covariance matrix
+        double pull=(hSigGen->GetBinContent(i)-hUnfoldedData->GetBinContent(i))/hUnfoldedData->GetBinError(i);
+        //cout << "data: " << hSigGen->GetBinContent(i) << " mc: " << hUnfoldedData->GetBinContent(i) << " data error: " << hSigGen->GetBinError(i) << endl;
+        chi2+= pull*pull;
+    }
+
+    TCanvas* c1 = new TCanvas("c1", "c1", 800, 800);
+    c1->cd();
+    hUnfoldedData->SetMarkerStyle(20);
+    hUnfoldedData->Draw("p9e");
+    hSigGen->SetLineColor(kRed);
+    hSigGen->Draw("HIST SAME E");
+
+    TLegend *legRec=new TLegend(0.4,0.5,0.68,0.85);
+    legRec->AddEntry((TObject*)0,TString::Format("#chi^{2}=%.1f ndf=%d",chi2,ndf),"");
+    legRec->Draw();
+
+    TDirectory* topDir;
+    TDirectory* varDir;
+
+    topDir=fUnfoldOut->GetDirectory("unfolded");
+    varDir=fUnfoldOut->GetDirectory("unfolded/"+var);
+    varDir->cd();
+
+    c1->Write();
+    delete c1;
+
+}
+
 double ISRUnfold::getSmearedChi2(TString filePath, TString dirName, TString steering, bool useAxis)
 {
     double chi2 = 0.;
@@ -78,7 +266,7 @@ double ISRUnfold::getSmearedChi2(TString filePath, TString dirName, TString stee
     TString DYHistName_ = "histo_DYJetsToMuMu";
     if(channel_name == "electron") DYHistName_ = "histo_DYJetsToEE";
     hData = nominalTUnfold->GetInput("hData_"+var, 0, 0, steering, useAxis);
-    hDY = getRawHist(filePath, dirName, DYHistName_, "Signal_"+var, steering, useAxis); ;
+    hDY =   getRawHist(filePath, dirName, DYHistName_, "Signal_"+var, steering, useAxis); ;
 
     for(int i=1;i<=hDY->GetNbinsX();i++)
     {
@@ -159,44 +347,43 @@ double ISRUnfold::getUnfoldedChi2(TString steering, bool useAxis)
 
 
     // Calculate chi2
-    //for(int i=0;i<hData->GetNbinsX();i++)
-    //{
-    //
-    //    double di_=hData->GetBinContent(i+1)-hDY->GetBinContent(i+1);
-    //    if(g_fcnMatrix)
-    //    {
-    //        for(int j=0;j<hData->GetNbinsX();j++)
-    //        {
-    //            double dj=hData->GetBinContent(j+1)-hDY->GetBinContent(j+1);
-    //            chi2+=di_*dj*(*g_fcnMatrix)(i,j);
-    //        }
-    //    }
-    //    else
-    //    {
-    //        double pull=di_/hData->GetBinError(i+1);
-    //        chi2+=pull*pull;
-    //    }
-    //    ndf+=1.0;
-    //}
-
-    for(int i=1;i<=hDY->GetNbinsX();i++)
+    for(int i=0;i<hData->GetNbinsX();i++)
     {
-        ndf += 1.;
-        if(hData->GetBinError(i) == 0)
+    
+        double di_=hData->GetBinContent(i+1)-hDY->GetBinContent(i+1);
+        if(g_fcnMatrix)
         {
-          std::cout << "unfolded " << i << " bin: " << hData->GetBinContent(i) << std::endl;
-          std::cout << "error is zero in the " << i << " bin..." << std::endl;
-          std::cout << "so skip this bin" << std::endl;
-          continue;
+            for(int j=0;j<hData->GetNbinsX();j++)
+            {
+                double dj=hData->GetBinContent(j+1)-hDY->GetBinContent(j+1);
+                chi2+=di_*dj*(*g_fcnMatrix)(i,j);
+            }
         }
-        // TODO add option to use input covariance matrix
-        double pull=(hData->GetBinContent(i)-hDY->GetBinContent(i))/hData->GetBinError(i);
-        //cout << "data: " << hData->GetBinContent(i) << " mc: " << hDY->GetBinContent(i) << " data error: " << hData->GetBinError(i) << endl;
-        chi2+= pull*pull;
+        else
+        {
+            double pull=di_/hData->GetBinError(i+1);
+            chi2+=pull*pull;
+        }
+        ndf+=1.0;
     }
+
+    //for(int i=1;i<=hDY->GetNbinsX();i++)
+    //{
+    //    ndf += 1.;
+    //    if(hData->GetBinError(i) == 0)
+    //    {
+    //      std::cout << "unfolded " << i << " bin: " << hData->GetBinContent(i) << std::endl;
+    //      std::cout << "error is zero in the " << i << " bin..." << std::endl;
+    //      std::cout << "so skip this bin" << std::endl;
+    //      continue;
+    //    }
+    //    // TODO add option to use input covariance matrix
+    //    double pull=(hData->GetBinContent(i)-hDY->GetBinContent(i))/hData->GetBinError(i);
+    //    //cout << "data: " << hData->GetBinContent(i) << " mc: " << hDY->GetBinContent(i) << " data error: " << hData->GetBinError(i) << endl;
+    //    chi2+= pull*pull;
+    //}
     //cout << "chi^{2}, " << chi2 << endl;
     return chi2;
-
 }
 
 void ISRUnfold::checkIterEMUnfold(void)
@@ -330,6 +517,7 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     if(doModelUnc)
     {
         modelUncertaintyTUnfold = new TUnfoldDensity(hReweightSF, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, TUnfoldDensity::kDensityModeBinWidth, binning_Gen, binning_Rec);
+
     }
 
     // Save migration and response matrix
@@ -362,6 +550,12 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     TH1D* hProjectedBinZero = (TH1D*) hmcGenRec->ProjectionX("histo_ProjectedBinZero", 0, 0, "e");  //
 
     TH1D* hProjectedReco = (TH1D*) hmcGenRec->ProjectionY("histo_ProjectedReco", 1, -1, "e");  //
+    TH1D* hProjectedReweightedReco = NULL;
+    if(doModelUnc)
+    {
+        hProjectedReweightedReco = hReweightSF->ProjectionY("histo_ProjectedReweightedReco", 1, -1, "e"); 
+    }
+    
 
     if(ignoreBinZero)
     {
@@ -383,6 +577,10 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     varDirForReco->cd();
     binning_Rec->Write();
     hProjectedReco->Write();
+    if(doModelUnc)
+    {
+        hProjectedReweightedReco->Write();
+    }
     varDir->cd();
 
     filein->Close();
@@ -493,12 +691,12 @@ void ISRUnfold::setUnfInput(ISRUnfold* unfold, TString thisSysType, TString sysN
     {
         if(thisSysType=="Type_0")
         {
-            nominalTUnfold->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var, "*[*]"), nominal_bias);
+            nominalTUnfold->SetInput(unfold->getUnfoldedHists("UnfoldOut_"+var, "*[*]", false), nominal_bias);
         }
         else
         {
             // FIXME
-            systematicTUnfold[sysName]->SetInput(unfold->getUnfoldedHists(var, "UnfoldOut_"+var+thisSysType+sysName, "*[*]"), nominal_bias);
+            systematicTUnfold[sysName]->SetInput(unfold->getUnfoldedHists("UnfoldOut_"+var+thisSysType+sysName, "*[*]", false), nominal_bias);
         }
     }
     else
@@ -647,7 +845,29 @@ void ISRUnfold::setSystematics(TString sysHistName)
     sysVector.push_back(sysHistName);
 }
 
-void ISRUnfold::doISRUnfold()
+void ISRUnfold::doUnfold(TUnfoldDensity* unfold, bool scan_tau)
+{
+    int istart=binning_Gen->GetGlobalBinNumber(0., 320);
+    int iend=binning_Gen->GetGlobalBinNumber(100-0.01,320);
+    //int iend=binning_Gen->GetGlobalBinNumber(50-0.01,320);
+    unfold->RegularizeBins(istart, 1, iend-istart+1, TUnfoldV17::kRegModeCurvature);
+    //unfold->RegularizeBins(istart, 1, iend-istart+1, TUnfoldV17::kRegModeSize);
+    //unfold->RegularizeBins(istart, 1, iend-istart+1, TUnfoldV17::kRegModeDerivative);
+
+    if(scan_tau){
+        TGraph *lcurve;
+        TSpline *logtaux,*logtauy,*logtaucurvature;
+        //int ibest=unfold->ScanLcurve(50,0,0,&lcurve,&logtaux,&logtauy,&logtaucurvature);
+        int ibest=unfold->ScanLcurve(50,0,0,&lcurve,&logtaux,&logtauy,&logtaucurvature);
+        tau = unfold->GetTau();
+    }
+    else{
+        unfold->DoUnfold(tau);
+    }
+}
+
+// Unfolding
+void ISRUnfold::doISRUnfold(bool partialReg)
 {
 
     TDirectory* topDir;
@@ -666,15 +886,26 @@ void ISRUnfold::doISRUnfold()
         // Nominal unfolding
         //nominalTUnfold->DoUnfold(tau);
         if(var == "Mass")
+        {
             nominalTUnfold->DoUnfold(tau);
+
+            //TSpline *rhoScan=0;
+            //nominalTUnfold->ScanTau(50,0,0,&rhoScan,TUnfoldDensity::kEScanTauRhoAvg);
+        }
         else 
         {
-            //nominalTUnfold->DoUnfold(tau);
+            
+            
+            //TSpline *rhoScan=0;
+            //nominalTUnfold->ScanTau(50,1e-5,1,&rhoScan,TUnfoldDensity::kEScanTauRhoAvg);
+            //cout << "tau: " << nominalTUnfold->GetTau() << endl;
+            
+            //TGraph *lcurve;
+            //TSpline *logtaux,*logtauy,*logtaucurvature;
+            //int ibest=nominalTUnfold->ScanLcurve(50,0,0,&lcurve,&logtaux,&logtauy,&logtaucurvature);
 
-            int istart=binning_Gen->GetGlobalBinNumber(0,320);
-            int iend=binning_Gen->GetGlobalBinNumber(100-0.01,320);
-            cout << "RegularizeBins, " << istart << " " <<  iend << "\n";
-            nominalTUnfold->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
+            doUnfold(nominalTUnfold, partialReg);
+
             /*
             TH1D* hProjectedTruth = (TH1D*) hResponseM->ProjectionX("histo_DY_temp", 0, -1, "e");
 
@@ -705,12 +936,8 @@ void ISRUnfold::doISRUnfold()
                 cout<<"\n";
             }
             */
-            TGraph *lcurve;
-            TSpline *logtaux,*logtauy,*logtaucurvature;
-            int ibest=nominalTUnfold->ScanLcurve(20,0,0,&lcurve,&logtaux,&logtauy,&logtaucurvature);
-            tau = nominalTUnfold->GetTau();
-
             //delete hProjectedTruth;
+            
         }
 
     }
@@ -753,7 +980,6 @@ void ISRUnfold::doISRUnfold()
     nominalTUnfold->GetInput("histo_UnfoldInput", 0, 0, 0, false)->Write();
 
     varDir->cd();
-
 
     if(doInputStatUnc)
     {
@@ -803,10 +1029,7 @@ void ISRUnfold::doISRUnfold()
             else
             {
                 //UnfoldingMatrixStatTUnfold.at(istat)->DoUnfold(tau);
-                int istart=binning_Gen->GetGlobalBinNumber(0,320);
-                int iend=binning_Gen->GetGlobalBinNumber(100-0.01,320);
-                UnfoldingMatrixStatTUnfold.at(istat)->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
-                UnfoldingMatrixStatTUnfold.at(istat)->DoUnfold(tau);
+                doUnfold(UnfoldingMatrixStatTUnfold.at(istat), false);
             }
 
             varDir->cd();
@@ -843,10 +1066,7 @@ void ISRUnfold::doISRUnfold()
         else
         {
             //modelUncertaintyTUnfold->DoUnfold(tau);
-            int istart=binning_Gen->GetGlobalBinNumber(0,320);
-            int iend=binning_Gen->GetGlobalBinNumber(100-0.01,320);
-            modelUncertaintyTUnfold->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
-            modelUncertaintyTUnfold->DoUnfold(tau);
+            doUnfold(modelUncertaintyTUnfold, false);
         }
 
         varDir->cd();
@@ -868,20 +1088,15 @@ void ISRUnfold::doISRUnfold()
             varDir->cd();
             iterEMTUnfold->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false)->Write();
         }
-        else
-        {
+        else{
             if(var == "Mass")
                 systematicTUnfold[*it]->DoUnfold(tau);
 
-            else
-            {
+            else{
             //systematicTUnfold[*it]->DoUnfold(tau);
             //cout << "Unfold for " << *it << endl;
             //if (systematicTUnfold[*it] == NULL) cout << "check" << endl;
-            int istart=binning_Gen->GetGlobalBinNumber(0,320);
-            int iend=binning_Gen->GetGlobalBinNumber(100-0.01,320);
-            systematicTUnfold[*it]->RegularizeBins(istart,1,iend-istart+1,TUnfoldV17::kRegModeCurvature);
-            systematicTUnfold[*it]->DoUnfold(tau);
+            doUnfold(systematicTUnfold[*it], false);
             }
 
             varDir->cd();
@@ -891,8 +1106,13 @@ void ISRUnfold::doISRUnfold()
     }
 
     topDir->Write();
+
+    drawChi2Reco();
+    drawChi2Truth();
 }
 
+
+// In this function, acceptance factors change only for PDF, Scale, AlphaS systematics
 void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString filePath_for_accept)
 {
     TDirectory* topDir;
@@ -916,57 +1136,55 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString filePath_
     else
         hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_MG"));
 
-    // full phase histogram from mass binned sample
+    hFiducialPhaseMC = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY");
     TString mass_binned_sample_prefix[9] = {"M-100to200", "M-200to400", "M-400to500", "M-500to700", "M-700to800", 
                                             "M-800to1000", "M-1000to1500", "M-1500to2000", "M-2000to3000"};
+
     TH1* hFullPhaseMC_massBinned = NULL;
-    for(int i = 0; i < 9; i++)
-    {
-        if(i==0)
-        {
-            hFullPhaseMC_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
-        }
-        else
-        {
-            hFullPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
-        }
-    }
-
-    // 
-    int istart = binning_Gen->GetGlobalBinNumber(0, 200); 
-    for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
-    {
-        hFullPhaseMC->SetBinContent(j, hFullPhaseMC_massBinned->GetBinContent(j));
-        hFullPhaseMC->SetBinError(j,   hFullPhaseMC_massBinned->GetBinError(j));
-    }
-
-
-    // fiducial phase histogram from mass binned sample
-    TH1* hFiducialPhaseMC_massBinned = NULL;
-    for(int i = 0; i < 9; i++)
-    {
-        if(i==0)
-        {
-            hFiducialPhaseMC_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
-        }
-        else
-        {
-            hFiducialPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
-        }
-            
-    }
-
-
-    //hFiducialPhaseMC = nominalTUnfold->GetBias("hFiducial"+var, 0, 0, "*[*]", false);
-    hFiducialPhaseMC = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY");
-    for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
-    {
-        hFiducialPhaseMC->SetBinContent(j, hFiducialPhaseMC_massBinned->GetBinContent(j));
-        hFiducialPhaseMC->SetBinError(j,   hFiducialPhaseMC_massBinned->GetBinError(j));
-    }
-
+    int istart = binning_Gen->GetGlobalBinNumber(0, 200);
     if(filePath_for_accept != "")
     {
+
+        // full phase histogram from mass binned sample
+        for(int i = 0; i < 9; i++)
+        {
+            if(i==0)
+            {
+                hFullPhaseMC_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
+            }
+            else
+            {
+                hFullPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
+            }
+        }
+
+        // 
+        for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
+        {
+            hFullPhaseMC->SetBinContent(j, hFullPhaseMC_massBinned->GetBinContent(j));
+            hFullPhaseMC->SetBinError(j,   hFullPhaseMC_massBinned->GetBinError(j));
+        }
+
+        // fiducial phase histogram from mass binned sample
+        TH1* hFiducialPhaseMC_massBinned = NULL;
+        for(int i = 0; i < 9; i++)
+        {
+            if(i==0)
+            {
+                hFiducialPhaseMC_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
+            }
+            else
+            {
+                hFiducialPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
+            }
+        }
+
+        for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
+        {
+            hFiducialPhaseMC->SetBinContent(j, hFiducialPhaseMC_massBinned->GetBinContent(j));
+            hFiducialPhaseMC->SetBinError(j,   hFiducialPhaseMC_massBinned->GetBinError(j));
+        }
+
         TFile* filein_temp = new TFile(filePath_for_accept);
 
         hAcceptance = (TH1*) filein_temp->Get("updated_accept_hist");
@@ -985,6 +1203,10 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString filePath_
 
     hFullPhaseData = nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false);
     hFullPhaseData->Multiply(hAcceptance);
+
+    //int itemp = binning_Gen->GetGlobalBinNumber(0, 320);
+    //double current_num = hFullPhaseData->GetBinContent(itemp);
+    //hFullPhaseData->SetBinContent(itemp, current_num * 0.8);
 
     varDir->cd();
     hFullPhaseData->Write();
@@ -1060,13 +1282,44 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString filePath_
         else
         {
             hSysFullPhaseData[*it]   = systematicTUnfold[*it]->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false);
-            //hFiducialPhaseMC_sys = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY_"+(*it));
-            hFiducialPhaseMC_sys = hFiducialPhaseMC;
+            hFiducialPhaseMC_sys = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY_"+(*it));
+            //hFiducialPhaseMC_sys = hFiducialPhaseMC;
             hFiducialPhaseMC_sys->SetName("histo_DY_"+(*it));
+
+            if(filePath_for_accept != "")
+            {
+                // fiducial phase histogram from mass binned sample
+
+                TH1* hFiducialPhaseMC_sys_massBinned = NULL;
+                for(int i = 0; i < 9; i++)
+                {
+                    if(i==0)
+                    {
+                        if( (((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) ) 
+                            hFiducialPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it));
+                        else 
+                            hFiducialPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
+                    }
+                    else
+                    {
+                        if( (((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) ) 
+                            hFiducialPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it)));
+                        else
+                            hFiducialPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
+                    }
+                        
+                }
+
+                for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
+                {
+                    hFiducialPhaseMC_sys->SetBinContent(j, hFiducialPhaseMC_sys_massBinned->GetBinContent(j));
+                    hFiducialPhaseMC_sys->SetBinError(j,   hFiducialPhaseMC_sys_massBinned->GetBinError(j));
+                }
+            }
         }
 
         // For PDF, AlphaS, Scale etc, nominator (of acceptance) also changes
-        if( ( ((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) && !(*it).Contains("_") )
+        if( (((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) )
         {
             hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_"+(*it));
             if(year==2016)
@@ -1074,22 +1327,25 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString filePath_
             else
                 hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets10to50_MG_"+(*it)));
 
-            TH1* hFullPhaseMC_sys_massBinned = NULL;
-            for(int i = 0; i < 9; i++)
+            if(filePath_for_accept != "")
             {
-                if(i==0)
+                TH1* hFullPhaseMC_sys_massBinned = NULL;
+                for(int i = 0; i < 9; i++)
                 {
-                    hFullPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
+                    if(i==0)
+                    {
+                        hFullPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it));
+                    }
+                    else
+                    {
+                        hFullPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it)));
+                    }
                 }
-                else
+                for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
                 {
-                    hFullPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + binDef + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
+                    hFullPhaseMC_raw_sys->SetBinContent(j, hFullPhaseMC_sys_massBinned->GetBinContent(j));
+                    hFullPhaseMC_raw_sys->SetBinError(j,   hFullPhaseMC_sys_massBinned->GetBinError(j));
                 }
-            }
-            for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
-            {
-                hFullPhaseMC_raw_sys->SetBinContent(j, hFullPhaseMC_sys_massBinned->GetBinContent(j));
-                hFullPhaseMC_raw_sys->SetBinError(j,   hFullPhaseMC_sys_massBinned->GetBinError(j));
             }
             
         }
@@ -1171,7 +1427,6 @@ TH1* ISRUnfold::getRawHist(TString filePath, TString dirName, TString histName, 
     }
 
     delete filein;
-
     return hist;
 }
 

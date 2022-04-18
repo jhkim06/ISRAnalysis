@@ -25,11 +25,12 @@ from matplotlib.lines import Line2D
 
 from scipy import optimize
 
+dashes = "--------------------------------------------------------------------------------"
 # root TH1 to DataFrame and plot using matplotlib
 class ISRPlotter :
-    def __init__ (self, inputHistFilePath, jasonConfigFilePath, doSystematic=False, verbose=True) :
+    def __init__(self, inputHistFilePath, jasonConfigFilePath, doSystematic=False, verbose=True) :
 
-        print("--------------------------------------------")
+        print(dashes)
         print("CREATE ISRPlotter......")
 
         self.labels_list = []
@@ -58,7 +59,7 @@ class ISRPlotter :
 
         self.nSystematics = 0 # Number of systematics
         self.systematic_marker={
-            "IsoSF":"o", "IdSF":"o", "recoSF":"o", "trgSF":"o", "trgDZSF":"o", "PU":"o", "bveto":"v", "L1Prefire":"o", "unfold": "^", "LepScale": "<", "LepRes": ">", 
+            "IsoSF":"o", "IdSF":"o", "recoSF":"o", "trgSF":"o", "trgDZSF":"o", "PU":"o", "bveto":"v", "L1Prefire":"o", "Unfold": "^", "LepScale": "<", "LepRes": ">", 
             "Scale": "*", "AlphaS": "+", "PDF": "X"
         }
 
@@ -131,7 +132,7 @@ class ISRPlotter :
         self.inRootFile=rt.TFile.Open(inputHistFilePath, 'READ')
 
         if self.useTUnfoldBin :
-            for index, binName in enumerate(self.tunfoldBinNames) :
+            for index, binName in enumerate(self.tunfoldBinNames) : # "Rec_Mass"
                 varDirName = binName.split("_")[1]
                 if len(self.variablePostfix) > 0 :
                     
@@ -156,8 +157,8 @@ class ISRPlotter :
         count_nSystematics = True
         # Get raw TH1 histograms
         # Convert them into DataFrame
-        for variable in self.variables :
-            
+        for variable in self.variables : # Mass 
+              
             # dict[variable]
             varDir=variable
             if self.useTUnfoldBin :
@@ -171,7 +172,7 @@ class ISRPlotter :
 
             # dict[variable][sample]
             for combinedName in self.samples :
-
+                # initialize 
                 if variable not in self.rawHistsDict[combinedName.split("_")[1]] : 
                     self.rawHistsDict[combinedName.split("_")[1]][variable] = dict() 
                     temp_dict=self.rawHistsDict[combinedName.split("_")[1]][variable]
@@ -184,101 +185,75 @@ class ISRPlotter :
                 if variable not in self.rawHistsDict["MCTotal"] :
                     self.rawHistsDict["MCTotal"][variable]=dict()
 
-                temp_dict[combinedName]=dict() # combined histogram TODO use name?
-                first_sample=True # first sample in the combinedName
+                temp_dict[combinedName]=dict() # combined histogram 
+                isFirstFileinCombinedName=True # first sample in the combinedName
+                isLastFileinCombinedName=False
 
-                for sampleName in self.samples[combinedName] :
-                    temp_dict[sampleName]=dict()
+                for fileIndex, mcFileName in enumerate(self.samples[combinedName]) :
+
+                    if fileIndex == len(self.samples[combinedName])-1 :
+                        isLastFileinCombinedName=True
+
+                    temp_dict[mcFileName]=dict()
 
                     # Set nominal histograms
                     sysName = "Nominal"
                     postfix = "Nominal"
-                    temp_TH1=self.inRootFile.Get(self.topDirName+"/"+varDir+"/"+self.histPrefix+sampleName)
-                    if self.useTUnfoldBin :
-                        temp_TH1=\
-                        self.binDef[varDir.split("_")[0]].ExtractHistogram(sampleName+variable+sysName+postfix, temp_TH1, 0, True, self.steeringTUnfold[variable])
 
-                    temp_dict[sampleName][sysName]=dict()
-                    temp_dict[sampleName][sysName][postfix]=dict()
-                    if first_sample : 
+                    temp_dict[mcFileName][sysName]=dict()
+                    temp_dict[mcFileName][sysName][postfix]=dict()
+                    if isFirstFileinCombinedName : 
                         temp_dict[combinedName][sysName]=dict()
                         temp_dict[combinedName][sysName][postfix]=dict()
 
-                    temp_dict[sampleName][sysName][postfix]["TH1"]=temp_TH1
-                    temp_dict[sampleName][sysName][postfix]["DataFrame"]=self.convertTH1toDataFrame(temp_TH1)
+                    self.setRawHistsDict(varDir, combinedName, mcFileName, sysName, postfix, variable, temp_dict, 
+                    isFirstFileinCombinedName, isLastFileinCombinedName)
 
-                    if first_sample :
-                        temp_dict[combinedName][sysName][postfix]["TH1"]=temp_TH1.Clone("Clone_"+combinedName+sampleName)
-                        temp_dict[combinedName][sysName][postfix]["DataFrame"]=self.convertTH1toDataFrame(temp_TH1)
-                    else :
-                        temp_dict[combinedName][sysName][postfix]["TH1"].Add(temp_TH1.Clone("Clone_"+combinedName+sampleName))
-                        self.convertTH1toDataFrame(temp_dict[combinedName][sysName][postfix]["TH1"], temp_dict[combinedName][sysName][postfix]["DataFrame"])
-
-                    del temp_TH1
                     # Set systemaitc histograms
                     for sysCategory in self.systematics.keys() :
                         for sysName, postfixs in self.systematics[sysCategory].items() :
+                            # just for varifying
                             if count_nSystematics :
                                 self.nSystematics += 1
 
-                            temp_dict[sampleName][sysName]=dict()
-                            if first_sample : temp_dict[combinedName][sysName]=dict()
+                            temp_dict[mcFileName][sysName]=dict()
+                            if isFirstFileinCombinedName : 
+                                temp_dict[combinedName][sysName]=dict()
                             for postfix in postfixs :
-                                temp_dict[sampleName][sysName][postfix]=dict()
-                                if first_sample : temp_dict[combinedName][sysName][postfix]=dict()
+                                temp_dict[mcFileName][sysName][postfix]=dict()
+                                if isFirstFileinCombinedName : 
+                                    temp_dict[combinedName][sysName][postfix]=dict()
 
-                                # Get TH1 object!
-                                #if sysName == "Nominal" :
-                                #    temp_TH1=self.inRootFile.Get(self.topDirName+"/"+varDir+"/"+self.histPrefix+sampleName)
-                                temp_TH1=self.inRootFile.Get(self.topDirName+"/"+varDir+"/"+self.histPrefix+sampleName+'_'+sysName+postfix)
-                                if type(temp_TH1) != rt.TH1D :
-                                    temp_TH1=self.inRootFile.Get(self.topDirName+"/"+varDir+"/"+self.histPrefix+sampleName)
-
-                                if self.useTUnfoldBin :
-                                    temp_TH1=\
-                                    self.binDef[varDir.split("_")[0]].ExtractHistogram(sampleName+variable+sysName+postfix, temp_TH1, 0, True, self.steeringTUnfold[variable])
-
-                                temp_dict[sampleName][sysName][postfix]["TH1"]=temp_TH1
-                                temp_dict[sampleName][sysName][postfix]["DataFrame"]=self.convertTH1toDataFrame(temp_TH1)
-
-                                if first_sample :
-                                    temp_dict[combinedName][sysName][postfix]["TH1"]=temp_TH1.Clone("Clone_"+combinedName+sampleName)
-                                    temp_dict[combinedName][sysName][postfix]["DataFrame"]=self.convertTH1toDataFrame(temp_TH1)
-                                else :
-                                    temp_dict[combinedName][sysName][postfix]["TH1"].Add(temp_TH1.Clone("Clone_"+combinedName+sampleName))
-                                    self.convertTH1toDataFrame(temp_dict[combinedName][sysName][postfix]["TH1"], temp_dict[combinedName][sysName][postfix]["DataFrame"]) 
-
-                                del temp_TH1
+                                self.setRawHistsDict(varDir, combinedName, mcFileName, sysName, postfix, variable, temp_dict, 
+                                isFirstFileinCombinedName, isLastFileinCombinedName)
 
                     count_nSystematics = False
-                    first_sample=False
+                    isFirstFileinCombinedName=False
 
         gc.collect() 
         end_time = time.time()
         print("DONE")
-        print("--------------------------------------------------------")
+        print(dashes)
         print("time elapsed: {:.2f} s".format(end_time-start_time))
-        print("--------------------------------------------------------")
-
+        print(dashes)
     
         print("Combine histograms.....")
         start_time = time.time()
 
-        self.combineHists(self.rawHistsDict["Measured"])
-        self.combineHists(self.rawHistsDict["Signal"])
+        self.setTotalHists(self.rawHistsDict["Measured"])
+        self.setTotalHists(self.rawHistsDict["Signal"])
         if self.bkgUsed : 
-            self.combineHists(self.rawHistsDict["Background"])
-        self.setMCTotalHists() # signal + background mc
-        if self.bkgUsed : 
-            self.setBkgSubtractedDataHis() # background mc only
+            self.setTotalHists(self.rawHistsDict["Background"])
+            self.setBkgSubtractedDataHis()
+        self.setMCTotalHists() # signal + background MC
         if self.rawHistsDict["Histogram"] != 0 : 
-            self.combineHists(self.rawHistsDict["Histogram"])    
+            self.setTotalHists(self.rawHistsDict["Histogram"])    
 
         end_time = time.time()
         print("DONE")
-        print("--------------------------------------------------------")
+        print(dashes)
         print("time elapsed: {:.2f} s".format(end_time-start_time))
-        print("--------------------------------------------------------")
+        print(dashes)
 
         print("Convert histogram to DataFrames.....")
         start_time = time.time()
@@ -289,13 +264,13 @@ class ISRPlotter :
             if "MeasuredBkgSubtracted" == histType or "Background" == histType : 
                 if self.bkgUsed == False : continue
             
-            self.createDataFrameWithUnc(histType)
+            self.setDataFrameWithUnc(histType)
 
         end_time = time.time()
         print("DONE")
-        print("--------------------------------------------------------")
+        print(dashes)
         print("time elapsed: {:.2f} s".format(end_time-start_time))
-        print("--------------------------------------------------------")
+        print(dashes)
 
         print("Calculate up/down systematics.....")
         start_time = time.time()
@@ -309,15 +284,45 @@ class ISRPlotter :
             self.calculateCombinedUnc(histType, "theory")
             self.calculateCombinedUnc(histType, "measurement")
 
-            self.calculateCombinedUnc(histType, "total", "upDownUnc_meanValue")
-            self.calculateCombinedUnc(histType, "theory", "upDownUnc_meanValue")
-            self.calculateCombinedUnc(histType, "measurement", "upDownUnc_meanValue")
+            if self.useTUnfoldBin :  
+                self.calculateCombinedUnc(histType, "total", "upDownUnc_meanValue")
+                self.calculateCombinedUnc(histType, "theory", "upDownUnc_meanValue")
+                self.calculateCombinedUnc(histType, "measurement", "upDownUnc_meanValue")
 
         end_time = time.time()
         print("DONE")
-        print("--------------------------------------------------------")
+        print(dashes)
         print("time elapsed: {:.2f} s".format(end_time-start_time))
-        print("--------------------------------------------------------")
+        print(dashes)
+
+    def setRawHistsDict(self, varDir, combinedName, inputHistFileName, sysName, sysPostfix, variable, targetDict, isFirstFile, isLastFile) :
+
+        if sysName == "Nominal" and sysPostfix == "Nominal" : 
+            histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName 
+        else :
+            histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName + '_' + sysName + sysPostfix 
+
+        temp_TH1=self.inRootFile.Get(histToRead)
+        if type(temp_TH1) != rt.TH1D :
+            histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName 
+            temp_TH1=self.inRootFile.Get(histToRead)
+        
+        if self.useTUnfoldBin :
+            temp_TH1 = self.binDef[varDir.split("_")[0]].ExtractHistogram(inputHistFileName + variable + sysName + sysPostfix, temp_TH1, 
+                                                                            0, True, self.steeringTUnfold[variable]) 
+
+        targetDict[inputHistFileName][sysName][sysPostfix]["TH1"] = temp_TH1
+        targetDict[inputHistFileName][sysName][sysPostfix]["DataFrame"] = self.convertTH1toDataFrame(temp_TH1)
+
+        if isFirstFile :
+            targetDict[combinedName][sysName][sysPostfix]["TH1"] = temp_TH1.Clone("Clone_" + combinedName + inputHistFileName)
+            targetDict[combinedName][sysName][sysPostfix]["DataFrame"] = self.convertTH1toDataFrame(temp_TH1)
+        else :
+            targetDict[combinedName][sysName][sysPostfix]["TH1"].Add(temp_TH1)
+            if isLastFile :
+                self.convertTH1toDataFrame(targetDict[combinedName][sysName][sysPostfix]["TH1"], targetDict[combinedName][sysName][sysPostfix]["DataFrame"])
+
+        del temp_TH1
 
     def getOutBaseDir(self) :
         return self.outDirPath
@@ -407,7 +412,7 @@ class ISRPlotter :
                             temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content= \
                             self.rawHistsDict["Background"][variable]["total"][sysName][postfix]["DataFrame"].content+temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content
 
-    def createDataFrameWithUnc(self, dictName="Measured") :
+    def setDataFrameWithUnc(self, dictName="Measured") :
 
         in_dict=self.rawHistsDict[dictName]
         out_dict=self.dfs[dictName]
@@ -426,8 +431,9 @@ class ISRPlotter :
                 # low mass cut, high mass cut, mean value
                 # For Mass, make a DataFrame for all the mass bins
                 # For pT, make a DataFrame for a mass bin
-                out_dict[variable][sample]["rawUnc_meanValue"]    = self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
-                out_dict[variable][sample]["upDownUnc_meanValue"] = self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
+                if self.useTUnfoldBin :
+                    out_dict[variable][sample]["rawUnc_meanValue"]    = self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
+                    out_dict[variable][sample]["upDownUnc_meanValue"] = self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
 
                 for sysCategory in self.systematics.keys() :
                     for sysName, postfixs in self.systematics[sysCategory].items() :
@@ -436,7 +442,6 @@ class ISRPlotter :
                         #print(" variable {} sample {}".format(variable, sample))
                         #print(" systematic name {} number of variations {} ".format(sysName, len(postfixs)))
                         #print(" Set differences....")
-                        start_time_ = time.time()
 
                         for postfix in postfixs :
 
@@ -444,9 +449,10 @@ class ISRPlotter :
                                 out_dict[variable][sample]["rawUnc"][sysName+"_"+postfix]= \
                                 in_dict[variable][sample][sysName][postfix]["DataFrame"].content-in_dict[variable][sample]["Nominal"]["Nominal"]["DataFrame"].content
 
-                                temp_df=self.createMeanDataFrame(variable, in_dict[variable][sample][sysName][postfix]["TH1"])
-                                out_dict[variable][sample]["rawUnc_meanValue"][sysName+"_"+postfix]= \
-                                temp_df["mean"]-out_dict[variable][sample]["rawUnc_meanValue"]["mean"]
+                                if self.useTUnfoldBin :
+                                    temp_df=self.createMeanDataFrame(variable, in_dict[variable][sample][sysName][postfix]["TH1"])
+                                    out_dict[variable][sample]["rawUnc_meanValue"][sysName+"_"+postfix]= \
+                                    temp_df["mean"]-out_dict[variable][sample]["rawUnc_meanValue"]["mean"]
 
                             else :
                                 current_index=postfixs.index(postfix)
@@ -458,19 +464,13 @@ class ISRPlotter :
                                 out_dict[variable][sample]["rawUnc"][sysName+"_"+postfix]= \
                                 in_dict[variable][sample][sysName][postfix]["DataFrame"].content-in_dict[variable][sample][sysName][the_other_postfix]["DataFrame"].content
 
-                                temp_df1=self.createMeanDataFrame(variable, in_dict[variable][sample][sysName][postfix]["TH1"])
-                                temp_df2=self.createMeanDataFrame(variable, in_dict[variable][sample][sysName][the_other_postfix]["TH1"])
-                                out_dict[variable][sample]["rawUnc_meanValue"][sysName+"_"+postfix]= \
-                                temp_df1["mean"]-temp_df2["mean"]
-
-                        end_time_ = time.time()
-                        #print(" --------------------------------------------------------")
-                        #print(" time elapsed: {:.2f}".format(end_time_-start_time_))
-                        #print(" --------------------------------------------------------")
-                        #print(" DONE")
+                                if self.useTUnfoldBin :
+                                    temp_df1=self.createMeanDataFrame(variable, in_dict[variable][sample][sysName][postfix]["TH1"])
+                                    temp_df2=self.createMeanDataFrame(variable, in_dict[variable][sample][sysName][the_other_postfix]["TH1"])
+                                    out_dict[variable][sample]["rawUnc_meanValue"][sysName+"_"+postfix]= \
+                                    temp_df1["mean"]-temp_df2["mean"]
 
                         #print(" Set up/down....")
-                        start_time_ = time.time()
 
                         # For systematics taking r.m.s of variations as systematic up/down
                         if sysName == "PDF" or sysName == "UnfoldingInput" or sysName == "UnfoldingMatrix":
@@ -485,7 +485,7 @@ class ISRPlotter :
 
                         else :
                             # Note sysName MUST BE UNIQUE
-                            regex_ = "(" + sysName + "_)"
+                            regex_ = "(^" + sysName + "_)"
                             temp_max = out_dict[variable][sample]["rawUnc"].filter(regex=regex_).max(axis=1)
                             temp_min = out_dict[variable][sample]["rawUnc"].filter(regex=regex_).min(axis=1)
 
@@ -502,28 +502,24 @@ class ISRPlotter :
                             out_dict[variable][sample]["upDownUnc"][sysName+'_Up']  = temp_symmetric_max 
                             out_dict[variable][sample]["upDownUnc"][sysName+'_Down']= temp_symmetric_min
 
-                            # for mean value
-                            temp_mean_max = out_dict[variable][sample]["rawUnc_meanValue"].filter(regex=regex_).max(axis=1)
-                            temp_mean_min = out_dict[variable][sample]["rawUnc_meanValue"].filter(regex=regex_).min(axis=1) 
+                            if self.useTUnfoldBin : 
+                                # for mean value
+                                temp_mean_max = out_dict[variable][sample]["rawUnc_meanValue"].filter(regex=regex_).max(axis=1)
+                                temp_mean_min = out_dict[variable][sample]["rawUnc_meanValue"].filter(regex=regex_).min(axis=1) 
 
-                            if temp_mean_max.equals(temp_mean_min) :
-                                temp_mean_max = temp_mean_max.abs()
-                                temp_mean_min = -1. * temp_mean_min.abs() 
+                                if temp_mean_max.equals(temp_mean_min) :
+                                    temp_mean_max = temp_mean_max.abs()
+                                    temp_mean_min = -1. * temp_mean_min.abs() 
 
-                            temp_mean_max=temp_mean_max.fillna(0)
-                            temp_mean_min=temp_mean_min.fillna(0)
+                                temp_mean_max=temp_mean_max.fillna(0)
+                                temp_mean_min=temp_mean_min.fillna(0)
 
-                            temp_mean_symmetric_max = (temp_mean_max.abs() + temp_mean_min.abs()) / 2.
-                            temp_mean_symmetric_min = (temp_mean_max.abs() + temp_mean_min.abs()) / -2.
+                                temp_mean_symmetric_max = (temp_mean_max.abs() + temp_mean_min.abs()) / 2.
+                                temp_mean_symmetric_min = (temp_mean_max.abs() + temp_mean_min.abs()) / -2.
 
-                            out_dict[variable][sample]["upDownUnc_meanValue"][sysName+'_Up']  = temp_mean_symmetric_max
-                            out_dict[variable][sample]["upDownUnc_meanValue"][sysName+'_Down']= temp_mean_symmetric_min
+                                out_dict[variable][sample]["upDownUnc_meanValue"][sysName+'_Up']  = temp_mean_symmetric_max
+                                out_dict[variable][sample]["upDownUnc_meanValue"][sysName+'_Down']= temp_mean_symmetric_min
 
-                        end_time_ = time.time()
-                        #print(" --------------------------------------------------------")
-                        #print(" time elapsed: {:.2f}".format(end_time_-start_time_))
-                        #print(" --------------------------------------------------------")
-                        #print(" DONE")
 
 
     def createMeanDataFrame(self, variable, TH1_hist) :
@@ -615,7 +611,7 @@ class ISRPlotter :
                 else :
                     in_dict[variable][sample][column_name][sys_to_combine+"_Down"]=0.
 
-    def combineHists(self, mc_dict) :
+    def setTotalHists(self, mc_dict) :
 
         for variable in mc_dict.keys() :
             mc_dict[variable]["total"]=dict()
@@ -800,6 +796,7 @@ class ISRPlotter :
         No stack below options
         1. Comparisons between the samples defined in the configuration file and in the external objects.
         2. Comparisons between a sample defined in this object and ones in the external object.
+        3. Distribution of systematic variation
         4. Show relative uncertatinty of the measurement  
         '''
         #print("variable ", variable)
@@ -813,17 +810,11 @@ class ISRPlotter :
             denominator_name=denominator
 
         denominator_print_name = denominator.split("_")[0]
-        if "Measured" in denominator :
-            denominator_print_name = "Data"
-        if "BkgSubtracted" in denominator :
-            denominator_print_name = denominator_print_name + " (Bkg. subtracted)"
-
-        if len(denominator.split("_")) > 2 : # ex) "Data bkg. subtracted_MeasuredBkgSubtracted_total"
-            denominator_print_name = denominator.split("_")[0]
 
         denominator_df=None
         denominator_hist=None
-        default_nominator_name="MCTotal"
+        default_nominator_hist_type="MCTotal"
+        default_nominator_hist_name="total"
         default_nominator_hist=None
         data_df={}
         additional_df=[] 
@@ -833,6 +824,7 @@ class ISRPlotter :
 
         nEvents={}
 
+        # set denominator
         if draw_mode == 5 : 
     
             mass_bin = int(variable.split("__")[1])
@@ -840,7 +832,7 @@ class ISRPlotter :
             nominal_mean_mass_df=self.dfs[denominator.split("_")[1]]["Mass"][denominator_name]["upDownUnc_meanValue"].iloc[mass_bin].copy() 
 
         else :
-
+                                # hist type, variable, plot name 
             df_filter = self.dfs[denominator.split("_")[1]][variable][denominator_name]["upDownUnc"]['content'] > minimum_content
             denominator_df=self.dfs[denominator.split("_")[1]][variable][denominator_name]["upDownUnc"][df_filter].copy()
             nEvents[denominator_print_name]=denominator_df["content"].sum()
@@ -849,25 +841,27 @@ class ISRPlotter :
             for combinedName in self.samples :
                 data_df[combinedName]=self.dfs[combinedName.split("_")[1]][variable][combinedName]["upDownUnc"][df_filter].copy() 
 
+        # set nominators
         if draw_mode == 0 :
 
-            default_nominator=self.dfs[default_nominator_name][variable]["total"]["upDownUnc"][df_filter].copy()
-            default_nominator_hist=self.rawHistsDict[default_nominator_name][variable]["total"]["Nominal"]["Nominal"]["TH1"]
+            default_nominator=self.dfs[default_nominator_hist_type][variable][default_nominator_hist_name]["upDownUnc"][df_filter].copy()
+            default_nominator_hist=self.rawHistsDict[default_nominator_hist_type][variable][default_nominator_hist_name]["Nominal"]["Nominal"]["TH1"]
             
         if draw_mode == 1:
 
             if len(internal_names[0].split("_")) > 2 :
-                default_nominator_name = "_".join(internal_names[0].split("_")[2:])
+                default_nominator_hist_name = "_".join(internal_names[0].split("_")[2:])
             else :  
-                default_nominator_name=internal_names[0]
+                default_nominator_hist_name=internal_names[0]
 
-            default_nominator=self.dfs[internal_names[0].split("_")[1]][variable][default_nominator_name]["upDownUnc"][df_filter].copy()
+            default_nominator=self.dfs[internal_names[0].split("_")[1]][variable][default_nominator_hist_name]["upDownUnc"][df_filter].copy()
             default_nominator_print_name=internal_names[0].split("_")[0]
             nEvents[default_nominator_print_name]=default_nominator['content'].sum()
-            default_nominator_hist=self.rawHistsDict[internal_names[0].split("_")[1]][variable][default_nominator_name]["Nominal"]["Nominal"]["TH1"]
+            default_nominator_hist=self.rawHistsDict[internal_names[0].split("_")[1]][variable][default_nominator_hist_name]["Nominal"]["Nominal"]["TH1"]
 
-            if normNominator :                                                                                                                                                        
-                normalisation =  denominator_df["content"].sum() / default_nominator["content"].sum()                                                                                 
+            if normNominator :
+ 
+                normalisation =  denominator_df["content"].sum() / default_nominator["content"].sum()  
                 default_nominator.loc[:, "content":]=default_nominator.loc[:, "content":] * normalisation   
 
             if len(internal_names) > 1 :
@@ -896,7 +890,11 @@ class ISRPlotter :
                         additional_df.append(self.rebinDataFrame(source_df, denominator_df))
 
                     else :
-                        additional_df.append(ext_objects[index].dfs[ext_names[index].split("_")[1]][variable][temp_nominator_name]["upDownUnc"][df_filter].copy())
+                        temp_df = ext_objects[index].dfs[ext_names[index].split("_")[1]][variable][temp_nominator_name]["upDownUnc"][df_filter].copy()
+                        if normNominator :
+                            normalisation =  denominator_df["content"].sum() / temp_df["content"].sum() 
+                            temp_df.loc[:, "content":]=temp_df.loc[:, "content":] * normalisation  
+                        additional_df.append(temp_df)
 
                     temp_nominator_print_name=ext_names[index].split("_")[0]
                     additional_names.append(temp_nominator_print_name)
@@ -904,17 +902,17 @@ class ISRPlotter :
         if draw_mode == 2 :
 
             if len(ext_names[0].split("_")) > 2 :
-                default_nominator_name = "_".join(ext_names[0].split("_")[2:])
+                default_nominator_hist_name = "_".join(ext_names[0].split("_")[2:])
             else :  
-                default_nominator_name=ext_names[0]
+                default_nominator_hist_name=ext_names[0]
 
-            if len(ext_objects[0].dfs[ext_names[0].split("_")[1]][variable][default_nominator_name]["upDownUnc"].index) > len(denominator_df.index) :
-                source_df = ext_objects[0].dfs[ext_names[0].split("_")[1]][variable][default_nominator_name]["upDownUnc"]
+            if len(ext_objects[0].dfs[ext_names[0].split("_")[1]][variable][default_nominator_hist_name]["upDownUnc"].index) > len(denominator_df.index) :
+                source_df = ext_objects[0].dfs[ext_names[0].split("_")[1]][variable][default_nominator_hist_name]["upDownUnc"]
                 
                 default_nominator=self.rebinDataFrame(source_df, denominator_df)
 
             else :
-                default_nominator=ext_objects[0].dfs[ext_names[0].split("_")[1]][variable][default_nominator_name]["upDownUnc"][df_filter].copy()
+                default_nominator=ext_objects[0].dfs[ext_names[0].split("_")[1]][variable][default_nominator_hist_name]["upDownUnc"][df_filter].copy()
 
             default_nominator_print_name=ext_names[0].split("_")[0]
 
@@ -928,7 +926,7 @@ class ISRPlotter :
                 else :
                     default_nominator_print_name=ext_names[0].split("_")[0] + "(x{:.2f})".format(normalisation)
 
-            default_nominator_hist=ext_objects[0].rawHistsDict[ext_names[0].split("_")[1]][variable][default_nominator_name]["Nominal"]["Nominal"]["TH1"]
+            default_nominator_hist=ext_objects[0].rawHistsDict[ext_names[0].split("_")[1]][variable][default_nominator_hist_name]["Nominal"]["Nominal"]["TH1"]
             nEvents[default_nominator_print_name]=default_nominator['content'].sum()
 
             if len(ext_names) > 1 :
@@ -955,6 +953,9 @@ class ISRPlotter :
 
                     nEvents[temp_nominator_print_name]=temp_df['content'].sum()
                     additional_names.append(temp_nominator_print_name)
+
+        if draw_mode == 3 :
+            pass
 
         if draw_mode == 4 :
 
@@ -989,6 +990,12 @@ class ISRPlotter :
             if not oneColumn :
                 top_axis.text(0.05, .9, "{:.0f}".format(self.massBins[nth_bin][0])  + "$ < M^{\mathit{"+channelName+"}} < $" + "{:.0f} GeV".format(self.massBins[nth_bin][1]),
                               fontsize='xx-large', transform=top_axis.transAxes, horizontalalignment='left')
+
+        if variable == "Mass" :
+
+            top_axis.text(0.05, .9, "$p_{T}$ < 100 GeV", fontsize='xx-large', transform=top_axis.transAxes, horizontalalignment='left'),
+
+            
 
         label_list = []
         plot_list = []
@@ -1137,9 +1144,7 @@ class ISRPlotter :
 
             fmt_denominator="ok"
 
-            if "Measured" not in denominator :
-                fmt_denominator=","
-
+            # drw denominator
             if draw_mode == 4 :
                 denominator_abs_systematic=self.makeErrorNumpy(denominator_df.stat_error, denominator_df.stat_error)
                 self.make_error_boxes(top_axis, x_bin_centers.values, denominator_df["content"], binWidthxerr, denominator_abs_systematic,
@@ -1147,13 +1152,24 @@ class ISRPlotter :
 
             else :
                 if oneColumn :
-                    denominator_handle = top_axis.errorbar(x_bin_centers, denominator_df["content"], xerr=bin_width/2., yerr=denominator_df["stat_error"], fmt=setMarker + "k", fillstyle='none', ecolor="black", markersize=15, zorder=4)
+                    denominator_handle = top_axis.errorbar(x_bin_centers, denominator_df["content"], xerr=bin_width/2., yerr=denominator_df["stat_error"], 
+                                                            fmt=setMarker + "k", fillstyle='none', ecolor="black", markersize=15, zorder=4)
                 else :
-                    denominator_handle = top_axis.errorbar(x_bin_centers, denominator_df["content"], xerr=bin_width/2., yerr=denominator_df["stat_error"], fmt=fmt_denominator, ecolor='black', zorder=4)
+                    if "Measured" in denominator :
+                        denominator_handle = top_axis.errorbar(x_bin_centers, denominator_df["content"], xerr=bin_width/2., yerr=denominator_df["stat_error"], 
+                                                                fmt=fmt_denominator, ecolor='black', markersize=5, zorder=4)
+                    else :
+                        denominator_handle = top_axis.errorbar(x_bin_centers, denominator_df["content"], xerr=bin_width/2., yerr=denominator_df["stat_error"], 
+                                                                fmt="o", ecolor=setColor, markeredgecolor=setColor, markerfacecolor="None", markersize=5, zorder=4)
 
                 denominator_abs_systematic=self.makeErrorNumpy(denominator_df.total_Up, denominator_df.total_Down)
-                self.make_error_boxes(top_axis, x_bin_centers.values, denominator_df["content"], binWidthxerr, denominator_abs_systematic,
-                                      showBar=False, alpha=0.2, edgecolor='None', facecolor='black', zorder=2, hatch_style="//////")
+
+                if "Measured" in denominator :
+                    self.make_error_boxes(top_axis, x_bin_centers.values, denominator_df["content"], binWidthxerr, denominator_abs_systematic,
+                                          showBar=False, alpha=0.2, edgecolor='None', facecolor='black', zorder=2, hatch_style="////")
+                else :
+                    self.make_error_boxes(top_axis, x_bin_centers.values, denominator_df["content"], binWidthxerr, denominator_abs_systematic,
+                                          showBar=False, alpha=0.2, edgecolor='None', facecolor=setColor)
 
             if draw_mode == 0 : 
 
@@ -1175,7 +1191,7 @@ class ISRPlotter :
                     else :
                         temp_color = next(color)
 
-                    handle = top_axis.bar(x_bin_centers, data_df[stack]['content'], width = bin_width, color=temp_color, bottom=stacks)
+                    handle = top_axis.bar(x_bin_centers, data_df[stack]['content'], width = bin_width, color=temp_color, bottom=stacks, alpha=0.7)
                     plot_list.append(handle)
                     label_list.append(label_name)
                     stacks=stacks+data_df[stack]['content']
@@ -1198,10 +1214,10 @@ class ISRPlotter :
 
             else :
 
-                handle=top_axis.errorbar(x_bin_centers, default_nominator['content'], xerr=bin_width/2., yerr=0, fmt='o', color=setColor)
+                handle=top_axis.errorbar(x_bin_centers, default_nominator['content'], xerr=bin_width/2., yerr=0, fmt='o', markerfacecolor="None", linewidth=0.5)
                 plot_list.append(handle)
 
-                default_nominator_color = setColor
+                default_nominator_color = handle[0].get_color() 
 
                 if showNEvents :
                     label_list.append(default_nominator_print_name + ": {:.1f}".format(nEvents[default_nominator_print_name])) 
@@ -1210,13 +1226,13 @@ class ISRPlotter :
 
                 mc_abs_systematic=self.makeErrorNumpy(default_nominator.total_Up, default_nominator.total_Down)
                 self.make_error_boxes(top_axis, x_bin_centers.values, default_nominator["content"], binWidthxerr, mc_abs_systematic,
-                                      showBar=False, alpha=0.2, edgecolor='None', facecolor='red')
+                                      showBar=False, alpha=0.2, edgecolor='None', facecolor=handle[0].get_color())
 
                 for index in range(len(additional_df)) :
 
-                    temp_handle = top_axis.errorbar(x_bin_centers, additional_df[index]["content"], xerr=bin_width/2., yerr=additional_df[index]["stat_error"], fmt="o")
+                    temp_handle = top_axis.errorbar(x_bin_centers, additional_df[index]["content"], xerr=bin_width/2., yerr=additional_df[index]["stat_error"], 
+                                                    fmt="o", markerfacecolor="None", linewidth=0.5)
                     additional_handle.append(temp_handle)
-
 
                     #print([x_bin_centers.values])
                     #print([additional_df[index]['low_bin_edge'].values])
@@ -1247,9 +1263,11 @@ class ISRPlotter :
 
                     color_=next(color) 
 
-                    top_axis.errorbar(nominal_mean_mass_df[sysName+"_Up"]/ nominal_mean_mass_df["mean"], nominal_mean_pt_df[sysName+"_Up"]/ nominal_mean_pt_df["mean"], xerr=0., yerr=0., fmt='o', ms = 4., color=color_)
+                    top_axis.errorbar(nominal_mean_mass_df[sysName+"_Up"]/ nominal_mean_mass_df["mean"], nominal_mean_pt_df[sysName+"_Up"]/ nominal_mean_pt_df["mean"], 
+                                        xerr=0., yerr=0., fmt='o', ms = 4., color=color_)
                     top_axis.text(nominal_mean_mass_df[sysName+"_Up"]/ nominal_mean_mass_df["mean"], nominal_mean_pt_df[sysName+"_Up"]/ nominal_mean_pt_df["mean"], sysName)
-                    top_axis.errorbar(nominal_mean_mass_df[sysName+"_Down"]/ nominal_mean_mass_df["mean"], nominal_mean_pt_df[sysName+"_Down"]/ nominal_mean_pt_df["mean"], xerr=0., yerr=0., fmt='o', ms = 4., color=color_)
+                    top_axis.errorbar(nominal_mean_mass_df[sysName+"_Down"]/ nominal_mean_mass_df["mean"], nominal_mean_pt_df[sysName+"_Down"]/ nominal_mean_pt_df["mean"], 
+                                        xerr=0., yerr=0., fmt='o', ms = 4., color=color_)
 
                     color_list.append(color_)
                     label_list.append(sysName)
@@ -1315,9 +1333,9 @@ class ISRPlotter :
             top_axis.set_xscale("log")
 
         # Draw vertical lines
-        if "Mass" in variable and x_max > 200. :
-            for bin_ in self.massBins[:-1] :
-                top_axis.axvline(bin_[1], color='black', linestyle=":", linewidth=0.5, zorder=3)
+        #if "Mass" in variable and x_max > 200. :
+        #    for bin_ in self.massBins[:-1] :
+        #        top_axis.axvline(bin_[1], color='black', linestyle=":", linewidth=0.5, zorder=3)
 
         varName, unit = self.setXaxisLabel(variable)
 
@@ -1367,17 +1385,16 @@ class ISRPlotter :
             #if variable == "Mass" :
             #    print(temp_stat_error_array)
 
-            #bottom_axis.errorbar(x_bin_centers, ratio, xerr=bin_width/2., yerr=0, fmt='.', ecolor='red', zorder=1)
 
             #color='red'
             color = default_nominator_color
-            bottom_axis.hist(x_bin_centers, bins=x_bins, weights=ratio, histtype = 'step', color=color, linewidth=1.5)
+            bottom_axis.hist(x_bin_centers, bins=x_bins, weights=ratio, histtype = 'step', color=color, linewidth=0.7)
 
             denominator_systematic = self.makeErrorNumpy(denominator_df.total_Up/denominator_df.content, denominator_df.total_Down/denominator_df.content)
             denominator_statistic = self.makeErrorNumpy(denominator_df.stat_error/denominator_df.content, denominator_df.stat_error/denominator_df.content)
 
             self.make_error_boxes(bottom_axis, x_bin_centers.values, one_points, binWidthxerr, denominator_systematic,
-                                  showBar=False, alpha=0.1, edgecolor='None', facecolor='black', zorder=2)
+                                  showBar=False, alpha=0.1, edgecolor='None', facecolor='black', zorder=2, hatch_style="////")
 
             self.make_error_boxes(bottom_axis, x_bin_centers.values, one_points, binWidthxerr, denominator_statistic,
                                   showBox=False, showBar=True, alpha=0.1, edgecolor='None', facecolor='black', barFmt=".k", zorder=2)
@@ -1388,8 +1405,8 @@ class ISRPlotter :
             self.make_error_boxes(bottom_axis, x_bin_centers.values, ratio.values, binWidthxerr, mc_systematic,
                                   showBar=False, alpha=0.2, edgecolor='None', facecolor=color, zorder=4)
 
-            self.make_error_boxes(bottom_axis, x_bin_centers.values, ratio.values, binWidthxerr, mc_statistic,
-                                  showBox=False, showBar=True, alpha=0.2, edgecolor='None', facecolor=color, zorder=2)
+            #self.make_error_boxes(bottom_axis, x_bin_centers.values, ratio.values, binWidthxerr, mc_statistic,
+            #                      showBox=False, showBar=True, alpha=0.2, edgecolor='None', facecolor=color, zorder=2)
 
             #print("x bin centers: ", x_bin_centers.values)
             #print("ratio: ", ratio.values)
@@ -1405,30 +1422,32 @@ class ISRPlotter :
                 self.make_error_boxes(bottom_axis, x_bin_centers.values, additional_ratios[index].values, binWidthxerr, mc_systematic,
                                       showBar=False, alpha=0.2, edgecolor='None', facecolor=color, zorder=4)
 
-                self.make_error_boxes(bottom_axis, x_bin_centers.values, additional_ratios[index].values, binWidthxerr, mc_statistic,
-                                      showBox=False, showBar=True, alpha=0.2, edgecolor='None', facecolor=color, zorder=2)
+                #self.make_error_boxes(bottom_axis, x_bin_centers.values, additional_ratios[index].values, binWidthxerr, mc_statistic,
+                #                      showBox=False, showBar=True, alpha=0.2, edgecolor='None', facecolor=color, zorder=2)
 
             bottom_axis.set_xlim(x_min, x_max)
             if setRatioLogy :
                 bottom_axis.set_yscale("log")
                 if ratio_min == 0 : ratio_min = 1e-4
             bottom_axis.set_ylim(ratio_min,ratio_max)
+            if setLogx :
+                bottom_axis.set_xscale("log")
+                bottom_axis.xaxis.set_minor_formatter(LogFormatter(base=10.0, labelOnlyBase=False, minor_thresholds=(2,1))) # show numbers for each tick
+            else :
+                #bottom_axis.xaxis.set_minor_formatter(FormatStrFormatter("%.0f")) # show numbers for each tick
+                bottom_axis.xaxis.set_minor_locator(AutoMinorLocator())
 
             bottom_axis.axhline(1., color='black', linewidth=1, zorder=5)
             bottom_axis.tick_params(bottom=True, top=True, left=True, right=True, which='both', direction='in')
             bottom_axis.tick_params(length=10, which='major')
             bottom_axis.tick_params(length=5, which='minor')
-            bottom_axis.xaxis.set_minor_locator(AutoMinorLocator())
             if setRatioLogy == False :
                 bottom_axis.yaxis.set_minor_locator(AutoMinorLocator())
 
-            if setLogx :
-                bottom_axis.set_xscale("log")
-
-            if "Mass" in variable and x_max > 200.:
-                #bottom_axis.xaxis.set_minor_formatter(FormatStrFormatter("%.0f"))
-                for bin_ in self.massBins[:-1] :
-                    bottom_axis.axvline(bin_[1], color='black', linewidth=0.5, zorder=6)
+            #if "Mass" in variable and x_max > 200.:
+            #    #bottom_axis.xaxis.set_minor_formatter(FormatStrFormatter("%.0f"))
+            #    for bin_ in self.massBins[:-1] :
+            #        bottom_axis.axvline(bin_[1], color='black', linewidth=0.5, zorder=6)
 
         del data_df
         gc.collect()
@@ -1455,6 +1474,7 @@ class ISRPlotter :
                 fig, axes = plt.subplots(len(variables) + 1, 1, sharex=False, figsize=figSize, gridspec_kw={'height_ratios': heights})
             else :
                 fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize, gridspec_kw={'height_ratios':[1, 0.3]})
+
         else :
             num_rows = 1
             if oneColumn : 
@@ -1463,7 +1483,7 @@ class ISRPlotter :
                 fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize)
 
         plt.tight_layout()
-        plt.subplots_adjust(left=0.12, right=0.97, bottom=0.1, top=0.9, hspace=0.05)
+        plt.subplots_adjust(left=0.12, right=0.97, bottom=0.1, top=0.9, hspace=0.0)
 
         write_xaxis_title = True
         write_yaxis_title = True
@@ -1518,7 +1538,7 @@ class ISRPlotter :
                              denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, 
                              showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator, oneColumn=oneColumn, setMarker=Line2D.filled_markers[index], setColor=c,)
 
-        outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+".pdf" 
+        outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+"_"+self.channel+"_"+self.year+".pdf" 
         if outPdfPostfix is not None :
             outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+"_"+outPdfPostfix+".pdf" 
         
@@ -1564,7 +1584,7 @@ class ISRPlotter :
         return combined_mass_df, combined_pt_df
 
 
-    def doLogLinearFit(self, ax, mass_df, pt_df, mass_unc, pt_unc, line_color) :
+    def doLogLinearFit(self, ax, mass_df, pt_df, mass_unc, pt_unc, line_color, useDF=True, printPar=True) :
 
         print("do log-linear fit!")
         x_err=[]
@@ -1574,22 +1594,32 @@ class ISRPlotter :
             y_err.append(max(pt_unc.T[i]))
 
         loglinear=Model(self.loglinear_func)
-        data=RealData(mass_df["mean"], pt_df["mean"], sx=x_err, sy=y_err)
+        if useDF :
+            data=RealData(mass_df["mean"], pt_df["mean"], sx=x_err, sy=y_err)
+        else :
+            data=RealData(mass_df, pt_df, sx=x_err, sy=y_err)
         odr=ODR(data, loglinear, beta0=[1.0, 0.0])
         out=odr.run()
         out.pprint()
 
-        xn = np.linspace(min(mass_df["mean"]), max(mass_df["mean"]), 1000)
+        xn = np.linspace(40., 700, 1000)
         yn = self.loglinear_func(out.beta, xn)
-        ax.plot(xn, yn, color=line_color, linewidth=0.8)
+        ax.plot(xn, yn, color=line_color, linewidth=0.5)
         # prepare parameters for confidence interval curves
         nstd = 1. # to draw 1-sigma intervals
         popt_up = out.beta + nstd * out.sd_beta
         popt_dw = out.beta - nstd * out.sd_beta
+        print(out.sd_beta)
+        print(type(out.sd_beta))
 
         # calculate y values for 1 sigma
         fit_up = self.loglinear_func(popt_up, xn)
         fit_dw = self.loglinear_func(popt_dw, xn)
+
+
+        if printPar :
+            ax.text(0.05, .05, "$<p_{T}^{DY}>$" + "=({:.2f}$\pm${:.2f})+({:.2f}$\mp${:.2f})".format(out.beta[1], out.sd_beta[1], out.beta[0], out.sd_beta[0]) + "x $log <m_{DY}>^{2}$"
+, fontsize='xx-large', transform=ax.transAxes)
 
         # plot 1 sigma
         #ax.plot(xn, fit_up, '#0076D4', dashes=[9, 4.5], label='1 Sigma uncertainty', linewidth=0.8)
@@ -1620,7 +1650,7 @@ class ISRPlotter :
         temp_df = None
         if variable == "Pt" :
             ax.set_ylabel("Variation/ Nominal of Mean $p_{T}^{" + channelName + "}$", fontsize=20, ha='right', y=1.0)
-            temp_df=self.combinedPtDataFrame("Data")
+            temp_df=self.combinedPtDataFrame("Measured")
         if variable == "Mass" :
             ax.set_ylabel("Variable/ Nominal of Mean $M^{" + channelName + "}$", fontsize=20, ha='right', y=1.0)
             temp_df=self.Data["Mass"]["total"]["upDownUnc_meanValue"]
@@ -1666,7 +1696,7 @@ class ISRPlotter :
         color=iter(cm.rainbow(np.linspace(0,1,len(list_to_plot))))
         isData=False
 
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(8, 8))
         plt.subplots_adjust(left=0.12, right=0.97, bottom=0.15, top=0.9)
         ax.text(0., 1.05, "CMS Work in progress", fontsize='xx-large', transform=ax.transAxes)
         ax.text(1., 1.05, "(13 TeV, " + self.year + ")", fontsize=20, transform=ax.transAxes, ha='right')
@@ -1690,11 +1720,11 @@ class ISRPlotter :
             temp_mass_df=self.dfs[name]["Mass"]["total"]["upDownUnc_meanValue"]
             temp_pt_df=self.combinedPtDataFrame(name)
 
-            temp_mass_total_up =   np.sqrt(np.square(temp_mass_df["total_Up"]) + np.square(temp_mass_df["stat_error"]/2.))
-            temp_mass_total_down = np.sqrt(np.square(temp_mass_df["total_Down"]) + np.square(temp_mass_df["stat_error"]/2.))
+            temp_mass_total_up =   np.sqrt(np.square(temp_mass_df["total_Up"]) + np.square(temp_mass_df["stat_error"]))
+            temp_mass_total_down = np.sqrt(np.square(temp_mass_df["total_Down"]) + np.square(temp_mass_df["stat_error"]))
 
-            temp_pt_total_up =   np.sqrt(np.square(temp_pt_df["total_Up"]) + np.square(temp_pt_df["stat_error"]/2.))
-            temp_pt_total_down = np.sqrt(np.square(temp_pt_df["total_Down"]) + np.square(temp_pt_df["stat_error"]/2.))
+            temp_pt_total_up =   np.sqrt(np.square(temp_pt_df["total_Up"]) + np.square(temp_pt_df["stat_error"]))
+            temp_pt_total_down = np.sqrt(np.square(temp_pt_df["total_Down"]) + np.square(temp_pt_df["stat_error"]))
 
             mass_systematic=self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
             pt_systematic=self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
@@ -1730,25 +1760,38 @@ class ISRPlotter :
         plt.savefig(outPdfName, format="pdf", dpi=300)
         plt.close(fig)
 
-    def drawISRPlots(self, *objects_to_plot, names_in_objects, do_linear_fit=None, labels=None, markers=None, colors=None, facecolor_list = None, ymin=13, ymax=30, xmin=30, xmax=4e2,
-                    outPdfPostfix=None, years = None, both_lepton = False) :
+    def drawISRPlots(self, *objects_to_plot, names_in_objects, do_linear_fit=None, labels=None, markers=None, colors=None, facecolor_list = None, 
+                     ymin=13, ymax=30, xmin=30, xmax=4e2, outPdfPostfix=None, years = None, both_lepton = False, ratios = False, nominators = None, 
+                     showRatio=False, showCDF=False, combined_result=None) :
+
+        allMeanMassDF = None
+        allErrorMassList = None
+
+        allMeanPtDF = None
+        allErrorPtList = None
 
         print("draw isr plot, do_linear_fit {}".format(do_linear_fit))
         color=iter(cm.rainbow(np.linspace(0,1,len(names_in_objects))))
         isData=False
 
-        fig, ax = plt.subplots(figsize=(10, 6))
-        plt.subplots_adjust(left=0.12, right=0.97, bottom=0.15, top=0.9)
+        if showRatio == False :
+            fig, ax = plt.subplots(figsize=(8, 8))
+        else :
+            fig, axes = plt.subplots(2, 1, figsize=(8, 8), sharex=False, gridspec_kw={'height_ratios':[1, 0.3]})
+            ax = axes[0]
+            bottom = axes[1] 
+
+        plt.tight_layout()
+        plt.subplots_adjust(left=0.12, right=0.97, bottom=0.15, top=0.9, hspace=0.05)
         ax.text(0., 1.05, "CMS Work in progress", fontsize=20, transform=ax.transAxes)
-        ax.text(1., 1.05, "(13 TeV, " + self.year + ")", fontsize=20, transform=ax.transAxes, ha='right')
         if years is not None :
             ax.text(1., 1.05, "(13 TeV " + years + ")", fontsize=20, transform=ax.transAxes, ha='right')
+        else :
+            ax.text(1., 1.05, "(13 TeV, " + self.year + ")", fontsize=20, transform=ax.transAxes, ha='right')
 
         ax.set_xlim(xmin,xmax)
         ax.set_ylim(ymin,ymax)
         ax.set_xscale("log")
-        ax.xaxis.set_minor_formatter(FormatStrFormatter("%.0f"))
-
 
         channelName = "e^{+}e^{-}"
         if self.channel == "muon" :
@@ -1761,6 +1804,20 @@ class ISRPlotter :
             ax.set_xlabel("Mean $M^{ll}$ [GeV]", fontsize=20, ha='right', x=1.0)
             ax.set_ylabel("Mean $p_{T}^{ll}$ [GeV]", fontsize=20, ha='right', y=1.0)
 
+        ax.grid(True, which='both', axis='x', color='black', linewidth=0.3, linestyle="--")
+        ax.grid(True, axis='y', color='black', linewidth=0.3, linestyle="--")
+
+        ax.tick_params(bottom=True, top=True, left=True, right=True, which='both', direction='in')
+        ax.tick_params(length=10, which='major')
+        ax.tick_params(length=5, which='minor')
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        if showRatio :
+            ax.set_xticklabels([]) 
+        else :
+            ax.xaxis.set_minor_formatter(FormatStrFormatter("%.0f"))
+
+        #if ratios :
+        #    ax.set_ylabel("R", fontsize=20, ha='right', y=1.0) 
         for index, name in enumerate(names_in_objects) :
 
             isData=False
@@ -1785,8 +1842,9 @@ class ISRPlotter :
                 current_facecolor=facecolor_list[index]
 
             if index==0 :
-                temp_mass_df=self.getDict(name)["Mass"]["total"]["upDownUnc_meanValue"]
-                temp_pt_df=self.combinedPtDataFrame(name)
+                temp_mass_df =self.getDict(name)["Mass"]["total"]["upDownUnc_meanValue"]
+                temp_pt_df   =self.combinedPtDataFrame(name)
+
             else :
                 if objects_to_plot[index-1].useTUnfoldBin :
                     temp_mass_df=objects_to_plot[index-1].getDict(name)["Mass"]["total"]["upDownUnc_meanValue"]
@@ -1794,39 +1852,158 @@ class ISRPlotter :
                 else :
                     temp_mass_df, temp_pt_df = objects_to_plot[index-1].combinedMassPtDataFrame(name)
 
-            temp_mass_total_up =   np.sqrt(np.square(temp_mass_df["total_Up"]) + np.square(temp_mass_df["stat_error"]/2.))
-            temp_mass_total_down = np.sqrt(np.square(temp_mass_df["total_Down"]) + np.square(temp_mass_df["stat_error"]/2.))
+            temp_mass_total_up =   np.sqrt(np.square(temp_mass_df["total_Up"]) + np.square(temp_mass_df["stat_error"]))
+            temp_mass_total_down = np.sqrt(np.square(temp_mass_df["total_Down"]) + np.square(temp_mass_df["stat_error"]))
 
-            temp_pt_total_up =   np.sqrt(np.square(temp_pt_df["total_Up"]) + np.square(temp_pt_df["stat_error"]/2.))
-            temp_pt_total_down = np.sqrt(np.square(temp_pt_df["total_Down"]) + np.square(temp_pt_df["stat_error"]/2.))
+            temp_pt_total_up =   np.sqrt(np.square(temp_pt_df["total_Up"]) + np.square(temp_pt_df["stat_error"]))
+            temp_pt_total_down = np.sqrt(np.square(temp_pt_df["total_Down"]) + np.square(temp_pt_df["stat_error"]))
 
             mass_systematic=self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
             pt_systematic=self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
 
             if index==0 or objects_to_plot[index-1].useTUnfoldBin :
 
-                ax.errorbar(temp_mass_df["mean"], temp_pt_df["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4, fillstyle='none')
+                if ratios == False :
+                    ax.errorbar(temp_mass_df["mean"], temp_pt_df["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=0.5, ms = 4)
+
+                    if index == 0 :
+                        allMeanMassDF = temp_mass_df.copy(deep=True)
+                        allErrorMassList = mass_systematic.copy()
+
+                        allMeanPtDF = temp_pt_df.copy(deep=True)
+                        allErrorPtList = pt_systematic.copy()
+                    else :
+                        allMeanMassDF.append(temp_mass_df)
+                        np.append(allErrorMassList[0], mass_systematic[0])
+                        np.append(allErrorMassList[1], mass_systematic[1])
+
+                        allMeanPtDF.append(temp_pt_df)
+                        np.append(allErrorPtList[0], pt_systematic[0])
+                        np.append(allErrorPtList[1], pt_systematic[1])
+
+                    if showRatio :
+                        if index == 0 :
+                            bottom.set_ylim(-5, 5)
+                            bottom.set_xlim(xmin,xmax)
+                            bottom.set_xlabel("Mean $M^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', x=1.0)
+                            bottom.set_ylabel("$\\delta \\barp_{T}$", fontsize=20, ha='center', y=0.5)
+                            bottom.set_xscale("log")
+                            bottom.tick_params(bottom=True, top=True, left=True, right=True, which='both', direction='in')
+                            bottom.tick_params(length=10, which='major')
+                            bottom.tick_params(length=5, which='minor')
+                            bottom.xaxis.set_minor_formatter(FormatStrFormatter("%.0f"))
+                            bottom.axhline(0., color='black', linewidth=1, linestyle="--")
+
+                            denominator_mass = temp_mass_df["mean"]
+                            denominator_pt = temp_pt_df["mean"]
+                            denominator_mass_err = mass_systematic
+                            denominator_pt_err = pt_systematic
+
+                        else :
+
+                            print("draw bottom")
+                            temp_ratio = temp_pt_df["mean"] - denominator_pt
+                            bottom.errorbar(temp_mass_df["mean"], temp_ratio, xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
+                else :
+                    # comparison to ratio method
+                    temp_pt_df_nominator = nominators[index].combinedPtDataFrame("Signal")
+                    temp_mass_df_nominator =  nominators[index].getDict("Signal")["Mass"]["total"]["upDownUnc_meanValue"]
+
+                    if index==0 :
+                        temp_pt_df_denominator = self.combinedPtDataFrame("Signal")
+                        temp_mass_df_denominator = self.getDict("Signal")["Mass"]["total"]["upDownUnc_meanValue"]
+                    else :
+                        temp_pt_df_denominator = objects_to_plot[index-1].combinedPtDataFrame("Signal")
+                        temp_mass_df_denominator =  objects_to_plot[index-1].getDict("Signal")["Mass"]["total"]["upDownUnc_meanValue"] 
+
+                    temp_pt_df_ratio = temp_pt_df_nominator["mean"]/ temp_pt_df_denominator["mean"]
+                    temp_mass_df_ratio = temp_mass_df_nominator["mean"]/ temp_mass_df_denominator["mean"]
+                    #ax.errorbar(temp_mass_df["mean"], temp_pt_df_ratio, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
+                    ax.errorbar(temp_mass_df_ratio * temp_mass_df["mean"], temp_pt_df_ratio * temp_pt_df["mean"], 
+                                fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
+
+                    # results from unfolding method
+                    temp_pt_df_unfolding = nominators[index].combinedPtDataFrame("Measured")
+                    temp_mass_df_unfolding = nominators[index].getDict("Measured")["Mass"]["total"]["upDownUnc_meanValue"]
+
+                    temp_mass_total_up =   np.sqrt(np.square(temp_mass_df_unfolding["total_Up"]) + np.square(temp_mass_df_unfolding["stat_error"]))
+                    temp_mass_total_down = np.sqrt(np.square(temp_mass_df_unfolding["total_Down"]) + np.square(temp_mass_df_unfolding["stat_error"]))
+
+                    temp_pt_total_up =   np.sqrt(np.square(temp_pt_df_unfolding["total_Up"]) + np.square(temp_pt_df_unfolding["stat_error"]))
+                    temp_pt_total_down = np.sqrt(np.square(temp_pt_df_unfolding["total_Down"]) + np.square(temp_pt_df_unfolding["stat_error"]))
+
+                    mass_systematic=self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
+                    pt_systematic=self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
+
+                    current_facecolor = current_color
+                    ax.errorbar(temp_mass_df_unfolding["mean"], temp_pt_df_unfolding["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
+
             else :
     
-                ax.plot(temp_mass_df["mean"], temp_pt_df["mean"], color=current_facecolor)
+                ax.plot(temp_mass_df["mean"], temp_pt_df["mean"], color=current_facecolor, linewidth=0.5)
                 ax.fill_between(temp_mass_df["mean"], temp_pt_df["mean"]-temp_pt_total_up, temp_pt_df["mean"]+temp_pt_total_up, facecolor=current_facecolor, alpha=0.2)
-    
 
-            print(label_name, temp_pt_df["mean"])
+            print(label_name)
+            #print(temp_mass_df["mean"].append(temp_pt_df["mean"], ignore_index = True))
+            d = {'mean mass': temp_mass_df["mean"].values, "mean mass stat": temp_mass_df["stat_error"], "mean mass sys": temp_mass_df["total_Up"], 
+                 'mean pt': temp_pt_df["mean"].values, "mean pt stat": temp_pt_df["stat_error"], "mean pt sys": temp_pt_df["total_Up"]}
+            print(pd.DataFrame(data=d))
 
-            if do_linear_fit[index] :
-                if isData :
-                    self.doLogLinearFit(ax, temp_mass_df, temp_pt_df, mass_systematic, pt_systematic,current_color)
-            #self.doLogLinearFit(ax, temp_mass_df, temp_pt_df, mass_systematic, pt_systematic)
-            isData=False
-        
-        ax.grid(True, which='both', axis='x', color='black', linewidth=0.3, linestyle="--")
-        ax.grid(True, axis='y', color='black', linewidth=0.3, linestyle="--")
+        if do_linear_fit[index] :
+            if isData :
+                self.doLogLinearFit(ax, allMeanMassDF, allMeanPtDF, allErrorMassList, allErrorPtList, "black")
 
-        ax.tick_params(bottom=True, top=True, left=True, right=True, which='both', direction='in')
-        ax.tick_params(length=10, which='major')
-        ax.tick_params(length=5, which='minor')
-        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        if showCDF :
+            
+            # Muon
+            cdf_muon_mass      = [47.72, 70.66, 90.99, 115.29, 243.33]
+            cdf_muon_mass_stat = [0.05, 0.04, 0.01, 0.18, 1.63]
+            cdf_muon_mass_sys  = [0.04, 0.07, 0.08, 0.14, 0.40]
+            cdf_muon_mass_tot  = np.sqrt(np.square(cdf_muon_mass_stat)) + np.sqrt(np.square(cdf_muon_mass_sys))
+            #cdf_muon_mass_tot  = self.makeErrorNumpy(cdf_muon_mass_tot, -1. * cdf_muon_mass_tot, False)
+
+            cdf_electron_mass      = [47.83, 70.76, 90.98, 115.11, 245.46]
+            cdf_electron_mass_stat = [0.05, 0.04, 0.01, 0.13, 1.29]
+            cdf_electron_mass_sys  = [0.07, 0.04, 0.07, 0.14, 0.21]
+            cdf_electron_mass_tot  = np.sqrt(np.square(cdf_electron_mass_stat)) + np.sqrt(np.square(cdf_electron_mass_sys))
+            #cdf_electron_mass_tot  = self.makeErrorNumpy(cdf_electron_mass_tot, -1. * cdf_electron_mass_tot, False)
+
+            # Electron
+            cdf_muon_pt      = [9.12, 10.81, 11.84, 13.17, 16.18]
+            cdf_muon_pt_stat = [0.09, 0.08, 0.03, 0.12, 0.61]
+            cdf_muon_pt_sys  = [0.12, 0.14, 0.03, 0.12, 0.45]
+            cdf_muon_pt_tot  = np.sqrt(np.square(cdf_muon_pt_stat)) + np.sqrt(np.square(cdf_muon_pt_sys))
+            #cdf_muon_pt_tot  = self.makeErrorNumpy(cdf_muon_pt_tot, -1. * cdf_muon_pt_tot, False)
+
+            cdf_electron_pt      = [9.10, 10.84, 11.79, 12.93, 16.41]
+            cdf_electron_pt_stat = [0.13, 0.08, 0.02, 0.09, 0.56]
+            cdf_electron_pt_sys  = [0.18, 0.10, 0.01, 0.09, 0.35]
+            cdf_electron_pt_tot  = np.sqrt(np.square(cdf_electron_pt_stat)) + np.sqrt(np.square(cdf_electron_pt_sys))
+            #cdf_electron_pt_tot  = self.makeErrorNumpy(cdf_electron_pt_tot, -1. * cdf_electron_pt_tot, False)
+
+            if self.channel == "electron" :
+                ax.errorbar(cdf_electron_mass, cdf_electron_pt, xerr=cdf_electron_mass_tot, yerr=cdf_electron_pt_tot, fmt="s", color="blue", mfc="none", label="CDF electron", linewidth=0.5)
+                mass_systematic=self.makeErrorNumpy(cdf_electron_mass_tot, cdf_electron_mass_tot, fromDF=False) 
+                pt_systematic=self.makeErrorNumpy(cdf_electron_pt_tot, cdf_electron_pt_tot, fromDF=False) 
+                self.doLogLinearFit(ax, cdf_electron_mass, cdf_electron_pt, mass_systematic, pt_systematic, "blue", useDF=False, printPar=False) 
+            else :
+                ax.errorbar(cdf_muon_mass, cdf_muon_pt, xerr=cdf_muon_mass_tot, yerr=cdf_muon_pt_tot, fmt="s", color="blue", mfc="none", label="CDF muon", linewidth=0.5)
+                mass_systematic=self.makeErrorNumpy(cdf_muon_mass_tot, cdf_muon_mass_tot, fromDF=False) 
+                pt_systematic=self.makeErrorNumpy(cdf_muon_pt_tot, cdf_muon_pt_tot, fromDF=False) 
+                self.doLogLinearFit(ax, cdf_muon_mass, cdf_muon_pt, mass_systematic, pt_systematic, "blue", useDF=False, printPar=False) 
+
+            
+
+        if combined_result is not None :
+
+            mass_err = np.sqrt(np.square(combined_result["mass"]["stat"]) + np.square(combined_result["mass"]["syst"]))
+            pt_err = np.sqrt(np.square(combined_result["pt"]["stat"]) + np.square(combined_result["pt"]["syst"]))
+            ax.errorbar(combined_result["mass"]["Nominal"], combined_result["pt"]["Nominal"], xerr=mass_err, yerr=pt_err, fmt="s", color="black", mfc="none", label="combined result", linewidth=0.5)
+
+            mass_systematic=self.makeErrorNumpy(mass_err, mass_err, fromDF=False)
+            pt_systematic=self.makeErrorNumpy(pt_err, pt_err, fromDF=False)
+
+            self.doLogLinearFit(ax, combined_result["mass"]["Nominal"], combined_result["pt"]["Nominal"], mass_systematic,  pt_systematic, "black", useDF=False)
 
         ax.legend(loc='best', fontsize=15, fancybox=False, framealpha=0.0)
 
@@ -1870,12 +2047,19 @@ class ISRPlotter :
                                   fmt=barFmt, ecolor=facecolor, linewidth=0.1)
         #return artists
 
-    def makeErrorNumpy(self, Up, Down) :
+    def makeErrorNumpy(self, Up, Down, fromDF=True) :
 
-        Up=Up.values
+        if fromDF :
+            Up=Up.values
+        else :
+            Up=Up
         Up[np.isinf(Up)] = 0
         Up=Up.reshape(1,len(Up))
-        Down=Down.values
+
+        if fromDF :
+            Down=Down.values
+        else :
+            Down=Down
         Down[np.isinf(Down)] = 0
         Down=Down.reshape(1,len(Down))
 

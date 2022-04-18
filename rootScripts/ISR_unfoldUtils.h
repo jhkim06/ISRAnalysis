@@ -123,6 +123,7 @@ public:
     ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool doInputStatUnc_ = true, bool doRMStatUnc_ = false, bool ignoreBinZero_ = false, 
               bool verbose_ = false, TString var_ = "Mass", TString output_baseDir_ = "", TString matrix_reweight_file_ = "", bool doModelUnc_ = false)
     {
+        // modified in Xcode
         cout << "ISRUnfold set! " << var_ << endl;
 
         output_baseDir = output_baseDir_;
@@ -240,7 +241,8 @@ public:
     void varyHistWithStatError(TH1* hist, int sys);
 
     // Do unfold
-    void doISRUnfold();
+    void doISRUnfold(bool partialReg);
+    void doUnfold(TUnfoldDensity* unfold, bool scan_tau=true);
 
     // Acceptance correction
     void doAcceptCorr(TString filePath, TString binDef, TString filePath_for_accept = "");
@@ -248,6 +250,10 @@ public:
     // Get histograms
     TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true);
     TH1* getRawHist(TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis);
+
+    // Bottom Line Test
+    void drawChi2Reco();
+    void drawChi2Truth();
 
 };
 
