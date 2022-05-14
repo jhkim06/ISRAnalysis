@@ -43,27 +43,42 @@
 #include "TUnfoldIterativeEM.h"
 
 using namespace std;
-
 const int statSize = 100;
 
 class ISRUnfold{
 
 private:
     bool verbose;
+    
+    // 
+    bool doInputStatUnc;
+    bool doRMStatUnc;
+    bool ignoreBinZero;
+    bool doModelUnc;
+
+    TString unfoldName;
+    TString channelName; // electron or muon
+    TString var; // dilepton mass or pt
+    int year;
+
+    // Conditions for unfolding
+    TUnfold::ERegMode regMode;
+    TUnfoldDensity::EDensityMode densityMode;
+    double nominalBias;
+    double tau;
 
     // Bin definitions
-    TUnfoldBinning* binning_Rec = NULL;
-    TUnfoldBinning* binning_Gen = NULL;
-
+    TUnfoldBinning* binningFine = NULL;
+    TUnfoldBinning* binningCoarse = NULL;
 
     // Unfolding
     // For nominal results
     TUnfoldDensity* nominalTUnfold;
     TH2* hResponseM;
 
-    // For statistical uncertainty
-    std::vector<TUnfoldDensity*> UnfoldingInputStatTUnfold;
-    std::vector<TUnfoldDensity*> UnfoldingMatrixStatTUnfold;
+    // For unfolding uncertainty
+    std::vector<TUnfoldDensity*> unfInputStatTUnfold;
+    std::vector<TUnfoldDensity*> unfMatrixStatTUnfold;
     TUnfoldDensity* modelUncertaintyTUnfold;
     TUnfoldDensity* ignoreBinZeroTUnfold;
 
@@ -71,12 +86,16 @@ private:
     vector<TString> sysVector;
     std::map<TString, TUnfoldDensity*> systematicTUnfold;
 
-    TUnfoldIterativeEM* iterEMTUnfold;
-
     int iBest;
     const int NITER_Iterative = 1000;
-
+    TUnfoldIterativeEM* iterEMTUnfold;
     TGraph *graph_SURE_IterativeSURE,*graph_DFdeviance_IterativeSURE;
+
+    Int_t iBest_nominal;
+    TSpline *logTauX,*logTauY;
+    TGraph *lCurve;
+    TGraph*bestLcurve;
+    TGraph*bestLogTauLogChi2;
 
     // Acceptance correction
     TH1* hFullPhaseData;
@@ -88,61 +107,34 @@ private:
     TH1* hAcceptance;
     std::map<TString, std::map<TString, TH1*>> hSysAcceptance;
 
-    TFile* fUnfoldOut;
     TFile* fUnfoldReweight;
     TH2* hReweightSF;
 
+    TString outputBaseDir;
+    TFile* fUnfoldOut;
     TString fUnfoldOutPath;
-
-    // Conditions for unfolding
-    TUnfold::ERegMode regMode;
-    double nominal_bias;
-
-    double tau;
-
-    Int_t iBest_nominal;
-    TSpline *logTauX,*logTauY;
-    TGraph *lCurve;
-    TGraph*bestLcurve;
-    TGraph*bestLogTauLogChi2;
-
-    TString output_baseDir;
-    TString unfold_name;
-    TString channel_name;
-    TString var;
-    int year;
-
-    bool doInputStatUnc;
-    bool doRMStatUnc;
-    bool ignoreBinZero;
-    bool doModelUnc;
 
 public:
 
     // Constructor
-    ISRUnfold(TString unfold_name_, TString channel, int year_ = 2016, int regMode_ = 0, bool doInputStatUnc_ = true, bool doRMStatUnc_ = false, bool ignoreBinZero_ = false, 
-              bool verbose_ = false, TString var_ = "Mass", TString output_baseDir_ = "", TString matrix_reweight_file_ = "", bool doModelUnc_ = false)
+    ISRUnfold(TString unfoldName_, TString channel, int year_ = 2016, TUnfold::ERegMode regMode_ = TUnfold::kRegModeNone, bool doInputStatUnc_ = true, bool doRMStatUnc_ = false, bool ignoreBinZero_ = false, 
+              bool verbose_ = false, TString var_ = "Mass", TString outputBaseDir_ = "", TString matrix_reweight_file_ = "", bool doModelUnc_ = false, 
+              TUnfoldDensity::EDensityMode densityMode_ = TUnfoldDensity::kDensityModeNone)
     {
         // modified in Xcode
         cout << "ISRUnfold set! " << var_ << endl;
 
-        output_baseDir = output_baseDir_;
-        unfold_name = unfold_name_;
-        channel_name = channel;
+        outputBaseDir = outputBaseDir_;
+        unfoldName = unfoldName_;
+        channelName = channel;
         year = year_;
         var = var_;
 
-        nominal_bias = 1.;
+        nominalBias = 1.;
         tau = 0.;
 
-        if(regMode_ == 0)
-            regMode = TUnfold::kRegModeNone;
-        if(regMode_ == 1)
-            regMode = TUnfold::kRegModeSize;
-        if(regMode_ == 2)
-            regMode = TUnfold::kRegModeDerivative;
-        if(regMode_ == 3)
-            regMode = TUnfold::kRegModeCurvature;
+        regMode = regMode_;
+        densityMode = densityMode_;
 
         doInputStatUnc = doInputStatUnc_;
         doRMStatUnc = doRMStatUnc_; 
@@ -155,9 +147,8 @@ public:
         TString yearStr;
         yearStr.Form("%d", (int)year);
 
-        //output_baseDir = "output/" + yearStr + "/" + channel_name + "/";
-
-        fUnfoldOutPath = output_baseDir+unfold_name+"_"+channel_name+"_"+yearStr+"_"+var+".root";
+        //outputBaseDir = "output/" + yearStr + "/" + channelName + "/";
+        fUnfoldOutPath = outputBaseDir+unfoldName+"_"+channelName+"_"+yearStr+"_"+var+".root";
         fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");
 
         fUnfoldOut->mkdir("matrix");
@@ -215,15 +206,16 @@ public:
     // Set input histogram
     void setUnfInput(TString filepath = "", TString dirName = "", TString binDef = "", TString histName = "", TString sysType = "", TString sysName = "", TString histPostfix = "", bool isFSR = false);
     void setUnfInput(ISRUnfold* unfold,  TString thisSysType = "", TString sysName = "", bool useAccept = false);
+    void setUnfInputUnfSys();
 
     // Set background histograms
     void subBkgs(TString filepath, TString dirName = "",  TString binDef = "", TString bkgName = "", TString sysType = "", TString sysName = "", TString histPostfix = "");
 
     // Set systematic TUnfoldDensity
     void setSystematicRM(TString filepath, TString dirName,  TString binDef,  TString sysName, TString histPostfix);
+    // TODO TUnfoldSYS?
 
     void setSystematics(TString sysHistName);
-
     void inline printSystematics()
     {
         std::vector<TString>::iterator it = sysVector.begin();
@@ -242,7 +234,7 @@ public:
 
     // Do unfold
     void doISRUnfold(bool partialReg);
-    void doUnfold(TUnfoldDensity* unfold, bool scan_tau=true);
+    void setPartialRegularize2D(TUnfold::ERegMode partialRegMode, double startMass, double startPt, double endMass, double endPt);
 
     // Acceptance correction
     void doAcceptCorr(TString filePath, TString binDef, TString filePath_for_accept = "");
@@ -254,7 +246,6 @@ public:
     // Bottom Line Test
     void drawChi2Reco();
     void drawChi2Truth();
-
 };
 
 #endif
