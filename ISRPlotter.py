@@ -147,11 +147,11 @@ class ISRPlotter :
             # FIXME this works when 2D binning used
             # When 2D bining used for (pt,m) mass ranges can be extracted but not the case when 1D bining  
 
-            #temp_tvecd=self.binDef["Pt"].GetDistributionBinning(1)
-            #temp_mass_bin_edges=temp_tvecd.GetMatrixArray()
-            #self.massBins.extend([ (temp_mass_bin_edges[index], temp_mass_bin_edges[index+1]) for index in range(temp_tvecd.GetNrows()-1)]) # list comprehension
+            temp_tvecd=self.binDef["Pt"].GetDistributionBinning(1)
+            temp_mass_bin_edges=temp_tvecd.GetMatrixArray()
+            self.massBins.extend([ (temp_mass_bin_edges[index], temp_mass_bin_edges[index+1]) for index in range(temp_tvecd.GetNrows()-1)]) # list comprehension
 
-            self.massBins.extend([(320, 10000)])
+            #self.massBins.extend([(320, 10000)])
         else :
             if self.channel == "electron" :
                 self.massBins.extend([(50, 64), (64, 81), (81, 101), (101, 200), (200, 320), (320,830)])
@@ -1804,7 +1804,7 @@ class ISRPlotter :
 
     def drawISRPlots(self, *objects_to_plot, names_in_objects, do_linear_fit=None, labels=None, markers=None, colors=None, facecolor_list = None, 
                      ymin=13, ymax=30, xmin=30, xmax=4e2, outPdfPostfix=None, years = None, both_lepton = False, ratios = False, nominators = None, 
-                     showRatio=False, showCDF=False, combined_result=None) :
+                     showRatio=False, showCDF=False, combined_result=None, showCMS=False) :
 
         allMeanMassDF = None
         allErrorMassList = None
@@ -1838,6 +1838,8 @@ class ISRPlotter :
         channelName = "e^{+}e^{-}"
         if self.channel == "muon" :
             channelName = "\mu^{+}\mu^{-}"
+        if showCMS:
+            channelName="ll";
 
         ax.set_xlabel("Mean $M^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', x=1.0)
         ax.set_ylabel("Mean $p_{T}^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', y=1.0)
@@ -1860,140 +1862,141 @@ class ISRPlotter :
 
         #if ratios :
         #    ax.set_ylabel("R", fontsize=20, ha='right', y=1.0) 
-        for index, name in enumerate(names_in_objects) :
+        if showCMS == False: 
+            for index, name in enumerate(names_in_objects) :
 
-            isData=False
-            if name == "Data" :
-                isData=True
+                isData=False
+                if name == "Data" :
+                    isData=True
 
-            label_name=name
-            if labels is not None :
-                label_name=labels[index]
+                label_name=name
+                if labels is not None :
+                    label_name=labels[index]
 
-            if markers is None :
-                current_marker='o'
-            else :
-                current_marker=markers[index]
-
-            if colors is None :
-                current_color="black"
-            else :
-                current_color=colors[index]
-
-            if facecolor_list is not None :
-                current_facecolor=facecolor_list[index]
-
-            if index==0 :
-                temp_mass_df =self.getDict(name)["Mass"]["total"]["upDownUnc_meanValue"]
-                temp_pt_df   =self.combinedPtDataFrame(name)
-
-            else :
-                if objects_to_plot[index-1].useTUnfoldBin :
-                    temp_mass_df=objects_to_plot[index-1].getDict(name)["Mass"]["total"]["upDownUnc_meanValue"]
-                    temp_pt_df=objects_to_plot[index-1].combinedPtDataFrame(name)
+                if markers is None :
+                    current_marker='o'
                 else :
-                    temp_mass_df, temp_pt_df = objects_to_plot[index-1].combinedMassPtDataFrame(name)
+                    current_marker=markers[index]
 
-            temp_mass_total_up =   np.sqrt(np.square(temp_mass_df["total_Up"]) + np.square(temp_mass_df["stat_error"]))
-            temp_mass_total_down = np.sqrt(np.square(temp_mass_df["total_Down"]) + np.square(temp_mass_df["stat_error"]))
+                if colors is None :
+                    current_color="black"
+                else :
+                    current_color=colors[index]
 
-            temp_pt_total_up =   np.sqrt(np.square(temp_pt_df["total_Up"]) + np.square(temp_pt_df["stat_error"]))
-            temp_pt_total_down = np.sqrt(np.square(temp_pt_df["total_Down"]) + np.square(temp_pt_df["stat_error"]))
+                if facecolor_list is not None :
+                    current_facecolor=facecolor_list[index]
 
-            mass_systematic=self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
-            pt_systematic=self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
+                if index==0 :
+                    temp_mass_df =self.getDict(name)["Mass"]["total"]["upDownUnc_meanValue"]
+                    temp_pt_df   =self.combinedPtDataFrame(name)
 
-            if index==0 or objects_to_plot[index-1].useTUnfoldBin :
-
-                if ratios == False :
-                    ax.errorbar(temp_mass_df["mean"], temp_pt_df["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=0.5, ms = 4)
-
-                    if index == 0 :
-                        allMeanMassDF = temp_mass_df.copy(deep=True)
-                        allErrorMassList = mass_systematic.copy()
-
-                        allMeanPtDF = temp_pt_df.copy(deep=True)
-                        allErrorPtList = pt_systematic.copy()
+                else :
+                    if objects_to_plot[index-1].useTUnfoldBin :
+                        temp_mass_df=objects_to_plot[index-1].getDict(name)["Mass"]["total"]["upDownUnc_meanValue"]
+                        temp_pt_df=objects_to_plot[index-1].combinedPtDataFrame(name)
                     else :
-                        allMeanMassDF.append(temp_mass_df)
-                        np.append(allErrorMassList[0], mass_systematic[0])
-                        np.append(allErrorMassList[1], mass_systematic[1])
+                        temp_mass_df, temp_pt_df = objects_to_plot[index-1].combinedMassPtDataFrame(name)
 
-                        allMeanPtDF.append(temp_pt_df)
-                        np.append(allErrorPtList[0], pt_systematic[0])
-                        np.append(allErrorPtList[1], pt_systematic[1])
+                temp_mass_total_up =   np.sqrt(np.square(temp_mass_df["total_Up"]) + np.square(temp_mass_df["stat_error"]))
+                temp_mass_total_down = np.sqrt(np.square(temp_mass_df["total_Down"]) + np.square(temp_mass_df["stat_error"]))
 
-                    if showRatio :
+                temp_pt_total_up =   np.sqrt(np.square(temp_pt_df["total_Up"]) + np.square(temp_pt_df["stat_error"]))
+                temp_pt_total_down = np.sqrt(np.square(temp_pt_df["total_Down"]) + np.square(temp_pt_df["stat_error"]))
+
+                mass_systematic=self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
+                pt_systematic=self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
+
+                if index==0 or objects_to_plot[index-1].useTUnfoldBin :
+
+                    if ratios == False :
+                        ax.errorbar(temp_mass_df["mean"], temp_pt_df["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=0.5, ms = 4)
+
                         if index == 0 :
-                            bottom.set_ylim(-5, 5)
-                            bottom.set_xlim(xmin,xmax)
-                            bottom.set_xlabel("Mean $M^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', x=1.0)
-                            bottom.set_ylabel("$\\delta \\barp_{T}$", fontsize=20, ha='center', y=0.5)
-                            bottom.set_xscale("log")
-                            bottom.tick_params(bottom=True, top=True, left=True, right=True, which='both', direction='in')
-                            bottom.tick_params(length=10, which='major')
-                            bottom.tick_params(length=5, which='minor')
-                            bottom.xaxis.set_minor_formatter(FormatStrFormatter("%.0f"))
-                            bottom.axhline(0., color='black', linewidth=1, linestyle="--")
+                            allMeanMassDF = temp_mass_df.copy(deep=True)
+                            allErrorMassList = mass_systematic.copy()
 
-                            denominator_mass = temp_mass_df["mean"]
-                            denominator_pt = temp_pt_df["mean"]
-                            denominator_mass_err = mass_systematic
-                            denominator_pt_err = pt_systematic
-
+                            allMeanPtDF = temp_pt_df.copy(deep=True)
+                            allErrorPtList = pt_systematic.copy()
                         else :
+                            allMeanMassDF.append(temp_mass_df)
+                            np.append(allErrorMassList[0], mass_systematic[0])
+                            np.append(allErrorMassList[1], mass_systematic[1])
 
-                            print("draw bottom")
-                            temp_ratio = temp_pt_df["mean"] - denominator_pt
-                            bottom.errorbar(temp_mass_df["mean"], temp_ratio, xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
-                else :
-                    # comparison to ratio method
-                    temp_pt_df_nominator = nominators[index].combinedPtDataFrame("SigMC")
-                    temp_mass_df_nominator =  nominators[index].getDict("SigMC")["Mass"]["total"]["upDownUnc_meanValue"]
+                            allMeanPtDF.append(temp_pt_df)
+                            np.append(allErrorPtList[0], pt_systematic[0])
+                            np.append(allErrorPtList[1], pt_systematic[1])
 
-                    if index==0 :
-                        temp_pt_df_denominator = self.combinedPtDataFrame("SigMC")
-                        temp_mass_df_denominator = self.getDict("SigMC")["Mass"]["total"]["upDownUnc_meanValue"]
+                        if showRatio :
+                            if index == 0 :
+                                bottom.set_ylim(-5, 5)
+                                bottom.set_xlim(xmin,xmax)
+                                bottom.set_xlabel("Mean $M^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', x=1.0)
+                                bottom.set_ylabel("$\\delta \\barp_{T}$", fontsize=20, ha='center', y=0.5)
+                                bottom.set_xscale("log")
+                                bottom.tick_params(bottom=True, top=True, left=True, right=True, which='both', direction='in')
+                                bottom.tick_params(length=10, which='major')
+                                bottom.tick_params(length=5, which='minor')
+                                bottom.xaxis.set_minor_formatter(FormatStrFormatter("%.0f"))
+                                bottom.axhline(0., color='black', linewidth=1, linestyle="--")
+
+                                denominator_mass = temp_mass_df["mean"]
+                                denominator_pt = temp_pt_df["mean"]
+                                denominator_mass_err = mass_systematic
+                                denominator_pt_err = pt_systematic
+
+                            else :
+
+                                print("draw bottom")
+                                temp_ratio = temp_pt_df["mean"] - denominator_pt
+                                bottom.errorbar(temp_mass_df["mean"], temp_ratio, xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
                     else :
-                        temp_pt_df_denominator = objects_to_plot[index-1].combinedPtDataFrame("SigMC")
-                        temp_mass_df_denominator =  objects_to_plot[index-1].getDict("SigMC")["Mass"]["total"]["upDownUnc_meanValue"] 
+                        # comparison to ratio method
+                        temp_pt_df_nominator = nominators[index].combinedPtDataFrame("SigMC")
+                        temp_mass_df_nominator =  nominators[index].getDict("SigMC")["Mass"]["total"]["upDownUnc_meanValue"]
 
-                    temp_pt_df_ratio = temp_pt_df_nominator["mean"]/ temp_pt_df_denominator["mean"]
-                    temp_mass_df_ratio = temp_mass_df_nominator["mean"]/ temp_mass_df_denominator["mean"]
-                    #ax.errorbar(temp_mass_df["mean"], temp_pt_df_ratio, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
-                    ax.errorbar(temp_mass_df_ratio * temp_mass_df["mean"], temp_pt_df_ratio * temp_pt_df["mean"], 
-                                fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
+                        if index==0 :
+                            temp_pt_df_denominator = self.combinedPtDataFrame("SigMC")
+                            temp_mass_df_denominator = self.getDict("SigMC")["Mass"]["total"]["upDownUnc_meanValue"]
+                        else :
+                            temp_pt_df_denominator = objects_to_plot[index-1].combinedPtDataFrame("SigMC")
+                            temp_mass_df_denominator =  objects_to_plot[index-1].getDict("SigMC")["Mass"]["total"]["upDownUnc_meanValue"] 
 
-                    # results from unfolding method
-                    temp_pt_df_unfolding = nominators[index].combinedPtDataFrame("Data")
-                    temp_mass_df_unfolding = nominators[index].getDict("Data")["Mass"]["total"]["upDownUnc_meanValue"]
+                        temp_pt_df_ratio = temp_pt_df_nominator["mean"]/ temp_pt_df_denominator["mean"]
+                        temp_mass_df_ratio = temp_mass_df_nominator["mean"]/ temp_mass_df_denominator["mean"]
+                        #ax.errorbar(temp_mass_df["mean"], temp_pt_df_ratio, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
+                        ax.errorbar(temp_mass_df_ratio * temp_mass_df["mean"], temp_pt_df_ratio * temp_pt_df["mean"], 
+                                    fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
 
-                    temp_mass_total_up =   np.sqrt(np.square(temp_mass_df_unfolding["total_Up"]) + np.square(temp_mass_df_unfolding["stat_error"]))
-                    temp_mass_total_down = np.sqrt(np.square(temp_mass_df_unfolding["total_Down"]) + np.square(temp_mass_df_unfolding["stat_error"]))
+                        # results from unfolding method
+                        temp_pt_df_unfolding = nominators[index].combinedPtDataFrame("Data")
+                        temp_mass_df_unfolding = nominators[index].getDict("Data")["Mass"]["total"]["upDownUnc_meanValue"]
 
-                    temp_pt_total_up =   np.sqrt(np.square(temp_pt_df_unfolding["total_Up"]) + np.square(temp_pt_df_unfolding["stat_error"]))
-                    temp_pt_total_down = np.sqrt(np.square(temp_pt_df_unfolding["total_Down"]) + np.square(temp_pt_df_unfolding["stat_error"]))
+                        temp_mass_total_up =   np.sqrt(np.square(temp_mass_df_unfolding["total_Up"]) + np.square(temp_mass_df_unfolding["stat_error"]))
+                        temp_mass_total_down = np.sqrt(np.square(temp_mass_df_unfolding["total_Down"]) + np.square(temp_mass_df_unfolding["stat_error"]))
 
-                    mass_systematic=self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
-                    pt_systematic=self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
+                        temp_pt_total_up =   np.sqrt(np.square(temp_pt_df_unfolding["total_Up"]) + np.square(temp_pt_df_unfolding["stat_error"]))
+                        temp_pt_total_down = np.sqrt(np.square(temp_pt_df_unfolding["total_Down"]) + np.square(temp_pt_df_unfolding["stat_error"]))
 
-                    current_facecolor = current_color
-                    ax.errorbar(temp_mass_df_unfolding["mean"], temp_pt_df_unfolding["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
+                        mass_systematic=self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
+                        pt_systematic=self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
 
-            else :
+                        current_facecolor = current_color
+                        ax.errorbar(temp_mass_df_unfolding["mean"], temp_pt_df_unfolding["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=1., ms = 4)
+
+                else :
     
-                ax.plot(temp_mass_df["mean"], temp_pt_df["mean"], color=current_facecolor, linewidth=0.5)
-                ax.fill_between(temp_mass_df["mean"], temp_pt_df["mean"]-temp_pt_total_up, temp_pt_df["mean"]+temp_pt_total_up, facecolor=current_facecolor, alpha=0.2)
+                    ax.plot(temp_mass_df["mean"], temp_pt_df["mean"], color=current_facecolor, linewidth=0.5)
+                    ax.fill_between(temp_mass_df["mean"], temp_pt_df["mean"]-temp_pt_total_up, temp_pt_df["mean"]+temp_pt_total_up, facecolor=current_facecolor, alpha=0.2)
 
-            print(label_name)
-            #print(temp_mass_df["mean"].append(temp_pt_df["mean"], ignore_index = True))
-            d = {'mean mass': temp_mass_df["mean"].values, "mean mass stat": temp_mass_df["stat_error"], "mean mass sys": temp_mass_df["total_Up"], 
-                 'mean pt': temp_pt_df["mean"].values, "mean pt stat": temp_pt_df["stat_error"], "mean pt sys": temp_pt_df["total_Up"]}
-            print(pd.DataFrame(data=d))
+                print(label_name)
+                #print(temp_mass_df["mean"].append(temp_pt_df["mean"], ignore_index = True))
+                d = {'mean mass': temp_mass_df["mean"].values, "mean mass stat": temp_mass_df["stat_error"], "mean mass sys": temp_mass_df["total_Up"], 
+                     'mean pt': temp_pt_df["mean"].values, "mean pt stat": temp_pt_df["stat_error"], "mean pt sys": temp_pt_df["total_Up"]}
+                print(pd.DataFrame(data=d))
 
-        if do_linear_fit[index] :
-            if isData :
-                self.doLogLinearFit(ax, allMeanMassDF, allMeanPtDF, allErrorMassList, allErrorPtList, "black")
+                if do_linear_fit[index] :
+                    if isData :
+                        self.doLogLinearFit(ax, allMeanMassDF, allMeanPtDF, allErrorMassList, allErrorPtList, "black")
 
         if showCDF :
             
@@ -2033,6 +2036,60 @@ class ISRPlotter :
                 mass_systematic=self.makeErrorNumpy(cdf_muon_mass_tot, cdf_muon_mass_tot, fromDF=False) 
                 pt_systematic=self.makeErrorNumpy(cdf_muon_pt_tot, cdf_muon_pt_tot, fromDF=False) 
                 self.doLogLinearFit(ax, cdf_muon_mass, cdf_muon_pt, mass_systematic, pt_systematic, "blue", useDF=False, printPar=False) 
+
+
+        if showCMS : 
+
+            # Muon
+            cms_muon_mass      = [49.32, 73.62, 91.23, 117.33, 240.16, 427.27]
+            cms_muon_mass_stat = [0.2, 0.01, 0.00, 0.03, 0.23, 1.75]
+            cms_muon_mass_sys  = [0.05, 0.02, 0.08, 0.05, 0.49, 6.05]
+            cms_muon_mass_tot  = np.sqrt(np.square(cms_muon_mass_stat)) + np.sqrt(np.square(cms_muon_mass_sys))
+            #cms_muon_mass_tot  = self.makeErrorNumpy(cms_muon_mass_tot, -1. * cms_muon_mass_tot, False)
+
+            cms_electron_mass      = [56.39, 73.69, 91.09, 116.89, 240.91, 428.18]
+            cms_electron_mass_stat = [0.01, 0.01, 0.0, 0.04, 0.25, 1.77]
+            cms_electron_mass_sys  = [0.03, 0.04, 0.06, 0.05, 0.22, 1.14]
+            cms_electron_mass_tot  = np.sqrt(np.square(cms_electron_mass_stat)) + np.sqrt(np.square(cms_electron_mass_sys))
+            #cms_electron_mass_tot  = self.makeErrorNumpy(cms_electron_mass_tot, -1. * cms_electron_mass_tot, False)
+
+            # Electron
+            cms_muon_pt      = [13.57, 16.62, 18.33, 20.04, 24.75, 27.44]
+            cms_muon_pt_stat = [0.03, 0.03, 0.01, 0.03, 0.19, 0.34]
+            cms_muon_pt_sys  = [0.11, 0.06, 0.04, 0.15, 0.39, 1.69]
+            cms_muon_pt_tot  = np.sqrt(np.square(cms_muon_pt_stat)) + np.sqrt(np.square(cms_muon_pt_sys))
+            #cms_muon_pt_tot  = self.makeErrorNumpy(cms_muon_pt_tot, -1. * cms_muon_pt_tot, False)
+
+            cms_electron_pt      = [14.76, 16.85, 18.37, 20.39, 25.91, 28.02]
+            cms_electron_pt_stat = [0.06, 0.04, 0.01, 0.03, 0.19, 0.41]
+            cms_electron_pt_sys  = [0.14, 0.12, 0.05, 0.12, 0.42, 1.27]
+            cms_electron_pt_tot  = np.sqrt(np.square(cms_electron_pt_stat)) + np.sqrt(np.square(cms_electron_pt_sys))
+            #cms_electron_pt_tot  = self.makeErrorNumpy(cms_electron_pt_tot, -1. * cms_electron_pt_tot, False)
+
+            cms_combined_pt      = [13.57, 14.76, 16.65, 18.35,20.26, 25.29, 27.93]
+            cms_combined_pt_stat = [0.03, 0.06, 0.03, 0.01, 0.02, 0.13, 0.35]
+            cms_combined_pt_sys  = [0.11, 0.14, 0.07, 0.04, 0.11, 0.33, 1.27]
+            cms_combined_pt_tot  = np.sqrt(np.square(cms_combined_pt_stat)) + np.sqrt(np.square(cms_combined_pt_sys))
+
+            cms_combined_mass      = [49.32, 56.39,73.63, 91.10,117.18, 240.71, 428.09]
+            cms_combined_mass_stat = [0.2, 0.01,0.01,0.00, 0.02, 0.19, 1.61]
+            cms_combined_mass_sys  = [0.05, 0.03,0.02,0.06, 0.05, 0.22, 1.20]
+            cms_combined_mass_tot  = np.sqrt(np.square(cms_combined_mass_stat)) + np.sqrt(np.square(cms_combined_mass_sys))
+
+            ax.errorbar(cms_combined_mass, cms_combined_pt, xerr=cms_combined_mass_tot, yerr=cms_combined_pt_tot, fmt="s--", color="black", mfc="none", label="CMS combined", linewidth=0.5)
+            mass_systematic=self.makeErrorNumpy(cms_combined_mass_tot, cms_combined_mass_tot, fromDF=False) 
+            pt_systematic=self.makeErrorNumpy(cms_combined_pt_tot, cms_combined_pt_tot, fromDF=False) 
+            self.doLogLinearFit(ax, cms_combined_mass, cms_combined_pt, mass_systematic, pt_systematic, "black", useDF=False, printPar=True) 
+
+            ax.errorbar(cms_electron_mass, cms_electron_pt, xerr=cms_electron_mass_tot, yerr=cms_electron_pt_tot, fmt="s", color="blue", mfc="none", label="CMS electron", linewidth=0.5)
+            mass_systematic=self.makeErrorNumpy(cms_electron_mass_tot, cms_electron_mass_tot, fromDF=False) 
+            pt_systematic=self.makeErrorNumpy(cms_electron_pt_tot, cms_electron_pt_tot, fromDF=False) 
+            #self.doLogLinearFit(ax, cms_electron_mass, cms_electron_pt, mass_systematic, pt_systematic, "blue", useDF=False, printPar=False) 
+
+            ax.errorbar(cms_muon_mass, cms_muon_pt, xerr=cms_muon_mass_tot, yerr=cms_muon_pt_tot, fmt="s", color="red", mfc="none", label="CMS muon", linewidth=0.5)
+            mass_systematic=self.makeErrorNumpy(cms_muon_mass_tot, cms_muon_mass_tot, fromDF=False) 
+            pt_systematic=self.makeErrorNumpy(cms_muon_pt_tot, cms_muon_pt_tot, fromDF=False) 
+            #self.doLogLinearFit(ax, cms_muon_mass, cms_muon_pt, mass_systematic, pt_systematic, "blue", useDF=False, printPar=False) 
 
             
 
