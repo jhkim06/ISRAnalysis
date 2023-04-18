@@ -82,7 +82,6 @@ class ISRAnalysis:
             model_sys_file_path = ""
             
         # Create ISRUnfold object
-        #
         self.unfold  = rt.ISRUnfold(self.unfold_name, self.channel, int(self.year), self.mode, doInputStat_, doRMStat_, ignoreBinZero_, False, self.var, self.outDirPath,   model_sys_file_path, doModelUnc_, self.density)
         self.unfold.setBias(self.bias)
         

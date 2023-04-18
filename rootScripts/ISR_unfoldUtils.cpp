@@ -890,6 +890,7 @@ void ISRUnfold::setPartialRegularize2D(TUnfold::ERegMode partialRegMode, double 
 
     int istart=binningCoarse->GetGlobalBinNumber(startPt, startMass);
     int iend=binningCoarse->GetGlobalBinNumber(endPt, endMass);
+    
     //int iend=binningCoarse->GetGlobalBinNumber(50-0.01,320);
     //unfold->RegularizeBins(istart, 1, iend-istart+1, TUnfoldV17::kRegModeSize);
     //unfold->RegularizeBins(istart, 1, iend-istart+1, TUnfoldV17::kRegModeDerivative);
@@ -899,7 +900,6 @@ void ISRUnfold::setPartialRegularize2D(TUnfold::ERegMode partialRegMode, double 
     std::vector<TString>::iterator it = sysVector.begin();
     while(it != sysVector.end())
     {
-
         systematicTUnfold[*it]->RegularizeBins(istart, 1, iend-istart+1, partialRegMode); 
         it++;
     }
@@ -954,9 +954,32 @@ void ISRUnfold::doISRUnfold(bool partialReg)
     topDir->cd();
 
     // No regularisation
-    if(regMode == TUnfold::kRegModeNone && !partialReg)
+    if(regMode == TUnfold::kRegModeNone)
     {
-        nominalTUnfold->DoUnfold(tau);
+        if (partialReg) {
+            
+            //setPartialRegularize2D(TUnfold::kRegModeCurvature, 200., 0., 1000., 100.);
+            setPartialRegularize2D(TUnfold::kRegModeCurvature, 320., 0., 1000., 100.);
+            Int_t nScan=1000;
+            Double_t tauMin = 1e-5; //If tauMin=tauMax, TUnfold automatically chooses a range
+            Double_t tauMax = 1e-1; //Not certain how they choose the range
+            
+            // L-curve scan
+            // much senstive to tauMin and tauMax when using ScanLcurve
+            iBest_nominal=nominalTUnfold->ScanLcurve(nScan,tauMin,tauMax,&lCurve,&logTauX,&logTauY);
+            //cout<< "tau=" << nominalTUnfold->GetTau() << endl;
+            //cout<<"chi**2="<<nominalTUnfold->GetChi2A()<<"+"<<nominalTUnfold->GetChi2L()<<" / "<<nominalTUnfold->GetNdf()<<"\n";
+            
+            // Tau scan
+            //TSpline *rhoScan=0;
+            //nominalTUnfold->ScanTau(nScan, tauMin, tauMax, &rhoScan, TUnfoldDensity::kEScanTauRhoAvg);
+            //cout << "tau: " << nominalTUnfold->GetTau() << endl;
+            
+            tau = nominalTUnfold->GetTau();
+        }
+        else {
+            nominalTUnfold->DoUnfold(tau);
+        }
         /*
         TH1D* hProjectedTruth = (TH1D*) hResponseM->ProjectionX("histo_DY_temp", 0, -1, "e");
 
@@ -989,13 +1012,13 @@ void ISRUnfold::doISRUnfold(bool partialReg)
         delete hProjectedTruth;
         */
     }
-    else
+    else // apply regularization for all bins
     {
-        // ScanLcurve
         Int_t nScan=100;
         Double_t tauMin = 1e-5; //If tauMin=tauMax, TUnfold automatically chooses a range
         Double_t tauMax = 1.; //Not certain how they choose the range
         
+        // ScanLcurve
         //iBest_nominal=nominalTUnfold->ScanLcurve(nScan,tauMin,tauMax,&lCurve,&logTauX,&logTauY);
         //tau=nominalTUnfold->GetTau(); // Use this tau for systematic unfolding
         //cout<< "tau=" << nominalTUnfold->GetTau() << endl;
@@ -1202,18 +1225,6 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString binDef, TString filePath_
 
     hFullPhaseData = nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false);
     hFullPhaseData->Multiply(hAcceptance);
-
-    //int itemp = binningCoarse->GetGlobalBinNumber(2);
-    //double current_num = hFullPhaseData->GetBinContent(itemp);
-    //hFullPhaseData->SetBinContent(itemp, current_num * 1.3);
-
-    //itemp = binningCoarse->GetGlobalBinNumber(4);
-    //current_num = hFullPhaseData->GetBinContent(itemp);
-    //hFullPhaseData->SetBinContent(itemp, current_num * 1.3);
-
-    //itemp = binningCoarse->GetGlobalBinNumber(10);
-    //current_num = hFullPhaseData->GetBinContent(itemp);
-    //hFullPhaseData->SetBinContent(itemp, current_num * 1.2);
 
     varDir->cd();
     hFullPhaseData->Write();

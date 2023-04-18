@@ -29,10 +29,12 @@ from scipy import optimize
 dashes = "--------------------------------------------------------------------------------"
 # root TH1 to DataFrame and plot using matplotlib
 class ISRPlotter :
-    def __init__(self, inputHistFilePath, jasonConfigFilePath, doSystematic=False, verbose=True) :
+    def __init__(self, inputHistFilePath, jasonConfigFilePath, doSystematic=False, verbose=True, setQuantile=False) :
 
         print(dashes)
         print("CREATE ISRPlotter......")
+
+        self.setQuantile = setQuantile
 
         self.labels_list = []
         self.plots_list = []
@@ -60,8 +62,8 @@ class ISRPlotter :
 
         self.nSystematics = 0 # Number of systematics
         self.systematic_marker={
-            "IsoSF":"o", "IdSF":"o", "recoSF":"o", "trgSF":"o", "trgDZSF":"o", "PU":"o", "bveto":"v", "L1Prefire":"o", "Unfold": "^", "LepScale": "<", "LepRes": ">", 
-            "Scale": "*", "AlphaS": "+", "PDF": "X"
+            "IsoSF":"o", "IdSF":"o", "recoSF":"o", "trgSF":"o", "trgDZSF":"o", "PU":"o", "bveto":"v", "L1Prefire":"o", "Unfold": "^", "LepMomScale": "<", "LepMomRes": ">", 
+            "Scale": "*", "AlphaS": "+", "PDF": "X", "UnfoldingMatrix": "o", "fsr" : "o"
         }
 
         self.lumi={"2016": "35.9/fb", "2017": "41.5/fb", "2018": "59.7/fb"}
@@ -297,6 +299,11 @@ class ISRPlotter :
                 self.calculateCombinedUnc(histType, "theory", "upDownUnc_meanValue")
                 self.calculateCombinedUnc(histType, "measurement", "upDownUnc_meanValue")
 
+                if self.setQuantile :
+                    self.calculateCombinedUnc(histType, "total", "upDownUnc_qValue", True)
+                    self.calculateCombinedUnc(histType, "theory", "upDownUnc_qValue", True)
+                    self.calculateCombinedUnc(histType, "measurement", "upDownUnc_qValue", True)
+
         end_time = time.time()
         print("DONE")
         print(dashes)
@@ -439,9 +446,17 @@ class ISRPlotter :
                 # low mass cut, high mass cut, mean value
                 # For Mass, make a DataFrame for all the mass bins
                 # For pT, make a DataFrame for a mass bin
+
+                q = 0.7
                 if self.useTUnfoldBin :
                     out_dict[variable][sample]["rawUnc_meanValue"]    = self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
                     out_dict[variable][sample]["upDownUnc_meanValue"] = self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
+
+                    # quantile
+                    if "Pt" in variable and self.setQuantile: 
+                        #print("call createQuantileDataFrame")
+                        out_dict[variable][sample]["rawUnc_qValue"]    = self.createQuantileDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"], q, True)
+                        out_dict[variable][sample]["upDownUnc_qValue"] = self.createQuantileDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"], q, True)
 
                 for sysCategory in self.systematics.keys() :
                     for sysName, postfixs in self.systematics[sysCategory].items() :
@@ -451,16 +466,30 @@ class ISRPlotter :
                         #print(" systematic name {} number of variations {} ".format(sysName, len(postfixs)))
                         #print(" Set differences....")
 
+                        # temp dictionary
+                        temp_rawUnc_dict = {}
+                        temp_rawUnc_meanValue_dict = {}
+                        if self.setQuantile :
+                            temp_rawUnc_qValue_dict = {}
+
                         for postfix in postfixs :
 
                             if "fsr" not in sysName :
-                                out_dict[variable][sample]["rawUnc"][sysName+"_"+postfix]= \
+
+                                temp_rawUnc_dict[sysName+"_"+postfix] = \
                                 in_dict[variable][sample][sysName][postfix]["DataFrame"].content-in_dict[variable][sample]["Nominal"]["Nominal"]["DataFrame"].content
 
                                 if self.useTUnfoldBin :
                                     temp_df=self.createMeanDataFrame(variable, in_dict[variable][sample][sysName][postfix]["TH1"])
-                                    out_dict[variable][sample]["rawUnc_meanValue"][sysName+"_"+postfix]= \
+
+                                    temp_rawUnc_meanValue_dict[sysName+"_"+postfix] = \
                                     temp_df["mean"]-out_dict[variable][sample]["rawUnc_meanValue"]["mean"]
+
+                                    if "Pt" in variable and self.setQuantile:
+                                        temp_quantile_df=self.createQuantileDataFrame(variable, in_dict[variable][sample][sysName][postfix]["TH1"], q)
+
+                                        temp_rawUnc_qValue_dict[sysName+"_"+postfix] = \
+                                        temp_quantile_df["q_"+str(q)]-out_dict[variable][sample]["rawUnc_qValue"]["q_"+str(q)]
 
                             else :
                                 current_index=postfixs.index(postfix)
@@ -469,14 +498,36 @@ class ISRPlotter :
                                 if current_index == 0 : the_other_postfix=postfixs[1]
                                 else : the_other_postfix=postfixs[0]
 
-                                out_dict[variable][sample]["rawUnc"][sysName+"_"+postfix]= \
+                                #out_dict[variable][sample]["rawUnc"][sysName+"_"+postfix]= \
+                                #in_dict[variable][sample][sysName][postfix]["DataFrame"].content-in_dict[variable][sample][sysName][the_other_postfix]["DataFrame"].content
+
+                                temp_rawUnc_dict[sysName+"_"+postfix] = \
                                 in_dict[variable][sample][sysName][postfix]["DataFrame"].content-in_dict[variable][sample][sysName][the_other_postfix]["DataFrame"].content
 
                                 if self.useTUnfoldBin :
                                     temp_df1=self.createMeanDataFrame(variable, in_dict[variable][sample][sysName][postfix]["TH1"])
                                     temp_df2=self.createMeanDataFrame(variable, in_dict[variable][sample][sysName][the_other_postfix]["TH1"])
-                                    out_dict[variable][sample]["rawUnc_meanValue"][sysName+"_"+postfix]= \
+
+                                    temp_rawUnc_meanValue_dict[sysName+"_"+postfix] = \
                                     temp_df1["mean"]-temp_df2["mean"]
+
+                                    if "Pt" in variable and self.setQuantile:
+                                        temp_quantile_df1=self.createQuantileDataFrame(variable, in_dict[variable][sample][sysName][postfix]["TH1"], q)
+                                        temp_quantile_df2=self.createQuantileDataFrame(variable, in_dict[variable][sample][sysName][the_other_postfix]["TH1"], q)
+
+                                        temp_rawUnc_qValue_dict[sysName+"_"+postfix] = \
+                                        temp_quantile_df1["q_"+str(q)]-temp_quantile_df2["q_"+str(q)]
+
+                        temp_rawUnc_df = pd.DataFrame(temp_rawUnc_dict)
+                        temp_rawUnc_meanValue_df = pd.DataFrame(temp_rawUnc_meanValue_dict)
+                        if self.setQuantile :
+                            temp_rawUnc_qValue_df = pd.DataFrame(temp_rawUnc_qValue_dict)
+
+                        out_dict[variable][sample]["rawUnc"] = pd.concat([out_dict[variable][sample]["rawUnc"], temp_rawUnc_df], axis = 1)
+                        out_dict[variable][sample]["rawUnc_meanValue"] = pd.concat([out_dict[variable][sample]["rawUnc_meanValue"], temp_rawUnc_meanValue_df], axis = 1)
+
+                        if "Pt" in variable and self.setQuantile:
+                            out_dict[variable][sample]["rawUnc_qValue"] = pd.concat([out_dict[variable][sample]["rawUnc_qValue"], temp_rawUnc_qValue_df], axis = 1)
 
                         #print(" Set up/down....")
 
@@ -490,6 +541,12 @@ class ISRPlotter :
                             np.sqrt(out_dict[variable][sample]["rawUnc_meanValue"].filter(like=sysName).var(axis=1))
                             out_dict[variable][sample]["upDownUnc_meanValue"][sysName+'_Down']=\
                             -1. * np.sqrt(out_dict[variable][sample]["rawUnc_meanValue"].filter(like=sysName).var(axis=1))
+
+                            if "Pt" in variable and self.setQuantile:
+                                out_dict[variable][sample]["upDownUnc_qValue"][sysName+'_Up']  =\
+                                np.sqrt(out_dict[variable][sample]["rawUnc_qValue"].filter(like=sysName).var(axis=1))
+                                out_dict[variable][sample]["upDownUnc_qValue"][sysName+'_Down']=\
+                                -1. * np.sqrt(out_dict[variable][sample]["rawUnc_qValue"].filter(like=sysName).var(axis=1))
 
                         else :
                             # Note sysName MUST BE UNIQUE
@@ -528,6 +585,23 @@ class ISRPlotter :
                                 out_dict[variable][sample]["upDownUnc_meanValue"][sysName+'_Up']  = temp_mean_symmetric_max
                                 out_dict[variable][sample]["upDownUnc_meanValue"][sysName+'_Down']= temp_mean_symmetric_min
 
+                                # for quantile
+                                if "Pt" in variable and self.setQuantile:
+                                    temp_quantile_max = out_dict[variable][sample]["rawUnc_qValue"].filter(regex=regex_).max(axis=1)
+                                    temp_quantile_min = out_dict[variable][sample]["rawUnc_qValue"].filter(regex=regex_).min(axis=1) 
+
+                                    if temp_quantile_max.equals(temp_quantile_min) :
+                                        temp_quantile_max = temp_quantile_max.abs()
+                                        temp_quantile_min = -1. * temp_quantile_min.abs() 
+
+                                    temp_quantile_max=temp_quantile_max.fillna(0)
+                                    temp_quantile_min=temp_quantile_min.fillna(0)
+
+                                    temp_quantile_symmetric_max = (temp_quantile_max.abs() + temp_quantile_min.abs()) / 2.
+                                    temp_quantile_symmetric_min = (temp_quantile_max.abs() + temp_quantile_min.abs()) / -2.
+
+                                    out_dict[variable][sample]["upDownUnc_qValue"][sysName+'_Up']  = temp_quantile_symmetric_max
+                                    out_dict[variable][sample]["upDownUnc_qValue"][sysName+'_Down']= temp_quantile_symmetric_min
 
 
     def createMeanDataFrame(self, variable, TH1_hist) :
@@ -574,13 +648,61 @@ class ISRPlotter :
 
                 return temp_df
 
-    
-    def calculateCombinedUnc(self, dictName="Data", sys_to_combine="total", column_name="upDownUnc") :
+    def createQuantileDataFrame(self, variable, TH1_hist, prob, set_stat = False) :
+
+        #if "Pt" in variable :
+        if not variable.isalpha() and self.useTUnfoldBin:
+            num_str = variable.split("__")[1]
+            nth_mass_bin = int(num_str)
+
+            temp_TH1_hist = TH1_hist.Clone("temp_TH1_hist") 
+            temp_TH1_hist.Scale(1., "width") # divide by binwidth
+        
+            length = 1
+            q = np.zeros(length)
+            prob = np.array([prob])
+            temp_TH1_hist.GetQuantiles(length, q, prob)
+
+            # stat
+            # 1000 toys
+            if set_stat : 
+                n_toys = 10
+                toy_quantiles = []
+                for i in range(n_toys) :
+                    #print(str(i) + " th toy")
+
+                    temp_toy = TH1_hist.Clone("temp_toy")
+                    temp_toy.Reset("ICESM")
+                    temp_toy.FillRandom(temp_TH1_hist, 100000)
+                    temp_toy.Scale(1., "width")
+
+                    temp_q = np.zeros(1)
+                    temp_toy.GetQuantiles(length, temp_q, prob)
+                    toy_quantiles.append(temp_q[0])
+                
+                stat_error = np.std(toy_quantiles)
+
+            else :
+                stat_error = 0.
+
+            temp_dict={"low mass cut": self.massBins[nth_mass_bin][0], "high mass cut": self.massBins[nth_mass_bin][1], "q_" + str(prob[0]): q[0], "stat_error": stat_error}
+            temp_df=pd.DataFrame([temp_dict], columns=['low mass cut','high mass cut','q_' + str(prob[0]), 'stat_error'])
+
+            del temp_TH1_hist
+
+            return temp_df
+
+    def calculateCombinedUnc(self, dictName="Data", sys_to_combine="total", column_name="upDownUnc", is_quantile = False) :
 
         in_dict=self.dfs[dictName]
 
         # total uncertainty (stat+sys), total theory, total measurement
         for variable in in_dict.keys() :
+
+            # for quantile, mass is not considered
+            if is_quantile : 
+                if "Pt" not in variable :
+                    continue
 
             for sample in in_dict[variable].keys() :
 
@@ -999,7 +1121,7 @@ class ISRPlotter :
             num_str = variable.split("__")[1]
             nth_bin = int(num_str)
             if not oneColumn :
-                top_axis.text(0.05, .9, "{:.0f}".format(self.massBins[nth_bin][0])  + "$ < M^{\mathit{"+channelName+"}} < $" + "{:.0f} GeV".format(self.massBins[nth_bin][1]),
+                top_axis.text(0.05, .8, "{:.0f}".format(self.massBins[nth_bin][0])  + "$ < M^{\mathit{"+channelName+"}} < $" + "{:.0f} GeV".format(self.massBins[nth_bin][1]),
                               fontsize='xx-large', transform=top_axis.transAxes, horizontalalignment='left')
 
         if variable == "Mass" :
@@ -1600,7 +1722,20 @@ class ISRPlotter :
             if nth_mass_bin == 0 :
                 combined_pt_df=in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy()
             else :
-                combined_pt_df=combined_pt_df.append(in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy(), ignore_index=True)
+                #combined_pt_df=combined_pt_df.append(in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy(), ignore_index=True)
+                combined_pt_df=pd.concat([combined_pt_df, in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy()], ignore_index=True)
+        return combined_pt_df
+
+    def combinedQuantilePtDataFrame(self, name="Data") :
+
+        in_df=self.dfs[name]
+
+        combined_pt_df = None
+        for nth_mass_bin in range(len(self.massBins)) :
+            if nth_mass_bin == 0 :
+                combined_pt_df=in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_qValue"].copy()
+            else :
+                combined_pt_df=combined_pt_df.append(in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_qValue"].copy(), ignore_index=True)
         return combined_pt_df
 
 
@@ -1842,7 +1977,8 @@ class ISRPlotter :
             channelName="ll";
 
         ax.set_xlabel("Mean $M^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', x=1.0)
-        ax.set_ylabel("Mean $p_{T}^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', y=1.0)
+        #ax.set_ylabel("Mean $p_{T}^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', y=1.0)
+        ax.set_ylabel("$p_{T}^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', y=1.0)
 
         if both_lepton :
             ax.set_xlabel("Mean $M^{ll}$ [GeV]", fontsize=20, ha='right', x=1.0)
@@ -1889,11 +2025,15 @@ class ISRPlotter :
                 if index==0 :
                     temp_mass_df =self.getDict(name)["Mass"]["total"]["upDownUnc_meanValue"]
                     temp_pt_df   =self.combinedPtDataFrame(name)
+                    if self.setQuantile : 
+                        temp_quantile_pt_df = self.combinedQuantilePtDataFrame(name)
 
                 else :
                     if objects_to_plot[index-1].useTUnfoldBin :
                         temp_mass_df=objects_to_plot[index-1].getDict(name)["Mass"]["total"]["upDownUnc_meanValue"]
                         temp_pt_df=objects_to_plot[index-1].combinedPtDataFrame(name)
+                        if self.setQuantile :
+                            temp_quantile_pt_df=objects_to_plot[index-1].combinedQuantilePtDataFrame(name)
                     else :
                         temp_mass_df, temp_pt_df = objects_to_plot[index-1].combinedMassPtDataFrame(name)
 
@@ -1906,10 +2046,21 @@ class ISRPlotter :
                 mass_systematic=self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
                 pt_systematic=self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
 
+                if self.setQuantile :
+
+                    temp_quantile_pt_total_up =   np.sqrt(np.square(temp_quantile_pt_df["total_Up"]) + np.square(temp_quantile_pt_df["stat_error"]))
+                    temp_quantile_pt_total_down = np.sqrt(np.square(temp_quantile_pt_df["total_Down"]) + np.square(temp_quantile_pt_df["stat_error"]))
+                    pt_quantile_systematic=self.makeErrorNumpy(temp_quantile_pt_total_up, temp_quantile_pt_total_down)
+
+                mass_systematic=self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
+                pt_systematic=self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
+
                 if index==0 or objects_to_plot[index-1].useTUnfoldBin :
 
                     if ratios == False :
                         ax.errorbar(temp_mass_df["mean"], temp_pt_df["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=0.5, ms = 4)
+                        if self.setQuantile :
+                            ax.errorbar(temp_mass_df["mean"], temp_quantile_pt_df["q_0.7"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc="none", label="q=0.7", linewidth=0.5, ms = 4)
 
                         if index == 0 :
                             allMeanMassDF = temp_mass_df.copy(deep=True)
@@ -1918,11 +2069,13 @@ class ISRPlotter :
                             allMeanPtDF = temp_pt_df.copy(deep=True)
                             allErrorPtList = pt_systematic.copy()
                         else :
-                            allMeanMassDF.append(temp_mass_df)
+                            #allMeanMassDF.append(temp_mass_df)
+                            allMeanMassDF=pd.concat([allMeanMassDF, temp_mass_df])
                             np.append(allErrorMassList[0], mass_systematic[0])
                             np.append(allErrorMassList[1], mass_systematic[1])
 
-                            allMeanPtDF.append(temp_pt_df)
+                            #allMeanPtDF.append(temp_pt_df)
+                            allMeanPtDF=pd.concat([allMeanPtDF, temp_pt_df])
                             np.append(allErrorPtList[0], pt_systematic[0])
                             np.append(allErrorPtList[1], pt_systematic[1])
 
@@ -2037,7 +2190,6 @@ class ISRPlotter :
                 pt_systematic=self.makeErrorNumpy(cdf_muon_pt_tot, cdf_muon_pt_tot, fromDF=False) 
                 self.doLogLinearFit(ax, cdf_muon_mass, cdf_muon_pt, mass_systematic, pt_systematic, "blue", useDF=False, printPar=False) 
 
-
         if showCMS : 
 
             # Muon
@@ -2054,19 +2206,19 @@ class ISRPlotter :
             #cms_electron_mass_tot  = self.makeErrorNumpy(cms_electron_mass_tot, -1. * cms_electron_mass_tot, False)
 
             # Electron
-            cms_muon_pt      = [13.57, 16.62, 18.33, 20.04, 24.75, 27.44]
+            cms_muon_pt      = [13.57, 16.62, 18.33, 20.04, 24.79, 26.80]
             cms_muon_pt_stat = [0.03, 0.03, 0.01, 0.03, 0.19, 0.34]
             cms_muon_pt_sys  = [0.11, 0.06, 0.04, 0.15, 0.39, 1.69]
             cms_muon_pt_tot  = np.sqrt(np.square(cms_muon_pt_stat)) + np.sqrt(np.square(cms_muon_pt_sys))
             #cms_muon_pt_tot  = self.makeErrorNumpy(cms_muon_pt_tot, -1. * cms_muon_pt_tot, False)
 
-            cms_electron_pt      = [14.76, 16.85, 18.37, 20.39, 25.91, 28.02]
+            cms_electron_pt      = [14.76, 16.85, 18.37, 20.39, 25.93, 27.66]
             cms_electron_pt_stat = [0.06, 0.04, 0.01, 0.03, 0.19, 0.41]
             cms_electron_pt_sys  = [0.14, 0.12, 0.05, 0.12, 0.42, 1.27]
             cms_electron_pt_tot  = np.sqrt(np.square(cms_electron_pt_stat)) + np.sqrt(np.square(cms_electron_pt_sys))
             #cms_electron_pt_tot  = self.makeErrorNumpy(cms_electron_pt_tot, -1. * cms_electron_pt_tot, False)
 
-            cms_combined_pt      = [13.57, 14.76, 16.65, 18.35,20.26, 25.29, 27.93]
+            cms_combined_pt      = [13.57, 14.76, 16.65, 18.35, 20.26, 25.31, 27.52]
             cms_combined_pt_stat = [0.03, 0.06, 0.03, 0.01, 0.02, 0.13, 0.35]
             cms_combined_pt_sys  = [0.11, 0.14, 0.07, 0.04, 0.11, 0.33, 1.27]
             cms_combined_pt_tot  = np.sqrt(np.square(cms_combined_pt_stat)) + np.sqrt(np.square(cms_combined_pt_sys))
@@ -2076,7 +2228,7 @@ class ISRPlotter :
             cms_combined_mass_sys  = [0.05, 0.03,0.02,0.06, 0.05, 0.22, 1.20]
             cms_combined_mass_tot  = np.sqrt(np.square(cms_combined_mass_stat)) + np.sqrt(np.square(cms_combined_mass_sys))
 
-            ax.errorbar(cms_combined_mass, cms_combined_pt, xerr=cms_combined_mass_tot, yerr=cms_combined_pt_tot, fmt="s--", color="black", mfc="none", label="CMS combined", linewidth=0.5)
+            ax.errorbar(cms_combined_mass, cms_combined_pt, xerr=cms_combined_mass_tot, yerr=cms_combined_pt_tot, fmt="s", color="black", mfc="none", label="CMS combined", linewidth=0.5)
             mass_systematic=self.makeErrorNumpy(cms_combined_mass_tot, cms_combined_mass_tot, fromDF=False) 
             pt_systematic=self.makeErrorNumpy(cms_combined_pt_tot, cms_combined_pt_tot, fromDF=False) 
             self.doLogLinearFit(ax, cms_combined_mass, cms_combined_pt, mass_systematic, pt_systematic, "black", useDF=False, printPar=True) 
@@ -2090,8 +2242,6 @@ class ISRPlotter :
             mass_systematic=self.makeErrorNumpy(cms_muon_mass_tot, cms_muon_mass_tot, fromDF=False) 
             pt_systematic=self.makeErrorNumpy(cms_muon_pt_tot, cms_muon_pt_tot, fromDF=False) 
             #self.doLogLinearFit(ax, cms_muon_mass, cms_muon_pt, mass_systematic, pt_systematic, "blue", useDF=False, printPar=False) 
-
-            
 
         if combined_result is not None :
 
