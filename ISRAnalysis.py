@@ -12,8 +12,6 @@ class HistType :
     unfInputHist = 0
     unfBkgHist = 1
     unfResMatrix = 2
-    
-
 
 class ISRAnalysis:
     
@@ -98,10 +96,10 @@ class ISRAnalysis:
 
         self.unfold.setUnfInputUnfSys()
 
-    def setInputHist(self, useMCInput = False, unfoldObj = None, dirName = "Detector", sys_type = "Type_0", sys_name = "", isFSR = False, useMadgraph = False, inputBinDef = None, inputHistName="", useAccept=True):
+    def setInputHist(self, useMCInput = False, unfoldObj = None, dirName = "ee2016", sys_type = "Type_0", sys_name = "", isFSR = False, useMadgraph = False, inputBinDef = None, inputHistName="", useAccept=True):
         
         input_hist_name = self.data_hist_name
-        hist_filekey_temp = "hist"
+        hist_filekey_temp = "Data"
         hist_postfix = self.makeSysHistPostfix(HistType.unfInputHist, sys_type, sys_name)
 
         if inputBinDef is not None :

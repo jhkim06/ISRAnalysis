@@ -446,11 +446,11 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     TH1::AddDirectory(kFALSE);
     TFile* filein = new TFile(filepath, "READ");
 
-    TString fullDirPath = dirName + "/" + var + "_ResMatrix_" + binDef + "/";
-    //cout << "ISRUnfold::setNominalRM fullDirPath : " << fullDirPath << endl;
+    //TString fullDirPath = dirName + "/" + var + "_ResMatrix_" + binDef + "/";
+    TString fullDirPath = dirName + "/";
 
-    TString Rec_binName = "Rec_"+var; //Fine_Coarse Fine_Fine Coarse_Coarse
-    TString Gen_binName = "Gen_"+var;
+    TString Rec_binName = var + "_smeared_bin"; //Fine_Coarse Fine_Fine Coarse_Coarse
+    TString Gen_binName = var + "_truth_bin";
     Rec_binName = fullDirPath + Rec_binName;
     Gen_binName = fullDirPath + Gen_binName;
 
@@ -460,8 +460,7 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
 
     // Set response matrix
     // First, get the response matrix
-    TH2* hmcGenRec = (TH2*)filein->Get(fullDirPath + "hmc" + var + "GenRec");
-    cout << fullDirPath + "hmc" + var + "GenRec" << endl;
+    TH2* hmcGenRec = (TH2*)filein->Get(fullDirPath + var + "_responseM");
 
     nominalTUnfold = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, densityMode, binningCoarse, binningFine);
     cout << "Used TUnfold version " << nominalTUnfold->GetTUnfoldVersion() << endl;
@@ -777,8 +776,9 @@ void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, T
     TFile* filein = new TFile(filepath);
     TH1* hRec = NULL;
     //cout << dirName+"/"+var+ "_" + binDef+"/"+histName << endl;
-    hRec = (TH1*)filein->Get(dirName+"/"+var+ "_" + binDef+"/"+histName + histPostfix);
+    hRec = (TH1*)filein->Get(dirName + "/" + var + "_smeared");
 
+    
     // Use DY MC as unfolding input, i.e. for simple closure test
     if(histName.Contains("DYJets"))
     {
