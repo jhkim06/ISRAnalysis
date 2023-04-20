@@ -69,320 +69,7 @@ void ISRUnfold::checkMatrixCond()
 */
 }
 
-void ISRUnfold::drawChi2Reco()
-{
-    double chi2 = 0.;
-    int ndf = 0;
-
-    TH1* hDataInput;
-    TH1* hSigMC;
-       
-    TString steering;
-    bool useAxis = true;
-    if(var=="Pt")
-        steering = "pt[O]"; 
-    else 
-        steering = "mass[UO]";
-
-    hDataInput = nominalTUnfold->GetInput("hDataInput", 0, 0, steering, useAxis);
-    hSigMC = (TH1D*) hResponseM->ProjectionY("hSigMC", 1, -1, "e");
-    hSigMC = binningFine->ExtractHistogram("hSigMC_extracted", hSigMC, 0, useAxis, steering);
-
-    for(int i=1;i<=hSigMC->GetNbinsX();i++)
-    {
-        ndf += 1.;
-        if(hDataInput->GetBinError(i) == 0)
-        {
-          std::cout << "unfolded " << i << " bin: " << hDataInput->GetBinContent(i) << std::endl;
-          std::cout << "error is zero in the " << i << " bin..." << std::endl;
-          std::cout << "so skip this bin" << std::endl;
-          continue;
-        }
-        // TODO add option to use input covariance matrix
-        double pull=(hDataInput->GetBinContent(i)-hSigMC->GetBinContent(i))/hDataInput->GetBinError(i);
-        //cout << "data: " << hDataInput->GetBinContent(i) << " mc: " << hSigMC->GetBinContent(i) << " data error: " << hDataInput->GetBinError(i) << endl;
-        chi2+= pull*pull;
-    }
-    
-    TCanvas* c1 = new TCanvas("c1", "c1", 800, 800);
-    c1->cd();
-    hDataInput->SetMarkerStyle(20);
-    hDataInput->Draw("p9e");
-    hSigMC->SetLineColor(kRed);
-    hSigMC->Draw("HIST SAME E");
-
-    TLegend *legRec=new TLegend(0.4,0.5,0.68,0.85);
-    legRec->AddEntry((TObject*)0,TString::Format("#chi^{2}=%.1f ndf=%d",chi2,ndf),"");
-    legRec->Draw();
-
-    TDirectory* varDirForReco;
-
-    varDirForReco=fUnfoldOut->GetDirectory("folded/"+var);
-    varDirForReco->cd();
-
-    c1->Write();
-    delete c1;
-}
-
-void ISRUnfold::drawChi2Truth()
-{
-
-    double chi2 = 0.;
-    int ndf  = 0;
-
-    TH1* hUnfoldedData; // 
-    TH1* hSigGen; // DY MC
-    TH2* hRho;
-
-    TString steering;
-    bool useAxis = true;
-    if(var=="Pt")
-        steering = "pt[O]"; 
-    else 
-        steering = "mass[UO]";
-
-    //TH1 *g_fcnHist=0;
-    TMatrixD *g_fcnMatrix=0;
-
-    //hUnfoldedData = nominalTUnfold->GetOutput("hUnfoldedData", 0, 0, steering, useAxis);
-    hUnfoldedData = (TH1*) fUnfoldOut->Get("unfolded/" + var + "/histo_Data");
-    hUnfoldedData = binningCoarse->ExtractHistogram("hUnfoldedData_extracted", hUnfoldedData, 0, useAxis, steering);
-    hSigGen = (TH1D*) hResponseM->ProjectionX("hSigGen", 0, -1, "e");
-
-    hSigGen = binningCoarse->ExtractHistogram("hSigGen_extracted", hSigGen, 0, useAxis, steering);
-    hRho = nominalTUnfold->GetRhoIJtotal("histRhoIJ", 0,0, steering, useAxis);
-/*
-    // FIXME check if "n" or "n+1"
-    int n = hUnfoldedData->GetNbinsX();
-    TMatrixDSym v(n);
-    for(int i=0;i<n;i++)
-    {
-       for(int j=0;j<n;j++)
-        {
-            v(i,j)=hRho->GetBinContent(i+1,j+1)*(hUnfoldedData->GetBinError(i+1)*hUnfoldedData->GetBinError(j+1));
-        }
-    }
-
-    TMatrixDSymEigen ev(v);
-    TMatrixD d(n,n);
-    TVectorD di(ev.GetEigenValues());
-    for(int i=0;i<n;i++) {
-       if(di(i)>0.0) {
-          d(i,i)=1./di(i);
-       } else {
-          cout<<"bad eigenvalue i="<<i<<" di="<<di(i)<<"\n";
-          exit(0);
-       }
-    }
-
-    TMatrixD O(ev.GetEigenVectors());
-    TMatrixD DOT(d,TMatrixD::kMultTranspose,O);
-    g_fcnMatrix=new TMatrixD(O,TMatrixD::kMult,DOT);
-    TMatrixD test(*g_fcnMatrix,TMatrixD::kMult,v);
-    int error=0;
-
-    for(int i=0;i<n;i++)
-    {
-        if(TMath::Abs(test(i,i)-1.0)>1.E-7)
-        {
-            error++;
-        }
-        for(int j=0;j<n;j++)
-        {
-            if(i==j) continue;
-            if(TMath::Abs(test(i,j)>1.E-7)) error++;
-        }
-    }
-*/
-    //// Calculate chi2
-    //for(int i=0;i<hUnfoldedData->GetNbinsX();i++)
-    //{
-    //    double di_=hUnfoldedData->GetBinContent(i+1)-hSigGen->GetBinContent(i+1);
-    //    if(g_fcnMatrix)
-    //    {
-    //        for(int j=0;j<hUnfoldedData->GetNbinsX();j++)
-    //        {
-    //            double dj=hUnfoldedData->GetBinContent(j+1)-hSigGen->GetBinContent(j+1);
-    //            chi2+=di_*dj*(*g_fcnMatrix)(i,j);
-    //        }
-    //    }
-    //    else
-    //    {
-    //        double pull=di_/hUnfoldedData->GetBinError(i+1);
-    //        chi2+=pull*pull;
-    //    }
-    //    ndf+=1;
-    //}
-
-    for(int i=1;i<=hUnfoldedData->GetNbinsX();i++)
-    {
-        ndf += 1;
-        if(hUnfoldedData->GetBinError(i) == 0)
-        {
-          std::cout << "unfolded " << i << " bin: " << hSigGen->GetBinContent(i) << std::endl;
-          std::cout << "error is zero in the " << i << " bin..." << std::endl;
-          std::cout << "so skip this bin" << std::endl;
-          continue;
-        }
-        // TODO add option to use input covariance matrix
-        double pull=(hSigGen->GetBinContent(i)-hUnfoldedData->GetBinContent(i))/hUnfoldedData->GetBinError(i);
-        //cout << "data: " << hSigGen->GetBinContent(i) << " mc: " << hUnfoldedData->GetBinContent(i) << " data error: " << hSigGen->GetBinError(i) << endl;
-        chi2+= pull*pull;
-    }
-
-    TCanvas* c1 = new TCanvas("c1", "c1", 800, 800);
-    c1->cd();
-    hUnfoldedData->SetMarkerStyle(20);
-    hUnfoldedData->Draw("p9e");
-    hSigGen->SetLineColor(kRed);
-    hSigGen->Draw("HIST SAME E");
-
-    TLegend *legRec=new TLegend(0.4,0.5,0.68,0.85);
-    legRec->AddEntry((TObject*)0,TString::Format("#chi^{2}=%.1f ndf=%d",chi2,ndf),"");
-    legRec->Draw();
-
-    TDirectory* varDir;
-
-    varDir=fUnfoldOut->GetDirectory("unfolded/"+var);
-    varDir->cd();
-
-    c1->Write();
-    delete c1;
-
-}
-
-double ISRUnfold::getSmearedChi2(TString filePath, TString dirName, TString steering, bool useAxis)
-{
-    double chi2 = 0.;
-    double ndf  = 0.;
-
-    TH1* hData; // Data - Bkg
-    TH1* hDY; // DY MC
-
-    TString DYHistName_ = "histo_DYJetsToMuMu";
-    if(channelName == "ee") DYHistName_ = "histo_DYJetsToEE";
-    hData = nominalTUnfold->GetInput("hData_"+var, 0, 0, steering, useAxis);
-    hDY =   getRawHist(filePath, dirName, DYHistName_, "Signal_"+var, steering, useAxis); ;
-
-    for(int i=1;i<=hDY->GetNbinsX();i++)
-    {
-        ndf += 1.;
-        if(hData->GetBinError(i) == 0)
-        {
-          std::cout << "unfolded " << i << " bin: " << hData->GetBinContent(i) << std::endl;
-          std::cout << "error is zero in the " << i << " bin..." << std::endl;
-          std::cout << "so skip this bin" << std::endl;
-          continue;
-        }
-        // TODO add option to use input covariance matrix
-        double pull=(hData->GetBinContent(i)-hDY->GetBinContent(i))/hData->GetBinError(i);
-        //cout << "data: " << hData->GetBinContent(i) << " mc: " << hDY->GetBinContent(i) << " data error: " << hData->GetBinError(i) << endl;
-        chi2+= pull*pull;
-    }
-    //cout << "chi^{2}, " << chi2 << endl;
-    return chi2;
-}
-
-double ISRUnfold::getUnfoldedChi2(TString steering, bool useAxis)
-{
-    double chi2 = 0.;
-    double ndf  = 0.;
-
-    TH1* hData; // Data - Bkg
-    TH1* hDY; // DY MC
-    TH2* hRho;
-
-    //TH1 *g_fcnHist=0;
-    TMatrixD *g_fcnMatrix=0;
-
-    hData = nominalTUnfold->GetOutput("hData_"+var, 0, 0, steering, useAxis);
-    hDY = nominalTUnfold->GetBias("hData_"+var, 0, 0, steering, useAxis);
-    hRho = nominalTUnfold->GetRhoIJtotal("histRho_chi_"+var, 0,0, steering, useAxis);
-
-    // FIXME check if "n" or "n+1"
-    int n = hData->GetNbinsX();
-    TMatrixDSym v(n);
-    for(int i=0;i<n;i++)
-    {
-       for(int j=0;j<n;j++)
-        {
-            v(i,j)=hRho->GetBinContent(i+1,j+1)*(hData->GetBinError(i+1)*hData->GetBinError(j+1));
-        }
-    }
-
-    TMatrixDSymEigen ev(v);
-    TMatrixD d(n,n);
-    TVectorD di(ev.GetEigenValues());
-    for(int i=0;i<n;i++) {
-       if(di(i)>0.0) {
-          d(i,i)=1./di(i);
-       } else {
-          cout<<"bad eigenvalue i="<<i<<" di="<<di(i)<<"\n";
-          exit(0);
-       }
-    }
-
-    TMatrixD O(ev.GetEigenVectors());
-    TMatrixD DOT(d,TMatrixD::kMultTranspose,O);
-    g_fcnMatrix=new TMatrixD(O,TMatrixD::kMult,DOT);
-    TMatrixD test(*g_fcnMatrix,TMatrixD::kMult,v);
-    int error=0;
-
-    for(int i=0;i<n;i++)
-    {
-        if(TMath::Abs(test(i,i)-1.0)>1.E-7)
-        {
-            error++;
-        }
-        for(int j=0;j<n;j++)
-        {
-            if(i==j) continue;
-            if(TMath::Abs(test(i,j)>1.E-7)) error++;
-        }
-    }
-
-
-    // Calculate chi2
-    for(int i=0;i<hData->GetNbinsX();i++)
-    {
-    
-        double di_=hData->GetBinContent(i+1)-hDY->GetBinContent(i+1);
-        if(g_fcnMatrix)
-        {
-            for(int j=0;j<hData->GetNbinsX();j++)
-            {
-                double dj=hData->GetBinContent(j+1)-hDY->GetBinContent(j+1);
-                chi2+=di_*dj*(*g_fcnMatrix)(i,j);
-            }
-        }
-        else
-        {
-            double pull=di_/hData->GetBinError(i+1);
-            chi2+=pull*pull;
-        }
-        ndf+=1.0;
-    }
-
-    //for(int i=1;i<=hDY->GetNbinsX();i++)
-    //{
-    //    ndf += 1.;
-    //    if(hData->GetBinError(i) == 0)
-    //    {
-    //      std::cout << "unfolded " << i << " bin: " << hData->GetBinContent(i) << std::endl;
-    //      std::cout << "error is zero in the " << i << " bin..." << std::endl;
-    //      std::cout << "so skip this bin" << std::endl;
-    //      continue;
-    //    }
-    //    // TODO add option to use input covariance matrix
-    //    double pull=(hData->GetBinContent(i)-hDY->GetBinContent(i))/hData->GetBinError(i);
-    //    //cout << "data: " << hData->GetBinContent(i) << " mc: " << hDY->GetBinContent(i) << " data error: " << hData->GetBinError(i) << endl;
-    //    chi2+= pull*pull;
-    //}
-    //cout << "chi^{2}, " << chi2 << endl;
-    return chi2;
-}
-
-void ISRUnfold::checkIterEMUnfold(void)
+void ISRUnfold::checkIterEMUnfold(void) 
 {
     double yMin=1.;
     double yLine=10.;
@@ -442,13 +129,13 @@ void ISRUnfold::checkIterEMUnfold(void)
 // Set the nominal response matrix
 void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
 {
-    //cout << "ISRUnfold::setNominalRM set response matrix..." << endl;
     TH1::AddDirectory(kFALSE);
     TFile* filein = new TFile(filepath, "READ");
 
     TString fullDirPath = dirName + "/";
 
-    TString Rec_binName = var + "_smeared_bin"; //Fine_Coarse Fine_Fine Coarse_Coarse
+    // bin definition
+    TString Rec_binName = var + "_smeared_bin"; 
     TString Gen_binName = var + "_truth_bin";
     Rec_binName = fullDirPath + Rec_binName;
     Gen_binName = fullDirPath + Gen_binName;
@@ -461,10 +148,16 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     // First, get the response matrix
     TH2* hmcGenRec = (TH2*)filein->Get(fullDirPath + var + "_responseM");
 
-    nominalTUnfold = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, densityMode, binningCoarse, binningFine);
-    cout << "Used TUnfold version " << nominalTUnfold->GetTUnfoldVersion() << endl;
-
+    nominalTUnfold = new TUnfoldDensity(hmcGenRec, 
+                                        TUnfold::kHistMapOutputHoriz, 
+                                        regMode, 
+                                        TUnfold::kEConstraintArea, 
+                                        densityMode, 
+                                        binningCoarse, 
+                                        binningFine);
     hResponseM = (TH2*) hmcGenRec->Clone("hResponseM");
+
+    cout << "TUnfold version: " << nominalTUnfold->GetTUnfoldVersion() << endl;
 
     // For statistical uncertainty
     if(doInputStatUnc)
@@ -511,11 +204,10 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
 
     if(doModelUnc)
     {
-        //
         modelUncertaintyTUnfold = new TUnfoldDensity(hReweightSF, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, densityMode, binningCoarse, binningFine);
-
     }
 
+    // TODO make function for saving histograms
     // Save migration and response matrix
     TDirectory* varDir;
     TDirectory* varDirForReco;
@@ -774,8 +466,7 @@ void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, T
     TH1::AddDirectory(kFALSE);
 
     TFile* filein = new TFile(filepath);
-    TH1* hRec = NULL;
-    hRec = (TH1*)filein->Get(dirName + "/" + var + "_smeared"); 
+    TH1* hRec = (TH1*)filein->Get(dirName + "/" + var + "_smeared"); 
     
     // Nominal
     if(sysType == "Type_0")
@@ -783,8 +474,8 @@ void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, T
         nominalTUnfold->SetInput(hRec, nominalBias, nominalBias);
     }
     else
-    // Systematic histograms
     {
+        // Systematic histograms
         if(sysName.Contains("IterEM"))
         {
             iterEMTUnfold->SetInput(hRec, 1.);
@@ -943,8 +634,6 @@ void ISRUnfold::doISRUnfold(bool partialReg)
             // L-curve scan
             // much senstive to tauMin and tauMax when using ScanLcurve
             iBest_nominal=nominalTUnfold->ScanLcurve(nScan,tauMin,tauMax,&lCurve,&logTauX,&logTauY);
-            //cout<< "tau=" << nominalTUnfold->GetTau() << endl;
-            //cout<<"chi**2="<<nominalTUnfold->GetChi2A()<<"+"<<nominalTUnfold->GetChi2L()<<" / "<<nominalTUnfold->GetNdf()<<"\n";
             
             // Tau scan
             //TSpline *rhoScan=0;
@@ -956,37 +645,6 @@ void ISRUnfold::doISRUnfold(bool partialReg)
         else {
             nominalTUnfold->DoUnfold(tau);
         }
-        /*
-        TH1D* hProjectedTruth = (TH1D*) hResponseM->ProjectionX("histo_DY_temp", 0, -1, "e");
-
-        int nSkip = 2;
-        int step = 1;
-        int nbin = iend-istart+1;
-        int i0 = istart;
-        int i1 = i0 + step;
-        int i2 = i1 + step;
-        for(int i = nSkip; i < nbin; i++)
-        { 
-            double i0_content = hProjectedTruth->GetBinContent(i0);
-            double i2_content = hProjectedTruth->GetBinContent(i2);
-            nominalTUnfold->RegularizeCurvature(i0, i1, i2, -1./ i0_content, -1./i2_content);
-            
-            i0 = i1;
-            i1 = i2;
-            i2 += step;
-        }
-
-        TH2 *histL=nominalTUnfold->GetL("L");
-        for(Int_t j=1;j<=histL->GetNbinsY();j++) {
-            cout<<"L["<<nominalTUnfold->GetLBinning()->GetBinName(j)<<"]";
-            for(Int_t i=1;i<=histL->GetNbinsX();i++) {
-                Double_t c=histL->GetBinContent(i,j);
-                cout<<" ["<<i<<"]="<<c;
-            }
-            cout<<"\n";
-        }
-        delete hProjectedTruth;
-        */
     }
     else // apply regularization for all bins
     {
@@ -1009,15 +667,16 @@ void ISRUnfold::doISRUnfold(bool partialReg)
     varDir->cd();
 
     bool useAxisBinning = false;
-    if(var == "Pt")
+    if(var == "1D_dimass")
     {
-        useAxisBinning = false;
+        useAxisBinning = true;
     }
 
     nominalTUnfold->GetRhoIJtotal("hCorrelation", 0, 0, 0, useAxisBinning)->Write();
     nominalTUnfold->GetEmatrixTotal("hCovariance", 0, 0, 0, useAxisBinning)->Write();
-    nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false)->Write();
+    nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", useAxisBinning)->Write();
 
+    // TODO make a function for saving
     // Save unfolding input histogram
     TDirectory* varDirForReco;
 
@@ -1104,9 +763,6 @@ void ISRUnfold::doISRUnfold(bool partialReg)
     }
 
     topDir->Write();
-
-    drawChi2Reco();
-    drawChi2Truth();
 }
 
 

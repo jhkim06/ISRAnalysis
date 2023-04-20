@@ -50,7 +50,6 @@ class ISRUnfold{
 private:
     bool verbose;
     
-    // 
     bool doInputStatUnc;
     bool doRMStatUnc;
     bool ignoreBinZero;
@@ -117,8 +116,18 @@ private:
 public:
 
     // Constructor
-    ISRUnfold(TString unfoldName_, TString channel, int year_ = 2016, TUnfold::ERegMode regMode_ = TUnfold::kRegModeNone, bool doInputStatUnc_ = true, bool doRMStatUnc_ = false, bool ignoreBinZero_ = false, 
-              bool verbose_ = false, TString var_ = "Mass", TString outputBaseDir_ = "", TString matrix_reweight_file_ = "", bool doModelUnc_ = false, 
+    ISRUnfold(TString unfoldName_, 
+              TString channel, 
+              int year_ = 2016, 
+              TUnfold::ERegMode regMode_ = TUnfold::kRegModeNone, 
+              bool doInputStatUnc_ = true, 
+              bool doRMStatUnc_ = false, 
+              bool ignoreBinZero_ = false, 
+              bool verbose_ = false, 
+              TString var_ = "Mass", 
+              TString outputBaseDir_ = "", 
+              TString matrix_reweight_file_ = "", 
+              bool doModelUnc_ = false, 
               TUnfoldDensity::EDensityMode densityMode_ = TUnfoldDensity::kDensityModeNone)
     {
         cout << "ISRUnfold set! " << var_ << endl;
@@ -146,7 +155,6 @@ public:
         TString yearStr;
         yearStr.Form("%d", (int)year);
 
-        //outputBaseDir = "output/" + yearStr + "/" + channelName + "/";
         fUnfoldOutPath = outputBaseDir+unfoldName+"_"+channelName+"_"+yearStr+"_"+var+".root";
         fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");
 
