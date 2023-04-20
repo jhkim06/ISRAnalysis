@@ -121,7 +121,6 @@ public:
               bool verbose_ = false, TString var_ = "Mass", TString outputBaseDir_ = "", TString matrix_reweight_file_ = "", bool doModelUnc_ = false, 
               TUnfoldDensity::EDensityMode densityMode_ = TUnfoldDensity::kDensityModeNone)
     {
-        // modified in Xcode
         cout << "ISRUnfold set! " << var_ << endl;
 
         outputBaseDir = outputBaseDir_;
@@ -204,7 +203,7 @@ public:
     void setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept = false);
 
     // Set input histogram
-    void setUnfInput(TString filepath = "", TString dirName = "", TString binDef = "", TString histName = "", TString sysType = "", TString sysName = "", TString histPostfix = "", bool isFSR = false);
+    void setUnfInput(TString filepath = "", TString dirName = "", TString binDef = "", TString sysType = "", TString sysName = "", TString histPostfix = "", bool isFSR = false);
     void setUnfInput(ISRUnfold* unfold,  TString thisSysType = "", TString sysName = "", bool useAccept = false);
     void setUnfInputUnfSys();
 

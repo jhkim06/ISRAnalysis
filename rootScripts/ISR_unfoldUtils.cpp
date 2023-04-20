@@ -260,7 +260,7 @@ double ISRUnfold::getSmearedChi2(TString filePath, TString dirName, TString stee
     TH1* hDY; // DY MC
 
     TString DYHistName_ = "histo_DYJetsToMuMu";
-    if(channelName == "electron") DYHistName_ = "histo_DYJetsToEE";
+    if(channelName == "ee") DYHistName_ = "histo_DYJetsToEE";
     hData = nominalTUnfold->GetInput("hData_"+var, 0, 0, steering, useAxis);
     hDY =   getRawHist(filePath, dirName, DYHistName_, "Signal_"+var, steering, useAxis); ;
 
@@ -446,7 +446,6 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
     TH1::AddDirectory(kFALSE);
     TFile* filein = new TFile(filepath, "READ");
 
-    //TString fullDirPath = dirName + "/" + var + "_ResMatrix_" + binDef + "/";
     TString fullDirPath = dirName + "/";
 
     TString Rec_binName = var + "_smeared_bin"; //Fine_Coarse Fine_Fine Coarse_Coarse
@@ -464,6 +463,7 @@ void ISRUnfold::setNominalRM(TString filepath, TString dirName, TString binDef)
 
     nominalTUnfold = new TUnfoldDensity(hmcGenRec, TUnfold::kHistMapOutputHoriz, regMode, TUnfold::kEConstraintArea, densityMode, binningCoarse, binningFine);
     cout << "Used TUnfold version " << nominalTUnfold->GetTUnfoldVersion() << endl;
+
     hResponseM = (TH2*) hmcGenRec->Clone("hResponseM");
 
     // For statistical uncertainty
@@ -769,38 +769,14 @@ void ISRUnfold::setUnfInputUnfSys()
 }
 
 // Set input histogram from root file
-void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, TString histName, TString sysType, TString sysName, TString histPostfix, bool isFSR)
+void ISRUnfold::setUnfInput(TString filepath, TString dirName, TString binDef, TString sysType, TString sysName, TString histPostfix, bool isFSR)
 {
     TH1::AddDirectory(kFALSE);
 
     TFile* filein = new TFile(filepath);
     TH1* hRec = NULL;
-    //cout << dirName+"/"+var+ "_" + binDef+"/"+histName << endl;
-    hRec = (TH1*)filein->Get(dirName + "/" + var + "_smeared");
-
+    hRec = (TH1*)filein->Get(dirName + "/" + var + "_smeared"); 
     
-    // Use DY MC as unfolding input, i.e. for simple closure test
-    if(histName.Contains("DYJets"))
-    {
-        if(!isFSR)
-        {
-            histName.ReplaceAll("DYJetsTo", "DYJets10to50To");
-            hRec->Add((TH1*)filein->Get(dirName+"/"+var+ "_" + binDef+"/"+histName));
-        }
-        else
-        {
-            //cout << "closure input" << endl;
-            //cout << "filepath: " << filepath << endl;
-            if(year==2016)  
-                histName.ReplaceAll("DYJets", "DYJets10to50");
-            else
-            {
-                histName.ReplaceAll("DYJets", "DYJets10to50_MG");
-            }
-            hRec->Add((TH1*)filein->Get(dirName+"/"+var+ "_" + binDef+"/"+histName));
-        }
-    }
-
     // Nominal
     if(sysType == "Type_0")
     {
@@ -828,12 +804,12 @@ void ISRUnfold::subBkgs(TString filepath, TString dirName, TString binDef, TStri
     TFile* filein = new TFile(filepath);
     TH1* hRec = NULL;
 
-    hRec = (TH1*)filein->Get(dirName + "/" + var + "_" + binDef+"/histo_" + bkgName + histPostfix);
+    hRec = (TH1*)filein->Get(dirName + "/" + var + "_smeared");
 
     // Nominal histograms
     if(sysType=="Type_0")
     {
-        nominalTUnfold->  SubtractBackground(hRec, bkgName);
+        nominalTUnfold->SubtractBackground(hRec, bkgName);
         
         // Save Unfolding fake histogram in folded directory
         if(dirName.Contains("Fake"))

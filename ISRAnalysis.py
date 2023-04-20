@@ -15,40 +15,25 @@ class HistType :
 
 class ISRAnalysis:
     
-    def __init__(self, unfold_name_ = "Detector", year_ = "2016", channel_= "electron", regMode_ = 0, doInputStat_ = False, doRMStat_ = False, ignoreBinZero_ = False, matrix_filekey_ = "matrix",
-                 matrix_dirPath_ = "Detector_Dressed_DRp1_Fiducial",  binDef_ = "", channel_postfix_ = "", doModelUnc_ = False, var_ = "Pt", bias_ = 0., density_ = 0):
+    def __init__(self, unfold_name_ = "Detector", year_ = "2016", channel_= "ee", regMode_ = 0, doInputStat_ = False, doRMStat_ = False, ignoreBinZero_ = False, matrix_filekey_ = "DY",
+                 binDef_ = "", channel_postfix_ = "", doModelUnc_ = False, var_ = "Pt", bias_ = 0., density_ = 0):
         
         # Initialize some variables 
         self.unfold_name = unfold_name_
         self.matrix_filekey = matrix_filekey_
-        self.matrix_dirPath  = matrix_dirPath_
         self.binDef = binDef_
+        self.hist_path = channel_ + year_  # TODO use postfix
         
         self.channel = channel_
         self.year = year_
         self.var = var_
         self.nMassBins = None
-       
-        # Set data and Drell-Yan input histogram names
-        dataHistPrefix = "Double"
-        if self.channel == "electron":
-            dataHistPrefix = dataHistPrefix + "EG"
-            if self.year == "2018":
-                dataHistPrefix = "EGamma"
-        if self.channel == "muon":
-            dataHistPrefix = dataHistPrefix + "Muon"
-        self.data_hist_name = "histo_"+dataHistPrefix
-            
-        self.dy10to50HistName = "DYJets10to50"
-        MG_postfix = "_MG"
-        if self.year != "2016":
-            self.dy10to50HistName += MG_postfix
         
-        self.outDirPath = "output/"+self.year+"/"+self.channel+"/"
-        self.inHistPathTxt = "inFiles/"+self.year+"/"+self.channel+"/fhist.txt"
+        self.outDirPath    = "output/" +self.year+"/"+self.channel+"/"
+        self.inHistPathTxt = "inFiles/" +self.year+"/"+self.channel+"/fhist.txt"
 
         if channel_postfix_ != "" :
-            self.outDirPath = "output/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/"
+            self.outDirPath    = "output/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/"
             self.inHistPathTxt = "inFiles/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/fhist.txt"
     
         # Make output directory
@@ -84,7 +69,7 @@ class ISRAnalysis:
         self.unfold.setBias(self.bias)
         
         # Set response matrix
-        self.unfold.setNominalRM(self.inHistDic[self.matrix_filekey], self.matrix_dirPath, self.binDef)
+        self.unfold.setNominalRM(self.inHistDic[self.matrix_filekey], self.hist_path, self.binDef)
 
     def setPartialReg2D(self, regMode = 0, startMass = 320., startPt = 0., endMass = 320., endPt = 99.) :
         pass
@@ -96,9 +81,8 @@ class ISRAnalysis:
 
         self.unfold.setUnfInputUnfSys()
 
-    def setInputHist(self, useMCInput = False, unfoldObj = None, dirName = "ee2016", sys_type = "Type_0", sys_name = "", isFSR = False, useMadgraph = False, inputBinDef = None, inputHistName="", useAccept=True):
+    def setInputHist(self, useMCInput = False, unfoldObj = None, sys_type = "Type_0", sys_name = "", isFSR = False, useMadgraph = False, inputBinDef = None, inputHistName="", useAccept=True):
         
-        input_hist_name = self.data_hist_name
         hist_filekey_temp = "Data"
         hist_postfix = self.makeSysHistPostfix(HistType.unfInputHist, sys_type, sys_name)
 
@@ -108,38 +92,12 @@ class ISRAnalysis:
         else :
             bin_def = self.binDef
 
-        # For closure test, use MC as unfolding input
-        if useMCInput == True:
+        if unfoldObj is None:
+            self.unfold.setUnfInput(self.inHistDic[hist_filekey_temp], self.hist_path, bin_def, sys_type, sys_name, hist_postfix)
 
-            if isFSR == False:
-                if self.channel == "electron":
-                    input_hist_name = "histo_DYJetsToEE"
-                else :
-                    input_hist_name = "histo_DYJetsToMuMu"
-
-                if useMadgraph == True:
-                    hist_filekey_temp = "hist_DYMG"
-
-                if inputHistName != "" :
-                    input_hist_name = inputHistName
-
-            else :
-                input_hist_name = "histo_DYJets"
-                hist_filekey_temp = "hist_accept_drp1"
-
-                if inputHistName != "" :
-                    input_hist_name = inputHistName
-
-            self.unfold.setUnfInput(self.inHistDic[hist_filekey_temp], dirName, bin_def, input_hist_name, sys_type, sys_name, hist_postfix, isFSR)
-
-        else :
-
-            if unfoldObj is None:
-                self.unfold.setUnfInput(self.inHistDic[hist_filekey_temp], dirName, bin_def, input_hist_name, sys_type, sys_name, hist_postfix)
-
-            else:
-                # Set unfold input from previous unfold 
-                self.unfold.setUnfInput(unfoldObj.getISRUnfold(self.var),   sys_type, sys_name, useAccept)
+        else:
+            # Set unfold input from previous unfold 
+            self.unfold.setUnfInput(unfoldObj.getISRUnfold(self.var), sys_type, sys_name, useAccept)
 
     def setFromPreviousUnfold(self, unfoldObj) :
 
@@ -168,10 +126,10 @@ class ISRAnalysis:
             self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], dirName, bin_def, fake_name, sys_type, sys_name, histPostfix_temp)
        
         
-    def setUnfoldBkgs(self, dirName = "Detector", sys_type = "Type_0", sys_name = ""):
+    def setUnfoldBkgs(self, dirName = "ee2016", sys_type = "Type_0", sys_name = ""):
    
-        if self.channel == "electron" : 
-            bkgList = ["DYJets10to50ToTauTau", "DYJetsToTauTau", "WW_pythia", "WZ_pythia", "ZZ_pythia", "TTLL_powheg", "SingleTop_tW_antitop_NoFullyHad", "SingleTop_tW_top_NoFullyHad"] 
+        if self.channel == "ee" : 
+            bkgList = ["DY_tau", "ttbar", "ww", "wz", "zz"] 
         else :
             bkgList = ["DYJets10to50ToTauTau", "DYJetsToTauTau", "WW_pythia", "WZ_pythia", "ZZ_pythia", "TTLL_powheg", "SingleTop_tW_antitop_NoFullyHad", "SingleTop_tW_top_NoFullyHad"] 
 
@@ -183,7 +141,7 @@ class ISRAnalysis:
             if "SingleTop" in bkg_name and "AlphaS" in sys_name : # FIXME
                 histPostfix_temp = self.makeSysHistPostfix(HistType.unfBkgHist, "Type_3", sys_name) 
 
-            self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], dirName, self.binDef, bkg_name, sys_type, sys_name, histPostfix_temp)
+            self.unfold.subBkgs(self.inHistDic[bkg_name], dirName, self.binDef, bkg_name, sys_type, sys_name, histPostfix_temp)
             
     def setSystematics(self, sys_type, sys_name, isFSR = False):
 
