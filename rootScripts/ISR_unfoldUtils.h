@@ -50,11 +50,6 @@ class ISRUnfold{
 private:
     bool verbose;
     
-    bool doInputStatUnc;
-    bool doRMStatUnc;
-    bool ignoreBinZero;
-    bool doModelUnc;
-
     TString unfoldName;
     TString channelName; // electron or muon
     TString var; // dilepton mass or pt
@@ -74,12 +69,6 @@ private:
     // For nominal results
     TUnfoldDensity* nominalTUnfold;
     TH2* hResponseM;
-
-    // For unfolding uncertainty
-    std::vector<TUnfoldDensity*> unfInputStatTUnfold;
-    std::vector<TUnfoldDensity*> unfMatrixStatTUnfold;
-    TUnfoldDensity* modelUncertaintyTUnfold;
-    TUnfoldDensity* ignoreBinZeroTUnfold;
 
     // For systematic uncertainty
     vector<TString> sysVector;
@@ -106,9 +95,6 @@ private:
     TH1* hAcceptance;
     std::map<TString, std::map<TString, TH1*>> hSysAcceptance;
 
-    TFile* fUnfoldReweight;
-    TH2* hReweightSF;
-
     TString outputBaseDir;
     TFile* fUnfoldOut;
     TString fUnfoldOutPath;
@@ -120,14 +106,9 @@ public:
               TString channel, 
               int year_ = 2016, 
               TUnfold::ERegMode regMode_ = TUnfold::kRegModeNone, 
-              bool doInputStatUnc_ = true, 
-              bool doRMStatUnc_ = false, 
-              bool ignoreBinZero_ = false, 
-              bool verbose_ = false, 
+              bool verbose_ = false,
               TString var_ = "Mass", 
               TString outputBaseDir_ = "", 
-              TString matrix_reweight_file_ = "", 
-              bool doModelUnc_ = false, 
               TUnfoldDensity::EDensityMode densityMode_ = TUnfoldDensity::kDensityModeNone)
     {
         cout << "ISRUnfold set! " << var_ << endl;
@@ -143,11 +124,6 @@ public:
 
         regMode = regMode_;
         densityMode = densityMode_;
-
-        doInputStatUnc = doInputStatUnc_;
-        doRMStatUnc = doRMStatUnc_; 
-        ignoreBinZero = ignoreBinZero_;
-        doModelUnc = doModelUnc_;
 
         verbose = verbose_;
 
@@ -167,29 +143,11 @@ public:
         fUnfoldOut->mkdir("folded/" + var);
         fUnfoldOut->mkdir("unfolded/" + var);
         fUnfoldOut->mkdir("acceptance/" + var);
-
-        // open reweight file
-        if(doModelUnc && matrix_reweight_file_ != "")
-        {
-            fUnfoldReweight = new TFile(matrix_reweight_file_);
-            if(var == "Pt")
-            {
-                hReweightSF = (TH2*) fUnfoldReweight->Get("reweighted_pt_matrix");
-            }
-            if(var == "Mass")
-            {
-                hReweightSF = (TH2*) fUnfoldReweight->Get("reweighted_mass_matrix");
-            }
-        }
     }
     // Destructor
     ~ISRUnfold()
     {
         fUnfoldOut->Close(); 
-        if(doModelUnc)
-        {
-            fUnfoldReweight->Close();
-        }
     }
 
     inline void closeOutFile()
@@ -200,29 +158,37 @@ public:
     void checkIterEMUnfold(void);
 
     TMatrixD makeMatrixFromHist(TH2F*hist);
-    void checkMatrixCond();
-    double getSmearedChi2(TString filePath, TString dirName, TString steering, bool useAxis);
-    double getUnfoldedChi2(TString steering, bool useAxis);
 
     void setBias(double bias);
 
     // Set nominal TUnfoldDensity
     void setNominalRM(TString filepath, TString dirName, TString binDef = "");
-    void setFromPrevUnfResult(ISRUnfold* unfold, bool useAccept = false);
+    void save_hists_from_responseM();
+    // Set systematic TUnfoldDensity
+    void setSystematicRM(TString filepath, TString dirName,  TString binDef,
+                         TString sysName,
+                         TString histPostfix);
 
     // Set input histogram
-    void setUnfInput(TString filepath = "", TString dirName = "", TString binDef = "", TString sysType = "", TString sysName = "", TString histPostfix = "", bool isFSR = false);
-    void setUnfInput(ISRUnfold* unfold,  TString thisSysType = "", TString sysName = "", bool useAccept = false);
-    void setUnfInputUnfSys();
+    void setUnfInput(TString filepath = "",
+                     TString dirName = "",
+                     TString binDef = "",
+                     TString sysType = "",
+                     TString sysName = "",
+                     TString histPostfix = "",
+                     bool isFSR = false);
 
     // Set background histograms
-    void subBkgs(TString filepath, TString dirName = "",  TString binDef = "", TString bkgName = "", TString sysType = "", TString sysName = "", TString histPostfix = "");
-
-    // Set systematic TUnfoldDensity
-    void setSystematicRM(TString filepath, TString dirName,  TString binDef,  TString sysName, TString histPostfix);
-    // TODO TUnfoldSYS?
+    void subBkgs(TString filepath,
+                 TString dirName = "",
+                 TString binDef = "",
+                 TString bkgName = "",
+                 TString sysType = "",
+                 TString sysName = "",
+                 TString histPostfix = "");
 
     void setSystematics(TString sysHistName);
+    
     void inline printSystematics()
     {
         std::vector<TString>::iterator it = sysVector.begin();
@@ -237,22 +203,17 @@ public:
         return sysVector;
     }
 
-    void varyHistWithStatError(TH1* hist, int sys);
-
     // Do unfold
     void doISRUnfold(bool partialReg);
-    void setPartialRegularize2D(TUnfold::ERegMode partialRegMode, double startMass, double startPt, double endMass, double endPt);
+    void setPartialRegularize2D(TUnfold::ERegMode partialRegMode,
+                                double startMass, double startPt,
+                                double endMass, double endPt);
 
     // Acceptance correction
     void doAcceptCorr(TString filePath, TString binDef, TString filePath_for_accept = "");
 
     // Get histograms
     TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true);
-    TH1* getRawHist(TString filePath, TString dirName, TString histName, TString outHistName, TString steering, bool useAxis);
-
-    // Bottom Line Test
-    void drawChi2Reco();
-    void drawChi2Truth();
 };
 
 #endif

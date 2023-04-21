@@ -20,13 +20,9 @@ class ISRAnalysis:
                  year_ = "2016", 
                  channel_= "ee", 
                  regMode_ = 0, 
-                 do_input_stat_ = False, 
-                 do_RM_stat_ = False, 
-                 ignore_bin_zero_ = False, 
                  matrix_filekey_ = "DY",
                  bin_def_ = "", 
                  channel_postfix_ = "", 
-                 do_model_unc_ = False, 
                  var_ = "Pt", 
                  bias_ = 0., 
                  density_ = 0):
@@ -38,7 +34,7 @@ class ISRAnalysis:
         self.mode = regMode_ 
         self.matrix_filekey = matrix_filekey_ 
         self.bin_def = bin_def_
-        self.dir_path = channel_ + year_  # TODO use postfix
+        self.dir_path = channel_ + year_  
         
         self.var = var_
         self.n_mass_bins = None
@@ -69,26 +65,14 @@ class ISRAnalysis:
         # Create ISRUnfold object
         print("Create ISRUnfold objects...")
 
-        if do_model_unc_ :
-            model_sys_file_path = self.inHistDic["matrix_reweightSF"]
-            if "FSR" in self.unfold_name :
-                model_sys_file_path = self.inHistDic["fsr_matrix_reweightSF"]
-        else :
-            model_sys_file_path = ""
-            
         # Create ISRUnfold object
         self.unfold  = rt.ISRUnfold(self.unfold_name, 
                                     self.channel, 
                                     int(self.year), 
                                     self.mode, 
-                                    do_input_stat_, 
-                                    do_RM_stat_, 
-                                    ignore_bin_zero_, 
                                     False, 
                                     self.var, 
                                     self.out_dir_path,   
-                                    model_sys_file_path, 
-                                    do_model_unc_, 
                                     self.density)
 
         self.unfold.setBias(self.bias)
@@ -99,13 +83,6 @@ class ISRAnalysis:
     def setPartialReg2D(self, regMode = 0, startMass = 320., startPt = 0., endMass = 320., endPt = 99.) :
         pass
        
-    def checkMatrixCond(self):
-        self.unfold.checkMatrixCond()
-
-    def setInputHistUnfSys(self) :
-
-        self.unfold.setUnfInputUnfSys()
-
     def setInputHist(self, useMCInput = False, unfoldObj = None, sys_type = "Type_0", sys_name = "", isFSR = False, useMadgraph = False, inputBinDef = None, inputHistName="", useAccept=True):
         
         hist_filekey_temp = "Data"
