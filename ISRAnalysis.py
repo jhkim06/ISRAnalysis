@@ -51,12 +51,14 @@ class ISRAnalysis:
             os.makedirs(self.out_dir_path)
     
         # Read text file including root file paths for unfolding
-        self.filePaths = open(self.in_hist_path_txt, 'r')
-        self.inHistDic = {}
+        self.file_paths = open(self.in_hist_path_txt, 'r')
+        self.input_root_file = {}
+        self.input_root_file["nominal"] = {}
+        self.input_root_file["SYS"] = {}
         
-        for path in self.filePaths:
-            modifiedPath = path.lstrip(' ').rstrip(' ').rstrip('\n')
-            self.inHistDic[modifiedPath.split()[1]] = modifiedPath.split()[2]
+        for path in self.file_paths:
+            path = path.lstrip(' ').rstrip(' ').rstrip('\n')
+            self.input_root_file[path.split()[0]][path.split()[1]] = path.split()[2]
         
         # Unfolding configuration
         self.bias = bias_
@@ -78,28 +80,33 @@ class ISRAnalysis:
         self.unfold.setBias(self.bias)
         
         # Set response matrix
-        self.unfold.setNominalRM(self.inHistDic[self.matrix_filekey], self.dir_path, self.bin_def)
+        self.unfold.setNominalRM(self.input_root_file["nominal"][self.matrix_filekey], self.dir_path, self.bin_def)
 
     def setPartialReg2D(self, regMode = 0, startMass = 320., startPt = 0., endMass = 320., endPt = 99.) :
         pass
        
-    def setInputHist(self, useMCInput = False, unfoldObj = None, sys_type = "Type_0", sys_name = "", isFSR = False, useMadgraph = False, inputBinDef = None, inputHistName="", useAccept=True):
+    def setInputHist(self, useMCInput = False, 
+                    unfoldObj = None, 
+                    sys_type = "Type_0", 
+                    sys_name = "", 
+                    isFSR = False, 
+                    useMadgraph = False, 
+                    inputBinDef = None, 
+                    inputHistName="", 
+                    useAccept=True) :
         
         hist_filekey_temp = "Data"
         hist_postfix = self.makeSysHistPostfix(HistType.unf_input_hist, sys_type, sys_name)
 
         if inputBinDef is not None :
             bin_def = inputBinDef
-    
         else :
             bin_def = self.bin_def
 
-        if unfoldObj is None:
-            self.unfold.setUnfInput(self.inHistDic[hist_filekey_temp], self.dir_path, bin_def, sys_type, sys_name, hist_postfix)
-
-        else:
-            # Set unfold input from previous unfold 
-            self.unfold.setUnfInput(unfoldObj.getISRUnfold(self.var), sys_type, sys_name, useAccept)
+        # TODO add selection key for nomianl or SYS
+        self.unfold.setUnfInput(self.input_root_file["nominal"][hist_filekey_temp], 
+                                self.dir_path, 
+                                bin_def, sys_type, sys_name, hist_postfix)
 
     def setFromPreviousUnfold(self, unfoldObj) :
 
@@ -125,13 +132,12 @@ class ISRAnalysis:
 
         for fake_name in fakeList:
 
-            self.unfold.subBkgs(self.inHistDic[hist_filekey_temp], dirName, bin_def, fake_name, sys_type, sys_name, histPostfix_temp)
-       
+            self.unfold.subBkgs(self.input_root_file[hist_filekey_temp], dirName, bin_def, fake_name, sys_type, sys_name, histPostfix_temp)
         
     def setUnfoldBkgs(self, dirName = "ee2016", sys_type = "Type_0", sys_name = ""):
    
         if self.channel == "ee" : 
-            bkgList = ["DY_tau", "ttbar", "ww", "wz", "zz"] 
+            bkgList = ["DY_tau", "ttbar", "top", "antitop", "ww", "wz", "zz"] 
         else :
             bkgList = ["DYJets10to50ToTauTau", "DYJetsToTauTau", "WW_pythia", "WZ_pythia", "ZZ_pythia", "TTLL_powheg", "SingleTop_tW_antitop_NoFullyHad", "SingleTop_tW_top_NoFullyHad"] 
 
@@ -143,13 +149,12 @@ class ISRAnalysis:
             if "SingleTop" in bkg_name and "AlphaS" in sys_name : # FIXME
                 histPostfix_temp = self.makeSysHistPostfix(HistType.unf_bkg_hist, "Type_3", sys_name) 
 
-            self.unfold.subBkgs(self.inHistDic[bkg_name], dirName, self.bin_def, bkg_name, sys_type, sys_name, histPostfix_temp)
+            self.unfold.subBkgs(self.input_root_file["nominal"][bkg_name], dirName, self.bin_def, bkg_name, sys_type, sys_name, histPostfix_temp)
             
     def setSystematics(self, sys_type, sys_name, isFSR = False):
 
         #print("setSystematics")
         self.unfold.setSystematics(sys_name)
-
 
         matrix_filekey_temp = self.matrix_filekey
         matrix_dir_path_temp = self.matrix_dirPath
@@ -165,7 +170,7 @@ class ISRAnalysis:
 
         # make a function to make a full histogram name with systematic
         #print("setSystematics", sys_name, hist_postfix_temp)
-        self.unfold.setSystematicRM(self.inHistDic[matrix_filekey_temp], matrix_dir_path_temp, self.bin_def, sys_name, hist_postfix_temp)
+        self.unfold.setSystematicRM(self.input_root_file["SYS"][matrix_filekey_temp], matrix_dir_path_temp, self.bin_def, sys_name, hist_postfix_temp)
 
     def makeSysHistPostfix(self, histType, sys_type, sys_name) :
 
@@ -223,18 +228,20 @@ class ISRAnalysis:
         if isFSR :
         
             if useMassBinned :  
-                self.unfold.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.bin_def, self.inHistDic['hist_updated_accept'])
+                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_fullPhase'], 
+                                         self.bin_def, self.input_root_file["nominal"]['hist_updated_accept'])
                 
             else :
-                self.unfold.doAcceptCorr(self.inHistDic['hist_accept_fullPhase'], self.bin_def)
+                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_fullPhase'], self.bin_def)
                 
          
         else : 
             if useMassBinned :
-                self.unfold.doAcceptCorr(self.inHistDic['hist_accept_drp1'], self.bin_def, self.inHistDic['hist_updated_accept'])
+                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_drp1'], 
+                                         self.bin_def, self.input_root_file["nominal"]['hist_updated_accept'])
                 
             else :
-                self.unfold.doAcceptCorr(self.inHistDic['hist_accept_drp1'], self.bin_def)
+                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_drp1'], self.bin_def)
       
 
     def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):

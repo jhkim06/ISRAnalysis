@@ -87,7 +87,7 @@ void ISRUnfold::save_hists_from_responseM()
     varDir->cd();
 }
 // Option for unfold options
-void ISRUnfold::setSystematicRM(TString file_path, TString channel_name, TString bin_prefix, TString sysName, TString histPostfix)
+void ISRUnfold::setSystematicRM(TString file_path, TString channel_name, TString bin_prefix, TString sys_name, TString histPostfix)
 {
     TFile* filein = new TFile(file_path, "READ");
     TH2* hmcGenRec = NULL;
@@ -100,15 +100,15 @@ void ISRUnfold::setSystematicRM(TString file_path, TString channel_name, TString
     varDir=fUnfoldOut->GetDirectory("unfolded/"+var);
     varDir->cd();
 
-    if(sysName.Contains("IterEM"))
+    if(sys_name.Contains("IterEM"))
     {
         iterEMTUnfold = new TUnfoldIterativeEM(hmcGenRec,TUnfoldDensity::kHistMapOutputHoriz,binningCoarse,binningFine);
     }
     else
     {
-        //cout << sysName << " crate TUnfoldDensity..." << endl;
+        //cout << sys_name << " crate TUnfoldDensity..." << endl;
         if(hmcGenRec == NULL) cout << "check input file" << endl;
-        systematicTUnfold[sysName] = new TUnfoldDensity(hmcGenRec,
+        systematicTUnfold[sys_name] = new TUnfoldDensity(hmcGenRec,
                                                         TUnfold::kHistMapOutputHoriz,
                                                         regMode,
                                                         TUnfold::kEConstraintArea,
@@ -116,7 +116,7 @@ void ISRUnfold::setSystematicRM(TString file_path, TString channel_name, TString
                                                         binningCoarse,
                                                         binningFine);
     }
-    TH1D* hProjectedTruth = (TH1D*) hmcGenRec->ProjectionX("histo_DY_"+sysName, 0, -1, "e");
+    TH1D* hProjectedTruth = (TH1D*) hmcGenRec->ProjectionX("histo_DY_"+sys_name, 0, -1, "e");
     hProjectedTruth->Write();
 
     filein->Close();
@@ -125,7 +125,7 @@ void ISRUnfold::setSystematicRM(TString file_path, TString channel_name, TString
 }
 
 // Set input histogram from root file
-void ISRUnfold::setUnfInput(TString file_path, TString channel_name, TString bin_prefix, TString sysType, TString sysName, TString histPostfix, bool isFSR)
+void ISRUnfold::setUnfInput(TString file_path, TString channel_name, TString bin_prefix, TString sysType, TString sys_name, TString histPostfix, bool isFSR)
 {
     TH1::AddDirectory(kFALSE);
 
@@ -140,13 +140,13 @@ void ISRUnfold::setUnfInput(TString file_path, TString channel_name, TString bin
     else
     {
         // Systematic histograms
-        if(sysName.Contains("IterEM"))
+        if(sys_name.Contains("IterEM"))
         {
             iterEMTUnfold->SetInput(hRec, 1.);
         }
         else
         {
-            systematicTUnfold[sysName]->SetInput(hRec, nominalBias);
+            systematicTUnfold[sys_name]->SetInput(hRec, nominalBias);
         }
     }
 
@@ -154,7 +154,7 @@ void ISRUnfold::setUnfInput(TString file_path, TString channel_name, TString bin
     delete filein;
 }
 
-void ISRUnfold::subBkgs(TString file_path, TString channel_name, TString bin_prefix, TString bkgName, TString sysType, TString sysName, TString histPostfix)
+void ISRUnfold::subBkgs(TString file_path, TString channel_name, TString bin_prefix, TString bkgName, TString sysType, TString sys_name, TString histPostfix)
 {
     TFile* filein = new TFile(file_path);
     TH1* hRec = NULL;
@@ -182,27 +182,27 @@ void ISRUnfold::subBkgs(TString file_path, TString channel_name, TString bin_pre
     // Systematic
     {
         //cout << "file path: " << file_path << endl;
-        if(sysName.Contains("IterEM"))
+        if(sys_name.Contains("IterEM"))
         {
             iterEMTUnfold->SubtractBackground(hRec, bkgName);
         }
         else
         {
             // FIXME temporary method for background systematic
-            if(sysName.Contains("Background"))
+            if(sys_name.Contains("Background"))
             {
-                if(sysName.Contains("Up"))
+                if(sys_name.Contains("Up"))
                 {
-                    systematicTUnfold[sysName]->SubtractBackground(hRec, bkgName, 1.05);
+                    systematicTUnfold[sys_name]->SubtractBackground(hRec, bkgName, 1.05);
                 }
-                if(sysName.Contains("Down"))
+                if(sys_name.Contains("Down"))
                 {
-                    systematicTUnfold[sysName]->SubtractBackground(hRec, bkgName, 0.95);
+                    systematicTUnfold[sys_name]->SubtractBackground(hRec, bkgName, 0.95);
                 }
             }
             else
             {
-                systematicTUnfold[sysName]->SubtractBackground(hRec, bkgName);
+                systematicTUnfold[sys_name]->SubtractBackground(hRec, bkgName);
             }
         }
     }
