@@ -2,7 +2,7 @@
 
 void ISRUnfold::setBias(double bias)
 {
-   nominalBias = bias;
+   nominal_bias = bias;
 }
 
 TMatrixD ISRUnfold::makeMatrixFromHist(TH2F*hist)
@@ -21,7 +21,7 @@ TMatrixD ISRUnfold::makeMatrixFromHist(TH2F*hist)
 }//end makeMatrixFromHist
 
 // Set the nominal response matrix
-void ISRUnfold::setNominalRM(TString file_path, TString channel_name, TString bin_prefix)
+void ISRUnfold::setNominalRM(TString file_path, TString channel_name)
 {
     TH1::AddDirectory(kFALSE);
     TFile* filein = new TFile(file_path, "READ");
@@ -52,6 +52,44 @@ void ISRUnfold::setNominalRM(TString file_path, TString channel_name, TString bi
 
     filein->Close();
     delete filein;
+}
+
+// Option for unfold options
+void ISRUnfold::setSystematicRM(TString file_path, TString channel_name, TString sys_name, TString hist_postfix)
+{
+    TH1::AddDirectory(kFALSE);
+    TFile* filein = new TFile(file_path, "READ");
+
+    TH2* hmcGenRec = (TH2*)filein->Get(channel_name + "/" + var + "_responseM" + hist_postfix);
+
+    if(sys_name.Contains("IterEM"))
+    {
+        iterEMTUnfold = new TUnfoldIterativeEM(hmcGenRec,TUnfoldDensity::kHistMapOutputHoriz,binningCoarse,binningFine);
+    }
+    else
+    {
+        //cout << sys_name << " crate TUnfoldDensity..." << endl;
+        if(hmcGenRec == NULL) cout << "check input file" << endl;
+        systematicTUnfold[sys_name] = new TUnfoldDensity(hmcGenRec,
+                                                        TUnfold::kHistMapOutputHoriz,
+                                                        regMode,
+                                                        TUnfold::kEConstraintArea,
+                                                        densityMode,
+                                                        binningCoarse,
+                                                        binningFine);
+    }
+    
+    TDirectory* varDir;
+    varDir=fUnfoldOut->GetDirectory("unfolded/"+var);
+    varDir->cd();
+    
+    TH1D* hProjectedTruth = (TH1D*) hmcGenRec->ProjectionX("histo_DY_"+sys_name, 0, -1, "e");
+    hProjectedTruth->Write();
+
+    filein->Close();
+    
+    delete filein;
+    delete hProjectedTruth;
 }
 
 void ISRUnfold::save_hists_from_responseM()
@@ -86,56 +124,21 @@ void ISRUnfold::save_hists_from_responseM()
 
     varDir->cd();
 }
-// Option for unfold options
-void ISRUnfold::setSystematicRM(TString file_path, TString channel_name, TString bin_prefix, TString sys_name, TString histPostfix)
-{
-    TFile* filein = new TFile(file_path, "READ");
-    TH2* hmcGenRec = NULL;
-
-    TString histNameWithSystematic = "hmc" + var + "GenRec" + histPostfix;
-    hmcGenRec = (TH2*)filein->Get(channel_name + "/" + var + "_ResMatrix_" + bin_prefix + "/" + histNameWithSystematic);
-
-    TDirectory* varDir;
-
-    varDir=fUnfoldOut->GetDirectory("unfolded/"+var);
-    varDir->cd();
-
-    if(sys_name.Contains("IterEM"))
-    {
-        iterEMTUnfold = new TUnfoldIterativeEM(hmcGenRec,TUnfoldDensity::kHistMapOutputHoriz,binningCoarse,binningFine);
-    }
-    else
-    {
-        //cout << sys_name << " crate TUnfoldDensity..." << endl;
-        if(hmcGenRec == NULL) cout << "check input file" << endl;
-        systematicTUnfold[sys_name] = new TUnfoldDensity(hmcGenRec,
-                                                        TUnfold::kHistMapOutputHoriz,
-                                                        regMode,
-                                                        TUnfold::kEConstraintArea,
-                                                        densityMode,
-                                                        binningCoarse,
-                                                        binningFine);
-    }
-    TH1D* hProjectedTruth = (TH1D*) hmcGenRec->ProjectionX("histo_DY_"+sys_name, 0, -1, "e");
-    hProjectedTruth->Write();
-
-    filein->Close();
-    delete filein;
-    delete hProjectedTruth;
-}
 
 // Set input histogram from root file
-void ISRUnfold::setUnfInput(TString file_path, TString channel_name, TString bin_prefix, TString sysType, TString sys_name, TString histPostfix, bool isFSR)
+void ISRUnfold::setUnfInput(TString file_path, TString channel_name, TString sys_type, TString sys_name, TString sys_hist_postfix, bool isFSR)
 {
     TH1::AddDirectory(kFALSE);
 
     TFile* filein = new TFile(file_path);
-    TH1* hRec = (TH1*)filein->Get(channel_name + "/" + var + "_smeared");
+
+    TString full_hist_path = channel_name + "/" + var + "_smeared" + sys_hist_postfix;
+    TH1* hRec = (TH1*)filein->Get(full_hist_path);
 
     // Nominal
-    if(sysType == "Type_0")
+    if(sys_type == "Type_0")
     {
-        nominalTUnfold->SetInput(hRec, nominalBias, nominalBias);
+        nominalTUnfold->SetInput(hRec, nominal_bias);
     }
     else
     {
@@ -146,7 +149,7 @@ void ISRUnfold::setUnfInput(TString file_path, TString channel_name, TString bin
         }
         else
         {
-            systematicTUnfold[sys_name]->SetInput(hRec, nominalBias);
+            systematicTUnfold[sys_name]->SetInput(hRec, nominal_bias);
         }
     }
 
@@ -154,17 +157,15 @@ void ISRUnfold::setUnfInput(TString file_path, TString channel_name, TString bin
     delete filein;
 }
 
-void ISRUnfold::subBkgs(TString file_path, TString channel_name, TString bin_prefix, TString bkgName, TString sysType, TString sys_name, TString histPostfix)
+void ISRUnfold::subBkgs(TString file_path, TString channel_name, TString bkg_name, TString sys_type, TString sys_name, TString hist_postfix)
 {
     TFile* filein = new TFile(file_path);
-    TH1* hRec = NULL;
-
-    hRec = (TH1*)filein->Get(channel_name + "/" + var + "_smeared");
+    TH1* hRec = (TH1*)filein->Get(channel_name + "/" + var + "_smeared" + hist_postfix);
 
     // Nominal histograms
-    if(sysType=="Type_0")
+    if(sys_type=="Type_0")
     {
-        nominalTUnfold->SubtractBackground(hRec, bkgName);
+        nominalTUnfold->SubtractBackground(hRec, bkg_name);
 
         // Save Unfolding fake histogram in folded directory
         if(channel_name.Contains("Fake"))
@@ -174,17 +175,16 @@ void ISRUnfold::subBkgs(TString file_path, TString channel_name, TString bin_pre
             varDirForReco=fUnfoldOut->GetDirectory("folded/"+var);
             varDirForReco->cd();
 
-            hRec->SetName("histo_Fake"+bkgName);
+            hRec->SetName("histo_Fake"+bkg_name);
             hRec->Write();
         }
     }
     else
     // Systematic
     {
-        //cout << "file path: " << file_path << endl;
         if(sys_name.Contains("IterEM"))
         {
-            iterEMTUnfold->SubtractBackground(hRec, bkgName);
+            iterEMTUnfold->SubtractBackground(hRec, bkg_name);
         }
         else
         {
@@ -193,16 +193,18 @@ void ISRUnfold::subBkgs(TString file_path, TString channel_name, TString bin_pre
             {
                 if(sys_name.Contains("Up"))
                 {
-                    systematicTUnfold[sys_name]->SubtractBackground(hRec, bkgName, 1.05);
+                    systematicTUnfold[sys_name]->SubtractBackground(hRec, bkg_name, 1.05);
                 }
                 if(sys_name.Contains("Down"))
                 {
-                    systematicTUnfold[sys_name]->SubtractBackground(hRec, bkgName, 0.95);
+                    systematicTUnfold[sys_name]->SubtractBackground(hRec, bkg_name, 0.95);
                 }
             }
             else
             {
-                systematicTUnfold[sys_name]->SubtractBackground(hRec, bkgName);
+                cout << "bkg name " << bkg_name << " sys type " << sys_type << " sys name " << sys_name << endl;
+                if (hRec == NULL) cout << "check histogram!" << endl;
+                systematicTUnfold[sys_name]->SubtractBackground(hRec, bkg_name);
             }
         }
     }
@@ -211,7 +213,7 @@ void ISRUnfold::subBkgs(TString file_path, TString channel_name, TString bin_pre
     delete filein;
 }
 
-void ISRUnfold::setSystematics(TString sysHistName)
+void ISRUnfold::set_systematics(TString sysHistName)
 {
     sysVector.push_back(sysHistName);
 }
@@ -344,7 +346,7 @@ void ISRUnfold::doISRUnfold(bool partialReg)
 
 
 // In this function, acceptance factors change only for PDF, Scale, AlphaS systematics
-void ISRUnfold::doAcceptCorr(TString filePath, TString bin_prefix, TString filePath_for_accept)
+void ISRUnfold::doAcceptCorr(TString filePath, TString filePath_for_accept)
 {
     TDirectory* topDir;
     TDirectory* varDir;
@@ -361,11 +363,11 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString bin_prefix, TString fileP
 
     TH1* hFiducialPhaseMC = NULL;
 
-    hFullPhaseMC = (TH1*) filein->Get("Acceptance/"+var+ "_" + bin_prefix + "/histo_DYJets");
+    hFullPhaseMC = (TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets");
     if(year==2016)
-        hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + bin_prefix + "/histo_DYJets10to50"));
+        hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets10to50"));
     else
-        hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + bin_prefix + "/histo_DYJets10to50_MG"));
+        hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets10to50_MG"));
 
     hFiducialPhaseMC = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY");
     TString mass_binned_sample_prefix[9] = {"M-100to200", "M-200to400", "M-400to500", "M-500to700", "M-700to800",
@@ -381,11 +383,11 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString bin_prefix, TString fileP
         {
             if(i==0)
             {
-                hFullPhaseMC_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" + bin_prefix + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
+                hFullPhaseMC_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
             }
             else
             {
-                hFullPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + bin_prefix + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
+                hFullPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
             }
         }
 
@@ -402,11 +404,11 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString bin_prefix, TString fileP
         {
             if(i==0)
             {
-                hFiducialPhaseMC_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + bin_prefix + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
+                hFiducialPhaseMC_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
             }
             else
             {
-                hFiducialPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + bin_prefix + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
+                hFiducialPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
             }
         }
 
@@ -472,16 +474,16 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString bin_prefix, TString fileP
                     if(i==0)
                     {
                         if( (((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) )
-                            hFiducialPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + bin_prefix + "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it));
+                            hFiducialPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" +  "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it));
                         else
-                            hFiducialPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + bin_prefix + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
+                            hFiducialPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
                     }
                     else
                     {
                         if( (((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) )
-                            hFiducialPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + bin_prefix + "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it)));
+                            hFiducialPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it)));
                         else
-                            hFiducialPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + bin_prefix + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
+                            hFiducialPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" +  "/histo_DYJets_" + mass_binned_sample_prefix[i]));
                     }
 
                 }
@@ -497,11 +499,11 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString bin_prefix, TString fileP
         // For PDF, AlphaS, Scale etc, nominator (of acceptance) also changes
         if( (((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) )
         {
-            hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "_" + bin_prefix + "/histo_DYJets_"+(*it));
+            hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets_"+(*it));
             if(year==2016)
-                hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + bin_prefix + "/histo_DYJets10to50_"+(*it)));
+                hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets10to50_"+(*it)));
             else
-                hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + bin_prefix + "/histo_DYJets10to50_MG_"+(*it)));
+                hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets10to50_MG_"+(*it)));
 
             if(filePath_for_accept != "")
             {
@@ -511,11 +513,11 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString bin_prefix, TString fileP
                 {
                     if(i==0)
                     {
-                        hFullPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" + bin_prefix + "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it));
+                        hFullPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it));
                     }
                     else
                     {
-                        hFullPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + bin_prefix + "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it)));
+                        hFullPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it)));
                     }
                 }
                 for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)

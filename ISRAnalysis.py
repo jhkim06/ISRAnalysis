@@ -39,11 +39,11 @@ class ISRAnalysis:
         self.var = var_
         self.n_mass_bins = None
         
-        self.out_dir_path    = "output/" +self.year+"/"+self.channel+"/"
+        self.out_dir_path     = "output/" +self.year+"/"+self.channel+"/"
         self.in_hist_path_txt = "inFiles/" +self.year+"/"+self.channel+"/fhist.txt"
 
         if channel_postfix_ != "" :
-            self.out_dir_path    = "output/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/"
+            self.out_dir_path     = "output/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/"
             self.in_hist_path_txt = "inFiles/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/fhist.txt"
     
         # Make output directory
@@ -80,39 +80,28 @@ class ISRAnalysis:
         self.unfold.setBias(self.bias)
         
         # Set response matrix
-        self.unfold.setNominalRM(self.input_root_file["nominal"][self.matrix_filekey], self.dir_path, self.bin_def)
+        self.unfold.setNominalRM(self.input_root_file["nominal"][self.matrix_filekey], self.dir_path)
 
-    def setPartialReg2D(self, regMode = 0, startMass = 320., startPt = 0., endMass = 320., endPt = 99.) :
-        pass
-       
-    def setInputHist(self, useMCInput = False, 
-                    unfoldObj = None, 
+    def set_input_hist(self, use_MC_input = False, 
                     sys_type = "Type_0", 
                     sys_name = "", 
-                    isFSR = False, 
-                    useMadgraph = False, 
-                    inputBinDef = None, 
-                    inputHistName="", 
+                    input_bin_def = None, 
                     useAccept=True) :
         
         hist_filekey_temp = "Data"
-        hist_postfix = self.makeSysHistPostfix(HistType.unf_input_hist, sys_type, sys_name)
 
-        if inputBinDef is not None :
-            bin_def = inputBinDef
-        else :
-            bin_def = self.bin_def
+        nominal_or_SYS = "nominal"
+        if sys_type == "Type_1" :
+            nominal_or_SYS = "SYS"
 
-        # TODO add selection key for nomianl or SYS
-        self.unfold.setUnfInput(self.input_root_file["nominal"][hist_filekey_temp], 
+        hist_postfix = self.make_sys_hist_postfix(HistType.unf_input_hist, sys_type, sys_name)
+
+        self.unfold.setUnfInput(self.input_root_file[nominal_or_SYS][hist_filekey_temp], 
                                 self.dir_path, 
-                                bin_def, sys_type, sys_name, hist_postfix)
+                                sys_type, sys_name,
+                                hist_postfix)
 
-    def setFromPreviousUnfold(self, unfoldObj) :
-
-        self.unfold.setFromPrevUnfResult(unfoldObj.getISRUnfold(self.var), True)
-            
-    def subFake(self, dirName = "Detector_DY_Fake", sys_type = "Type_0", sys_name = "", isFSR = False, inputBinDef = None):
+    def subFake(self, dir_name = "Detector_DY_Fake", sys_type = "Type_0", sys_name = "", isFSR = False):
             
         fakeList = ["DYJets", self.dy10to50HistName]
         hist_filekey_temp = "matrix" # FIXME save DY fake in the histogram file
@@ -120,133 +109,110 @@ class ISRAnalysis:
         if isFSR :
             hist_filekey_temp = "fsr_matrix"
 
-        if inputBinDef is not None :
-            bin_def = inputBinDef
-           
-        else :
-            bin_def = self.bin_def
-         
-
-        histPostfix_temp = self.makeSysHistPostfix(HistType.unf_bkg_hist, sys_type, sys_name)  
+        histPostfix_temp = self.make_sys_hist_postfix(HistType.unf_bkg_hist, sys_type, sys_name)  
         #print(histPostfix_temp)
 
         for fake_name in fakeList:
 
-            self.unfold.subBkgs(self.input_root_file[hist_filekey_temp], dirName, bin_def, fake_name, sys_type, sys_name, histPostfix_temp)
+            self.unfold.subBkgs(self.input_root_file[hist_filekey_temp], dir_name, fake_name, sys_type, sys_name, histPostfix_temp)
         
-    def setUnfoldBkgs(self, dirName = "ee2016", sys_type = "Type_0", sys_name = ""):
+    def set_bkgs(self, sys_type = "Type_0", sys_name = ""):
    
         if self.channel == "ee" : 
-            bkgList = ["DY_tau", "ttbar", "top", "antitop", "ww", "wz", "zz"] 
+            bkg_list = ["DY_tau", "ttbar", "top", "antitop", "ww", "wz", "zz"] 
         else :
-            bkgList = ["DYJets10to50ToTauTau", "DYJetsToTauTau", "WW_pythia", "WZ_pythia", "ZZ_pythia", "TTLL_powheg", "SingleTop_tW_antitop_NoFullyHad", "SingleTop_tW_top_NoFullyHad"] 
+            bkg_list = ["DY_tau", "ttbar", "top", "antitop", "ww", "wz", "zz"] 
 
-        histPostfix_temp = self.makeSysHistPostfix(HistType.unf_bkg_hist, sys_type, sys_name) 
-        #print(histPostfix_temp)
+        hist_postfix = self.make_sys_hist_postfix(HistType.unf_bkg_hist, sys_type, sys_name) 
         
-        for bkg_name in bkgList:
+        nominal_or_SYS = "nominal"
+        if sys_type == "Type_1" or sys_type == "Type_2" or sys_type == "Type_3" :
+            nominal_or_SYS = "SYS"
+
+        for bkg_name in bkg_list:
             hist_filekey_temp = "hist"
             if "SingleTop" in bkg_name and "AlphaS" in sys_name : # FIXME
-                histPostfix_temp = self.makeSysHistPostfix(HistType.unf_bkg_hist, "Type_3", sys_name) 
+                hist_postfix = self.make_sys_hist_postfix(HistType.unf_bkg_hist, "Type_3", sys_name) 
 
-            self.unfold.subBkgs(self.input_root_file["nominal"][bkg_name], dirName, self.bin_def, bkg_name, sys_type, sys_name, histPostfix_temp)
+            self.unfold.subBkgs(self.input_root_file[nominal_or_SYS][bkg_name], self.dir_path, 
+                                bkg_name, 
+                                sys_type, sys_name, hist_postfix)
             
-    def setSystematics(self, sys_type, sys_name, isFSR = False):
+    def set_systematics(self, sys_type, sys_name, isFSR = False):
 
-        #print("setSystematics")
-        self.unfold.setSystematics(sys_name)
+        self.unfold.set_systematics(sys_name)
 
-        matrix_filekey_temp = self.matrix_filekey
-        matrix_dir_path_temp = self.matrix_dirPath
-       
-        hist_postfix_temp = self.makeSysHistPostfix(HistType.unf_res_matrix, sys_type, sys_name)
+        matrix_filekey = self.matrix_filekey
+        hist_postfix = self.make_sys_hist_postfix(HistType.unf_res_matrix, sys_type, sys_name)
 
         if sys_name == "UnfoldingModel" :
-            matrix_filekey_temp = "matrix_mg"
+            matrix_filekey= "matrix_mg"
         if "fsrPHOTOS" in sys_name :
-            matrix_filekey_temp = "fsr_matrix_pythia"
+            matrix_filekey = "fsr_matrix_pythia"
         if "fsrPYTHIA" in sys_name :
-            matrix_filekey_temp = "fsr_matrix_photos"
+            matrix_filekey = "fsr_matrix_photos"
 
-        # make a function to make a full histogram name with systematic
-        #print("setSystematics", sys_name, hist_postfix_temp)
-        self.unfold.setSystematicRM(self.input_root_file["SYS"][matrix_filekey_temp], matrix_dir_path_temp, self.bin_def, sys_name, hist_postfix_temp)
+        self.unfold.setSystematicRM(self.input_root_file["SYS"][matrix_filekey], 
+                                    self.dir_path, 
+                                    sys_name, 
+                                    hist_postfix)
 
-    def makeSysHistPostfix(self, histType, sys_type, sys_name) :
+    def make_sys_hist_postfix(self, hist_type, sys_type, sys_name) :
 
-        if histType == HistType.unf_input_hist : # Input histogram
+        if hist_type == HistType.unf_input_hist : # Input histogram
 
             if sys_type == "Type_1":
-                sysHistPostfix = "_" + sys_name
+                sys_hist_postfix = "_" + sys_name
             else :
-                sysHistPostfix = ""
+                sys_hist_postfix = ""
 
-            return sysHistPostfix 
+            return sys_hist_postfix 
 
-        elif histType == HistType.unf_bkg_hist : # Background histogram
+        elif hist_type == HistType.unf_bkg_hist : # Background histogram
 
             if sys_type == "Type_1" or sys_type == "Type_2":
-                sysHistPostfix = "_" + sys_name
+                sys_hist_postfix = "_" + sys_name
             else :
-                sysHistPostfix = ""
-            return sysHistPostfix
+                sys_hist_postfix = ""
+            return sys_hist_postfix
 
-        elif histType == HistType.unf_res_matrix : # Response matrix
+        elif hist_type == HistType.unf_res_matrix : # Response matrix
             
             if sys_type == "Type_1" or sys_type == "Type_2" or sys_type == "Type_4" :
-                sysHistPostfix = "_" + sys_name
+                sys_hist_postfix = "_" + sys_name
                 if sys_name == "UnfoldingModel" or "fsr" in sys_name:
-                    sysHistPostfix = ""
+                    sys_hist_postfix = ""
             else :
-                sysHistPostfix = "" 
+                sys_hist_postfix = "" 
 
-            return sysHistPostfix
+            return sys_hist_postfix
 
         else :
             print("Which histogram do you mean?")
 
-    def checkIterEMUnfold(self):
-
-        self.unfold.checkIterEMUnfold()
-
     # Do unfold! 
-    def doUnfold(self, partialReg=True):
+    def do_unfold(self, partialReg=True):
 
         self.unfold.doISRUnfold(partialReg)
 
-
-    def doStatUnfold(self):
-
-        self.unfold.doStatUnfold()
-    
-
-    def getISRUnfold(self):
-        return self.unfold
-    
     def doAcceptance(self, isFSR = False, outName = "", useMassBinned = False) :
 
         if isFSR :
         
             if useMassBinned :  
                 self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_fullPhase'], 
-                                         self.bin_def, self.input_root_file["nominal"]['hist_updated_accept'])
+                                         self.input_root_file["nominal"]['hist_updated_accept'])
                 
             else :
-                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_fullPhase'], self.bin_def)
-                
+                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_fullPhase'])
          
         else : 
             if useMassBinned :
                 self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_drp1'], 
-                                         self.bin_def, self.input_root_file["nominal"]['hist_updated_accept'])
+                                         self.input_root_file["nominal"]['hist_updated_accept'])
                 
             else :
-                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_drp1'], self.bin_def)
-      
-
-    def drawCorrelation(self, var = "Mass", steering = None, useAxis = True, outName = ""):
-
-        self.unfold.drawCorrelation(var, steering, useAxis, outName)
+                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_drp1'])
 
     def combineOutFiles(self, prefix = "") :
 

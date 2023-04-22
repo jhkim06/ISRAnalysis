@@ -58,7 +58,7 @@ private:
     // Conditions for unfolding
     TUnfold::ERegMode regMode;
     TUnfoldDensity::EDensityMode densityMode;
-    double nominalBias;
+    double nominal_bias;
     double tau;
 
     // Bin definitions
@@ -119,7 +119,7 @@ public:
         year = year_;
         var = var_;
 
-        nominalBias = 1.;
+        nominal_bias = 1.;
         tau = 0.;
 
         regMode = regMode_;
@@ -162,32 +162,30 @@ public:
     void setBias(double bias);
 
     // Set nominal TUnfoldDensity
-    void setNominalRM(TString filepath, TString dirName, TString binDef = "");
+    void setNominalRM(TString filepath, TString dirName);
     void save_hists_from_responseM();
     // Set systematic TUnfoldDensity
-    void setSystematicRM(TString filepath, TString dirName,  TString binDef,
+    void setSystematicRM(TString filepath, TString dirName,
                          TString sysName,
                          TString histPostfix);
 
     // Set input histogram
     void setUnfInput(TString filepath = "",
                      TString dirName = "",
-                     TString binDef = "",
                      TString sysType = "",
                      TString sysName = "",
-                     TString histPostfix = "",
+                     TString sys_hist_postfix = "",
                      bool isFSR = false);
 
     // Set background histograms
     void subBkgs(TString filepath,
                  TString dirName = "",
-                 TString binDef = "",
                  TString bkgName = "",
                  TString sysType = "",
                  TString sysName = "",
                  TString histPostfix = "");
 
-    void setSystematics(TString sysHistName);
+    void set_systematics(TString sysHistName);
     
     void inline printSystematics()
     {
@@ -210,7 +208,7 @@ public:
                                 double endMass, double endPt);
 
     // Acceptance correction
-    void doAcceptCorr(TString filePath, TString binDef, TString filePath_for_accept = "");
+    void doAcceptCorr(TString filePath, TString filePath_for_accept = "");
 
     // Get histograms
     TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true);
