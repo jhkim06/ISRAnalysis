@@ -53,7 +53,7 @@ private:
     TString unfoldName;
     TString channelName; // electron or muon
     TString var; // dilepton mass or pt
-    int year;
+    TString year;
 
     // Conditions for unfolding
     TUnfold::ERegMode regMode;
@@ -104,7 +104,7 @@ public:
     // Constructor
     ISRUnfold(TString unfoldName_, 
               TString channel, 
-              int year_ = 2016, 
+              TString year_ = "2016", 
               TUnfold::ERegMode regMode_ = TUnfold::kRegModeNone, 
               bool verbose_ = false,
               TString var_ = "Mass", 
@@ -128,10 +128,7 @@ public:
         verbose = verbose_;
 
         // Make output root files
-        TString yearStr;
-        yearStr.Form("%d", (int)year);
-
-        fUnfoldOutPath = outputBaseDir+unfoldName+"_"+channelName+"_"+yearStr+"_"+var+".root";
+        fUnfoldOutPath = outputBaseDir+unfoldName+"_"+channelName+"_"+year+"_"+var+".root";
         fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");
 
         fUnfoldOut->mkdir("matrix");

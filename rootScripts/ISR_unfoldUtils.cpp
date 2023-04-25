@@ -364,7 +364,7 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString filePath_for_accept)
     TH1* hFiducialPhaseMC = NULL;
 
     hFullPhaseMC = (TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets");
-    if(year==2016)
+    if(year.Contains("2016"))
         hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets10to50"));
     else
         hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets10to50_MG"));
@@ -500,7 +500,7 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString filePath_for_accept)
         if( (((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) )
         {
             hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets_"+(*it));
-            if(year==2016)
+            if(year.Contains(2016))
                 hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets10to50_"+(*it)));
             else
                 hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets10to50_MG_"+(*it)));

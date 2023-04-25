@@ -70,7 +70,7 @@ class ISRAnalysis:
         # Create ISRUnfold object
         self.unfold  = rt.ISRUnfold(self.unfold_name, 
                                     self.channel, 
-                                    int(self.year), 
+                                    self.year, 
                                     self.mode, 
                                     False, 
                                     self.var, 
