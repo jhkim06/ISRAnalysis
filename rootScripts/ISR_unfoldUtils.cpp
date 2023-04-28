@@ -300,7 +300,7 @@ void ISRUnfold::doISRUnfold(bool partialReg)
     varDir->cd();
 
     bool useAxisBinning = false;
-    if(var == "1D_dimass")
+    if(var.Contains("1D"))
     {
         useAxisBinning = true;
     }
