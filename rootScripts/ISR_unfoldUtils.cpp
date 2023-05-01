@@ -300,7 +300,7 @@ void ISRUnfold::doISRUnfold(bool partialReg)
     varDir->cd();
 
     bool useAxisBinning = false;
-    if(var.Contains("1D"))
+    if(var.Contains("1D")) // FIXME check bin structure to decide whether to use axis_binning or not
     {
         useAxisBinning = true;
     }

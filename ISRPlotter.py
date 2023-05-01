@@ -11,6 +11,7 @@ import sys
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
                                AutoMinorLocator, LogLocator, NullFormatter, LogFormatter)
+                               
 from matplotlib.pyplot import cm
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
@@ -23,12 +24,12 @@ import matplotlib as mpl
 mpl.rcParams['hatch.linewidth'] = 0.3
 from matplotlib.lines import Line2D
 
-
 from scipy import optimize
 
 dashes = "--------------------------------------------------------------------------------"
 # root TH1 to DataFrame and plot using matplotlib
 class ISRPlotter :
+    
     def __init__(self, inputHistFilePath, jasonConfigFilePath, doSystematic=False, verbose=True, setQuantile=False) :
 
         print(dashes)
@@ -136,24 +137,15 @@ class ISRPlotter :
         self.inRootFile=rt.TFile.Open(inputHistFilePath, 'READ')
 
         if self.useTUnfoldBin :
-            for index, binName in enumerate(self.tunfoldBinNames) : # "Rec_Mass"
-                varDirName = binName.split("_")[1]
-                if len(self.variablePostfix) > 0 :
-                    
-                    varDirName = varDirName + "_" + self.variablePostfix[index]
+            
+            for var in ["2D_dimass_dipt", "2D_dipt_dimass"] :
+                self.binDef[var]=self.inRootFile.Get(self.topDirName+"/"+var+"/truth") 
 
-                self.binDef[binName.split("_")[1]]=self.inRootFile.Get(self.topDirName+"/"+varDirName+"/"+binName)
-                print (self.topDirName+"/"+varDirName+"/"+binName)
-
-            # Set massBins
-            # FIXME this works when 2D binning used
-            # When 2D bining used for (pt,m) mass ranges can be extracted but not the case when 1D bining  
-
-            temp_tvecd=self.binDef["Pt"].GetDistributionBinning(1)
+            # todo if the bin has two axis then use the second axis to draw each distribution of the first axis
+            temp_tvecd=self.binDef["2D_dipt_dimass"].GetDistributionBinning(1)
             temp_mass_bin_edges=temp_tvecd.GetMatrixArray()
             self.massBins.extend([ (temp_mass_bin_edges[index], temp_mass_bin_edges[index+1]) for index in range(temp_tvecd.GetNrows()-1)]) # list comprehension
 
-            #self.massBins.extend([(320, 10000)])
         else :
             if self.channel == "electron" :
                 self.massBins.extend([(50, 64), (64, 81), (81, 101), (101, 200), (200, 320), (320,830)])
@@ -164,7 +156,7 @@ class ISRPlotter :
         start_time = time.time()
 
         count_nSystematics = True
-        # FIXME make a function
+        
         # Get raw TH1 histograms
         # Convert them into DataFrame
         for variable in self.variables : # Mass 
@@ -172,7 +164,7 @@ class ISRPlotter :
             # dict[variable]
             varDir=variable
             if self.useTUnfoldBin :
-                varDir=variable.split("_")[0] # In case, TUnfoldBinning used
+                varDir=variable.split("__")[0] # In case, TUnfoldBinning used
                 if len(self.variablePostfix)>0 :
 
                     if varDir == "Mass" :
@@ -188,14 +180,12 @@ class ISRPlotter :
                     temp_dict=self.rawHistsDict[combinedName.split("_")[1]][variable]
                     if "BkgMC" in combinedName : 
                         self.bkgUsed = True
-
                 else :
                     temp_dict=self.rawHistsDict[combinedName.split("_")[1]][variable]
                
                 if variable not in self.rawHistsDict["MCTotal"] :
                     self.rawHistsDict["MCTotal"][variable]=dict()
 
-                temp_dict[combinedName]=dict() # combined histogram, rawHistDict["Data"]["Pt__0"]["Data_Data"]
                 isFirstFileinCombinedName=True # first sample in the combinedName
                 isLastFileinCombinedName=False
 
@@ -212,9 +202,6 @@ class ISRPlotter :
 
                     temp_dict[mcFileName][sysName]=dict()
                     temp_dict[mcFileName][sysName][postfix]=dict()
-                    if isFirstFileinCombinedName : 
-                        temp_dict[combinedName][sysName]=dict()
-                        temp_dict[combinedName][sysName][postfix]=dict()
 
                     self.setRawHistsDict(varDir, combinedName, mcFileName, sysName, postfix, variable, temp_dict, 
                     isFirstFileinCombinedName, isLastFileinCombinedName)
@@ -317,25 +304,18 @@ class ISRPlotter :
         else :
             histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName + '_' + sysName + sysPostfix 
 
+        # read histogram
         temp_TH1=self.inRootFile.Get(histToRead)
         if type(temp_TH1) != rt.TH1D :
             histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName 
             temp_TH1=self.inRootFile.Get(histToRead)
         
         if self.useTUnfoldBin :
-            temp_TH1 = self.binDef[varDir.split("_")[0]].ExtractHistogram(inputHistFileName + variable + sysName + sysPostfix, temp_TH1, 
+            temp_TH1 = self.binDef[varDir.split("__")[0]].ExtractHistogram(inputHistFileName + variable + sysName + sysPostfix, temp_TH1, 
                                                                             0, True, self.steeringTUnfold[variable]) 
 
         targetDict[inputHistFileName][sysName][sysPostfix]["TH1"] = temp_TH1
         targetDict[inputHistFileName][sysName][sysPostfix]["DataFrame"] = self.convertTH1toDataFrame(temp_TH1)
-
-        if isFirstFile :
-            targetDict[combinedName][sysName][sysPostfix]["TH1"] = temp_TH1.Clone("Clone_" + combinedName + inputHistFileName)
-            targetDict[combinedName][sysName][sysPostfix]["DataFrame"] = self.convertTH1toDataFrame(temp_TH1)
-        else :
-            targetDict[combinedName][sysName][sysPostfix]["TH1"].Add(temp_TH1)
-            if isLastFile :
-                self.convertTH1toDataFrame(targetDict[combinedName][sysName][sysPostfix]["TH1"], targetDict[combinedName][sysName][sysPostfix]["DataFrame"])
 
         del temp_TH1
 
@@ -434,6 +414,7 @@ class ISRPlotter :
 
         for variable in in_dict.keys() :
             out_dict[variable]=dict()
+            print(variable)
 
             for sample in in_dict[variable].keys() : # Note loop over samples defined in the "dictionary!"
                 
@@ -607,7 +588,7 @@ class ISRPlotter :
     def createMeanDataFrame(self, variable, TH1_hist) :
 
         #if "Pt" in variable :
-        if not variable.isalpha() and self.useTUnfoldBin:
+        if "dipt_dimass" in variable and self.useTUnfoldBin:
             #num_index = [x.isdigit() for x in variable].index(True)
             num_str = variable.split("__")[1]
             nth_mass_bin = int(num_str)
@@ -620,7 +601,7 @@ class ISRPlotter :
             return temp_df
 
         else :
-            if "Mass" in variable :
+            if "dimass_dipt" in variable :
                 # Get mean mass for all mass bins
                 #self.massBins
                 # Create DataFrame
@@ -822,11 +803,11 @@ class ISRPlotter :
         pd_series_highBinEdge = pd.Series(temp_binEdge[0][1:], range(1, nBin+1), name="high_bin_edge")
 
         dict_temp={
-            'bin_width': pd_series_binWidth,
-            'low_bin_edge': pd_series_lowBinEdge,
-            'high_bin_edge': pd_series_highBinEdge,
-            'content': temp_content,
-            'stat_error': temp_stat_error_array,
+            'bin_width':     pd_series_binWidth,
+            'low_bin_edge':   pd_series_lowBinEdge,
+            'high_bin_edge':  pd_series_highBinEdge,
+            'content':       temp_content,
+            'stat_error':    temp_stat_error_array,
         }
 
         pd_temp=pd.DataFrame(dict_temp, index=pd_series_binIndex)
@@ -910,7 +891,7 @@ class ISRPlotter :
                     write_xaxis_title=False, write_yaxis_title=False, setLogx = False, showLegend = False, show_additional_legend=False,
                     min=1e-1, max=1e9,
                     ratio_max = 1.35, ratio_min = 0.65, optimzeXrange=False, minimum_content=1, show_ratio=False, ext_objects=None, ext_names=None, 
-                    denominator="Data_Data", internal_names=None, draw_mode=0,
+                    denominator="Data_total", internal_names=None, draw_mode=0,
                     setRatioLogy = False, showNEvents=False, showChi2=False, ratioName=None, normNominator=False,
                     oneColumn=False, setMarker="o", setColor='red', xFactor=1., colors=None) :
 
@@ -940,7 +921,7 @@ class ISRPlotter :
         if len(denominator.split("_")) > 2 :
             denominator_name = "_".join(denominator.split("_")[2:])
         else :  
-            denominator_name=denominator
+            denominator_name="total"
 
         denominator_print_name = denominator.split("_")[0]
 
@@ -966,13 +947,13 @@ class ISRPlotter :
 
         else :
                                 # hist type, variable, plot name 
-            df_filter = self.dfs[denominator.split("_")[1]][variable][denominator_name]["upDownUnc"]['content'] > minimum_content
-            denominator_df=self.dfs[denominator.split("_")[1]][variable][denominator_name]["upDownUnc"][df_filter].copy()
+            df_filter = self.dfs[denominator.split("_")[0]][variable][denominator_name]["upDownUnc"]['content'] > minimum_content
+            denominator_df=self.dfs[denominator.split("_")[0]][variable][denominator_name]["upDownUnc"][df_filter].copy()
             nEvents[denominator_print_name]=denominator_df["content"].sum()
             denominator_hist=self.rawHistsDict[denominator.split("_")[1]][variable][denominator_name]["Nominal"]["Nominal"]["TH1"]
 
             for combinedName in self.samples :
-                data_df[combinedName]=self.dfs[combinedName.split("_")[1]][variable][combinedName]["upDownUnc"][df_filter].copy() 
+                data_df[combinedName]=self.dfs[combinedName.split("_")[1]][variable]["total"]["upDownUnc"][df_filter].copy()
 
         # set nominators
         if draw_mode == 0 :
@@ -1112,10 +1093,10 @@ class ISRPlotter :
             channelName = "\mu^{+}\mu^{-}"
 
         if write_yaxis_title : top_axis.text(0., 1.07, "CMS Work in progress", fontsize='xx-large', transform=top_axis.transAxes)
-        if write_xaxis_title : top_axis.text(1., 1.07, "(13 TeV, " + self.lumi[self.year] + " " + self.year + ")", fontsize='xx-large', transform=top_axis.transAxes, ha='right')
+        #if write_xaxis_title : top_axis.text(1., 1.07, "(13 TeV, " + self.lumi[self.year] + " " + self.year + ")", fontsize='xx-large', transform=top_axis.transAxes, ha='right')
 
         # print mass range top right
-        if not variable.isalpha() :
+        if "dipt_dimass" in variable :
 
             #num_index = [x.isdigit() for x in variable].index(True)
             num_str = variable.split("__")[1]
@@ -1720,10 +1701,10 @@ class ISRPlotter :
         combined_pt_df = None
         for nth_mass_bin in range(len(self.massBins)) :
             if nth_mass_bin == 0 :
-                combined_pt_df=in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy()
+                combined_pt_df=in_df["2D_dipt_dimass__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy()
             else :
                 #combined_pt_df=combined_pt_df.append(in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy(), ignore_index=True)
-                combined_pt_df=pd.concat([combined_pt_df, in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy()], ignore_index=True)
+                combined_pt_df=pd.concat([combined_pt_df, in_df["2D_dipt_dimass__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy()], ignore_index=True)
         return combined_pt_df
 
     def combinedQuantilePtDataFrame(self, name="Data") :
@@ -1894,7 +1875,7 @@ class ISRPlotter :
             if "Data" in name :
                 isData=True
 
-            temp_mass_df=self.dfs[name]["Mass"]["total"]["upDownUnc_meanValue"]
+            temp_mass_df=self.dfs[name]["2D_dimass_dipt"]["total"]["upDownUnc_meanValue"]
             temp_pt_df=self.combinedPtDataFrame(name)
 
             temp_mass_total_up =   np.sqrt(np.square(temp_mass_df["total_Up"]) + np.square(temp_mass_df["stat_error"]))
@@ -2023,14 +2004,14 @@ class ISRPlotter :
                     current_facecolor=facecolor_list[index]
 
                 if index==0 :
-                    temp_mass_df =self.getDict(name)["Mass"]["total"]["upDownUnc_meanValue"]
+                    temp_mass_df =self.getDict(name)["2D_dimass_dipt"]["total"]["upDownUnc_meanValue"]
                     temp_pt_df   =self.combinedPtDataFrame(name)
                     if self.setQuantile : 
                         temp_quantile_pt_df = self.combinedQuantilePtDataFrame(name)
 
                 else :
                     if objects_to_plot[index-1].useTUnfoldBin :
-                        temp_mass_df=objects_to_plot[index-1].getDict(name)["Mass"]["total"]["upDownUnc_meanValue"]
+                        temp_mass_df=objects_to_plot[index-1].getDict(name)["2D_dimass_dipt"]["total"]["upDownUnc_meanValue"]
                         temp_pt_df=objects_to_plot[index-1].combinedPtDataFrame(name)
                         if self.setQuantile :
                             temp_quantile_pt_df=objects_to_plot[index-1].combinedQuantilePtDataFrame(name)
@@ -2058,7 +2039,7 @@ class ISRPlotter :
                 if index==0 or objects_to_plot[index-1].useTUnfoldBin :
 
                     if ratios == False :
-                        ax.errorbar(temp_mass_df["mean"], temp_pt_df["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc=current_facecolor, label=label_name, linewidth=0.5, ms = 4)
+                        ax.errorbar(temp_mass_df["mean"], temp_pt_df["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc="none", label=label_name, linewidth=0.5, ms = 4)
                         if self.setQuantile :
                             ax.errorbar(temp_mass_df["mean"], temp_quantile_pt_df["q_0.7"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, mfc="none", label="q=0.7", linewidth=0.5, ms = 4)
 
@@ -2147,9 +2128,9 @@ class ISRPlotter :
                      'mean pt': temp_pt_df["mean"].values, "mean pt stat": temp_pt_df["stat_error"], "mean pt sys": temp_pt_df["total_Up"]}
                 print(pd.DataFrame(data=d))
 
-                if do_linear_fit[index] :
-                    if isData :
-                        self.doLogLinearFit(ax, allMeanMassDF, allMeanPtDF, allErrorMassList, allErrorPtList, "black")
+                #if do_linear_fit[index] :
+                #    if isData :
+                #        self.doLogLinearFit(ax, allMeanMassDF, allMeanPtDF, allErrorMassList, allErrorPtList, "black")
 
         if showCDF :
             
@@ -2260,7 +2241,8 @@ class ISRPlotter :
         if outPdfPostfix is not None :
             outPdfName = self.outDirPath+self.plotPrefix+"_ISR_comparison.pdf"
 
-        plt.savefig(self.outDirPath+self.plotPrefix+"_"+outPdfPostfix + "_comparison.pdf", format="pdf", dpi=300)
+        #plt.savefig(self.outDirPath+self.plotPrefix+"_"+outPdfPostfix + "_comparison.pdf", format="pdf", dpi=300)
+        plt.savefig(self.outDirPath+self.plotPrefix+"_test_comparison.pdf", format="pdf", dpi=300)
         plt.close(fig)
 
     def make_error_boxes(self, ax, xdata, ydata, xerror, yerror,
