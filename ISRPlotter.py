@@ -25,6 +25,40 @@ mpl.rcParams['hatch.linewidth'] = 0.3
 from matplotlib.lines import Line2D
 
 from scipy import optimize
+import mplhep as hep
+
+def root_to_numpy(hist) :
+            
+    values = []
+    bins = []
+    error = []  
+                
+    nbinsx = hist.GetNbinsX()
+    for ibin in range(nbinsx):
+        values.append(hist.GetBinContent(ibin+1))
+        error.append(hist.GetBinError(ibin+1))
+        bins.append(hist.GetXaxis().GetBinLowEdge(ibin+1))
+                    
+    bins.append(bins[-1]+hist.GetBinWidth(nbinsx))
+                    
+    values = np.array(values)
+    bins = np.array(bins)
+    error = np.array(error)
+                    
+    return (values, bins), error
+
+def divide(nominator, denominator, output_type='root'):# 'root', 'numpy'
+
+    ratio = nominator.Clone("ratio")
+    ratio.Divide(denominator)
+
+    if output_type == 'numpy' :
+        # (values, bins, error)
+        return root_to_numpy(ratio)
+
+    else :
+        # return root histogram
+        return ratio
 
 dashes = "--------------------------------------------------------------------------------"
 # root TH1 to DataFrame and plot using matplotlib
@@ -886,7 +920,7 @@ class ISRPlotter :
                     write_xaxis_title=False, write_yaxis_title=False, setLogx = False, showLegend = False, show_additional_legend=False,
                     min=1e-1, max=1e9,
                     ratio_max = 1.35, ratio_min = 0.65, optimzeXrange=False, minimum_content=1, show_ratio=False, ext_objects=None, ext_names=None, 
-                    denominator="Data_total", internal_names=None, draw_mode=0,
+                    denominator="total_Data", internal_names=None,
                     setRatioLogy = False, showNEvents=False, showChi2=False, ratioName=None, normNominator=False,
                     oneColumn=False, setMarker="o", setColor='red', xFactor=1., colors=None) :
 
@@ -896,471 +930,63 @@ class ISRPlotter :
         else :
             top_axis = axis[0] 
 
-        '''
-        Draw modes
-        0. Default mode: Data and MC comparison as in the configuration file. 
-        In this mode, MCs are stacked and the ratio is data divided by total MC.
-        '''
-        #print("variable ", variable)
-        # Get DataFrame
-        # len(denominator.split("_")) == 2 -> to draw combined plot as defined in the configuration file
-        # len(denominator.split("_")) == 3 -> to draw a element sample plot of the combined sample as defined in the configuration file 
-        #or to draw a modified plot such as a background subtracted data or total barckground mc 
-        
-        denominator_hist_type = denominator.split("_")[0]
-        denominator_hist_name = denominator.split("_")[1]
+        denominator_hist_type = denominator.split("_")[1]
+        denominator_hist_name = denominator.split("_")[0]
         
         if len(denominator.split("_")) > 2 :
-            denominator_name = "_".join(denominator.split("_")[2:])
             denominator_label_name = denominator.split("_")[2:]
-        else :
-            denominator_name="total"
 
-        denominator_print_name = denominator.split("_")[0]
-
+        denominator_print_name = denominator.split("_")[1]
         denominator_df=None
         denominator_hist=None
-        default_nominator_hist_type="MCTotal"
-        default_nominator_hist_name="total"
-        default_nominator_hist=None
-        data_df={}
-        additional_df=[] 
-        additional_handle=[]
-        additional_names=[]
-        default_nominator_handle = None
 
-        nEvents={}
+        nominator_hist_type="MCTotal"
+        nominator_hist_name="total"
+        nominator_hist=None
 
-        # hist type, variable, plot name
         df_filter = self.dfs[denominator_hist_type][variable][denominator_hist_name]["upDownUnc"]['content'] > minimum_content
-        denominator_df=self.dfs[denominator_hist_type][variable][denominator_hist_name]["upDownUnc"][df_filter].copy()
-        nEvents[denominator_print_name]=denominator_df["content"].sum()
-        denominator_hist=self.rawHistsDict[denominator_hist_type][variable][denominator_hist_name]["Nominal"]["Nominal"]["TH1"]
 
-        for combinedName in self.samples :
-            data_df[combinedName]=self.dfs[combinedName.split("_")[1]][variable]["total"]["upDownUnc"][df_filter].copy()
+        # set denominator
+        denominator_df   = self.dfs[denominator_hist_type][variable][denominator_hist_name]["upDownUnc"][df_filter].copy()
+        denominator_hist = self.rawHistsDict[denominator_hist_type][variable][denominator_hist_name]["Nominal"]["Nominal"]["TH1"]
 
         # set nominators
-        default_nominator=self.dfs[default_nominator_hist_type][variable][default_nominator_hist_name]["upDownUnc"][df_filter].copy()
-        default_nominator_hist=self.rawHistsDict[default_nominator_hist_type][variable][default_nominator_hist_name]["Nominal"]["Nominal"]["TH1"]
+        nominator_df      = self.dfs[nominator_hist_type][variable][nominator_hist_name]["upDownUnc"][df_filter].copy()
+        nominator_hist    = self.rawHistsDict[nominator_hist_type][variable][nominator_hist_name]["Nominal"]["Nominal"]["TH1"]
             
         channelName = "e^{+}e^{-}"
         if self.channel == "muon" :
             channelName = "\mu^{+}\mu^{-}"
 
-        if write_yaxis_title : top_axis.text(0., 1.07, "CMS Work in progress", fontsize='xx-large', transform=top_axis.transAxes)
-        #if write_xaxis_title : top_axis.text(1., 1.07, "(13 TeV, " + self.lumi[self.year] + " " + self.year + ")", fontsize='xx-large', transform=top_axis.transAxes, ha='right')
-
-        # print mass range top right
-        if "dipt_dimass" in variable :
-
-            num_str = variable.split("__")[1]
-            nth_bin = int(num_str)
-            if not oneColumn :
-                top_axis.text(0.05, .8, "{:.0f}".format(self.massBins[nth_bin][0])  + "$ < M^{\mathit{"+channelName+"}} < $" + "{:.0f} GeV".format(self.massBins[nth_bin][1]),
-                              fontsize='xx-large', transform=top_axis.transAxes, horizontalalignment='left')
-
-        if variable == "Mass" :
-            top_axis.text(0.05, .9, "$p_{T}$ < 100 GeV", fontsize='xx-large', transform=top_axis.transAxes, horizontalalignment='left'),
-
-        label_list = []
-        plot_list = []
-        color_list = []
-
-
         if show_ratio : 
-            ratio=default_nominator.content/  denominator_df.content
-            one_points= denominator_df.content/ denominator_df.content
-            ratio.replace(np.inf, 0, inplace=True)
-            one_points.replace(np.inf, 0, inplace=True)
+            ratio, ratio_error = divide(nominator_hist, denominator_hist, output_type='numpy')
 
-            additional_ratios = []
-            for index in range(len(additional_df)) : 
+        # bins
+        bins = denominator_df.low_bin_edge.values
+        last_edge = denominator_df.high_bin_edge.values[-1]
+        bins = np.append(bins, last_edge)
 
-                ratio_ = additional_df[index].content/  denominator_df.content
-                ratio_.replace(np.inf, 0, inplace=True)
-                additional_ratios.append(ratio_)
-
-        # Set basic histogram configuration
-        x_bin_centers= denominator_df['low_bin_edge'] + denominator_df['bin_width']/2.
-        x_bins=denominator_df['low_bin_edge'].values
-        x_bins=np.append(x_bins, denominator_df['high_bin_edge'].iloc[-1])
-        bin_width=denominator_df['bin_width']
-        nbins=len(denominator_df.index)
-
-        if optimzeXrange :
-            bin_range_dict = {}
-            for index in range(len(denominator_df['low_bin_edge'])) :
-                if index == 0 :
-                    temp_initial_index = index
-                    continue
-
-                current_df_index = denominator_df['low_bin_edge'].index[index]
-                previous_df_index = denominator_df['low_bin_edge'].index[index-1]
-
-                if current_df_index == previous_df_index + 1 :
-                    if index == len(denominator_df['low_bin_edge'])-1 :
-                        temp_length = (index) - temp_initial_index
-                        bin_range_dict[(temp_initial_index, index)] = temp_length
-                    continue
-                else :
-
-                    temp_length = (index) - temp_initial_index
-                    bin_range_dict[(temp_initial_index, index-1)] = temp_length
-
-                    temp_initial_index = index
-
-                    if index == len(denominator_df['low_bin_edge'])-1 :
-                        temp_length = 1
-                        bin_range_dict[(temp_initial_index, index)] = temp_length
-
-            if len(bin_range_dict) == 0 :
-                x_min=denominator_df['low_bin_edge'].iloc[0]
-                x_max=denominator_df['high_bin_edge'].iloc[-1]
-            else :
-                min_index, max_index = max(bin_range_dict.keys(), key=(lambda key: bin_range_dict[key]))
-                x_min=denominator_df['low_bin_edge'].iloc[min_index]
-                x_max=denominator_df['high_bin_edge'].iloc[max_index]
-            nbins=len(x_bin_centers)
-
-        else :
-            x_min=denominator_df['low_bin_edge'].iloc[0]
-            x_max=denominator_df['high_bin_edge'].iloc[-1]
-
-        if setLogx :
-            if x_min == 0 :
-                #x_min = x_bin_centers.values[0]
-                x_min = 0.1
-
-        if len(axis) == 2: 
-            top_axis.set_xticklabels([]) # turn off xais label
-        top_axis.set_xlim(x_min, x_max)
-
-        binWidthnumpy = np.asarray([denominator_df['bin_width']/2.])
-        binWidthxerr = np.append(binWidthnumpy, binWidthnumpy, axis=0)
-
-        # Check if nominator and denominator have the same bin definitions
-        if divde_by_bin_width:
-            
-            if write_yaxis_title: top_axis.set_ylabel('Events/1 GeV', fontsize='xx-large', ha='right', y=1.0, labelpad=15)
-
-            default_nominator["content"]=default_nominator["content"]/ bin_width
-            default_nominator["stat_error"]=default_nominator["stat_error"]/ bin_width
-            default_nominator["total_Up"]=default_nominator["total_Up"]/ bin_width
-            default_nominator["total_Down"]=default_nominator["total_Down"]/ bin_width
-
-            denominator_df["content"]=denominator_df["content"]/ bin_width
-            denominator_df["stat_error"]=denominator_df["stat_error"]/bin_width
-            denominator_df["total_Up"]=denominator_df["total_Up"]/bin_width
-            denominator_df["total_Down"]=denominator_df["total_Down"]/bin_width
-
-            for combinedName in self.samples :
-
-                data_df[combinedName]["content"]=data_df[combinedName]["content"]/ bin_width
-                data_df[combinedName]["stat_error"]=data_df[combinedName]["stat_error"]/ bin_width
-                data_df[combinedName]["total_Up"]=data_df[combinedName]["total_Up"]/ bin_width
-                data_df[combinedName]["total_Down"]=data_df[combinedName]["total_Down"]/ bin_width
-
-            for index in range(len(additional_df)) :
-          
-                additional_df[index]["content"]=additional_df[index]["content"]/ bin_width
-                additional_df[index]["stat_error"]=additional_df[index]["stat_error"]/ bin_width
-                additional_df[index]["total_Up"]=additional_df[index]["total_Up"]/ bin_width
-                additional_df[index]["total_Down"]=additional_df[index]["total_Down"]/ bin_width
-
-        else :
-            if write_yaxis_title: top_axis.set_ylabel('Events/Bin', fontsize='xx-large', ha='right', y=1.0, labelpad=15)
-
-        if oneColumn :  
-
-            default_nominator_sum = default_nominator["content"].sum()
-            default_nominator["content"] = default_nominator["content"]/default_nominator_sum * xFactor
-            default_nominator["stat_error"] = default_nominator["stat_error"]/default_nominator_sum * xFactor
-            default_nominator["total_Up"] = default_nominator["total_Up"]/default_nominator_sum * xFactor
-            default_nominator["total_Down"] = default_nominator["total_Down"]/default_nominator_sum * xFactor
-
-            denominator_df_sum = denominator_df["content"].sum()
-            denominator_df["content"] = denominator_df["content"]/denominator_df_sum * xFactor
-            denominator_df["stat_error"] = denominator_df["stat_error"]/denominator_df_sum * xFactor
-            denominator_df["total_Up"] = denominator_df["total_Up"]/denominator_df_sum * xFactor
-            denominator_df["total_Down"] = denominator_df["total_Down"]/denominator_df_sum * xFactor
-
-            for combinedName in self.samples :
-
-                temp_sum = data_df[combinedName]["content"].sum()
-                data_df[combinedName]["content"]=data_df[combinedName]["content"]/temp_sum * xFactor
-                data_df[combinedName]["stat_error"]=data_df[combinedName]["stat_error"]/temp_sum * xFactor
-                data_df[combinedName]["total_Up"]=data_df[combinedName]["total_Up"]/temp_sum * xFactor
-                data_df[combinedName]["total_Down"]=data_df[combinedName]["total_Down"]/temp_sum * xFactor
-
-            for index in range(len(additional_df)) :
-            
-                temp_sum = additional_df[index]["content"].sum()
-                additional_df[index]["content"]=additional_df[index]["content"]/temp_sum * xFactor
-                additional_df[index]["stat_error"]=additional_df[index]["stat_error"]/temp_sum * xFactor
-                additional_df[index]["total_Up"]=additional_df[index]["total_Up"]/temp_sum * xFactor
-                additional_df[index]["total_Down"]=additional_df[index]["total_Down"]/temp_sum * xFactor
-
-        #################################################################################
-        #
-        #                                   Now draw...
-        #
-        #################################################################################
-
-        fmt_denominator="ok"
-
-        # drw denominator
-        if oneColumn :
-            denominator_handle = top_axis.errorbar(x_bin_centers, denominator_df["content"], xerr=bin_width/2., yerr=denominator_df["stat_error"], 
-                                                    fmt=setMarker + "k", fillstyle='none', ecolor="black", markersize=15, zorder=4)
-        else :
-            if "Data" in denominator :
-                denominator_handle = top_axis.errorbar(x_bin_centers, denominator_df["content"], xerr=bin_width/2., yerr=denominator_df["stat_error"], 
-                                                        fmt=fmt_denominator, ecolor='black', markersize=5, zorder=4)
-            else :
-                denominator_handle = top_axis.errorbar(x_bin_centers, denominator_df["content"], xerr=bin_width/2., yerr=denominator_df["stat_error"], 
-                                                        fmt="o", ecolor=setColor, markeredgecolor=setColor, markerfacecolor="None", markersize=5, zorder=4)
-
-        denominator_abs_systematic=self.makeErrorNumpy(denominator_df.total_Up, denominator_df.total_Down)
-
-        if "Data" in denominator :
-            self.make_error_boxes(top_axis, x_bin_centers.values, denominator_df["content"], binWidthxerr, denominator_abs_systematic,
-                                  showBar=False, alpha=0.2, edgecolor='None', facecolor='black', zorder=2, hatch_style="////")
-        else :
-            self.make_error_boxes(top_axis, x_bin_centers.values, denominator_df["content"], binWidthxerr, denominator_abs_systematic,
-                                  showBar=False, alpha=0.2, edgecolor='None', facecolor=setColor)
-
-        if draw_mode == 0 : 
-
-            default_nominator_color = setColor
-
-            alpha = 0.2
-            edgecolor = 'None'
-            showBar = False
-            barFmt = "None"
-            
-            if len(self.stackOrder) == 0 :
-                alpha = 0.7
-                edgecolor = setColor
-                showBar = True
-                barFmt = "s"
-            
-            mc_abs_systematic=self.makeErrorNumpy(default_nominator.total_Up, default_nominator.total_Down)
-            self.make_error_boxes(top_axis, x_bin_centers.values, default_nominator["content"], binWidthxerr, mc_abs_systematic,
-                                  showBar=True, alpha=alpha, edgecolor=edgecolor, facecolor=setColor, barFmt=barFmt)
-
-            color=iter(cm.rainbow(np.linspace(0,1,len(self.stackOrder))))
+        hep.cms.label("Preliminary", data=True, lumi=50, year=2016, ax=top_axis, fontsize=20)
+        hep.histplot((denominator_df.content, bins), ax=top_axis, binwnorm=1., yerr=True, histtype='errorbar', label="test", color='black')
+        hep.histplot((nominator_df.content, bins), ax=top_axis, binwnorm=1., yerr=True, histtype='step', label="test", color='red')
+        top_axis.set_xlim(bins[0], bins[-1])
         
-            stacks = 0
-            for i, stack in enumerate(self.stackOrder) :
+        print(ratio)
+        hep.histplot((ratio[0], bins), ax=bottom_axis, yerr=ratio_error, histtype='step', label="ratio", color='red')
+        bottom_axis.set_xlim(bins[0], bins[-1])
+        bottom_axis.set_ylim(ratio_min, ratio_max)
 
-                label_name = stack.split("_")[0]
-
-                if len(self.stackOrder) == 1 :
-                    temp_color = setColor
-                else :
-                    temp_color = next(color)
-
-                handle = top_axis.bar(x_bin_centers, data_df[stack]['content'], width = bin_width, color=temp_color, bottom=stacks, alpha=0.7)
-                plot_list.append(handle)
-                label_list.append(label_name)
-                stacks=stacks+data_df[stack]['content']
-
-        # plot legend settings
-        if showLegend :
-
-            if showNEvents :
-                label_list.append(denominator_print_name + ": {:.1f}".format(nEvents[denominator_print_name])) 
-            else :
-                if oneColumn :
-                    label_list.append(denominator_print_name + " {:.0f}".format(self.massBins[nth_bin][0])  + "$ < M^{\mathit{"+channelName+"}} < $" + "{:.0f}".format(self.massBins[nth_bin][1]))
-                else :
-                    label_list.append(denominator_print_name)
-
-            plot_list.append(denominator_handle)
-
-            label_list = label_list[::-1]
-            plot_list = plot_list[::-1]
-
-            if oneColumn :
-                self.plots_list.extend(plot_list)
-                self.labels_list.extend(label_list) 
-
-                top_axis.legend(tuple(self.plots_list), tuple(self.labels_list), loc="best",
-                                ncol=2, framealpha=0., fontsize='x-large')
-            else :
-                top_axis.legend(tuple(plot_list), tuple(label_list), loc="upper right", framealpha=0., fontsize='x-large')
-
-        top_axis.tick_params(bottom=True, top=True, left=True, right=True, which="both", direction='in')
-        top_axis.tick_params(length=10, which='major')
-        top_axis.tick_params(length=5, which='minor')
-        top_axis.xaxis.set_minor_locator(AutoMinorLocator())
-        
-        # y axis settings
-        if setLogy :
-            top_axis.set_yscale("log")
-            ymin = 1e-2* denominator_df["content"].min()
-            ymax = 1e2 * denominator_df["content"].max()
-            
-            if ymin <= 0 :
-                ymin = 1e-1
-            
-            if oneColumn :
-                ymin = min
-                ymax = max
-                
-            top_axis.set_ylim(ymin, ymax)
-            top_axis.yaxis.set_major_locator(LogLocator(10, numticks=14))
-            top_axis.yaxis.set_minor_locator(LogLocator(10, subs=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9), numticks=14))
-
-        else :
-            #top_axis.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.2e'))
-            if draw_mode == 4 : 
-                if write_yaxis_title: top_axis.set_ylabel('Relative Uncertainty', fontsize='xx-large', ha='right', y=1.0, labelpad=15)
-                top_axis.set_ylim(-1.5 * denominator_df.total_Down.abs().max(), 1.5 * denominator_df.total_Up.abs().max())
-            elif draw_mode == 5 : 
-                if write_yaxis_title: top_axis.set_ylabel('Relative Uncertainty', fontsize='xx-large', ha='right', y=1.0, labelpad=15)
-                top_axis.set_ylim(-1.5 * nominal_mean_pt_df.total_Down.abs().max(), 1.5 * nominal_mean_pt_df.total_Up.abs().max())
-                top_axis.set_xlim(-1.5 * nominal_mean_mass_df.total_Down.max(), 1.5 * nominal_mean_mass_df.total_Up.max())
-            else :
-                top_axis.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-                top_axis.set_ylim(0., 1.5 * denominator_df["content"].max())
-
-        if setLogx :
-            top_axis.set_xscale("log")
-
-        # Draw vertical lines
-        #if "Mass" in variable and x_max > 200. :
-        #    for bin_ in self.massBins[:-1] :
-        #        top_axis.axvline(bin_[1], color='black', linestyle=":", linewidth=0.5, zorder=3)
-
-        varName, unit = self.setXaxisLabel(variable)
-
-        if showChi2 :
-    
-            nbins=denominator_hist.GetNbinsX()
-            res = np.zeros(nbins)
-            chi2=denominator_hist.Chi2Test(default_nominator_hist, "CHI2", res)
-            top_axis.text(0.05, 0.9,'Chi2/NDF= {:.2f}'.format(chi2), fontsize='medium', transform=top_axis.transAxes)
-
-        if len(axis) == 1 :
-            if draw_mode == 5 :
-                if write_xaxis_title : top_axis.set_xlabel('Relative Uncertainty', fontsize='xx-large', ha='right', x=1.0, labelpad=10)
-            else :
-                if write_xaxis_title : top_axis.set_xlabel(varName + " " + unit, fontsize='xx-large', ha='right', x=1.0, labelpad=10) 
-
-        ###################################################################
-        #
-        #
-        #               Bottom plot
-        #
-        ###################################################################
-
-        # Hide tick labels
-        if len(axis) == 2 :
-            top_axis.set_xticklabels([])
-
-            bottom_axis.grid(True, axis='y', color='black', linewidth=0.3, linestyle="--")
-            
-            bottom_axis.set_xlim(x_min, x_max)
-            if setRatioLogy :
-                bottom_axis.set_yscale("log")
-                if ratio_min == 0 : ratio_min = 1e-4
-            bottom_axis.set_ylim(ratio_min,ratio_max)
-            if setLogx :
-                bottom_axis.set_xscale("log")
-                bottom_axis.xaxis.set_minor_formatter(LogFormatter(base=10.0, labelOnlyBase=False, minor_thresholds=(2,1))) # show numbers for each tick
-            else :
-                #bottom_axis.xaxis.set_minor_formatter(FormatStrFormatter("%.0f")) # show numbers for each tick
-                bottom_axis.xaxis.set_minor_locator(AutoMinorLocator())
-
-            bottom_axis.axhline(1., color='black', linewidth=1, zorder=5)
-            bottom_axis.tick_params(bottom=True, top=True, left=True, right=True, which='both', direction='in')
-            bottom_axis.tick_params(length=10, which='major')
-            bottom_axis.tick_params(length=5, which='minor')
-
-            bottom_axis.set_xlim(x_min, x_max)
-            if setRatioLogy :
-                bottom_axis.set_yscale("log")
-                if ratio_min == 0 : ratio_min = 1e-4
-            bottom_axis.set_ylim(ratio_min,ratio_max)
-            if setLogx :
-                bottom_axis.set_xscale("log")
-                bottom_axis.xaxis.set_minor_formatter(LogFormatter(base=10.0, labelOnlyBase=False, minor_thresholds=(2,1))) # show numbers for each tick
-            else :
-                #bottom_axis.xaxis.set_minor_formatter(FormatStrFormatter("%.0f")) # show numbers for each tick
-                bottom_axis.xaxis.set_minor_locator(AutoMinorLocator())
-
-            bottom_axis.axhline(1., color='black', linewidth=1, zorder=5)
-            bottom_axis.tick_params(bottom=True, top=True, left=True, right=True, which='both', direction='in')
-            bottom_axis.tick_params(length=10, which='major')
-            bottom_axis.tick_params(length=5, which='minor')
-            if setRatioLogy == False :
-                bottom_axis.yaxis.set_minor_locator(AutoMinorLocator())
-                
-            if write_xaxis_title :
-                bottom_axis.set_xlabel(varName + " " + unit, fontsize='xx-large', ha='right', x=1.0, labelpad=10)
-            else :
-                bottom_axis.set_xticklabels([])
-            
-            if write_yaxis_title :
-                if ratioName is None :
-                    bottom_axis.set_ylabel("MC/Data", fontsize='xx-large', labelpad=15)
-                else :
-                    bottom_axis.set_ylabel(ratioName, fontsize='xx-large', labelpad=15)
-
-
-
-            #color='red'
-            color = default_nominator_color
-            #bottom_axis.hist(x_bin_centers, bins=x_bins, weights=ratio, histtype = 'step', color=color, linewidth=0.7)
-            #
-
-            denominator_systematic = self.makeErrorNumpy(denominator_df.total_Up/denominator_df.content, denominator_df.total_Down/denominator_df.content)
-            denominator_statistic = self.makeErrorNumpy(denominator_df.stat_error/denominator_df.content, denominator_df.stat_error/denominator_df.content)
-
-            self.make_error_boxes(bottom_axis, x_bin_centers.values, one_points, binWidthxerr, denominator_systematic,
-                                  showBar=False, alpha=0.1, edgecolor='None', facecolor='black', zorder=2, hatch_style="////")
-
-            self.make_error_boxes(bottom_axis, x_bin_centers.values, one_points, binWidthxerr, denominator_statistic,
-                                  showBox=False, showBar=True, alpha=0.1, edgecolor='None', facecolor='black', barFmt=".", zorder=2, barMfc='black')
-
-            mc_systematic      = self.makeErrorNumpy(default_nominator.total_Up/ denominator_df.content, default_nominator.total_Down/ denominator_df.content)
-            mc_statistic = self.makeErrorNumpy(default_nominator.stat_error/denominator_df.content, default_nominator.stat_error/denominator_df.content)
-
-            self.make_error_boxes(bottom_axis, x_bin_centers.values, ratio.values, binWidthxerr, mc_systematic,
-                                  showBar=False, alpha=0.2, edgecolor='None', facecolor=color, zorder=4)
-
-            self.make_error_boxes(bottom_axis, x_bin_centers.values, ratio.values, binWidthxerr, mc_statistic,
-                                  showBox=False, showBar=True, alpha=0.2, edgecolor=color, facecolor=color, zorder=2, barFmt='s')
-
-
-            for index in range(len(additional_df)) :
-
-                color=additional_handle[index][0].get_color()
-                #bottom_axis.hist(x_bin_centers, bins=x_bins, weights=additional_ratios[index], histtype = 'step', color=color, linewidth=1.5)
-
-                mc_systematic      = self.makeErrorNumpy(additional_df[index].total_Up/ denominator_df.content, additional_df[index].total_Down/ denominator_df.content)
-                mc_statistic = self.makeErrorNumpy(additional_df[index].stat_error/denominator_df.content, additional_df[index].stat_error/denominator_df.content)
-
-                self.make_error_boxes(bottom_axis, x_bin_centers.values, additional_ratios[index].values, binWidthxerr, mc_systematic,
-                                      showBar=False, alpha=0.2, edgecolor='None', facecolor=color, zorder=4)
-
-                self.make_error_boxes(bottom_axis, x_bin_centers.values, additional_ratios[index].values, binWidthxerr, mc_statistic,
-                                      showBox=False, showBar=True, alpha=0.2, edgecolor=color, facecolor=color, zorder=2, barFmt='s')
-
-
-        del data_df
         gc.collect()
 
     def drawHistPlot(self, *variables, divde_by_bin_width = False, setLogy=False, setLogx=False,
                      min = 1e-2, max = 1e9, ratio_max=1.35, ratio_min=0.65,
                      optimzeXrange=False, minimum_content=1,
                      figSize=(10,6), show_ratio=True, ext_object_list=None, ext_names_list=None,
-                     denominator="Data_Data", internal_names=None, draw_mode=0, setRatioLogy=False,
+                     denominator="Data_Data", internal_names=None, setRatioLogy=False,
                      showNEvents=False, showChi2=False, outPdfPostfix=None, ratioName=None,
                      normNominator=False, oneColumn=False, colors=None, top=0.9, bottom=0.1) :
 
+        hep.style.use("CMS")
         # FIXME make a function for setting
         if show_ratio == True :
             num_rows = 2
@@ -1387,7 +1013,6 @@ class ISRPlotter :
                 fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize)
 
         plt.tight_layout()
-        plt.subplots_adjust(left=0.15, right=0.97, bottom=bottom, top=top, hspace=0.0)
 
         write_xaxis_title = True
         write_yaxis_title = True
@@ -1445,7 +1070,7 @@ class ISRPlotter :
                              write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, 
                              showLegend=show_legend, show_additional_legend=show_additional_legend, min = min, max = max, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange,
                              minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, 
-                             denominator=denominator, internal_names=internal_names, draw_mode=draw_mode, setRatioLogy=setRatioLogy, 
+                             denominator=denominator, internal_names=internal_names, setRatioLogy=setRatioLogy, 
                              showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator, oneColumn=oneColumn, setMarker=Line2D.filled_markers[index], setColor=color[index%len(color)],
                              xFactor=factor, colors=colors)
 
