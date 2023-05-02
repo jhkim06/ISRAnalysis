@@ -76,7 +76,7 @@ class ISRPlotter :
         self.binDef={} # dictionary of TUnfoldBinning object
         self.massBins=[] # list of tuple, ex) [(40.,64.), (64., 81.), (81., 101.), (101., 200.), (200., 320.)]
 
-        self.histTypes=["Data", "DataBkgMCSubtracted", "SigMC", "BkgMC", "MCTotal", "Histogram"]
+        self.histTypes=["Data", "DataBkgMCSubtracted", "SigMC", "BkgMC", "MCTotal", "Hist"]
 
         # Dictionary of raw histograms according DataFrames
         self.rawHistsDict = {}
@@ -92,8 +92,6 @@ class ISRPlotter :
 
         self.normalisation = 1.
         self.bkgUsed = False
-
-        self.nSystematics = 0 # Number of systematics
 
         self.lumi={"2016": "35.9/fb", "2017": "41.5/fb", "2018": "59.7/fb"}
 
@@ -173,66 +171,48 @@ class ISRPlotter :
             temp_mass_bin_edges=temp_tvecd.GetMatrixArray()
             self.massBins.extend([ (temp_mass_bin_edges[index], temp_mass_bin_edges[index+1]) for index in range(temp_tvecd.GetNrows()-1)]) # list comprehension
 
-        count_nSystematics = True
-        
-        # Get raw TH1 histograms
+        # get raw TH1 histograms
+        # this code assume a histogram for a variable stored in a direcotry with the variable name as the directory name 
         for variable in self.variables : 
-              
             varDir=variable
             if self.useTUnfoldBin :
-                varDir=variable.split("__")[0] # In case, TUnfoldBinning used
+                varDir=variable.split("__")[0] # In case, TUnfoldBinning used 
 
             for combinedName in self.samples :
                 # initialize 
                 if variable not in self.rawHistsDict[combinedName.split("_")[1]] : # rawHistDict["Data"]["Pt__0"]
                     self.rawHistsDict[combinedName.split("_")[1]][variable] = dict() 
-                    temp_dict=self.rawHistsDict[combinedName.split("_")[1]][variable]
-                    if "BkgMC" in combinedName : 
-                        self.bkgUsed = True
+                    temp_dict = self.rawHistsDict[combinedName.split("_")[1]][variable]
+                    if "BkgMC" in combinedName : self.bkgUsed = True
                 else :
-                    temp_dict=self.rawHistsDict[combinedName.split("_")[1]][variable]
+                    temp_dict = self.rawHistsDict[combinedName.split("_")[1]][variable]
                
-                if variable not in self.rawHistsDict["MCTotal"] :
-                    self.rawHistsDict["MCTotal"][variable]=dict()
-
                 for fileIndex, mcFileName in enumerate(self.samples[combinedName]) :
-
                     temp_dict[mcFileName]=dict()
 
                     # Set nominal histograms
-                    sysName = "Nominal"
-                    postfix = "Nominal"
-
-                    temp_dict[mcFileName][sysName]=dict()
-                    temp_dict[mcFileName][sysName][postfix]=dict()
-
-                    self.setRawHistsDict(varDir, combinedName, mcFileName, sysName, postfix, variable, temp_dict)
+                    temp_dict[mcFileName]["Nominal"]=dict()
+                    temp_dict[mcFileName]["Nominal"]["Nominal"]=dict()
+                    self.setRawHistsDict(varDir, combinedName, mcFileName, "Nominal", "Nominal", variable, temp_dict)
 
                     # Set systemaitc histograms
                     for sysCategory in self.systematics.keys() :
                         for sysName, postfixs in self.systematics[sysCategory].items() :
-                            # just for varifying
-                            if count_nSystematics :
-                                self.nSystematics += 1
-
                             temp_dict[mcFileName][sysName]=dict()
 
                             for postfix in postfixs :
                                 temp_dict[mcFileName][sysName][postfix]=dict()
-
                                 self.setRawHistsDict(varDir, combinedName, mcFileName, sysName, postfix, variable, temp_dict)
-
-                    count_nSystematics = False
-                    isFirstFileinCombinedName=False
 
         self.setTotalHists(self.rawHistsDict["Data"])
         self.setTotalHists(self.rawHistsDict["SigMC"])
         if self.bkgUsed : 
             self.setTotalHists(self.rawHistsDict["BkgMC"])
-            self.setBkgSubtractedDataHis()
+            self.setBkgSubtractedDataHist()
         self.setMCTotalHists() # signal + background MC
-        if self.rawHistsDict["Histogram"] != 0 : 
-            self.setTotalHists(self.rawHistsDict["Histogram"])    
+
+        if self.rawHistsDict["Hist"] != 0 : 
+            self.setTotalHists(self.rawHistsDict["Hist"])    
 
         # convert histogram to DataFrame
         for histType in self.histTypes :
@@ -278,7 +258,7 @@ class ISRPlotter :
         
         if self.useTUnfoldBin :
             temp_TH1 = self.binDef[varDir.split("__")[0]].ExtractHistogram(inputHistFileName + variable + sysName + sysPostfix, temp_TH1, 
-                                                                            0, True, self.steeringTUnfold[variable]) 
+                                                                          0, True, self.steeringTUnfold[variable]) 
 
         targetDict[inputHistFileName][sysName][sysPostfix]["TH1"] = temp_TH1
 
@@ -290,59 +270,21 @@ class ISRPlotter :
     def loglinear_func(self, p, x):
         return 2.*p[0]*np.log(x)+p[1]
 
-    def setBkgSubtractedDataHis(self) :
+    def setBkgSubtractedDataHist(self) :
 
+        temp_dict = self.rawHistsDict["DataBkgMCSubtracted"]
         for variable in self.variables :
-            self.rawHistsDict["DataBkgMCSubtracted"][variable]=dict()
-            self.rawHistsDict["DataBkgMCSubtracted"][variable]["total"]=dict()
+            temp_dict[variable] = dict()
+            temp_dict[variable]["total"] = dict()
 
-            sysName = "Nominal" 
-            postfix = "Nominal"
-    
-            self.rawHistsDict["DataBkgMCSubtracted"][variable]["total"][sysName]=dict()
-            self.rawHistsDict["DataBkgMCSubtracted"][variable]["total"][sysName][postfix]=dict() 
+            temp_dict[variable]["total"]["Nominal"] = dict()
+            temp_dict[variable]["total"]["Nominal"]["Nominal"] = dict() 
 
-            temp_dict=self.rawHistsDict["DataBkgMCSubtracted"][variable]["total"][sysName][postfix]
+            data_dict   = self.rawHistsDict["Data"][variable]["total"]["Nominal"]["Nominal"]
+            mc_bkg_dict = self.rawHistsDict["BkgMC"][variable]["total"]["Nominal"]["Nominal"]
 
-            data_dict=self.rawHistsDict["Data"][variable]["total"][sysName][postfix]
-            mc_bkg_dict=self.rawHistsDict["BkgMC"][variable]["total"][sysName][postfix]
-
-            temp_dict["TH1"]=data_dict["TH1"].Clone("data_bkg_subtracted")
-            temp_dict["TH1"].Add(mc_bkg_dict["TH1"], -1)
-
-            for sysCategory in self.systematics.keys() :
-                for sysName, postfixs in self.systematics[sysCategory].items() :
-                    self.rawHistsDict["DataBkgMCSubtracted"][variable]["total"][sysName]=dict()
-                    for postfix in postfixs :
-                        self.rawHistsDict["DataBkgMCSubtracted"][variable]["total"][sysName][postfix]=dict()
-                        temp_dict=self.rawHistsDict["DataBkgMCSubtracted"][variable]["total"][sysName][postfix]
-
-                        data_dict=self.rawHistsDict["Data"][variable]["total"][sysName][postfix]
-                        mc_bkg_dict=self.rawHistsDict["BkgMC"][variable]["total"][sysName][postfix]
-
-                        temp_dict["TH1"]=data_dict["TH1"].Clone("data_bkg_subtracted")
-                        temp_dict["TH1"].Add(mc_bkg_dict["TH1"], -1)
-
-    def setMCTotalHists(self) :
-
-        temp_dict = self.rawHistsDict["MCTotal"]
-        for variable in self.variables :
-            # dict[variable]
-            #temp_dict[variable]=dict()
-            temp_dict[variable]["total"]=dict()
-            # 
-            sysName = "Nominal"
-            postfix = "Nominal"
-
-            temp_dict[variable]["total"][sysName]=dict()
-            temp_dict[variable]["total"][sysName][postfix]=dict()
-
-            # Lets combine MC histograms
-            temp_dict[variable]["total"][sysName][postfix]["TH1"] = \
-            self.rawHistsDict["SigMC"][variable]["total"][sysName][postfix]["TH1"].Clone("Clone_"+variable+sysName+postfix)
-
-            if self.bkgUsed :
-                temp_dict[variable]["total"][sysName][postfix]["TH1"].Add(self.rawHistsDict["BkgMC"][variable]["total"][sysName][postfix]["TH1"])
+            temp_dict[variable]["total"]["Nominal"]["Nominal"]["TH1"] = data_dict["TH1"].Clone("data_bkg_subtracted")
+            temp_dict[variable]["total"]["Nominal"]["Nominal"]["TH1"].Add(mc_bkg_dict["TH1"], -1)
 
             for sysCategory in self.systematics.keys() :
                 for sysName, postfixs in self.systematics[sysCategory].items() :
@@ -350,7 +292,34 @@ class ISRPlotter :
                     for postfix in postfixs :
                         temp_dict[variable]["total"][sysName][postfix]=dict()
 
-                        # Lets combine MC histograms
+                        data_dict   = self.rawHistsDict["Data"][variable]["total"][sysName][postfix]
+                        mc_bkg_dict = self.rawHistsDict["BkgMC"][variable]["total"][sysName][postfix]
+
+                        temp_dict[variable]["total"][sysName][postfix]["TH1"] = data_dict["TH1"].Clone("data_bkg_subtracted")
+                        temp_dict[variable]["total"][sysName][postfix]["TH1"].Add(mc_bkg_dict["TH1"], -1)
+
+    def setMCTotalHists(self) :
+
+        temp_dict = self.rawHistsDict["MCTotal"]
+        for variable in self.variables :
+            temp_dict[variable] = dict()
+            temp_dict[variable]["total"] = dict()
+
+            temp_dict[variable]["total"]["Nominal"] = dict()
+            temp_dict[variable]["total"]["Nominal"]["Nominal"] = dict()
+
+            # Lets combine MC histograms
+            temp_dict[variable]["total"]["Nominal"]["Nominal"]["TH1"] = \
+            self.rawHistsDict["SigMC"][variable]["total"]["Nominal"]["Nominal"]["TH1"].Clone("Clone_"+variable+"Nominal"+"Nominal")
+
+            if self.bkgUsed :
+                temp_dict[variable]["total"][sysName][postfix]["TH1"].Add(self.rawHistsDict["BkgMC"][variable]["total"]["Nominal"]["Nominal"]["TH1"])
+
+            for sysCategory in self.systematics.keys() :
+                for sysName, postfixs in self.systematics[sysCategory].items() :
+                    temp_dict[variable]["total"][sysName]=dict()
+                    for postfix in postfixs :
+                        temp_dict[variable]["total"][sysName][postfix]=dict()
                         temp_dict[variable]["total"][sysName][postfix]["TH1"] = \
                         self.rawHistsDict["SigMC"][variable]["total"][sysName][postfix]["TH1"].Clone("Clone_"+variable+sysName+postfix)
 
@@ -663,12 +632,8 @@ class ISRPlotter :
 
         for variable in raw_dict.keys() :
             raw_dict[variable]["total"]=dict()
-
-            sysName = "Nominal"
-            postfix = "Nominal"
-
-            raw_dict[variable]["total"][sysName]=dict()
-            raw_dict[variable]["total"][sysName][postfix]=dict()
+            raw_dict[variable]["total"]["Nominal"]=dict()
+            raw_dict[variable]["total"]["Nominal"]["Nominal"]=dict()
 
             first_sample=True 
             for sample in raw_dict[variable].keys() : 
@@ -677,16 +642,13 @@ class ISRPlotter :
 
                 if first_sample :
                     first_sample=False
-                    raw_dict[variable]["total"][sysName][postfix]["TH1"]=\
-                    raw_dict[variable][sample][sysName][postfix]["TH1"].Clone("Clone_"+variable+sample+sysName+postfix)
-
+                    raw_dict[variable]["total"]["Nominal"]["Nominal"]["TH1"]=\
+                    raw_dict[variable][sample]["Nominal"]["Nominal"]["TH1"].Clone("Clone_"+variable+sample+"Nominal"+"Nominal")
                 else :
-                    raw_dict[variable]["total"][sysName][postfix]["TH1"].Add(raw_dict[variable][sample][sysName][postfix]["TH1"])
+                    raw_dict[variable]["total"]["Nominal"]["Nominal"]["TH1"].Add(raw_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
 
             for sysCategory in self.systematics.keys() :
-
                 for sysName, postfixs in self.systematics[sysCategory].items() :
-
                     raw_dict[variable]["total"][sysName]=dict()
 
                     for postfix in postfixs :
