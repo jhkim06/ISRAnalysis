@@ -61,6 +61,7 @@ def divide(nominator, denominator, output_type='root'):# 'root', 'numpy'
         return ratio
 
 dashes = "--------------------------------------------------------------------------------"
+
 # root TH1 to DataFrame and plot using matplotlib
 class ISRPlotter :
     
@@ -70,9 +71,6 @@ class ISRPlotter :
         print("CREATE ISRPlotter......")
 
         self.setQuantile = setQuantile
-
-        self.labels_list = []
-        self.plots_list = []
 
         # Set using self.binDef
         self.binDef={} # dictionary of TUnfoldBinning object
@@ -96,10 +94,6 @@ class ISRPlotter :
         self.bkgUsed = False
 
         self.nSystematics = 0 # Number of systematics
-        self.systematic_marker={
-            "IsoSF":"o", "IdSF":"o", "recoSF":"o", "trgSF":"o", "trgDZSF":"o", "PU":"o", "bveto":"v", "L1Prefire":"o", "Unfold": "^", "LepMomScale": "<", "LepMomRes": ">", 
-            "Scale": "*", "AlphaS": "+", "PDF": "X", "UnfoldingMatrix": "o", "fsr" : "o"
-        }
 
         self.lumi={"2016": "35.9/fb", "2017": "41.5/fb", "2018": "59.7/fb"}
 
@@ -118,7 +112,6 @@ class ISRPlotter :
             self.useTUnfoldBin=self.config["useTUnfoldBin"]
             self.tunfoldBinNames=self.config["TUnfoldBinNames"]
             self.variables=self.config["Variables"]
-            self.variablePostfix=self.config["VariablePostfix"]
             self.steeringTUnfold=self.config['Steering']
 
             if doSystematic : 
@@ -147,14 +140,14 @@ class ISRPlotter :
             else :
                 self.systematics=dict()
 
-            self.samples=self.config['Samples']
-            self.stackOrder=self.config['StackOrder']
+            self.samples    = self.config['Samples']
+            self.stackOrder = self.config['StackOrder']
 
             # Out directory
-            self.outDirPath="output/"+self.year+"/"+self.channel+"/"
+            self.outDirPath = "output/"+self.year+"/"+self.channel+"/"
             if "ChannelPostfix" in self.config :
                 self.channelPostfix = self.config['ChannelPostfix']
-                self.outDirPath="output/"+self.year+"/"+self.channel+"_"+self.channelPostfix+"/"
+                self.outDirPath     = "output/"+self.year+"/"+self.channel+"_"+self.channelPostfix+"/"
             if not os.path.exists(self.outDirPath) :
                 os.makedirs(self.outDirPath)
 
@@ -175,36 +168,20 @@ class ISRPlotter :
             for var in ["2D_dimass_dipt", "2D_dipt_dimass"] :
                 self.binDef[var]=self.inRootFile.Get(self.topDirName+"/"+var+"/truth") 
 
-            # todo if the bin has two axis then use the second axis to draw each distribution of the first axis
+            # TODO use GetDistributionDimension()
             temp_tvecd=self.binDef["2D_dipt_dimass"].GetDistributionBinning(1)
             temp_mass_bin_edges=temp_tvecd.GetMatrixArray()
             self.massBins.extend([ (temp_mass_bin_edges[index], temp_mass_bin_edges[index+1]) for index in range(temp_tvecd.GetNrows()-1)]) # list comprehension
-
-        else :
-            if self.channel == "electron" :
-                self.massBins.extend([(50, 64), (64, 81), (81, 101), (101, 200), (200, 320), (320,830)])
-            else :
-                self.massBins.extend([(40, 64), (64, 81), (81, 101), (101, 200), (200, 320), (320,830)])
-
-        print("Read histograms from input file...")
-        start_time = time.time()
 
         count_nSystematics = True
         
         # Get raw TH1 histograms
         # Convert them into DataFrame
-        for variable in self.variables : # Mass 
+        for variable in self.variables : 
               
-            # dict[variable]
             varDir=variable
             if self.useTUnfoldBin :
                 varDir=variable.split("__")[0] # In case, TUnfoldBinning used
-                if len(self.variablePostfix)>0 :
-
-                    if varDir == "Mass" :
-                        varDir=varDir+"_"+self.variablePostfix[1]
-                    if varDir == "Pt" :
-                        varDir=varDir+"_"+self.variablePostfix[0]
 
             # dict[variable][sample]
             for combinedName in self.samples :
@@ -237,8 +214,7 @@ class ISRPlotter :
                     temp_dict[mcFileName][sysName]=dict()
                     temp_dict[mcFileName][sysName][postfix]=dict()
 
-                    self.setRawHistsDict(varDir, combinedName, mcFileName, sysName, postfix, variable, temp_dict, 
-                    isFirstFileinCombinedName, isLastFileinCombinedName)
+                    self.setRawHistsDict(varDir, combinedName, mcFileName, sysName, postfix, variable, temp_dict)
 
                     # Set systemaitc histograms
                     for sysCategory in self.systematics.keys() :
@@ -255,21 +231,10 @@ class ISRPlotter :
                                 if isFirstFileinCombinedName : 
                                     temp_dict[combinedName][sysName][postfix]=dict()
 
-                                self.setRawHistsDict(varDir, combinedName, mcFileName, sysName, postfix, variable, temp_dict, 
-                                isFirstFileinCombinedName, isLastFileinCombinedName)
+                                self.setRawHistsDict(varDir, combinedName, mcFileName, sysName, postfix, variable, temp_dict)
 
                     count_nSystematics = False
                     isFirstFileinCombinedName=False
-
-        gc.collect() 
-        end_time = time.time()
-        print("DONE")
-        print(dashes)
-        print("time elapsed: {:.2f} s".format(end_time-start_time))
-        print(dashes)
-    
-        print("Combine histograms.....")
-        start_time = time.time()
 
         self.setTotalHists(self.rawHistsDict["Data"])
         self.setTotalHists(self.rawHistsDict["SigMC"])
@@ -280,15 +245,6 @@ class ISRPlotter :
         if self.rawHistsDict["Histogram"] != 0 : 
             self.setTotalHists(self.rawHistsDict["Histogram"])    
 
-        end_time = time.time()
-        print("DONE")
-        print(dashes)
-        print("time elapsed: {:.2f} s".format(end_time-start_time))
-        print(dashes)
-
-        print("Convert histogram to DataFrames.....")
-        start_time = time.time()
-
         # DataFrame
         for histType in self.histTypes :
         
@@ -296,15 +252,6 @@ class ISRPlotter :
                 if self.bkgUsed == False : continue
             
             self.setDataFrameWithUnc(histType)
-
-        end_time = time.time()
-        print("DONE")
-        print(dashes)
-        print("time elapsed: {:.2f} s".format(end_time-start_time))
-        print(dashes)
-
-        print("Calculate up/down systematics.....")
-        start_time = time.time()
 
         for histType in self.histTypes :
         
@@ -326,13 +273,7 @@ class ISRPlotter :
                     self.calculateCombinedUnc(histType, "theory", "upDownUnc_qValue", True)
                     self.calculateCombinedUnc(histType, "measurement", "upDownUnc_qValue", True)
 
-        end_time = time.time()
-        print("DONE")
-        print(dashes)
-        print("time elapsed: {:.2f} s".format(end_time-start_time))
-        print(dashes)
-
-    def setRawHistsDict(self, varDir, combinedName, inputHistFileName, sysName, sysPostfix, variable, targetDict, isFirstFile, isLastFile) :
+    def setRawHistsDict(self, varDir, combinedName, inputHistFileName, sysName, sysPostfix, variable, targetDict) :
 
         if sysName == "Nominal" and sysPostfix == "Nominal" : 
             histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName 
@@ -350,7 +291,6 @@ class ISRPlotter :
                                                                             0, True, self.steeringTUnfold[variable]) 
 
         targetDict[inputHistFileName][sysName][sysPostfix]["TH1"] = temp_TH1
-        targetDict[inputHistFileName][sysName][sysPostfix]["DataFrame"] = self.convertTH1toDataFrame(temp_TH1)
 
         del temp_TH1
 
@@ -380,10 +320,6 @@ class ISRPlotter :
             temp_dict["TH1"]=data_dict["TH1"].Clone("data_bkg_subtracted")
             temp_dict["TH1"].Add(mc_bkg_dict["TH1"], -1)
 
-            temp_dict["DataFrame"]=data_dict["DataFrame"].copy()
-            temp_dict["DataFrame"].content=data_dict["DataFrame"].content-mc_bkg_dict["DataFrame"].content
-            
-
             for sysCategory in self.systematics.keys() :
                 for sysName, postfixs in self.systematics[sysCategory].items() :
                     self.rawHistsDict["DataBkgMCSubtracted"][variable]["total"][sysName]=dict()
@@ -396,9 +332,6 @@ class ISRPlotter :
 
                         temp_dict["TH1"]=data_dict["TH1"].Clone("data_bkg_subtracted")
                         temp_dict["TH1"].Add(mc_bkg_dict["TH1"], -1)
-
-                        temp_dict["DataFrame"]=data_dict["DataFrame"].copy()
-                        temp_dict["DataFrame"].content=data_dict["DataFrame"].content-mc_bkg_dict["DataFrame"].content
 
     def setMCTotalHists(self) :
 
@@ -417,13 +350,9 @@ class ISRPlotter :
             # Lets combine MC histograms
             temp_dict[variable]["total"][sysName][postfix]["TH1"] = \
             self.rawHistsDict["SigMC"][variable]["total"][sysName][postfix]["TH1"].Clone("Clone_"+variable+sysName+postfix)
-            temp_dict[variable]["total"][sysName][postfix]["DataFrame"] = \
-            self.rawHistsDict["SigMC"][variable]["total"][sysName][postfix]["DataFrame"].copy()
 
             if self.bkgUsed :
                 temp_dict[variable]["total"][sysName][postfix]["TH1"].Add(self.rawHistsDict["BkgMC"][variable]["total"][sysName][postfix]["TH1"])
-                temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content= \
-                self.rawHistsDict["BkgMC"][variable]["total"][sysName][postfix]["DataFrame"].content+temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content
 
             for sysCategory in self.systematics.keys() :
                 for sysName, postfixs in self.systematics[sysCategory].items() :
@@ -434,13 +363,9 @@ class ISRPlotter :
                         # Lets combine MC histograms
                         temp_dict[variable]["total"][sysName][postfix]["TH1"] = \
                         self.rawHistsDict["SigMC"][variable]["total"][sysName][postfix]["TH1"].Clone("Clone_"+variable+sysName+postfix)
-                        temp_dict[variable]["total"][sysName][postfix]["DataFrame"] = \
-                        self.rawHistsDict["SigMC"][variable]["total"][sysName][postfix]["DataFrame"].copy()
 
                         if self.bkgUsed :
                             temp_dict[variable]["total"][sysName][postfix]["TH1"].Add(self.rawHistsDict["BkgMC"][variable]["total"][sysName][postfix]["TH1"])
-                            temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content= \
-                            self.rawHistsDict["BkgMC"][variable]["total"][sysName][postfix]["DataFrame"].content+temp_dict[variable]["total"][sysName][postfix]["DataFrame"].content
 
     def setDataFrameWithUnc(self, dictName="Data") :
 
@@ -449,13 +374,13 @@ class ISRPlotter :
 
         for variable in in_dict.keys() :
             out_dict[variable]=dict()
-            print(variable)
 
             for sample in in_dict[variable].keys() : # Note loop over samples defined in the "dictionary!"
                 
                 out_dict[variable][sample]=dict()
-                out_dict[variable][sample]["rawUnc"]=in_dict[variable][sample]["Nominal"]["Nominal"]["DataFrame"].copy()
-                out_dict[variable][sample]["upDownUnc"]=in_dict[variable][sample]["Nominal"]["Nominal"]["DataFrame"].copy()
+                out_dict[variable][sample]["rawUnc"]    = self.convertTH1toDataFrame(in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
+                out_dict[variable][sample]["upDownUnc"] = self.convertTH1toDataFrame(in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
+
                 # TODO Create column for statistical uncertainty
 
                 # DataFrame for mean values
@@ -493,7 +418,8 @@ class ISRPlotter :
                             if "fsr" not in sysName :
 
                                 temp_rawUnc_dict[sysName+"_"+postfix] = \
-                                in_dict[variable][sample][sysName][postfix]["DataFrame"].content-in_dict[variable][sample]["Nominal"]["Nominal"]["DataFrame"].content
+                                root_to_numpy(in_dict[variable][sample][sysName][postfix]["TH1"])[0][0]-root_to_numpy(in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])[0][0]
+
 
                                 if self.useTUnfoldBin :
                                     temp_df=self.createMeanDataFrame(variable, in_dict[variable][sample][sysName][postfix]["TH1"])
@@ -753,65 +679,56 @@ class ISRPlotter :
                 else :
                     in_dict[variable][sample][column_name][sys_to_combine+"_Down"]=0.
 
-    def setTotalHists(self, mc_dict) :
+    def setTotalHists(self, raw_dict) :
 
-        for variable in mc_dict.keys() :
-            mc_dict[variable]["total"]=dict()
+        for variable in raw_dict.keys() :
+            raw_dict[variable]["total"]=dict()
 
             sysName = "Nominal"
             postfix = "Nominal"
 
-            mc_dict[variable]["total"][sysName]=dict()
-            mc_dict[variable]["total"][sysName][postfix]=dict()
+            raw_dict[variable]["total"][sysName]=dict()
+            raw_dict[variable]["total"][sysName][postfix]=dict()
 
-            first_mc=True 
-            for sample in mc_dict[variable].keys() : 
+            first_sample=True 
+            for sample in raw_dict[variable].keys() : 
 
                 if sample == "total" : continue
 
-                if first_mc :
-                    first_mc=False
-                    mc_dict[variable]["total"][sysName][postfix]["TH1"]=\
-                    mc_dict[variable][sample][sysName][postfix]["TH1"].Clone("Clone_"+variable+sample+sysName+postfix)
+                if first_sample :
+                    first_sample=False
+                    raw_dict[variable]["total"][sysName][postfix]["TH1"]=\
+                    raw_dict[variable][sample][sysName][postfix]["TH1"].Clone("Clone_"+variable+sample+sysName+postfix)
 
-                    mc_dict[variable]["total"][sysName][postfix]["DataFrame"]=\
-                    mc_dict[variable][sample][sysName][postfix]["DataFrame"].copy()
                 else :
-                    mc_dict[variable]["total"][sysName][postfix]["TH1"].Add(mc_dict[variable][sample][sysName][postfix]["TH1"])
-
-                    mc_dict[variable]["total"][sysName][postfix]["DataFrame"].content= \
-                    mc_dict[variable]["total"][sysName][postfix]["DataFrame"].content+mc_dict[variable][sample][sysName][postfix]["DataFrame"].content
-
+                    raw_dict[variable]["total"][sysName][postfix]["TH1"].Add(raw_dict[variable][sample][sysName][postfix]["TH1"])
 
             for sysCategory in self.systematics.keys() :
 
                 for sysName, postfixs in self.systematics[sysCategory].items() :
 
-                    mc_dict[variable]["total"][sysName]=dict()
+                    raw_dict[variable]["total"][sysName]=dict()
 
                     for postfix in postfixs :
-                        mc_dict[variable]["total"][sysName][postfix]=dict()
+                        raw_dict[variable]["total"][sysName][postfix]=dict()
 
-                        # Lets combine MC histograms
-                        first_mc=True
+                        first_sample=True
+                        for sample in raw_dict[variable].keys() :
 
-                        for sample in mc_dict[variable].keys() :
-
-                            if sample in self.samples.keys(): continue # self.samples.keys() is a list of combined sample
                             if sample == "total" : continue
 
-                            if first_mc :
-                                first_mc=False
-                                mc_dict[variable]["total"][sysName][postfix]["TH1"]=\
-                                mc_dict[variable][sample][sysName][postfix]["TH1"].Clone("Clone_"+variable+sample+sysName+postfix)
+                            if first_sample :
+                                first_sample=False
+                                raw_dict[variable]["total"][sysName][postfix]["TH1"]=\
+                                raw_dict[variable][sample][sysName][postfix]["TH1"].Clone("Clone_"+variable+sample+sysName+postfix)
 
-                                mc_dict[variable]["total"][sysName][postfix]["DataFrame"]=\
-                                mc_dict[variable][sample][sysName][postfix]["DataFrame"].copy()
+                                raw_dict[variable]["total"][sysName][postfix]["DataFrame"]=\
+                                raw_dict[variable][sample][sysName][postfix]["DataFrame"].copy()
                             else :
-                                mc_dict[variable]["total"][sysName][postfix]["TH1"].Add(mc_dict[variable][sample][sysName][postfix]["TH1"])
+                                raw_dict[variable]["total"][sysName][postfix]["TH1"].Add(raw_dict[variable][sample][sysName][postfix]["TH1"])
 
-                                mc_dict[variable]["total"][sysName][postfix]["DataFrame"].content= \
-                                mc_dict[variable]["total"][sysName][postfix]["DataFrame"].content+mc_dict[variable][sample][sysName][postfix]["DataFrame"].content
+                                raw_dict[variable]["total"][sysName][postfix]["DataFrame"].content= \
+                                raw_dict[variable]["total"][sysName][postfix]["DataFrame"].content+raw_dict[variable][sample][sysName][postfix]["DataFrame"].content
 
 
     def convertTH1toDataFrame(self, temp_TH1, existing_df = None) :
@@ -963,10 +880,6 @@ class ISRPlotter :
         nominator_df      = self.dfs[nominator_hist_type][variable][nominator_hist_name]["upDownUnc"][df_filter].copy()
         nominator_hist    = self.rawHistsDict[nominator_hist_type][variable][nominator_hist_name]["Nominal"]["Nominal"]["TH1"]
             
-        channelName = "e^{+}e^{-}"
-        if self.channel == "muon" :
-            channelName = "\mu^{+}\mu^{-}"
-
         if show_ratio : 
             ratio, ratio_error = divide(nominator_hist, denominator_hist, output_type='numpy')
 
@@ -980,7 +893,6 @@ class ISRPlotter :
         hep.histplot((nominator_df.content, bins), ax=top_axis, binwnorm=1., yerr=True, histtype='step', label="test", color='red')
         top_axis.set_xlim(bins[0], bins[-1])
         
-        print(ratio)
         hep.histplot((ratio[0], bins), ax=bottom_axis, yerr=ratio_error, histtype='step', label="ratio", color='red')
         bottom_axis.set_xlim(bins[0], bins[-1])
         bottom_axis.set_ylim(ratio_min, ratio_max)
@@ -992,9 +904,6 @@ class ISRPlotter :
         
         plt.savefig(outPdfName, format="pdf", dpi=300)
         plt.close(fig)
-
-        self.labels_list.clear()
-        self.plots_list.clear()
 
     def combinedPtDataFrame(self, name="Data") :
 
