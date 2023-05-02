@@ -383,11 +383,6 @@ class ISRPlotter :
 
                 # TODO Create column for statistical uncertainty
 
-                # DataFrame for mean values
-                # low mass cut, high mass cut, mean value
-                # For Mass, make a DataFrame for all the mass bins
-                # For pT, make a DataFrame for a mass bin
-
                 q = 0.7
                 if self.useTUnfoldBin :
                     out_dict[variable][sample]["rawUnc_meanValue"]    = self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
@@ -403,8 +398,6 @@ class ISRPlotter :
                     for sysName, postfixs in self.systematics[sysCategory].items() :
 
                         if sysName == "Nominal" : continue
-                        #print(" variable {} sample {}".format(variable, sample))
-                        #print(" systematic name {} number of variations {} ".format(sysName, len(postfixs)))
                         #print(" Set differences....")
 
                         # temp dictionary
@@ -765,73 +758,6 @@ class ISRPlotter :
             del pd_temp
             return None
 
-    def setXaxisLabel(self, variable) :
-
-        channelName = "e^{+}e^{-}"
-        if self.channel == "muon" :
-            channelName = "\mu^{+}\mu^{-}"
-
-        if "Lep" in variable :
-            channelName = "e"
-            if self.channel == "muon" :
-                channelName = "\mu"
-
-        varName = "$p_{T}^{\mathit{"+channelName+"}}$"
-        unit = "[GeV]"
-
-        if variable == "Mass" :
-            varName = "Mass$^{\mathit{"+channelName+"}}$"
-        if "Eta" in variable :
-            varName = "$\eta^{\mathit{"+channelName+"}}$"
-            unit = ""
-        if "MET" in variable :
-            varName = "MET"
-        if "nPV" in variable :
-            varName = "Number of Vertex"
-            unit = ""
-
-        return varName, unit
-
-    def rebinDataFrame(self, source_df, target_df) :
-
-        output_source=pd.DataFrame(index=target_df.index, columns=target_df.columns)
-        target_nbins = len(target_df.index)
-        source_nbins = len(source_df.index)
-
-        for target_index in range(target_nbins) :
-            low = target_df.iloc[target_index].low_bin_edge
-            high = target_df.iloc[target_index].high_bin_edge
-            
-            low_source_index = -1
-            high_source_index = -1
-            # find index matched to the target index
-            for source_index in range(source_nbins) :
-                current_source_low=source_df.iloc[source_index].low_bin_edge
-                current_source_high=source_df.iloc[source_index].high_bin_edge
-                if low > current_source_low : continue
-                if low == current_source_low :
-                    low_source_index = source_index
-                
-                    if high == current_source_high :
-                        high_source_index = source_index
-                        break
-                if high == current_source_high :
-                    high_source_index = source_index
-                    
-            #print("target low {} high {} index {}, source index {} {}".format(low, high, target_index+1, low_source_index+1, high_source_index+1))
-            #print(source_df.iloc[low_source_index:high_source_index+1]["content"].sum(), np.sqrt(np.square(source_df.iloc[low_source_index:high_source_index+1]["stat_error"]).sum()))
-            for column_name in target_df.columns :
-                if "bin" in column_name :
-                    output_source.iloc[target_index][column_name] = target_df.iloc[target_index][column_name]
-                elif "content" == column_name :
-                    output_source.iloc[target_index][column_name] = source_df.iloc[low_source_index:high_source_index+1]["content"].sum()
-                else :
-                    output_source.iloc[target_index][column_name] = np.sqrt(np.square(source_df.iloc[low_source_index:high_source_index+1][column_name]).sum())
-
-        output_source=output_source.astype('float')
-
-        return output_source
-
     def drawHistPlot(self, variable, divde_by_bin_width = False, setLogy=False, setLogx=False,
                      min = 1e-2, max = 1e9, ratio_max=1.35, ratio_min=0.65,
                      optimzeXrange=False, minimum_content=1,
@@ -993,75 +919,6 @@ class ISRPlotter :
         # plot 1 sigma
         #ax.plot(xn, fit_up, '#0076D4', dashes=[9, 4.5], label='1 Sigma uncertainty', linewidth=0.8)
         #ax.plot(xn, fit_dw, '#0076D4', dashes=[9, 4.5], linewidth=0.8)
-
-    def drawISRPlot(self, *list_to_plot, do_linear_fit=False, ymin=13, ymax=30, xmin=30, xmax=4e2, outPdfPostfix=None) :
-        print("draw isr plot, do_linear_fit {}".format(do_linear_fit))
-        color=iter(cm.rainbow(np.linspace(0,1,len(list_to_plot))))
-        isData=False
-
-        fig, ax = plt.subplots(figsize=(8, 8))
-        plt.subplots_adjust(left=0.12, right=0.97, bottom=0.15, top=0.9)
-        ax.text(0., 1.05, "CMS Work in progress", fontsize='xx-large', transform=ax.transAxes)
-        ax.text(1., 1.05, "(13 TeV, " + self.year + ")", fontsize=20, transform=ax.transAxes, ha='right')
-
-        ax.set_xlim(xmin,xmax)
-        ax.set_ylim(ymin,ymax)
-        ax.set_xscale("log")
-        ax.xaxis.set_minor_formatter(FormatStrFormatter("%.0f"))
-
-        channelName = "e^{+}e^{-}"
-        if self.channel == "muon" :
-            channelName = "\mu^{+}\mu^{-}"
-
-        ax.set_xlabel("Mean $M^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', x=1.0)
-        ax.set_ylabel("Mean $p_{T}^{" + channelName + "}$ [GeV]", fontsize=20, ha='right', y=1.0)
-
-        for index, name in enumerate(list_to_plot) :
-            if "Data" in name :
-                isData=True
-
-            temp_mass_df=self.dfs[name]["2D_dimass_dipt"]["total"]["upDownUnc_meanValue"]
-            temp_pt_df=self.combinedPtDataFrame(name)
-
-            temp_mass_total_up =   np.sqrt(np.square(temp_mass_df["total_Up"]) + np.square(temp_mass_df["stat_error"]))
-            temp_mass_total_down = np.sqrt(np.square(temp_mass_df["total_Down"]) + np.square(temp_mass_df["stat_error"]))
-
-            temp_pt_total_up =   np.sqrt(np.square(temp_pt_df["total_Up"]) + np.square(temp_pt_df["stat_error"]))
-            temp_pt_total_down = np.sqrt(np.square(temp_pt_df["total_Down"]) + np.square(temp_pt_df["stat_error"]))
-
-            mass_systematic=self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
-            pt_systematic=self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
-
-            color_=next(color)
-
-            if "Data" in name :
-                color_ = 'black'
-
-            ax.errorbar(temp_mass_df["mean"], temp_pt_df["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt='o', ms = 4., color=color_, label=name)
-
-            if do_linear_fit :
-                if isData :
-                    self.doLogLinearFit(ax, temp_mass_df, temp_pt_df, mass_systematic, pt_systematic, color_)
-                    print("mass_systematic: ", mass_systematic)
-                    print("pt_systematic: ", pt_systematic)
-            isData=False
-
-        ax.grid(True, which='both', axis='x', color='black', linewidth=0.3, linestyle="--")
-        ax.grid(True, axis='y', color='black', linewidth=0.3, linestyle="--")
-
-        ax.tick_params(bottom=True, top=True, left=True, right=True, which='both', direction='in')
-        ax.tick_params(length=10, which='major')
-        ax.tick_params(length=5, which='minor')
-        ax.yaxis.set_minor_locator(AutoMinorLocator())
-
-        ax.legend(loc='best', fontsize=15, fancybox=False, framealpha=0.0)
-
-        outPdfName = self.outDirPath+self.plotPrefix+"_ISR.pdf"
-        if outPdfPostfix is not None :
-            outPdfName = self.outDirPath+self.plotPrefix+"_"+outPdfPostfix+"_ISR.pdf"
-            
-        plt.savefig(outPdfName, format="pdf", dpi=300)
-        plt.close(fig)
 
     def drawISRPlots(self, *objects_to_plot, names_in_objects, do_linear_fit=None, labels=None, markers=None, colors=None, facecolor_list = None, 
                      ymin=13, ymax=30, xmin=30, xmax=4e2, outPdfPostfix=None, years = None, both_lepton = False, ratios = False, nominators = None, 
@@ -1389,42 +1246,6 @@ class ISRPlotter :
         #plt.savefig(self.outDirPath+self.plotPrefix+"_"+outPdfPostfix + "_comparison.pdf", format="pdf", dpi=300)
         plt.savefig(self.outDirPath+self.plotPrefix+"_test_comparison.pdf", format="pdf", dpi=300)
         plt.close(fig)
-
-    def make_error_boxes(self, ax, xdata, ydata, xerror, yerror,
-                         showBox=True, showBar=False, facecolor='red', edgecolor='None', alpha=0.5, zorder=5, hatch_style=None, barFmt="None", barMfc='none'):
-
-        # Loop over data points; create box from errors at each point
-        try :
-            if hatch_style is None :
-                errorboxes = [Rectangle((x - xe[0], y - ye[0]), xe.sum(), ye.sum())
-                              for x, y, xe, ye in zip(xdata, ydata, xerror.T, yerror.T)]
-            else :
-                errorboxes = [Rectangle((x - xe[0], y - ye[0]), xe.sum(), ye.sum(), fill=False, facecolor=None, 
-                              edgecolor=None, hatch=hatch_style, linewidth=0.)
-                              for x, y, xe, ye in zip(xdata, ydata, xerror.T, yerror.T)]
-        except RuntimeWarning :
-            for x, y, xe, ye in zip(xdata, ydata, xerror.T, yerror.T) :
-                print("x, y, xe, ye: ", x, y, xe, ye)
-
-        # Create patch collection with specified colour/alpha
-        if showBox :
-        
-            if hatch_style is None :
-                pc = PatchCollection(errorboxes, facecolor=facecolor, alpha=alpha,
-                                 edgecolor=edgecolor, zorder = zorder, linewidth=0.05)
-            else :
-                pc = PatchCollection(errorboxes, zorder = zorder, match_original=True, hatch=hatch_style, linewidth=0. )
-            # Add collection to axes
-            ax.add_collection(pc)
-
-        if showBar :
-            # Plot errorbars
-            
-            if barFmt != "None" :
-                barFmt += facecolor[0]
-            artists = ax.errorbar(xdata, ydata, xerr=xerror, yerr=yerror,
-                                  fmt=barFmt, ecolor=facecolor, linewidth=0.1, mfc=barMfc)
-        #return artists
 
     def makeErrorNumpy(self, Up, Down, fromDF=True) :
 
