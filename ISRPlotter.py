@@ -915,20 +915,29 @@ class ISRPlotter :
 
         return output_source
 
-    # Draw data and all MC and the ratio plot between data and total MC
-    def drawSubPlot(self, axis, variable, divde_by_bin_width = False, setLogy=False,
-                    write_xaxis_title=False, write_yaxis_title=False, setLogx = False, showLegend = False, show_additional_legend=False,
-                    min=1e-1, max=1e9,
-                    ratio_max = 1.35, ratio_min = 0.65, optimzeXrange=False, minimum_content=1, show_ratio=False, ext_objects=None, ext_names=None, 
-                    denominator="total_Data", internal_names=None,
-                    setRatioLogy = False, showNEvents=False, showChi2=False, ratioName=None, normNominator=False,
-                    oneColumn=False, setMarker="o", setColor='red', xFactor=1., colors=None) :
+    def drawHistPlot(self, variable, divde_by_bin_width = False, setLogy=False, setLogx=False,
+                     min = 1e-2, max = 1e9, ratio_max=1.35, ratio_min=0.65,
+                     optimzeXrange=False, minimum_content=1,
+                     figSize=(10,6), show_ratio=True, 
+                     denominator="total_Data", setRatioLogy=False,
+                     showNEvents=False, showChi2=False, outPdfPostfix=None, ratioName=None) :
 
-        if len(axis) == 2 :
-            top_axis = axis[0]
-            bottom_axis = axis[1]
+        hep.style.use("CMS")
+
+        n_columns = 1
+        if show_ratio == True :
+            num_rows = 2
+            fig, axes = plt.subplots(num_rows, n_columns, sharex=False, figsize=figSize, gridspec_kw={'height_ratios':[1, 0.3]})
+
+            top_axis = axes[0]
+            bottom_axis = axes[1]
+
         else :
-            top_axis = axis[0] 
+            num_rows = 1
+            fig, axes = plt.subplots(num_rows, n_colums, sharex=False, figsize=figSize)
+            top_axis = axes[0] 
+
+        plt.tight_layout()
 
         denominator_hist_type = denominator.split("_")[1]
         denominator_hist_name = denominator.split("_")[0]
@@ -976,104 +985,7 @@ class ISRPlotter :
         bottom_axis.set_xlim(bins[0], bins[-1])
         bottom_axis.set_ylim(ratio_min, ratio_max)
 
-        gc.collect()
-
-    def drawHistPlot(self, *variables, divde_by_bin_width = False, setLogy=False, setLogx=False,
-                     min = 1e-2, max = 1e9, ratio_max=1.35, ratio_min=0.65,
-                     optimzeXrange=False, minimum_content=1,
-                     figSize=(10,6), show_ratio=True, ext_object_list=None, ext_names_list=None,
-                     denominator="Data_Data", internal_names=None, setRatioLogy=False,
-                     showNEvents=False, showChi2=False, outPdfPostfix=None, ratioName=None,
-                     normNominator=False, oneColumn=False, colors=None, top=0.9, bottom=0.1) :
-
-        hep.style.use("CMS")
-        # FIXME make a function for setting
-        if show_ratio == True :
-            num_rows = 2
-            
-            if oneColumn :
-        
-                heights = []
-                for i in range(len(variables) + 1) :
-                    if i == 0 :
-                        heights.append(1.)
-                    else :
-                        heights.append(0.3)
-                fig, axes = plt.subplots(len(variables) + 1, 1, sharex=False, figsize=figSize, gridspec_kw={'height_ratios': heights})
-                
-            else :
-            
-                fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize, gridspec_kw={'height_ratios':[1, 0.3]})
-
-        else :
-            num_rows = 1
-            if oneColumn : 
-                fig, axes = plt.subplots(num_rows, 1, sharex=False, figsize=figSize)
-            else :
-                fig, axes = plt.subplots(num_rows, len(variables), sharex=False, figsize=figSize)
-
-        plt.tight_layout()
-
-        write_xaxis_title = True
-        write_yaxis_title = True
-
-        show_legend = False
-
-        color=['red', 'blue', 'green', 'cyan', 'magenta', 'yellow', 'black', 'white']
-        factor = 1.
-        write_xaxis_title=False
-        show_additional_legend=False
-        
-        for index, variable in enumerate(variables) :
-
-            if len(variables) == 1:
-                show_legend = True
-                write_xaxis_title=True
-                show_additional_legend=True
-
-                if show_ratio : 
-                    axes_tuple = (axes[0], axes[1])
-
-                else :
-                    axes_tuple = (axes, )
-
-            # draw multiple histograms(variables) at once
-            else :
-                if index > 0 :
-                    write_yaxis_title=False
-
-                if index == len(variables)-1 :
-                    write_xaxis_title=True
-                    show_additional_legend=True
-
-                if oneColumn : 
-                    show_legend = True
-                    factor *= 10.
-                else :
-                    if len(variables) == index + 1:
-                        show_legend = True
-
-                if show_ratio : 
-                    if oneColumn :
-                        axes_tuple = (axes[0], axes[index+1]) 
-                    else :
-                        axes_tuple = (axes[0][index], axes[1][index])
-
-                else :
-                    if oneColumn :
-                        axes_tuple = (axes,) 
-                    else :
-                        axes_tuple = (axes[index], )
-
-            
-            self.drawSubPlot(axes_tuple, variable=variable, divde_by_bin_width=divde_by_bin_width, setLogy=setLogy,
-                             write_xaxis_title=write_xaxis_title, write_yaxis_title=write_yaxis_title, setLogx=setLogx, 
-                             showLegend=show_legend, show_additional_legend=show_additional_legend, min = min, max = max, ratio_max=ratio_max, ratio_min=ratio_min, optimzeXrange=optimzeXrange,
-                             minimum_content=minimum_content, show_ratio=show_ratio, ext_objects=ext_object_list, ext_names=ext_names_list, 
-                             denominator=denominator, internal_names=internal_names, setRatioLogy=setRatioLogy, 
-                             showNEvents=showNEvents, showChi2=showChi2, ratioName=ratioName, normNominator=normNominator, oneColumn=oneColumn, setMarker=Line2D.filled_markers[index], setColor=color[index%len(color)],
-                             xFactor=factor, colors=colors)
-
+        # save plot as pdf
         outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+"_"+self.channel+"_"+self.year+".pdf" 
         if outPdfPostfix is not None :
             outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+"_"+outPdfPostfix+".pdf" 
@@ -1172,72 +1084,6 @@ class ISRPlotter :
         # plot 1 sigma
         #ax.plot(xn, fit_up, '#0076D4', dashes=[9, 4.5], label='1 Sigma uncertainty', linewidth=0.8)
         #ax.plot(xn, fit_dw, '#0076D4', dashes=[9, 4.5], linewidth=0.8)
-
-    def drawISRUncertaintyPlot(self, variable = "Pt", ymin=0.95, ymax=1.05) :
-
-        print("draw isr uncertainty plot")
-        print(self.nSystematics)
-
-        fig, ax = plt.subplots(figsize=(8, 6))
-        plt.subplots_adjust(left=0.12, right=0.97, bottom=0.15, top=0.9)
-        ax.text(0., 1.05, "CMS Work in progress", fontsize='xx-large', transform=ax.transAxes)
-        ax.text(1., 1.05, "(13 TeV, " + self.year + ")", fontsize=20, transform=ax.transAxes, ha='right')
-
-        ax.tick_params(bottom=True, left=True, right=True, which="both", direction='in')  
-
-        mass_bin_index = [index for index in range(1, len(self.massBins)+1)]
-        ax.set_xlim(0,len(self.massBins)+1)
-        ax.set_ylim(ymin, ymax)
-        ax.xaxis.set_minor_formatter(FormatStrFormatter("%.0f"))
-
-        channelName = "e^{+}e^{-}"
-        if self.channel == "muon" :
-            channelName = "\mu^{+}\mu^{-}"
-
-        ax.set_xlabel("Mass bins", fontsize=20, ha='right', x=1.0)
-        temp_df = None
-        if variable == "Pt" :
-            ax.set_ylabel("Variation/ Nominal of Mean $p_{T}^{" + channelName + "}$", fontsize=20, ha='right', y=1.0)
-            temp_df=self.combinedPtDataFrame("Data")
-        if variable == "Mass" :
-            ax.set_ylabel("Variable/ Nominal of Mean $M^{" + channelName + "}$", fontsize=20, ha='right', y=1.0)
-            temp_df=self.Data["Mass"]["total"]["upDownUnc_meanValue"]
-
-        ax.errorbar(mass_bin_index, (temp_df.total_Up+temp_df["mean"])/temp_df["mean"], fmt='--', ms = 4., color="black", label="Total uncertainty", linewidth=0.7)
-        ax.errorbar(mass_bin_index, (temp_df["mean"]-temp_df.total_Down)/temp_df["mean"], fmt='--', ms = 4., color="black", linewidth=0.7)
-
-        ax.errorbar(mass_bin_index, (temp_df.stat_error+temp_df["mean"])/temp_df["mean"], fmt='--', ms = 4., color="black", label="Stat. uncertainty", linewidth=0.5)
-        ax.errorbar(mass_bin_index, (temp_df["mean"]-temp_df.stat_error)/temp_df["mean"], fmt='--', ms = 4., color="black", linewidth=0.5)
-
-        legend_handle = []
-        label_handle = []
-
-        color=iter(cm.rainbow(np.linspace(0,1,self.nSystematics))) 
-        for sysCategory in self.systematics.keys() :
-            for sysName in self.systematics[sysCategory] :
-
-                color_=next(color)
-                
-                temp_handle = ax.errorbar(mass_bin_index, (temp_df[sysName+"_Up"].abs()+temp_df["mean"])/temp_df["mean"], fmt=self.systematic_marker[sysName], ms = 4., color=color_)
-                legend_handle.append(temp_handle)
-                label_handle.append(sysName + " Up")
-
-        color=iter(cm.rainbow(np.linspace(0,1,self.nSystematics))) 
-        for sysCategory in self.systematics.keys() :
-            for sysName in self.systematics[sysCategory] :
-
-                color_=next(color)
-                
-                temp_handle = ax.errorbar(mass_bin_index, (temp_df["mean"]-temp_df[sysName+"_Down"].abs())/temp_df["mean"], fmt=self.systematic_marker[sysName], fillstyle = "none", ms = 4., color=color_)
-
-                legend_handle.append(temp_handle)
-                label_handle.append(sysName + " Down")
-
-        ax.legend(tuple(legend_handle), tuple(label_handle), loc='upper left', fancybox=False, framealpha=0.0, ncol=2, fontsize=5)
-
-        plt.tight_layout()
-        plt.savefig(self.outDirPath+self.plotPrefix+"_ISRUncertainty.pdf", format="pdf", dpi=300)
-        plt.close(fig)
 
     def drawISRPlot(self, *list_to_plot, do_linear_fit=False, ymin=13, ymax=30, xmin=30, xmax=4e2, outPdfPostfix=None) :
         print("draw isr plot, do_linear_fit {}".format(do_linear_fit))
