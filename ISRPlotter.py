@@ -176,14 +176,12 @@ class ISRPlotter :
         count_nSystematics = True
         
         # Get raw TH1 histograms
-        # Convert them into DataFrame
         for variable in self.variables : 
               
             varDir=variable
             if self.useTUnfoldBin :
                 varDir=variable.split("__")[0] # In case, TUnfoldBinning used
 
-            # dict[variable][sample]
             for combinedName in self.samples :
                 # initialize 
                 if variable not in self.rawHistsDict[combinedName.split("_")[1]] : # rawHistDict["Data"]["Pt__0"]
@@ -197,13 +195,7 @@ class ISRPlotter :
                 if variable not in self.rawHistsDict["MCTotal"] :
                     self.rawHistsDict["MCTotal"][variable]=dict()
 
-                isFirstFileinCombinedName=True # first sample in the combinedName
-                isLastFileinCombinedName=False
-
                 for fileIndex, mcFileName in enumerate(self.samples[combinedName]) :
-
-                    if fileIndex == len(self.samples[combinedName])-1 :
-                        isLastFileinCombinedName=True
 
                     temp_dict[mcFileName]=dict()
 
@@ -224,12 +216,9 @@ class ISRPlotter :
                                 self.nSystematics += 1
 
                             temp_dict[mcFileName][sysName]=dict()
-                            if isFirstFileinCombinedName : 
-                                temp_dict[combinedName][sysName]=dict()
+
                             for postfix in postfixs :
                                 temp_dict[mcFileName][sysName][postfix]=dict()
-                                if isFirstFileinCombinedName : 
-                                    temp_dict[combinedName][sysName][postfix]=dict()
 
                                 self.setRawHistsDict(varDir, combinedName, mcFileName, sysName, postfix, variable, temp_dict)
 
@@ -245,7 +234,7 @@ class ISRPlotter :
         if self.rawHistsDict["Histogram"] != 0 : 
             self.setTotalHists(self.rawHistsDict["Histogram"])    
 
-        # DataFrame
+        # convert histogram to DataFrame
         for histType in self.histTypes :
         
             if "DataBkgMCSubtracted" == histType or "BkgMC" == histType : 
@@ -253,6 +242,7 @@ class ISRPlotter :
             
             self.setDataFrameWithUnc(histType)
 
+        # calculate uncertainty
         for histType in self.histTypes :
         
             if "DataBkgMCSubtracted" == histType or "BkgMC" == histType : 
@@ -381,8 +371,6 @@ class ISRPlotter :
                 out_dict[variable][sample]["rawUnc"]    = self.convertTH1toDataFrame(in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
                 out_dict[variable][sample]["upDownUnc"] = self.convertTH1toDataFrame(in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
 
-                # TODO Create column for statistical uncertainty
-
                 q = 0.7
                 if self.useTUnfoldBin :
                     out_dict[variable][sample]["rawUnc_meanValue"]    = self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
@@ -398,7 +386,6 @@ class ISRPlotter :
                     for sysName, postfixs in self.systematics[sysCategory].items() :
 
                         if sysName == "Nominal" : continue
-                        #print(" Set differences....")
 
                         # temp dictionary
                         temp_rawUnc_dict = {}
@@ -728,7 +715,7 @@ class ISRPlotter :
 
         temp_content, temp_binEdge=hist2array(temp_TH1, return_edges=True)
         binWidth = (temp_binEdge[0][1:] - temp_binEdge[0][:-1])
-        nBin=len(temp_binEdge[0])-1
+        nBin = len(temp_binEdge[0])-1
 
         temp_stat_error = []
         for ibin in range(1, len(temp_content)+1) :
@@ -857,29 +844,6 @@ class ISRPlotter :
         return combined_pt_df
 
 
-    def combinedMassPtDataFrame(self, name="Data") :
-
-        in_df=self.dfs[name]
-
-        combined_pt_df = None
-        combined_mass_df = None
-
-        for key in in_df.keys() :
-
-            if "mll_mll" in key :
-                if combined_mass_df is None :
-                    combined_mass_df = in_df[key]["total"]["upDownUnc_meanValue"].copy() 
-                else :
-                    combined_mass_df = combined_mass_df.append(in_df[key]["total"]["upDownUnc_meanValue"].copy(), ignore_index=True)
-            else : 
-                if combined_pt_df is None :
-                    combined_pt_df = in_df[key]["total"]["upDownUnc_meanValue"].copy() 
-                else :
-                    combined_pt_df = combined_pt_df.append(in_df[key]["total"]["upDownUnc_meanValue"].copy(), ignore_index=True)
-
-        return combined_mass_df, combined_pt_df
-
-
     def doLogLinearFit(self, ax, mass_df, pt_df, mass_unc, pt_unc, line_color, useDF=True, printPar=True) :
 
         print("do log-linear fit!")
@@ -916,17 +880,19 @@ class ISRPlotter :
             ax.text(0.05, .05, "$<p_{T}^{DY}>$" + "=({:.2f}$\pm${:.2f})+({:.2f}$\mp${:.2f})".format(out.beta[1], out.sd_beta[1], out.beta[0], out.sd_beta[0]) + "x $log <m_{DY}>^{2}$"
 , fontsize='xx-large', transform=ax.transAxes)
 
-    def drawISRPlots(self, *objects_to_plot, names_in_objects, do_linear_fit=None, labels=None, markers=None, colors=None, facecolor_list = None, 
-                     ymin=13, ymax=30, xmin=30, xmax=4e2, outPdfPostfix=None, years = None, both_lepton = False, nominators = None) :
+    def drawISRPlots(self, *objects_to_plot, names_in_objects, do_linear_fit=None, 
+                    labels=None, markers=None, colors=None, facecolor_list = None, 
+                    ymin=13, ymax=30, xmin=30, xmax=4e2, outPdfPostfix=None, years = None, both_lepton = False, nominators = None) :
 
-        print("draw isr plot, do_linear_fit {}".format(do_linear_fit))
         color=iter(cm.rainbow(np.linspace(0,1,len(names_in_objects))))
         isData=False
 
+        hep.style.use("CMS")
+
         fig, ax = plt.subplots(figsize=(8, 8))
+        hep.cms.label("Preliminary", data=True, lumi=50, year=2016, ax=ax, fontsize=20) 
 
         plt.tight_layout()
-        plt.subplots_adjust(left=0.12, right=0.97, bottom=0.15, top=0.9, hspace=0.05)
 
         ax.set_xlim(xmin,xmax)
         ax.set_ylim(ymin,ymax)
@@ -948,35 +914,40 @@ class ISRPlotter :
                 isData=True
 
             label_name=name
+            # set label
             if labels is not None :
                 label_name=labels[index]
 
+            # set marker
             if markers is None :
                 current_marker='o'
             else :
                 current_marker=markers[index]
 
+            # set color
             if colors is None :
                 current_color="black"
             else :
                 current_color=colors[index]
 
+            # set face color
             if facecolor_list is not None :
                 current_facecolor=facecolor_list[index]
 
             temp_mass_df = self.getDict(name)["2D_dimass_dipt"]["total"]["upDownUnc_meanValue"]
             temp_pt_df   = self.combinedPtDataFrame(name)
 
-            temp_mass_total_up =   np.sqrt(np.square(temp_mass_df["total_Up"]) + np.square(temp_mass_df["stat_error"]))
+            temp_mass_total_up   = np.sqrt(np.square(temp_mass_df["total_Up"]) + np.square(temp_mass_df["stat_error"]))
             temp_mass_total_down = np.sqrt(np.square(temp_mass_df["total_Down"]) + np.square(temp_mass_df["stat_error"]))
 
-            temp_pt_total_up =   np.sqrt(np.square(temp_pt_df["total_Up"]) + np.square(temp_pt_df["stat_error"]))
+            temp_pt_total_up   = np.sqrt(np.square(temp_pt_df["total_Up"]) + np.square(temp_pt_df["stat_error"]))
             temp_pt_total_down = np.sqrt(np.square(temp_pt_df["total_Down"]) + np.square(temp_pt_df["stat_error"]))
 
-            mass_systematic=self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
-            pt_systematic=self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
+            mass_systematic = self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
+            pt_systematic   = self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
 
-            ax.errorbar(temp_mass_df["mean"], temp_pt_df["mean"], xerr=mass_systematic, yerr=pt_systematic, fmt=current_marker, color=current_color, label=label_name, linewidth=0.5, ms = 4)
+            ax.errorbar(temp_mass_df["mean"], temp_pt_df["mean"], xerr=mass_systematic, yerr=pt_systematic, 
+                        fmt=current_marker, color=current_color, label=label_name, linewidth=0.5, ms = 4)
 
         ax.legend(loc='best', fontsize=15, fancybox=False, framealpha=0.0)
 
@@ -991,20 +962,19 @@ class ISRPlotter :
 
         if fromDF :
             Up=Up.values
-        else :
-            Up=Up
-        Up[np.isinf(Up)] = 0
-        Up=Up.reshape(1,len(Up))
-
-        if fromDF :
             Down=Down.values
         else :
+            Up=Up
             Down=Down
-        Down[np.isinf(Down)] = 0
-        Down=Down.reshape(1,len(Down))
 
-        UpDown=Up
-        UpDown=np.append(UpDown, Down, axis = 0)
+        Up[np.isinf(Up)] = 0
+        Up = Up.reshape(1,len(Up))
+
+        Down[np.isinf(Down)] = 0
+        Down = Down.reshape(1,len(Down))
+
+        UpDown = Up
+        UpDown = np.append(UpDown, Down, axis = 0)
 
         return UpDown
 
