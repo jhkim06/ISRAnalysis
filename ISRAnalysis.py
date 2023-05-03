@@ -195,24 +195,13 @@ class ISRAnalysis:
 
         self.unfold.doISRUnfold(partialReg)
 
-    def doAcceptance(self, isFSR = False, outName = "", useMassBinned = False) :
+    def doAcceptance(self, isFSR = False) :
 
         if isFSR :
-        
-            if useMassBinned :  
-                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_fullPhase'], 
-                                         self.input_root_file["nominal"]['hist_updated_accept'])
-                
-            else :
-                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_fullPhase'])
+            self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_fullPhase'])
          
         else : 
-            if useMassBinned :
-                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_drp1'], 
-                                         self.input_root_file["nominal"]['hist_updated_accept'])
-                
-            else :
-                self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_drp1'])
+            self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_drp1'])
 
     def combineOutFiles(self, prefix = "") :
 
