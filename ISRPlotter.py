@@ -175,44 +175,63 @@ class ISRPlotter :
         # this code assume a histogram for a variable stored in a direcotry with the variable name as the directory name 
         for variable in self.variables : 
             varDir=variable
-            if self.useTUnfoldBin :
-                varDir=variable.split("__")[0] # In case, TUnfoldBinning used 
+            
+            if self.useTUnfoldBin : # FIXME use information of the second axis
+                varDir=variable.split("__")[0] # 2D_dipt_dimass__0
 
             for combinedName in self.samples :
-                # initialize 
-                if variable not in self.rawHistsDict[combinedName.split("_")[1]] : # rawHistDict["Data"]["Pt__0"]
-                    self.rawHistsDict[combinedName.split("_")[1]][variable] = dict() 
-                    temp_dict = self.rawHistsDict[combinedName.split("_")[1]][variable]
+                # initialize
+                hist_type = combinedName.split("_")[1]
+                if variable not in self.rawHistsDict[hist_type] : # rawHistDict["Data"]["Pt__0"]
+                    self.rawHistsDict[hist_type][variable] = dict()
+                    temp_dict = self.rawHistsDict[hist_type][variable]
+                    
                     if "BkgMC" in combinedName : self.bkgUsed = True
                 else :
-                    temp_dict = self.rawHistsDict[combinedName.split("_")[1]][variable]
+                    temp_dict = self.rawHistsDict[hist_type][variable]
                
-                for fileIndex, mcFileName in enumerate(self.samples[combinedName]) :
+                for mcFileName in self.samples[combinedName] :
                     temp_dict[mcFileName]=dict()
 
                     # Set nominal histograms
                     temp_dict[mcFileName]["Nominal"]=dict()
                     temp_dict[mcFileName]["Nominal"]["Nominal"]=dict()
-                    self.setRawHistsDict(varDir, combinedName, mcFileName, "Nominal", "Nominal", variable, temp_dict)
+                    self.set_rawHistsDict(varDir, mcFileName, "Nominal", "Nominal", variable, temp_dict)
+                    
+                    # "total" in temp_dict
+                    if "total" in temp_dict :
+                        self.set_rawHistsDict(varDir, mcFileName, "Nominal", "Nominal", variable, temp_dict, True)
+                    else :
+                        temp_dict["total"] = dict()
+                        temp_dict["total"]["Nominal"] = dict()
+                        temp_dict["total"]["Nominal"]["Nominal"] = dict()
+                        self.set_rawHistsDict(varDir, mcFileName, "Nominal", "Nominal", variable, temp_dict, True)
 
                     # Set systemaitc histograms
                     for sysCategory in self.systematics.keys() :
                         for sysName, postfixs in self.systematics[sysCategory].items() :
                             temp_dict[mcFileName][sysName]=dict()
 
+                            # sysName in temp_dict["total"]
+                            if sysName not in temp_dict["total"] :
+                                temp_dict["total"][sysName] = dict()
+                            
                             for postfix in postfixs :
                                 temp_dict[mcFileName][sysName][postfix]=dict()
-                                self.setRawHistsDict(varDir, combinedName, mcFileName, sysName, postfix, variable, temp_dict)
+                                self.set_rawHistsDict(varDir, mcFileName, sysName, postfix, variable, temp_dict)
+                                
+                                # postfix in temp_dict["total"]["sysName"]
+                                if postfix not in temp_dict["total"][sysName] :
+                                    temp_dict["total"][sysName][postfix] = dict()
+                                    
+                                self.set_rawHistsDict(varDir, mcFileName, sysName, postfix, variable, temp_dict, True)
 
-        self.setTotalHists(self.rawHistsDict["Data"])
-        self.setTotalHists(self.rawHistsDict["SigMC"])
-        if self.bkgUsed : 
-            self.setTotalHists(self.rawHistsDict["BkgMC"])
+        if self.bkgUsed :
             self.setBkgSubtractedDataHist()
         self.setMCTotalHists() # signal + background MC
 
-        if self.rawHistsDict["Hist"] != 0 : 
-            self.setTotalHists(self.rawHistsDict["Hist"])    
+        #if self.rawHistsDict["Hist"] != 0 :
+        #    self.setTotalHists(self.rawHistsDict["Hist"])
 
         # convert histogram to DataFrame
         for histType in self.histTypes :
@@ -243,33 +262,37 @@ class ISRPlotter :
                     self.calculateCombinedUnc(histType, "theory", "upDownUnc_qValue", True)
                     self.calculateCombinedUnc(histType, "measurement", "upDownUnc_qValue", True)
 
-    def setRawHistsDict(self, varDir, combinedName, inputHistFileName, sysName, sysPostfix, variable, targetDict) :
-
-        if sysName == "Nominal" and sysPostfix == "Nominal" : 
-            histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName 
+    def set_rawHistsDict(self, varDir, inputHistFileName, sysName, sysPostfix, variable, targetDict, is_total = False) :
+        if is_total :
+            if "TH1" in targetDict["total"][sysName][sysPostfix] :
+                targetDict["total"][sysName][sysPostfix]["TH1"].Add(targetDict[inputHistFileName][sysName][sysPostfix]["TH1"])
+            else :
+                targetDict["total"][sysName][sysPostfix]["TH1"] = targetDict[inputHistFileName][sysName][sysPostfix]["TH1"].Clone("total"+inputHistFileName+variable+sysName+sysPostfix)
         else :
-            histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName + '_' + sysName + sysPostfix 
-
-        # read histogram
-        temp_TH1=self.inRootFile.Get(histToRead)
-        if type(temp_TH1) != rt.TH1D :
-            histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName 
+            if sysName == "Nominal" and sysPostfix == "Nominal" :
+                histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName
+            else :
+                histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName + '_' + sysName + sysPostfix
+            # read histogram
             temp_TH1=self.inRootFile.Get(histToRead)
-        
-        if self.useTUnfoldBin :
-            temp_TH1 = self.binDef[varDir.split("__")[0]].ExtractHistogram(inputHistFileName + variable + sysName + sysPostfix, temp_TH1, 
+            
+            # in case sysName+sysPostrix not exists, use nominal histogram
+            if type(temp_TH1) != rt.TH1D :
+                histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName
+                temp_TH1=self.inRootFile.Get(histToRead)
+            
+            if self.useTUnfoldBin :
+                temp_TH1 = self.binDef[varDir.split("__")[0]].ExtractHistogram(inputHistFileName + variable + sysName + sysPostfix, temp_TH1,
                                                                           0, True, self.steeringTUnfold[variable]) 
-
-        targetDict[inputHistFileName][sysName][sysPostfix]["TH1"] = temp_TH1
-
-        del temp_TH1
+            targetDict[inputHistFileName][sysName][sysPostfix]["TH1"] = temp_TH1
+            del temp_TH1
 
     def getOutBaseDir(self) :
         return self.outDirPath
 
     def loglinear_func(self, p, x):
         return 2.*p[0]*np.log(x)+p[1]
-
+        
     def setBkgSubtractedDataHist(self) :
 
         temp_dict = self.rawHistsDict["DataBkgMCSubtracted"]
@@ -390,7 +413,7 @@ class ISRPlotter :
                                 else : the_other_postfix=postfixs[0]
 
                                 #out_dict[variable][sample]["rawUnc"][sysName+"_"+postfix]= \
-                                #in_dict[variable][sample][sysName][postfix]["DataFrame"].content-in_dict[variable][sample][sysName][the_other_postfix]["DataFrame"].content
+                                     #in_dict[variable][sample][sysName][postfix]["DataFrame"].content-in_dict[variable][sample][sysName][the_other_postfix]["DataFrame"].content
 
                                 temp_rawUnc_dict[sysName+"_"+postfix] = \
                                 in_dict[variable][sample][sysName][postfix]["DataFrame"].content-in_dict[variable][sample][sysName][the_other_postfix]["DataFrame"].content
@@ -628,49 +651,6 @@ class ISRPlotter :
                 else :
                     in_dict[variable][sample][column_name][sys_to_combine+"_Down"]=0.
 
-    def setTotalHists(self, raw_dict) :
-
-        for variable in raw_dict.keys() :
-            raw_dict[variable]["total"]=dict()
-            raw_dict[variable]["total"]["Nominal"]=dict()
-            raw_dict[variable]["total"]["Nominal"]["Nominal"]=dict()
-
-            first_sample=True 
-            for sample in raw_dict[variable].keys() : 
-
-                if sample == "total" : continue
-
-                if first_sample :
-                    first_sample=False
-                    raw_dict[variable]["total"]["Nominal"]["Nominal"]["TH1"]=\
-                    raw_dict[variable][sample]["Nominal"]["Nominal"]["TH1"].Clone("Clone_"+variable+sample+"Nominal"+"Nominal")
-                else :
-                    raw_dict[variable]["total"]["Nominal"]["Nominal"]["TH1"].Add(raw_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
-
-            for sysCategory in self.systematics.keys() :
-                for sysName, postfixs in self.systematics[sysCategory].items() :
-                    raw_dict[variable]["total"][sysName]=dict()
-
-                    for postfix in postfixs :
-                        raw_dict[variable]["total"][sysName][postfix]=dict()
-
-                        first_sample=True
-                        for sample in raw_dict[variable].keys() :
-
-                            if sample == "total" : continue
-
-                            if first_sample :
-                                first_sample=False
-                                raw_dict[variable]["total"][sysName][postfix]["TH1"]=\
-                                raw_dict[variable][sample][sysName][postfix]["TH1"].Clone("Clone_"+variable+sample+sysName+postfix)
-
-                                raw_dict[variable]["total"][sysName][postfix]["DataFrame"]=\
-                                raw_dict[variable][sample][sysName][postfix]["DataFrame"].copy()
-                            else :
-                                raw_dict[variable]["total"][sysName][postfix]["TH1"].Add(raw_dict[variable][sample][sysName][postfix]["TH1"])
-
-                                raw_dict[variable]["total"][sysName][postfix]["DataFrame"].content= \
-                                raw_dict[variable]["total"][sysName][postfix]["DataFrame"].content+raw_dict[variable][sample][sysName][postfix]["DataFrame"].content
 
 
     def convertTH1toDataFrame(self, temp_TH1, existing_df = None) :
