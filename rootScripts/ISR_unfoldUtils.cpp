@@ -346,7 +346,7 @@ void ISRUnfold::doISRUnfold(bool partialReg)
 
 
 // In this function, acceptance factors change only for PDF, Scale, AlphaS systematics
-void ISRUnfold::doAcceptCorr(TString filePath, TString filePath_for_accept)
+void ISRUnfold::doAcceptCorr(TString filePath)
 {
     TDirectory* topDir;
     TDirectory* varDir;
@@ -373,66 +373,10 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString filePath_for_accept)
     TString mass_binned_sample_prefix[9] = {"M-100to200", "M-200to400", "M-400to500", "M-500to700", "M-700to800",
                                             "M-800to1000", "M-1000to1500", "M-1500to2000", "M-2000to3000"};
 
-    TH1* hFullPhaseMC_massBinned = NULL;
-    if(filePath_for_accept != "")
-    {
-        int istart = binningCoarse->GetGlobalBinNumber(0, 200);
+    hAcceptance = (TH1*) hFullPhaseMC->Clone("hAcceptance"+var);
+    hAcceptance->Divide(hFiducialPhaseMC); // Nominal acceptance factor
 
-        // full phase histogram from mass binned sample
-        for(int i = 0; i < 9; i++)
-        {
-            if(i==0)
-            {
-                hFullPhaseMC_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
-            }
-            else
-            {
-                hFullPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
-            }
-        }
-
-        //
-        for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
-        {
-            hFullPhaseMC->SetBinContent(j, hFullPhaseMC_massBinned->GetBinContent(j));
-            hFullPhaseMC->SetBinError(j,   hFullPhaseMC_massBinned->GetBinError(j));
-        }
-
-        // fiducial phase histogram from mass binned sample
-        TH1* hFiducialPhaseMC_massBinned = NULL;
-        for(int i = 0; i < 9; i++)
-        {
-            if(i==0)
-            {
-                hFiducialPhaseMC_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
-            }
-            else
-            {
-                hFiducialPhaseMC_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i]));
-            }
-        }
-
-        for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
-        {
-            hFiducialPhaseMC->SetBinContent(j, hFiducialPhaseMC_massBinned->GetBinContent(j));
-            hFiducialPhaseMC->SetBinError(j,   hFiducialPhaseMC_massBinned->GetBinError(j));
-        }
-
-        TFile* filein_temp = new TFile(filePath_for_accept);
-
-        hAcceptance = (TH1*) filein_temp->Get("updated_accept_hist");
-        filein_temp->Close();
-
-        hAcceptance_raw = (TH1*) hFullPhaseMC->Clone("hAcceptance_raw");
-        hAcceptance_raw->Divide(hFiducialPhaseMC);
-    }
-    else
-    {
-        hAcceptance = (TH1*) hFullPhaseMC->Clone("hAcceptance"+var);
-        hAcceptance->Divide(hFiducialPhaseMC); // Nominal acceptance factor
-
-        hAcceptance_raw = (TH1*) hAcceptance->Clone("hAcceptance_raw");
-    }
+    hAcceptance_raw = (TH1*) hAcceptance->Clone("hAcceptance_raw");
 
     hFullPhaseData = nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false);
     hFullPhaseData->Multiply(hAcceptance);
@@ -462,38 +406,6 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString filePath_for_accept)
             hFiducialPhaseMC_sys = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY_"+(*it));
             //hFiducialPhaseMC_sys = hFiducialPhaseMC;
             hFiducialPhaseMC_sys->SetName("histo_DY_"+(*it));
-
-            if(filePath_for_accept != "")
-            {
-                // fiducial phase histogram from mass binned sample
-
-                int istart = binningCoarse->GetGlobalBinNumber(0, 200);
-                TH1* hFiducialPhaseMC_sys_massBinned = NULL;
-                for(int i = 0; i < 9; i++)
-                {
-                    if(i==0)
-                    {
-                        if( (((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) )
-                            hFiducialPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" +  "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it));
-                        else
-                            hFiducialPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i]);
-                    }
-                    else
-                    {
-                        if( (((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) )
-                            hFiducialPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" + "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it)));
-                        else
-                            hFiducialPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance_Efficiency/"+var+ "_" +  "/histo_DYJets_" + mass_binned_sample_prefix[i]));
-                    }
-
-                }
-
-                for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
-                {
-                    hFiducialPhaseMC_sys->SetBinContent(j, hFiducialPhaseMC_sys_massBinned->GetBinContent(j));
-                    hFiducialPhaseMC_sys->SetBinError(j,   hFiducialPhaseMC_sys_massBinned->GetBinError(j));
-                }
-            }
         }
 
         // For PDF, AlphaS, Scale etc, nominator (of acceptance) also changes
@@ -504,28 +416,6 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString filePath_for_accept)
                 hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets10to50_"+(*it)));
             else
                 hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets10to50_MG_"+(*it)));
-
-            if(filePath_for_accept != "")
-            {
-                int istart = binningCoarse->GetGlobalBinNumber(0, 200);
-                TH1* hFullPhaseMC_sys_massBinned = NULL;
-                for(int i = 0; i < 9; i++)
-                {
-                    if(i==0)
-                    {
-                        hFullPhaseMC_sys_massBinned = (TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it));
-                    }
-                    else
-                    {
-                        hFullPhaseMC_sys_massBinned->Add((TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets_" + mass_binned_sample_prefix[i] + "_" + (*it)));
-                    }
-                }
-                for(int j = istart; j < hFullPhaseMC_massBinned->GetNbinsX()+1; j++)
-                {
-                    hFullPhaseMC_raw_sys->SetBinContent(j, hFullPhaseMC_sys_massBinned->GetBinContent(j));
-                    hFullPhaseMC_raw_sys->SetBinError(j,   hFullPhaseMC_sys_massBinned->GetBinError(j));
-                }
-            }
         }
         else
         {

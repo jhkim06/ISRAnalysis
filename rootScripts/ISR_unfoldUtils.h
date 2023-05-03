@@ -205,7 +205,7 @@ public:
                                 double endMass, double endPt);
 
     // Acceptance correction
-    void doAcceptCorr(TString filePath, TString filePath_for_accept = "");
+    void doAcceptCorr(TString filePath);
 
     // Get histograms
     TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true);
