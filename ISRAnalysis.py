@@ -198,10 +198,10 @@ class ISRAnalysis:
     def doAcceptance(self, isFSR = False) :
 
         if isFSR :
-            self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_fullPhase'])
+            self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_fullPhase'], self.dir_path)
          
         else : 
-            self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_drp1'])
+            self.unfold.doAcceptCorr(self.input_root_file["nominal"]['DY'], self.dir_path)
 
     def combineOutFiles(self, prefix = "") :
 
