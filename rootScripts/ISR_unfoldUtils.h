@@ -51,7 +51,7 @@ private:
     bool verbose;
     
     TString unfoldName;
-    TString channelName; // electron or muon
+    TString channel; // electron or muon
     TString var; // dilepton mass or pt
     TString year;
 
@@ -103,7 +103,7 @@ public:
 
     // Constructor
     ISRUnfold(TString unfoldName_, 
-              TString channel, 
+              TString channel_, 
               TString year_ = "2016", 
               TUnfold::ERegMode regMode_ = TUnfold::kRegModeNone, 
               bool verbose_ = false,
@@ -115,7 +115,7 @@ public:
 
         outputBaseDir = outputBaseDir_;
         unfoldName = unfoldName_;
-        channelName = channel;
+        channel = channel_;
         year = year_;
         var = var_;
 
@@ -128,7 +128,7 @@ public:
         verbose = verbose_;
 
         // Make output root files
-        fUnfoldOutPath = outputBaseDir+unfoldName+"_"+channelName+"_"+year+"_"+var+".root";
+        fUnfoldOutPath = outputBaseDir+unfoldName+"_"+channel+"_"+year+"_"+var+".root";
         fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");
 
         fUnfoldOut->mkdir("matrix");
@@ -171,8 +171,7 @@ public:
                      TString dirName = "",
                      TString sysType = "",
                      TString sysName = "",
-                     TString sys_hist_postfix = "",
-                     bool isFSR = false);
+                     TString sys_hist_postfix = "");
 
     // Set background histograms
     void subBkgs(TString filepath,
@@ -205,7 +204,7 @@ public:
                                 double endMass, double endPt);
 
     // Acceptance correction
-    void doAcceptCorr(TString filePath);
+    void doAcceptCorr(TString filePath, TString top_dir);
 
     // Get histograms
     TH1* getUnfoldedHists(TString outHistName = "", TString steering = "", bool useAxis = true);

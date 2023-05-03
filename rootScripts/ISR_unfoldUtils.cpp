@@ -21,7 +21,7 @@ TMatrixD ISRUnfold::makeMatrixFromHist(TH2F*hist)
 }//end makeMatrixFromHist
 
 // Set the nominal response matrix
-void ISRUnfold::setNominalRM(TString file_path, TString channel_name)
+void ISRUnfold::setNominalRM(TString file_path, TString top_dir)
 {
     TH1::AddDirectory(kFALSE);
     TFile* filein = new TFile(file_path, "READ");
@@ -31,12 +31,12 @@ void ISRUnfold::setNominalRM(TString file_path, TString channel_name)
     TString Gen_binName = var + "_truth_bin";
 
     // Set bin definition
-    binningFine = (TUnfoldBinning*)filein->Get(channel_name + "/" + Rec_binName);
-    binningCoarse = (TUnfoldBinning*)filein->Get(channel_name + "/" + Gen_binName);
+    binningFine = (TUnfoldBinning*)filein->Get(top_dir + "/" + Rec_binName);
+    binningCoarse = (TUnfoldBinning*)filein->Get(top_dir + "/" + Gen_binName);
 
     // Set response matrix
     // First, get the response matrix
-    TH2* hmcGenRec = (TH2*)filein->Get(channel_name + "/" + var + "_responseM");
+    TH2* hmcGenRec = (TH2*)filein->Get(top_dir + "/" + var + "_responseM");
 
     nominalTUnfold = new TUnfoldDensity(hmcGenRec,
                                         TUnfold::kHistMapOutputHoriz,
@@ -55,12 +55,12 @@ void ISRUnfold::setNominalRM(TString file_path, TString channel_name)
 }
 
 // Option for unfold options
-void ISRUnfold::setSystematicRM(TString file_path, TString channel_name, TString sys_name, TString hist_postfix)
+void ISRUnfold::setSystematicRM(TString file_path, TString top_dir, TString sys_name, TString hist_postfix)
 {
     TH1::AddDirectory(kFALSE);
     TFile* filein = new TFile(file_path, "READ");
 
-    TH2* hmcGenRec = (TH2*)filein->Get(channel_name + "/" + var + "_responseM" + hist_postfix);
+    TH2* hmcGenRec = (TH2*)filein->Get(top_dir + "/" + var + "_responseM" + hist_postfix);
 
     if(sys_name.Contains("IterEM"))
     {
@@ -126,13 +126,13 @@ void ISRUnfold::save_hists_from_responseM()
 }
 
 // Set input histogram from root file
-void ISRUnfold::setUnfInput(TString file_path, TString channel_name, TString sys_type, TString sys_name, TString sys_hist_postfix, bool isFSR)
+void ISRUnfold::setUnfInput(TString file_path, TString top_dir, TString sys_type, TString sys_name, TString sys_hist_postfix)
 {
     TH1::AddDirectory(kFALSE);
 
     TFile* filein = new TFile(file_path);
 
-    TString full_hist_path = channel_name + "/" + var + "_smeared" + sys_hist_postfix;
+    TString full_hist_path = top_dir + "/" + var + "_smeared" + sys_hist_postfix;
     TH1* hRec = (TH1*)filein->Get(full_hist_path);
 
     // Nominal
@@ -157,10 +157,10 @@ void ISRUnfold::setUnfInput(TString file_path, TString channel_name, TString sys
     delete filein;
 }
 
-void ISRUnfold::subBkgs(TString file_path, TString channel_name, TString bkg_name, TString sys_type, TString sys_name, TString hist_postfix)
+void ISRUnfold::subBkgs(TString file_path, TString top_dir, TString bkg_name, TString sys_type, TString sys_name, TString hist_postfix)
 {
     TFile* filein = new TFile(file_path);
-    TH1* hRec = (TH1*)filein->Get(channel_name + "/" + var + "_smeared" + hist_postfix);
+    TH1* hRec = (TH1*)filein->Get(top_dir + "/" + var + "_smeared" + hist_postfix);
 
     // Nominal histograms
     if(sys_type=="Type_0")
@@ -168,7 +168,7 @@ void ISRUnfold::subBkgs(TString file_path, TString channel_name, TString bkg_nam
         nominalTUnfold->SubtractBackground(hRec, bkg_name);
 
         // Save Unfolding fake histogram in folded directory
-        if(channel_name.Contains("Fake"))
+        if(top_dir.Contains("Fake"))
         {
             TDirectory* varDirForReco;
 
@@ -346,15 +346,13 @@ void ISRUnfold::doISRUnfold(bool partialReg)
 
 
 // In this function, acceptance factors change only for PDF, Scale, AlphaS systematics
-void ISRUnfold::doAcceptCorr(TString filePath)
+void ISRUnfold::doAcceptCorr(TString filePath, TString top_dir)
 {
     TDirectory* topDir;
     TDirectory* varDir;
 
-    TH1* hAcceptance_raw = NULL;
     TFile* filein = new TFile(filePath);
 
-    //if(!gSystem->AccessPathName(fullPath, kFileExists))
     topDir=fUnfoldOut->GetDirectory("acceptance");
     varDir=fUnfoldOut->GetDirectory("acceptance/"+var);
     varDir->cd();
@@ -363,23 +361,16 @@ void ISRUnfold::doAcceptCorr(TString filePath)
 
     TH1* hFiducialPhaseMC = NULL;
 
-    hFullPhaseMC = (TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets");
-    if(year.Contains("2016"))
-        hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets10to50"));
-    else
-        hFullPhaseMC->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets10to50_MG"));
-
-    hFiducialPhaseMC = (TH1*)fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY");
-    TString mass_binned_sample_prefix[9] = {"M-100to200", "M-200to400", "M-400to500", "M-500to700", "M-700to800",
-                                            "M-800to1000", "M-1000to1500", "M-1500to2000", "M-2000to3000"};
+    hFullPhaseMC     = (TH1*) filein->Get(top_dir + "/woLepCut_" + var+ "_" + "truth");
+    hFiducialPhaseMC = (TH1*) fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY");
 
     hAcceptance = (TH1*) hFullPhaseMC->Clone("hAcceptance"+var);
-    hAcceptance->Divide(hFiducialPhaseMC); // Nominal acceptance factor
+    hAcceptance->Divide(hFiducialPhaseMC); // Nominal acceptance correction factor
 
-    hAcceptance_raw = (TH1*) hAcceptance->Clone("hAcceptance_raw");
+    TH1* hAcceptance_raw = (TH1*) hAcceptance->Clone("hAcceptance_raw");
 
     hFullPhaseData = nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false);
-    hFullPhaseData->Multiply(hAcceptance);
+    hFullPhaseData->Multiply(hAcceptance); // acceptance corrected data
 
     varDir->cd();
     hFullPhaseData->Write();
@@ -412,7 +403,7 @@ void ISRUnfold::doAcceptCorr(TString filePath)
         if( (((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) )
         {
             hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets_"+(*it));
-            if(year.Contains(2016))
+            if(year.Contains("2016"))
                 hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets10to50_"+(*it)));
             else
                 hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets10to50_MG_"+(*it)));
