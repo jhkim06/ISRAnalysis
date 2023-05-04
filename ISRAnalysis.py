@@ -39,12 +39,12 @@ class ISRAnalysis:
         self.var = var_
         self.n_mass_bins = None
         
-        self.out_dir_path     = "output/" +self.year+"/"+self.channel+"/"
-        self.in_hist_path_txt = "inFiles/" +self.year+"/"+self.channel+"/fhist.txt"
+        self.out_dir_path     = "output/UltraLegacy/" +self.year+"/"+self.channel+"/"
+        self.in_hist_path_txt = "inFiles/UltraLegacy/" +self.year+"/"+self.channel+"/fhist.txt"
 
         if channel_postfix_ != "" :
-            self.out_dir_path     = "output/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/"
-            self.in_hist_path_txt = "inFiles/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/fhist.txt"
+            self.out_dir_path     = "output/UltraLegacy/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/"
+            self.in_hist_path_txt = "inFiles/UltraLegacy/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/fhist.txt"
     
         # Make output directory
         if not os.path.exists(self.out_dir_path):

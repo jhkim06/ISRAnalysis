@@ -142,10 +142,10 @@ class ISRPlotter :
             self.stackOrder = self.config['StackOrder']
 
             # Out directory
-            self.outDirPath = "output/"+self.year+"/"+self.channel+"/"
+            self.outDirPath = "output/UltraLegacy/"+self.year+"/"+self.channel+"/"
             if "ChannelPostfix" in self.config :
                 self.channelPostfix = self.config['ChannelPostfix']
-                self.outDirPath     = "output/"+self.year+"/"+self.channel+"_"+self.channelPostfix+"/"
+                self.outDirPath     = "output/UltraLegacy/"+self.year+"/"+self.channel+"_"+self.channelPostfix+"/"
             if not os.path.exists(self.outDirPath) :
                 os.makedirs(self.outDirPath)
 
