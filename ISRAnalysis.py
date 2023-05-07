@@ -19,11 +19,11 @@ class ISRAnalysis:
                  unfold_name_ = "Detector", 
                  year_ = "2016", 
                  channel_= "ee", 
-                 regMode_ = 0, 
+                 channel_postfix_ = "", 
                  matrix_filekey_ = "DY",
                  bin_def_ = "", 
-                 channel_postfix_ = "", 
                  var_ = "Pt", 
+                 regMode_ = 0, 
                  bias_ = 0., 
                  density_ = 0):
         
@@ -71,10 +71,12 @@ class ISRAnalysis:
         self.unfold  = rt.ISRUnfold(self.unfold_name, 
                                     self.channel, 
                                     self.year, 
-                                    self.mode, 
+                                    self.out_dir_path,   
                                     False, 
                                     self.var, 
-                                    self.out_dir_path,   
+                                    folded_bin_name,
+                                    unfolded_bin_name,
+                                    self.mode, 
                                     self.density)
 
         self.unfold.setBias(self.bias)

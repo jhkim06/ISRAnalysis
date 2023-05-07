@@ -55,6 +55,9 @@ private:
     TString var; // dilepton mass or pt
     TString year;
 
+    TString folded_bin_name;
+    TString unfolded_bin_name;
+
     // Conditions for unfolding
     TUnfold::ERegMode regMode;
     TUnfoldDensity::EDensityMode densityMode;
@@ -105,10 +108,12 @@ public:
     ISRUnfold(TString unfoldName_, 
               TString channel_, 
               TString year_ = "2016", 
-              TUnfold::ERegMode regMode_ = TUnfold::kRegModeNone, 
+              TString outputBaseDir_ = "", 
               bool verbose_ = false,
               TString var_ = "Mass", 
-              TString outputBaseDir_ = "", 
+              TString folded_bin_name_ = "[folded_nominal:folded_nominal]",
+              TString unfolded_bin_name_ = "[unfolded_nominal:unfolded_nominal]",
+              TUnfold::ERegMode regMode_ = TUnfold::kRegModeNone, 
               TUnfoldDensity::EDensityMode densityMode_ = TUnfoldDensity::kDensityModeNone)
     {
         cout << "ISRUnfold set! " << var_ << endl;
@@ -118,6 +123,9 @@ public:
         channel = channel_;
         year = year_;
         var = var_;
+
+        folded_bin_name = folded_bin_name_;
+        unfolded_bin_name = unfolded_bin_name_;
 
         nominal_bias = 1.;
         tau = 0.;
