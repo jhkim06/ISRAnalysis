@@ -60,15 +60,10 @@ def divide(nominator, denominator, output_type='root'):# 'root', 'numpy'
         # return root histogram
         return ratio
 
-dashes = "--------------------------------------------------------------------------------"
-
 # root TH1 to DataFrame and plot using matplotlib
 class ISRPlotter :
     
     def __init__(self, inputHistFilePath, jasonConfigFilePath, doSystematic=False, verbose=True, setQuantile=False) :
-
-        print(dashes)
-        print("CREATE ISRPlotter......")
 
         self.setQuantile = setQuantile
 
