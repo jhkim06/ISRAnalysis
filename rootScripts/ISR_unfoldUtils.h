@@ -139,15 +139,9 @@ public:
         fUnfoldOutPath = outputBaseDir+unfoldName+"_"+channel+"_"+year+"_"+var+".root";
         fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");
 
-        fUnfoldOut->mkdir("matrix");
-        fUnfoldOut->mkdir("folded");
-        fUnfoldOut->mkdir("unfolded");
-        fUnfoldOut->mkdir("acceptance");
-
-        fUnfoldOut->mkdir("matrix/" + var);
-        fUnfoldOut->mkdir("folded/" + var);
-        fUnfoldOut->mkdir("unfolded/" + var);
-        fUnfoldOut->mkdir("acceptance/" + var);
+        fUnfoldOut->mkdir(channel+year);
+        fUnfoldOut->mkdir(channel+year+"/data");
+        fUnfoldOut->mkdir(channel+year+"/DY");
     }
     // Destructor
     ~ISRUnfold()
@@ -168,7 +162,7 @@ public:
 
     // Set nominal TUnfoldDensity
     void setNominalRM(TString filepath, TString dirName);
-    void save_hists_from_responseM();
+    void save_hists_from_responseM(TFile* file);
     // Set systematic TUnfoldDensity
     void setSystematicRM(TString filepath, TString dirName,
                          TString sysName,

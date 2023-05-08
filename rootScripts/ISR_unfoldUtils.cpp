@@ -27,8 +27,8 @@ void ISRUnfold::setNominalRM(TString file_path, TString top_dir)
     TFile* filein = new TFile(file_path, "READ");
 
     // bin definition
-    TString Rec_binName = var + "_smeared_bin";
-    TString Gen_binName = var + "_truth_bin";
+    TString Rec_binName = "[tunfold:bin]_"+var+"_"+folded_bin_name;
+    TString Gen_binName = "[tunfold:bin]_"+var+"_"+unfolded_bin_name;
 
     // Set bin definition
     binningFine = (TUnfoldBinning*)filein->Get(top_dir + "/" + Rec_binName);
@@ -36,7 +36,7 @@ void ISRUnfold::setNominalRM(TString file_path, TString top_dir)
 
     // Set response matrix
     // First, get the response matrix
-    TH2* hmcGenRec = (TH2*)filein->Get(top_dir + "/" + var + "_responseM");
+    TH2* hmcGenRec = (TH2*)filein->Get(top_dir + "/[tunfold:matrix]_"+var+"_"+folded_bin_name+"_"+unfolded_bin_name); // hist_suffix
 
     nominalTUnfold = new TUnfoldDensity(hmcGenRec,
                                         TUnfold::kHistMapOutputHoriz,
@@ -45,8 +45,8 @@ void ISRUnfold::setNominalRM(TString file_path, TString top_dir)
                                         densityMode,
                                         binningCoarse,
                                         binningFine);
-    hResponseM = (TH2*) hmcGenRec->Clone("hResponseM");
-    save_hists_from_responseM();
+    hResponseM = (TH2*) hmcGenRec->Clone("[tunfold:matrix]_"+var+"_"+folded_bin_name+"_"+unfolded_bin_name);
+    save_hists_from_responseM(filein);
 
     cout << "TUnfold version: " << nominalTUnfold->GetTUnfoldVersion() << endl;
 
@@ -92,37 +92,28 @@ void ISRUnfold::setSystematicRM(TString file_path, TString top_dir, TString sys_
     delete hProjectedTruth;
 }
 
-void ISRUnfold::save_hists_from_responseM()
+void ISRUnfold::save_hists_from_responseM(TFile* file)
 {
-    TDirectory* varDir;
-    TDirectory* varDirForReco;
-
-    varDirForReco=fUnfoldOut->GetDirectory("folded/"+var);
-    varDir=fUnfoldOut->GetDirectory("matrix/"+var);
-    varDir->cd();
+    fUnfoldOut->cd(channel+year);
     binningCoarse->Write();
     binningFine->Write();
 
-    TH2F* hMigrationM = (TH2F*) nominalTUnfold->GetProbabilityMatrix("hMigrationM");
+    TH2* truth_unfolded = (TH2*)file->Get(channel+year+"/[tunfold:hist]_"+var+"_"+unfolded_bin_name);
+    fUnfoldOut->cd(channel+year+"/DY");
+    truth_unfolded->Write("[tunfold:unfolded_hist]_"+var+"_"+unfolded_bin_name);
+
+
+    TH2F* hMigrationM = (TH2F*) nominalTUnfold->GetProbabilityMatrix("[tunfold:hprob_matrix]_"+var+"_"+folded_bin_name+"_"+unfolded_bin_name);
     hMigrationM->Write();
-    hResponseM->SetName("hResponseM");
     hResponseM->Write();
 
     // Save projection of the migration matrix
-    varDir=fUnfoldOut->GetDirectory("unfolded/"+var);
-    varDir->cd();
-
-    TH1D* hProjectedTruth = (TH1D*) hResponseM->ProjectionX("histo_DY", 0, -1, "e"); 
-    TH1D* hProjectedBinZero = (TH1D*) hResponseM->ProjectionX("histo_ProjectedBinZero", 0, 0, "e");  //
-    TH1D* hProjectedReco = (TH1D*) hResponseM->ProjectionY("histo_ProjectedReco", 1, -1, "e");  //
+    TH1D* hProjectedTruth   = (TH1D*) hResponseM->ProjectionX("[tunfold:projX_hist]_"+var+"_"+unfolded_bin_name, 0, -1, "e"); 
+    TH1D* hProjectedBinZero = (TH1D*) hResponseM->ProjectionX("[tunfold:projX_bin_zero_hist]_"+var+"_"+unfolded_bin_name, 0, 0, "e");  
+    TH1D* hProjectedReco    = (TH1D*) hResponseM->ProjectionY("[tunfold:projY_hist]_"+var+"_"+folded_bin_name, 1, -1, "e");
     hProjectedTruth->Write();
     hProjectedBinZero->Write();
-
-    varDirForReco->cd();
-    binningFine->Write();
     hProjectedReco->Write();
-
-    varDir->cd();
 }
 
 // Set input histogram from root file
@@ -132,7 +123,7 @@ void ISRUnfold::setUnfInput(TString file_path, TString top_dir, TString sys_type
 
     TFile* filein = new TFile(file_path);
 
-    TString full_hist_path = top_dir + "/" + var + "_smeared" + sys_hist_postfix;
+    TString full_hist_path = top_dir+"/[tunfold:hist]_"+var+"_"+folded_bin_name+sys_hist_postfix;
     TH1* hRec = (TH1*)filein->Get(full_hist_path);
 
     // Nominal
@@ -160,7 +151,7 @@ void ISRUnfold::setUnfInput(TString file_path, TString top_dir, TString sys_type
 void ISRUnfold::subBkgs(TString file_path, TString top_dir, TString bkg_name, TString sys_type, TString sys_name, TString hist_postfix)
 {
     TFile* filein = new TFile(file_path);
-    TH1* hRec = (TH1*)filein->Get(top_dir + "/" + var + "_smeared" + hist_postfix);
+    TH1* hRec = (TH1*)filein->Get(top_dir+"/[tunfold:hist]_"+var+"_"+folded_bin_name+hist_postfix);
 
     // Nominal histograms
     if(sys_type=="Type_0")
@@ -243,23 +234,13 @@ void ISRUnfold::setPartialRegularize2D(TUnfold::ERegMode partialRegMode, double 
 void ISRUnfold::doISRUnfold(bool partialReg)
 {
 
-    TDirectory* topDir;
-    TDirectory* varDir;
-
-    topDir=fUnfoldOut->GetDirectory("unfolded");
-    varDir=fUnfoldOut->GetDirectory("unfolded/"+var);
-    varDir->cd();
-    binningCoarse->Write();
-
-    topDir->cd();
-
     // No regularisation
     if(regMode == TUnfold::kRegModeNone)
     {
         if (partialReg) {
 
             //setPartialRegularize2D(TUnfold::kRegModeCurvature, 200., 0., 1000., 100.);
-            setPartialRegularize2D(TUnfold::kRegModeCurvature, 320., 0., 1000., 100.);
+            setPartialRegularize2D(TUnfold::kRegModeCurvature, 320., 0., 1000., 1000.);
             Int_t nScan=1000;
             Double_t tauMin = 1e-5; //If tauMin=tauMax, TUnfold automatically chooses a range
             Double_t tauMax = 1e-1; //Not certain how they choose the range
@@ -297,28 +278,19 @@ void ISRUnfold::doISRUnfold(bool partialReg)
         tau = nominalTUnfold->GetTau();
     }
 
-    varDir->cd();
-
     bool useAxisBinning = false;
     if(var.Contains("1D")) // FIXME check bin structure to decide whether to use axis_binning or not
     {
         useAxisBinning = true;
     }
 
-    nominalTUnfold->GetRhoIJtotal("hCorrelation", 0, 0, 0, useAxisBinning)->Write();
-    nominalTUnfold->GetEmatrixTotal("hCovariance", 0, 0, 0, useAxisBinning)->Write();
-    nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", useAxisBinning)->Write();
+    fUnfoldOut->cd(channel+year+"/DY"); 
+    nominalTUnfold->GetRhoIJtotal("[tunfold:corr_hist]_"+var+"_"+folded_bin_name+"_"+unfolded_bin_name, 0, 0, 0, useAxisBinning)->Write();
+    nominalTUnfold->GetEmatrixTotal("[tunfold:cov_hist]_"+var+"_"+folded_bin_name+"_"+unfolded_bin_name, 0, 0, 0, useAxisBinning)->Write();
 
-    // TODO make a function for saving
-    // Save unfolding input histogram
-    TDirectory* varDirForReco;
-
-    varDirForReco=fUnfoldOut->GetDirectory("folded/"+var);
-    varDirForReco->cd();
-
-    nominalTUnfold->GetInput("histo_UnfoldInput", 0, 0, 0, false)->Write();
-
-    varDir->cd();
+    fUnfoldOut->cd(channel+year+"/data"); 
+    nominalTUnfold->GetOutput("[tunfold:unfolded_hist]_"+var+"_"+unfolded_bin_name,0,0, "*[*]", useAxisBinning)->Write();
+    nominalTUnfold->GetInput("[tunfold:input_hist]_"+var+"_"+folded_bin_name, 0, 0, 0, false)->Write();
 
     // For systematic
     std::vector<TString>::iterator it = sysVector.begin();
@@ -329,52 +301,40 @@ void ISRUnfold::doISRUnfold(bool partialReg)
             iBest=iterEMTUnfold->ScanSURE(NITER_Iterative, &graph_SURE_IterativeSURE, &graph_DFdeviance_IterativeSURE);
             //cout << "iBest: " << iBest << endl;
 
-            varDir->cd();
             iterEMTUnfold->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false)->Write();
         }
         else{
             systematicTUnfold[*it]->DoUnfold(tau);
 
-            varDir->cd();
             systematicTUnfold[*it]->GetOutput("histo_Data_"+(*it),0,0, "*[*]", false)->Write();
         }
         it++;
     }
-
-    topDir->Write();
 }
-
 
 // In this function, acceptance factors change only for PDF, Scale, AlphaS systematics
 void ISRUnfold::doAcceptCorr(TString filePath, TString top_dir)
 {
-    TDirectory* topDir;
-    TDirectory* varDir;
-
     TFile* filein = new TFile(filePath);
 
-    topDir=fUnfoldOut->GetDirectory("acceptance");
-    varDir=fUnfoldOut->GetDirectory("acceptance/"+var);
-    varDir->cd();
-    binningCoarse->Write();
-    topDir->cd();
 
     TH1* hFiducialPhaseMC = NULL;
 
-    hFullPhaseMC     = (TH1*) filein->Get(top_dir + "/woLepCut_" + var+ "_" + "truth");
-    hFiducialPhaseMC = (TH1*) fUnfoldOut->Get("unfolded/"+var+"/"+"histo_DY");
+    hFullPhaseMC     = (TH1*) filein->Get(top_dir+"/[tunfold:fullphase_hist]_"+var+"_"+unfolded_bin_name);
+    hFiducialPhaseMC = (TH1*) fUnfoldOut->Get(channel+year+"/DY/[tunfold:projX_hist]_"+var+"_"+unfolded_bin_name);
 
-    hAcceptance = (TH1*) hFullPhaseMC->Clone("hAcceptance"+var);
+    hAcceptance = (TH1*) hFullPhaseMC->Clone("[tunfold:acc_hist]_"+var+"_"+unfolded_bin_name);
     hAcceptance->Divide(hFiducialPhaseMC); // Nominal acceptance correction factor
 
     TH1* hAcceptance_raw = (TH1*) hAcceptance->Clone("hAcceptance_raw");
 
-    hFullPhaseData = nominalTUnfold->GetOutput("histo_Data",0,0, "*[*]", false);
+    fUnfoldOut->cd(channel+year+"/data"); 
+    hFullPhaseData = nominalTUnfold->GetOutput("[tunfold:unfolded_fullphase_hist]_"+var+"_"+unfolded_bin_name,0,0, "*[*]", false);
     hFullPhaseData->Multiply(hAcceptance); // acceptance corrected data
-
-    varDir->cd();
     hFullPhaseData->Write();
-    hFullPhaseMC->SetName("histo_DY");
+
+    fUnfoldOut->cd(channel+year+"/DY"); 
+    hFullPhaseMC->SetName("[tunfold:unfolded_fullphase_hist]_"+var+"_"+unfolded_bin_name);
     hFullPhaseMC->Write();
     hAcceptance->Write();
 
@@ -403,10 +363,6 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString top_dir)
         if( (((*it).Contains("Scale") && !(*it).Contains("Lep")) || (*it).Contains("PDF") || (*it).Contains("AlphaS")) )
         {
             hFullPhaseMC_raw_sys = (TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets_"+(*it));
-            if(year.Contains("2016"))
-                hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" +  "/histo_DYJets10to50_"+(*it)));
-            else
-                hFullPhaseMC_raw_sys->Add((TH1*) filein->Get("Acceptance/"+var+ "_" + "/histo_DYJets10to50_MG_"+(*it)));
         }
         else
         {
@@ -426,15 +382,12 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString top_dir)
 
         delete hAcceptance_sys;
 
-        varDir->cd();
-
         hSysFullPhaseData[*it]->Write();
         hFullPhaseMC_raw_sys->SetName("histo_DY_"+(*it));
         hFullPhaseMC_raw_sys->Write();
         it++;
     }
 
-    topDir->Write();;
     delete hAcceptance_raw;
     delete hFiducialPhaseMC;
 }

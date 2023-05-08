@@ -29,12 +29,15 @@ class ISRAnalysis:
         
         # Initialize some variables 
         self.unfold_name = unfold_name_
-        self.year = year_
         self.channel = channel_
-        self.mode = regMode_ 
+        self.year = year_
         self.matrix_filekey = matrix_filekey_ 
+        self.mode = regMode_ 
         self.bin_def = bin_def_
         self.dir_path = channel_ + year_  
+
+        folded_bin_name = self.bin_def[0] 
+        unfolded_bin_name = self.bin_def[1]
         
         self.var = var_
         self.n_mass_bins = None
