@@ -10,7 +10,7 @@ import sys
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
-                               AutoMinorLocator, LogLocator, NullFormatter, LogFormatter)
+                               AutoMinorLocator, LogLocator, NullFormatter, LogFormatter, FixedLocator, FixedFormatter)
                                
 from matplotlib.pyplot import cm
 from matplotlib.collections import PatchCollection
@@ -63,7 +63,7 @@ def divide(nominator, denominator, output_type='root'):# 'root', 'numpy'
 # root TH1 to DataFrame and plot using matplotlib
 class ISRPlotter :
     
-    def __init__(self, inputHistFilePath, jasonConfigFilePath, doSystematic=False, verbose=True, setQuantile=False) :
+    def __init__(self, inputHistFilePath, jasonConfigFilePath, doSystematic=False, verbose=True, setQuantile=False, bin_names=None) :
 
         self.setQuantile = setQuantile
 
@@ -88,7 +88,7 @@ class ISRPlotter :
         self.normalisation = 1.
         self.bkgUsed = False
 
-        self.lumi={"2016": "35.9/fb", "2017": "41.5/fb", "2018": "59.7/fb"}
+        self.lumi={"2016": 35.9, "2016a": 19.5, "2016b": 16.8, "2017": 41.5, "2018": 59.8}
 
         # FIXME make a function to read json configuration file
         # Read json file to get information of histograms
@@ -144,6 +144,7 @@ class ISRPlotter :
             if not os.path.exists(self.outDirPath) :
                 os.makedirs(self.outDirPath)
 
+        self.tunfoldBinNames=bin_names
         if verbose==True :
             print('This is {} {} data of {} analysis...'.format(self.year, self.channel, self.analysis))
             print("Systematics saved in the input root file...")
@@ -158,11 +159,11 @@ class ISRPlotter :
 
         if self.useTUnfoldBin :
             
-            for var in ["2D_dimass_dipt", "2D_dipt_dimass"] :
-                self.binDef[var]=self.inRootFile.Get(self.topDirName+"/"+var+"/truth") 
+            for var in ["[dimass-dipt]", "[dipt-dimass]"] :
+                self.binDef[var]=self.inRootFile.Get(self.topDirName+"/[tunfold-bin]_"+var+"_"+self.tunfoldBinNames[var])
 
             # TODO use GetDistributionDimension()
-            temp_tvecd=self.binDef["2D_dipt_dimass"].GetDistributionBinning(1)
+            temp_tvecd=self.binDef["[dipt-dimass]"].GetDistributionBinning(1)
             temp_mass_bin_edges=temp_tvecd.GetMatrixArray()
             self.massBins.extend([ (temp_mass_bin_edges[index], temp_mass_bin_edges[index+1]) for index in range(temp_tvecd.GetNrows()-1)]) # list comprehension
 
@@ -265,7 +266,10 @@ class ISRPlotter :
                 targetDict["total"][sysName][sysPostfix]["TH1"] = targetDict[inputHistFileName][sysName][sysPostfix]["TH1"].Clone("total"+inputHistFileName+variable+sysName+sysPostfix)
         else :
             if sysName == "Nominal" and sysPostfix == "Nominal" :
-                histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName
+                if self.plotPrefix == "detector" :
+                    histToRead = self.topDirName+"/"+inputHistFileName+"/[tunfold-hist]_"+varDir+"_"+self.tunfoldBinNames[varDir] 
+                else :
+                    histToRead = self.topDirName+"/"+inputHistFileName+"/[tunfold-unfolded_fullphase_hist]_"+varDir+"_"+self.tunfoldBinNames[varDir] 
             else :
                 histToRead = self.topDirName + "/"+varDir + "/" + self.histPrefix + inputHistFileName + '_' + sysName + sysPostfix
             # read histogram
@@ -331,7 +335,7 @@ class ISRPlotter :
             self.rawHistsDict["SigMC"][variable]["total"]["Nominal"]["Nominal"]["TH1"].Clone("Clone_"+variable+"Nominal"+"Nominal")
 
             if self.bkgUsed :
-                temp_dict[variable]["total"][sysName][postfix]["TH1"].Add(self.rawHistsDict["BkgMC"][variable]["total"]["Nominal"]["Nominal"]["TH1"])
+                temp_dict[variable]["total"]["Nominal"]["Nominal"]["TH1"].Add(self.rawHistsDict["BkgMC"][variable]["total"]["Nominal"]["Nominal"]["TH1"])
 
             for sysCategory in self.systematics.keys() :
                 for sysName, postfixs in self.systematics[sysCategory].items() :
@@ -358,13 +362,13 @@ class ISRPlotter :
                 out_dict[variable][sample]["rawUnc"]    = self.convertTH1toDataFrame(in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
                 out_dict[variable][sample]["upDownUnc"] = self.convertTH1toDataFrame(in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
 
-                q = 0.7
+                q = 0.5
                 if self.useTUnfoldBin :
                     out_dict[variable][sample]["rawUnc_meanValue"]    = self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
                     out_dict[variable][sample]["upDownUnc_meanValue"] = self.createMeanDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"])
 
                     # quantile
-                    if "Pt" in variable and self.setQuantile: 
+                    if "[dipt-dimass]" in variable and self.setQuantile: 
                         #print("call createQuantileDataFrame")
                         out_dict[variable][sample]["rawUnc_qValue"]    = self.createQuantileDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"], q, True)
                         out_dict[variable][sample]["upDownUnc_qValue"] = self.createQuantileDataFrame(variable, in_dict[variable][sample]["Nominal"]["Nominal"]["TH1"], q, True)
@@ -420,7 +424,7 @@ class ISRPlotter :
                                     temp_rawUnc_meanValue_dict[sysName+"_"+postfix] = \
                                     temp_df1["mean"]-temp_df2["mean"]
 
-                                    if "Pt" in variable and self.setQuantile:
+                                    if "[dipt-dimass]" in variable and self.setQuantile:
                                         temp_quantile_df1=self.createQuantileDataFrame(variable, in_dict[variable][sample][sysName][postfix]["TH1"], q)
                                         temp_quantile_df2=self.createQuantileDataFrame(variable, in_dict[variable][sample][sysName][the_other_postfix]["TH1"], q)
 
@@ -435,7 +439,7 @@ class ISRPlotter :
                         out_dict[variable][sample]["rawUnc"] = pd.concat([out_dict[variable][sample]["rawUnc"], temp_rawUnc_df], axis = 1)
                         out_dict[variable][sample]["rawUnc_meanValue"] = pd.concat([out_dict[variable][sample]["rawUnc_meanValue"], temp_rawUnc_meanValue_df], axis = 1)
 
-                        if "Pt" in variable and self.setQuantile:
+                        if "[dipt-dimass]" in variable and self.setQuantile:
                             out_dict[variable][sample]["rawUnc_qValue"] = pd.concat([out_dict[variable][sample]["rawUnc_qValue"], temp_rawUnc_qValue_df], axis = 1)
 
                         #print(" Set up/down....")
@@ -451,7 +455,7 @@ class ISRPlotter :
                             out_dict[variable][sample]["upDownUnc_meanValue"][sysName+'_Down']=\
                             -1. * np.sqrt(out_dict[variable][sample]["rawUnc_meanValue"].filter(like=sysName).var(axis=1))
 
-                            if "Pt" in variable and self.setQuantile:
+                            if "[dipt-dimass]" in variable and self.setQuantile:
                                 out_dict[variable][sample]["upDownUnc_qValue"][sysName+'_Up']  =\
                                 np.sqrt(out_dict[variable][sample]["rawUnc_qValue"].filter(like=sysName).var(axis=1))
                                 out_dict[variable][sample]["upDownUnc_qValue"][sysName+'_Down']=\
@@ -495,7 +499,7 @@ class ISRPlotter :
                                 out_dict[variable][sample]["upDownUnc_meanValue"][sysName+'_Down'] = temp_mean_symmetric_min
 
                                 # for quantile
-                                if "Pt" in variable and self.setQuantile:
+                                if "[dipt-dimass]" in variable and self.setQuantile:
                                     temp_quantile_max = out_dict[variable][sample]["rawUnc_qValue"].filter(regex=regex_).max(axis=1)
                                     temp_quantile_min = out_dict[variable][sample]["rawUnc_qValue"].filter(regex=regex_).min(axis=1) 
 
@@ -515,7 +519,7 @@ class ISRPlotter :
 
     def createMeanDataFrame(self, variable, TH1_hist) :
 
-        if "dipt_dimass" in variable and self.useTUnfoldBin:
+        if "[dipt-dimass]" in variable and self.useTUnfoldBin:
             num_str      = variable.split("__")[1]
             nth_mass_bin = int(num_str)
             temp_mean    = TH1_hist.GetMean()
@@ -525,7 +529,7 @@ class ISRPlotter :
             return temp_df
 
         else :
-            if "dimass_dipt" in variable :
+            if "[dimass-dipt]" in variable :
                 # Get mean mass for all mass bins
                 #self.massBins
                 # Create DataFrame
@@ -605,7 +609,7 @@ class ISRPlotter :
 
             # for quantile, mass is not considered
             if is_quantile : 
-                if "Pt" not in variable :
+                if "[dipt-dimass]" not in variable :
                     continue
 
             for sample in in_dict[variable].keys() :
@@ -683,36 +687,36 @@ class ISRPlotter :
             return None
 
     def drawHistPlot(self, variable, divde_by_bin_width = False, setLogy=False, setLogx=False,
-                     min = 1e-2, max = 1e9, ratio_max=1.35, ratio_min=0.65,
-                     optimzeXrange=False, minimum_content=1,
+                     ratio_max=1.35, ratio_min=0.65,
                      figSize=(10,6), show_ratio=True, 
                      denominator="total_Data", setRatioLogy=False,
-                     showNEvents=False, showChi2=False, outPdfPostfix=None, ratioName=None) :
+                     showNEvents=False, showChi2=False, outPdfPostfix=None, ratioName=None, top=0.9, bottom=0.1, xLabel="") :
 
         hep.style.use("CMS")
-
         n_columns = 1
+
         if show_ratio == True :
             num_rows = 2
             fig, axes = plt.subplots(num_rows, n_columns, sharex=False, figsize=figSize, gridspec_kw={'height_ratios':[1, 0.3]})
 
             top_axis = axes[0]
             bottom_axis = axes[1]
-
+            top_axis.yaxis.get_major_ticks()[0].set_visible(False)
+            bottom_axis.yaxis.get_minor_ticks()[0].set_visible(True)
         else :
             num_rows = 1
-            fig, axes = plt.subplots(num_rows, n_colums, sharex=False, figsize=figSize)
+            fig, axes = plt.subplots(num_rows, n_columns, sharex=False, figsize=figSize)
             top_axis = axes[0] 
 
         plt.tight_layout()
+        plt.subplots_adjust(left=0.15, right=0.95, bottom=bottom, top=top, hspace=0.05)
 
         denominator_hist_type = denominator.split("_")[1]
         denominator_hist_name = denominator.split("_")[0]
-        
+        denominator_label_name = denominator.split("_")[1] 
         if len(denominator.split("_")) > 2 :
             denominator_label_name = denominator.split("_")[2:]
 
-        denominator_print_name = denominator.split("_")[1]
         denominator_df=None
         denominator_hist=None
 
@@ -720,14 +724,15 @@ class ISRPlotter :
         nominator_hist_name="total"
         nominator_hist=None
 
+        minimum_content = 1
         df_filter = self.dfs[denominator_hist_type][variable][denominator_hist_name]["upDownUnc"]['content'] > minimum_content
 
         # set denominator
-        denominator_df   = self.dfs[denominator_hist_type][variable][denominator_hist_name]["upDownUnc"][df_filter].copy()
+        denominator_df   = self.dfs[denominator_hist_type][variable][denominator_hist_name]["upDownUnc"].copy()
         denominator_hist = self.rawHistsDict[denominator_hist_type][variable][denominator_hist_name]["Nominal"]["Nominal"]["TH1"]
 
         # set nominators
-        nominator_df      = self.dfs[nominator_hist_type][variable][nominator_hist_name]["upDownUnc"][df_filter].copy()
+        nominator_df      = self.dfs[nominator_hist_type][variable][nominator_hist_name]["upDownUnc"].copy()
         nominator_hist    = self.rawHistsDict[nominator_hist_type][variable][nominator_hist_name]["Nominal"]["Nominal"]["TH1"]
             
         if show_ratio : 
@@ -738,14 +743,59 @@ class ISRPlotter :
         last_edge = denominator_df.high_bin_edge.values[-1]
         bins = np.append(bins, last_edge)
 
-        hep.cms.label("Preliminary", data=True, lumi=50, year=2016, ax=top_axis, fontsize=20)
-        hep.histplot((denominator_df.content, bins), ax=top_axis, binwnorm=1., yerr=True, histtype='errorbar', label="test", color='black')
-        hep.histplot((nominator_df.content, bins), ax=top_axis, binwnorm=1., yerr=True, histtype='step', label="test", color='red')
+        hep.cms.label("Preliminary", data=True, lumi=self.lumi[self.year], year=self.year, ax=top_axis, fontsize=20, loc=1)
+        # draw
+        if self.plotPrefix == "detector" :
+            DY = self.dfs["SigMC"][variable]["total"]["upDownUnc"].copy()
+            DY_tau = self.dfs["BkgMC"][variable]["DY_tau"]["upDownUnc"].copy()
+            ttbar = self.dfs["BkgMC"][variable]["ttbar"]["upDownUnc"].copy()
+            ww = self.dfs["BkgMC"][variable]["ww"]["upDownUnc"].copy()
+            wz = self.dfs["BkgMC"][variable]["wz"]["upDownUnc"].copy()
+            zz = self.dfs["BkgMC"][variable]["zz"]["upDownUnc"].copy()
+            vv = ww + wz + zz
+            top = self.dfs["BkgMC"][variable]["top"]["upDownUnc"].copy()
+            antitop = self.dfs["BkgMC"][variable]["antitop"]["upDownUnc"].copy()
+            stop = top + antitop
+
+            hep.histplot([stop.content,ttbar.content,DY_tau.content, vv.content, DY.content], stack=True, bins=bins, ax=top_axis, binwnorm=1., histtype='fill', 
+                         label=["top", "ttbar","tautau", "vv", "DY"], color=['blue', 'red', 'green', '#069AF3', "#C79FEF"])
+            hep.histplot((nominator_df.content, bins), ax=top_axis, binwnorm=1., yerr=True, histtype='step', color='r')
+        else :
+            hep.histplot((nominator_df.content, bins), ax=top_axis, binwnorm=1., yerr=True, histtype='step', label="DY", color='r')
+        hep.histplot((denominator_df.content, bins), ax=top_axis, binwnorm=1., yerr=denominator_df.stat_error.values, histtype='errorbar', label=denominator_label_name, color='black')
         top_axis.set_xlim(bins[0], bins[-1])
-        
+        top_axis.legend(fontsize=15, loc="upper right")
+
         hep.histplot((ratio[0], bins), ax=bottom_axis, yerr=ratio_error, histtype='step', label="ratio", color='red')
         bottom_axis.set_xlim(bins[0], bins[-1])
         bottom_axis.set_ylim(ratio_min, ratio_max)
+
+        if setLogy : 
+            top_axis.set_yscale("log")
+            top_axis.set_ylim(top_axis.get_ylim()[0], top_axis.get_ylim()[1]*10)
+        else :
+            top_axis.set_ylim(top_axis.get_ylim()[0], top_axis.get_ylim()[1]*1.1)
+
+        if setLogx :
+            if top_axis.get_xlim()[0] == 0 : top_axis.set_xlim((1, top_axis.get_xlim()[1]))
+            top_axis.set_xscale("log")
+            if show_ratio : 
+                if bottom_axis.get_xlim()[0] == 0 : bottom_axis.set_xlim((1, bottom_axis.get_xlim()[1]))
+                bottom_axis.set_xscale("log")
+
+        if show_ratio :
+            top_axis.set_xticklabels([])
+            bottom_axis.set_ylabel("MC/Data", fontsize=20) 
+            bottom_axis.axhline(y=1, color='black', linestyle='--')
+            bottom_axis.set_xlabel(xLabel, fontsize=20)
+
+        top_axis.set_ylabel("Events/bin", fontsize=20)
+
+        if "[dipt-dimass]" in variable :
+            num_str = variable.split("__")[1]
+            nth_bin = int(num_str)
+            top_axis.text(0.03, .8, "{:.0f}".format(self.massBins[nth_bin][0])+"$<m^{\mathit{"+self.channel+"}}<$"+"{:.0f} GeV".format(self.massBins[nth_bin][1]),
+                          fontsize='x-small', transform=top_axis.transAxes, horizontalalignment='left')
 
         # save plot as pdf
         outPdfName = self.outDirPath+self.plotPrefix+"_"+variable+"_"+self.channel+"_"+self.year+".pdf" 
@@ -762,10 +812,9 @@ class ISRPlotter :
         combined_pt_df = None
         for nth_mass_bin in range(len(self.massBins)) :
             if nth_mass_bin == 0 :
-                combined_pt_df=in_df["2D_dipt_dimass__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy()
+                combined_pt_df=in_df["[dipt-dimass]__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy()
             else :
-                #combined_pt_df=combined_pt_df.append(in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy(), ignore_index=True)
-                combined_pt_df=pd.concat([combined_pt_df, in_df["2D_dipt_dimass__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy()], ignore_index=True)
+                combined_pt_df=pd.concat([combined_pt_df, in_df["[dipt-dimass]__"+str(nth_mass_bin)]["total"]["upDownUnc_meanValue"].copy()], ignore_index=True)
         return combined_pt_df
 
     def combinedQuantilePtDataFrame(self, name="Data") :
@@ -775,9 +824,10 @@ class ISRPlotter :
         combined_pt_df = None
         for nth_mass_bin in range(len(self.massBins)) :
             if nth_mass_bin == 0 :
-                combined_pt_df=in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_qValue"].copy()
+                combined_pt_df=in_df["[dipt-dimass]__"+str(nth_mass_bin)]["total"]["upDownUnc_qValue"].copy()
             else :
-                combined_pt_df=combined_pt_df.append(in_df["Pt__"+str(nth_mass_bin)]["total"]["upDownUnc_qValue"].copy(), ignore_index=True)
+                #combined_pt_df=combined_pt_df.append(in_df["[dipt-dimass]__"+str(nth_mass_bin)]["total"]["upDownUnc_qValue"].copy(), ignore_index=True)
+                combined_pt_df=pd.concat([combined_pt_df, in_df["[dipt-dimass]__"+str(nth_mass_bin)]["total"]["upDownUnc_qValue"].copy()], ignore_index=True)
         return combined_pt_df
 
 
@@ -819,15 +869,16 @@ class ISRPlotter :
 
     def drawISRPlots(self, *objects_to_plot, names_in_objects, do_linear_fit=None, 
                     labels=None, markers=None, colors=None, facecolor_list = None, 
-                    ymin=13, ymax=30, xmin=30, xmax=4e2, outPdfPostfix=None, years = None, both_lepton = False, nominators = None) :
+                    figSize=(8,8), ymin=13, ymax=30, xmin=30, xmax=4e2, outPdfPostfix=None, years = None, both_lepton = False, nominators = None,
+                    show_quantile = False) :
 
         color=iter(cm.rainbow(np.linspace(0,1,len(names_in_objects))))
         isData=False
 
         hep.style.use("CMS")
 
-        fig, ax = plt.subplots(figsize=(8, 8))
-        hep.cms.label("Preliminary", data=True, lumi=50, year=2016, ax=ax, fontsize=20) 
+        fig, ax = plt.subplots(figsize=figSize)
+        hep.cms.label("Preliminary", data=True, lumi=self.lumi[self.year], year=self.year, ax=ax, fontsize=20) 
 
         plt.tight_layout()
 
@@ -843,6 +894,20 @@ class ISRPlotter :
         ax.tick_params(length=5, which='minor')
         ax.yaxis.set_minor_locator(AutoMinorLocator())
         ax.xaxis.set_minor_formatter(FormatStrFormatter("%.0f"))
+        ax.xaxis.set_major_formatter(FormatStrFormatter("%.0f"))
+
+        minor_x_ticks = FixedLocator([50, 60, 70, 80, 90, 200, 300, 400, 500, 600])
+        minor_x_ticklabels = ['50', '60', '70', '', '90', '200', '300', '400', '', '600']
+        ax.xaxis.set_minor_locator(minor_x_ticks)
+        ax.xaxis.set_minor_formatter(FixedFormatter(minor_x_ticklabels))
+
+        major_x_ticks = FixedLocator([100])
+        major_x_ticklabels = ['']
+        ax.xaxis.set_major_locator(major_x_ticks)
+        ax.xaxis.set_major_formatter(FixedFormatter(major_x_ticklabels))
+
+        ax.set_ylabel("$p_{T}^{"+self.channel+"}$", fontsize=20) 
+        ax.set_xlabel(r"$\langle m \rangle^{"+self.channel+"} (GeV)$", fontsize=20) 
 
         for index, name in enumerate(names_in_objects) :
 
@@ -871,8 +936,9 @@ class ISRPlotter :
             if facecolor_list is not None :
                 current_facecolor=facecolor_list[index]
 
-            temp_mass_df = self.getDict(name)["2D_dimass_dipt"]["total"]["upDownUnc_meanValue"]
+            temp_mass_df = self.getDict(name)["[dimass-dipt]"]["total"]["upDownUnc_meanValue"]
             temp_pt_df   = self.combinedPtDataFrame(name)
+            if show_quantile : temp_pt_df = self.combinedQuantilePtDataFrame(name)
 
             temp_mass_total_up   = np.sqrt(np.square(temp_mass_df["total_Up"]) + np.square(temp_mass_df["stat_error"]))
             temp_mass_total_down = np.sqrt(np.square(temp_mass_df["total_Down"]) + np.square(temp_mass_df["stat_error"]))
@@ -883,7 +949,9 @@ class ISRPlotter :
             mass_systematic = self.makeErrorNumpy(temp_mass_total_up, temp_mass_total_down)
             pt_systematic   = self.makeErrorNumpy(temp_pt_total_up, temp_pt_total_down)
 
-            ax.errorbar(temp_mass_df["mean"], temp_pt_df["mean"], xerr=mass_systematic, yerr=pt_systematic, 
+            key = "mean"
+            if show_quantile : key = "q_0.5"
+            ax.errorbar(temp_mass_df["mean"], temp_pt_df[key], xerr=mass_systematic, yerr=pt_systematic, 
                         fmt=current_marker, color=current_color, label=label_name, linewidth=0.5, ms = 4)
 
         ax.legend(loc='best', fontsize=15, fancybox=False, framealpha=0.0)
