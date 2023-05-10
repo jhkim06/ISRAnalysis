@@ -25,7 +25,7 @@ LIB=unfold
 _lib=$(LIBDIR)libisrunfold.so
 lib:$(_lib)
 
-SRCCODE=$(shell ls $(SRC)ISR_*.cpp)
+SRCCODE=$(shell ls $(SRC)*.cpp)
 
 _OBJ=$(SRCCODE:%.cpp=%_C.o)
 OBJ=$(subst rootScripts,lib,$(_OBJ))
@@ -38,7 +38,7 @@ DIC = $(subst rootScripts,lib,$(_DIC))
 #
 
 $(LIBDIR)%_C_ACLiC_dict.cxx: $(SRC)%.h  $(SRC)Linkdef.h
-	rootcling -f $@ -c `root-config --ldflags` -I$(HTUNFOLDV17) -p $^
+	rootcling -f $@ -c -I$(HTUNFOLDV17) -p $^
 
 $(LIBDIR)%_C.o: $(SRC)%.cpp 
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -48,5 +48,5 @@ $(_lib): $(OBJ) $(DIC)
 	$(ROOTLIBS)
 
 clean:
-	rm $(LIBDIR)ISR_*
+	rm $(LIBDIR)ISR*
 	rm $(LIBDIR)libisrunfold.so

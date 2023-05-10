@@ -5,7 +5,6 @@ import json
 import pandas as pd
 import numpy as np
 import ROOT as rt
-from root_numpy import hist2array, array2hist
 import sys
 
 import matplotlib.pyplot as plt
@@ -225,9 +224,6 @@ class ISRPlotter :
         if self.bkgUsed :
             self.setBkgSubtractedDataHist()
         self.setMCTotalHists() # signal + background MC
-
-        #if self.rawHistsDict["Hist"] != 0 :
-        #    self.setTotalHists(self.rawHistsDict["Hist"])
 
         # convert histogram to DataFrame
         for histType in self.histTypes :
@@ -558,7 +554,6 @@ class ISRPlotter :
 
     def createQuantileDataFrame(self, variable, TH1_hist, prob, set_stat = False) :
 
-        #if "Pt" in variable :
         if not variable.isalpha() and self.useTUnfoldBin:
             num_str = variable.split("__")[1]
             nth_mass_bin = int(num_str)
@@ -577,7 +572,6 @@ class ISRPlotter :
                 n_toys = 10
                 toy_quantiles = []
                 for i in range(n_toys) :
-                    #print(str(i) + " th toy")
 
                     temp_toy = TH1_hist.Clone("temp_toy")
                     temp_toy.Reset("ICESM")
@@ -654,9 +648,9 @@ class ISRPlotter :
 
     def convertTH1toDataFrame(self, temp_TH1, existing_df = None) :
 
-        temp_content, temp_binEdge=hist2array(temp_TH1, return_edges=True)
-        binWidth = (temp_binEdge[0][1:] - temp_binEdge[0][:-1])
-        nBin = len(temp_binEdge[0])-1
+        (temp_content, temp_binEdge), _ = root_to_numpy(temp_TH1)
+        binWidth = (temp_binEdge[1:] - temp_binEdge[:-1])
+        nBin = len(temp_binEdge)-1
 
         temp_stat_error = []
         for ibin in range(1, len(temp_content)+1) :
@@ -666,8 +660,8 @@ class ISRPlotter :
 
         pd_series_binIndex    = pd.Series(range(1,nBin+1), range(1, nBin+1), name="bin_index")
         pd_series_binWidth    = pd.Series(binWidth, range(1, nBin+1), name="bin_width")
-        pd_series_lowBinEdge  = pd.Series(temp_binEdge[0][0:-1], range(1, nBin+1), name="low_bin_edge")
-        pd_series_highBinEdge = pd.Series(temp_binEdge[0][1:], range(1, nBin+1), name="high_bin_edge")
+        pd_series_lowBinEdge  = pd.Series(temp_binEdge[0:-1], range(1, nBin+1), name="low_bin_edge")
+        pd_series_highBinEdge = pd.Series(temp_binEdge[1:], range(1, nBin+1), name="high_bin_edge")
 
         dict_temp={
             'bin_width':     pd_series_binWidth,
