@@ -249,7 +249,7 @@ void ISRUnfold::doISRUnfold(bool partialReg)
 
             setPartialRegularize2D(TUnfold::kRegModeCurvature, 320., 0., 1000., 100.);
             //setPartialRegularize2D(TUnfold::kRegModeCurvature, 320., 0., 1000., 1000.); // FIXME get last bin edge
-            Int_t nScan=500;
+            Int_t nScan=1000;
             Double_t tauMin = 1e-5; //If tauMin=tauMax, TUnfold automatically chooses a range
             Double_t tauMax = 1e-1; //Not certain how they choose the range
 

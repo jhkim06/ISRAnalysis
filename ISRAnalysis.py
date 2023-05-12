@@ -27,7 +27,6 @@ class ISRAnalysis:
                  bias_ = 0., 
                  density_ = 0):
         
-        # Initialize some variables 
         self.unfold_name = unfold_name_
         self.channel = channel_
         self.year = year_
@@ -49,11 +48,11 @@ class ISRAnalysis:
             self.out_dir_path     = "output/UltraLegacy/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/"
             self.in_hist_path_txt = "inFiles/UltraLegacy/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/fhist.txt"
     
-        # Make output directory
+        # make output directory
         if not os.path.exists(self.out_dir_path):
             os.makedirs(self.out_dir_path)
     
-        # Read text file including root file paths for unfolding
+        # read text file including root file paths for unfolding
         self.file_paths = open(self.in_hist_path_txt, 'r')
         self.input_root_file = {}
         self.input_root_file["nominal"] = {}
