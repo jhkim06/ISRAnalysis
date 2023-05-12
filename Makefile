@@ -10,16 +10,15 @@ ROOTCINT=$(ROOTSYS)/bin/rootcint
 # libraries generated in the current project
 LIBDIR=$(ISR_UNFOLD_WD)/lib/
 
-# header from V17 TUnfold package
+# headers from V17 TUnfold package
 HTUNFOLDV17=$(ISR_UNFOLD_WD)/TUnfold/
 
 # sources for this project
 SRC=$(ISR_UNFOLD_WD)/src/
+INCLUDE=$(ISR_UNFOLD_WD)/include/
 
-CXXFLAGS=-isystem $(shell $(ROOTCONFIG) --incdir) -I$(ROOTSYS)/htmldoc -I$(HTUNFOLDV17) -O2 -g -Wall -Wshadow -W -Woverloaded-virtual -fPIC $(ROOTCFLAGS)
-
+CXXFLAGS=-isystem $(shell $(ROOTCONFIG) --incdir) -I$(HTUNFOLDV17) -I$(INCLUDE) -O2 -g -Wall -Wshadow -W -Woverloaded-virtual -fPIC $(ROOTCFLAGS)
 LDFLAGS=$(ROOTLDFLAGS) -L$(LIBDIR) -Wl,-rpath $(LIBDIR)
-
 LIB=unfold
 
 _lib=$(LIBDIR)libisrunfold.so
@@ -40,7 +39,7 @@ DIC = $(subst src,lib,$(_DIC))
 $(LIBDIR)%_C.o: $(SRC)%.cpp 
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(LIBDIR)%_C_ACLiC_dict.cxx: $(SRC)%.h  $(SRC)Linkdef.h
+$(LIBDIR)%_C_ACLiC_dict.cxx: $(INCLUDE)%.h  $(INCLUDE)Linkdef.h
 	rootcling -f $@ -c -I$(HTUNFOLDV17) -p $^
 
 $(_lib): $(OBJ) $(DIC) 
