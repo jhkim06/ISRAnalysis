@@ -3,9 +3,10 @@ import sys
 from array import array
 import ROOT as rt
 import math
-
-import pyScripts.unfoldUtil as unfoldutil
 import pandas as pd
+
+current_dir = os.getcwd()
+rt.gSystem.Load(current_dir + "/lib/libisrunfold.so")
 
 class HistType :
 

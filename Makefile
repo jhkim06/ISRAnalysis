@@ -14,7 +14,7 @@ LIBDIR=$(ISR_UNFOLD_WD)/lib/
 HTUNFOLDV17=$(ISR_UNFOLD_WD)/TUnfold/
 
 # sources for this project
-SRC=$(ISR_UNFOLD_WD)/rootScripts/
+SRC=$(ISR_UNFOLD_WD)/src/
 
 CXXFLAGS=-isystem $(shell $(ROOTCONFIG) --incdir) -I$(ROOTSYS)/htmldoc -I$(HTUNFOLDV17) -O2 -g -Wall -Wshadow -W -Woverloaded-virtual -fPIC $(ROOTCFLAGS)
 
@@ -28,20 +28,20 @@ lib:$(_lib)
 SRCCODE=$(shell ls $(SRC)*.cpp)
 
 _OBJ=$(SRCCODE:%.cpp=%_C.o)
-OBJ=$(subst rootScripts,lib,$(_OBJ))
+OBJ=$(subst src,lib,$(_OBJ))
 
 _DIC = $(SRCCODE:%.cpp=%_C_ACLiC_dict.cxx)                             
-DIC = $(subst rootScripts,lib,$(_DIC))
+DIC = $(subst src,lib,$(_DIC))
 
 # 
 # make object files
 #
 
-$(LIBDIR)%_C_ACLiC_dict.cxx: $(SRC)%.h  $(SRC)Linkdef.h
-	rootcling -f $@ -c -I$(HTUNFOLDV17) -p $^
-
 $(LIBDIR)%_C.o: $(SRC)%.cpp 
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(LIBDIR)%_C_ACLiC_dict.cxx: $(SRC)%.h  $(SRC)Linkdef.h
+	rootcling -f $@ -c -I$(HTUNFOLDV17) -p $^
 
 $(_lib): $(OBJ) $(DIC) 
 	c++ $(CXXFLAGS) -shared -o $@ $^ $(LDFLAGS) -l$(LIB) \
