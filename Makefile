@@ -21,10 +21,10 @@ CXXFLAGS=-isystem $(shell $(ROOTCONFIG) --incdir) -I$(HTUNFOLDV17) -I$(INCLUDE) 
 LDFLAGS=$(ROOTLDFLAGS) -L$(LIBDIR) -Wl,-rpath $(LIBDIR)
 LIB=unfold
 
+SRCCODE=$(shell ls $(SRC)*.cpp)
+
 _lib=$(LIBDIR)libisrunfold.so
 lib:$(_lib)
-
-SRCCODE=$(shell ls $(SRC)*.cpp)
 
 _OBJ=$(SRCCODE:%.cpp=%_C.o)
 OBJ=$(subst src,lib,$(_OBJ))
@@ -32,9 +32,7 @@ OBJ=$(subst src,lib,$(_OBJ))
 _DIC = $(SRCCODE:%.cpp=%_C_ACLiC_dict.cxx)                             
 DIC = $(subst src,lib,$(_DIC))
 
-# 
 # make object files
-#
 
 $(LIBDIR)%_C.o: $(SRC)%.cpp 
 	$(CXX) $(CXXFLAGS) -c $< -o $@

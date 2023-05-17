@@ -50,7 +50,7 @@ class ISRUnfold{
 private:
     bool verbose;
     
-    TString unfoldName;
+    TString unfold_name;
     TString channel; // electron or muon
     TString var; // dilepton mass or pt
     TString year;
@@ -105,7 +105,7 @@ private:
 public:
 
     // Constructor
-    ISRUnfold(TString unfoldName_, 
+    ISRUnfold(TString unfold_name_, 
               TString channel_, 
               TString year_ = "2016", 
               TString outputBaseDir_ = "", 
@@ -119,7 +119,7 @@ public:
         cout << "ISRUnfold set! " << var_ << endl;
 
         outputBaseDir = outputBaseDir_;
-        unfoldName = unfoldName_;
+        unfold_name = unfold_name_;
         channel = channel_;
         year = year_;
         var = var_;
@@ -136,7 +136,7 @@ public:
         verbose = verbose_;
 
         // Make output root files
-        fUnfoldOutPath = outputBaseDir+unfoldName+"_"+channel+"_"+year+"_"+var+".root";
+        fUnfoldOutPath = outputBaseDir+unfold_name+"_"+channel+"_"+year+"_"+var+".root";
         fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");
 
         fUnfoldOut->mkdir(channel+year);

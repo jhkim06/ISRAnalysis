@@ -56,26 +56,26 @@ def divide(nominator, denominator, output_type='root'):# 'root', 'numpy'
         # return root histogram
         return ratio
 
-# root TH1 to DataFrame and plot using matplotlib
+# TH1 to DataFrame
 class ISRPlotter :
     
     def __init__(self, inputHistFilePath, jasonConfigFilePath, doSystematic=False, verbose=True, setQuantile=False, bin_names=None) :
 
         self.setQuantile = setQuantile
 
-        # Set using self.binDef
+        # set using self.binDef
         self.binDef={} # dictionary of TUnfoldBinning object
         self.massBins=[] # list of tuple, ex) [(40.,64.), (64., 81.), (81., 101.), (101., 200.), (200., 320.)]
 
         self.histTypes=["Data", "DataBkgMCSubtracted", "SigMC", "BkgMC", "MCTotal", "Hist"]
 
-        # Dictionary of raw histograms according DataFrames
+        # dictionary of raw histograms according DataFrames
         self.rawHistsDict = {}
 
         for histType in self.histTypes :
             self.rawHistsDict[histType] = dict()
     
-        # Dictionary of DataFrames containing nominal and systematic histogram content
+        # dictionary of DataFrames containing nominal and systematic histogram content
         self.dfs = {} # self.dfs["Data"] self.dfs["DataBkgMCSubtracted"] self.dfs["SigMC"] self.dfs["BkgMC"] self.dfs["MCTotal"]
 
         for histType in self.histTypes :
@@ -87,7 +87,7 @@ class ISRPlotter :
         self.lumi={"2016": 35.9, "2016a": 19.5, "2016b": 16.8, "2017": 41.5, "2018": 59.8}
 
         # FIXME make a function to read json configuration file
-        # Read json file to get information of histograms
+        # read json file to get information of histograms
         with open(jasonConfigFilePath, 'r') as jsonFile :
 
             self.config = json.load(jsonFile)
