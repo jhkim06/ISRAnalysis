@@ -12,15 +12,12 @@ class ROOTFiles:
         self.input_files = dict()
         self.set_input_files(sample_config, data, mc)
 
-    def get_stack_list(self):
+    def make_stack_list(self, stack_list):
         pass
 
     # get values, bin, error as numpy array
-    def get_hist(self, file_key, hist_name):  # data/2016prePFV/B_ver2 data/2016prePFV/all
-        sample_type = file_key.split("/")[0]
-        hist_label = file_key.split("/")[1]
-        file_name = file_key.split("/")[2]
-
+    def get_hist(self, file_key, hist_name):
+        sample_type, hist_label, file_name = file_key.split("/")
         raw_hist = None
         if file_name == "all":  # sum of all histograms
             for index, file in enumerate(self.input_files[sample_type][hist_label]):
@@ -35,9 +32,7 @@ class ROOTFiles:
         return root_to_numpy(raw_hist)
 
     def get_raw_labels(self, file_key, hist_name):
-        sample_type = file_key.split("/")[0]
-        hist_label = file_key.split("/")[1]
-        file_name = file_key.split("/")[2]
+        sample_type, hist_label, file_name = file_key.split("/")
         if file_name == "all":
             file_name = [*self.input_files[sample_type][hist_label].keys()][0]
         file_path = self.path+"/"+self.input_files[sample_type][hist_label][file_name]
