@@ -54,7 +54,7 @@ class ROOTFiles:
 
         ratio = combined_nominator.Clone("ratio")
         ratio.Divide(combined_denominator)
-        
+
         return root_to_numpy(ratio)
 
     def get_combined_hist(self, file_key_list, hist_path_list, axis_steering="", root_hist=False):
