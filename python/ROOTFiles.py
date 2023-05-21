@@ -1,6 +1,11 @@
+from typing import List
+
 import ROOT as rt
 import numpy as np
 import json
+
+from numpy import ndarray
+
 from helper import root_to_numpy, get_raw_hist, get_raw_labels
 
 
@@ -12,8 +17,13 @@ class ROOTFiles:
         self.input_files = dict()
         self.set_input_files(sample_config, data, mc)
 
-    def make_stack_list(self, stack_list):
-        pass
+    def make_stack_list(self, file_key_list, hist_path_list):
+        stack_list: list[ndarray] = []
+        for index, file_key in enumerate(file_key_list):
+            (value, _), error = self.get_hist(file_key, hist_path_list[index])
+            stack_list.append(value)
+
+        return stack_list
 
     # get values, bin, error as numpy array
     def get_hist(self, file_key, hist_name):
