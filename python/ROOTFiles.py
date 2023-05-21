@@ -5,7 +5,6 @@ import numpy as np
 import json
 
 from numpy import ndarray
-
 from helper import root_to_numpy, get_raw_hist, get_raw_labels
 
 
@@ -17,27 +16,28 @@ class ROOTFiles:
         self.input_files = dict()
         self.set_input_files(sample_config, data, mc)
 
-    def make_stack_list(self, file_key_list, hist_path_list):
+    def make_stack_list(self, file_key_list, hist_path_list, axis_steering=""):
         stack_list: list[ndarray] = []
         for index, file_key in enumerate(file_key_list):
-            (value, _), error = self.get_hist(file_key, hist_path_list[index])
+            (value, _), error = self.get_hist(file_key, hist_path_list[index], axis_steering)
             stack_list.append(value)
 
         return stack_list
 
     # get values, bin, error as numpy array
-    def get_hist(self, file_key, hist_name):
+    def get_hist(self, file_key, hist_path, axis_steering=""):
         sample_type, hist_label, file_name = file_key.split("/")
         raw_hist = None
         if file_name == "all":  # sum of all histograms
             for index, file in enumerate(self.input_files[sample_type][hist_label]):
                 file_path = self.path+"/"+self.input_files[sample_type][hist_label][file]
                 if index == 0:
-                    raw_hist = get_raw_hist(file_path, hist_name)
+                    raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
                 else:
-                    raw_hist.Add(get_raw_hist(file_path, hist_name))
+                    raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering))
         else:
-            raw_hist = get_raw_hist(self.path+"/"+self.input_files[sample_type][hist_label][file_name], hist_name)
+            file_path = self.path+"/"+self.input_files[sample_type][hist_label][file_name]
+            raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
 
         return root_to_numpy(raw_hist)
 
