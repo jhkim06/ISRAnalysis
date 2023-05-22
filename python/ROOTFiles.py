@@ -1,9 +1,6 @@
 from typing import List
 
-import ROOT as rt
-import numpy as np
 import json
-
 from numpy import ndarray
 from helper import root_to_numpy, get_raw_hist, get_raw_labels
 
@@ -27,6 +24,12 @@ class ROOTFiles:
     # get values, bin, error as numpy array
     def get_hist(self, file_key, hist_path, axis_steering="", root_hist=False):
         sample_type, hist_label, file_name = file_key.split("/")
+        hist_label_parsing = hist_label.split(":")
+        if len(hist_label_parsing) == 3:
+            directory = hist_path.split("/")[0]
+            hist_name = hist_path.split("/")[1]
+            hist_path = directory+"/"+hist_label_parsing[2]+hist_name
+            
         raw_hist = None
         if file_name == "all":  # sum of all histograms
             for index, file in enumerate(self.input_files[sample_type][hist_label]):
@@ -56,6 +59,9 @@ class ROOTFiles:
         ratio.Divide(combined_denominator)
 
         return root_to_numpy(ratio)
+
+    def get_bkg_subtracted_data_hist(self, hist_path):
+        pass
 
     def get_combined_hist(self, file_key_list, hist_path_list, axis_steering="", root_hist=False):
         raw_hist = None
