@@ -48,6 +48,16 @@ def get_raw_hist(file_path, hist_path, axis_steering=""):
     return hist
 
 
+def attach_hprefix_to_hist_name(file_name, hist_path):
+    file_name_parsing = file_name.split(":")
+    if len(file_name_parsing) == 2:  # hprefix set in config file
+        directory = hist_path.split("/")[0]
+        hist_name = hist_path.split("/")[1]
+        hist_path = directory + "/" + file_name_parsing[1] + hist_name
+        return hist_path
+    else:
+        return hist_path
+
 def get_raw_labels(file_path, hist_name):
     with uprt.open(file_path) as file:
         return file[hist_name].axis().labels()
