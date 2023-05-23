@@ -13,10 +13,10 @@ class ROOTFiles:
         self.input_files = dict()
         self.set_input_files(sample_config, data, mc)
 
-    def make_stack_list(self, file_key_list, hist_path_list, axis_steering=""):
+    def make_stack_list(self, file_key_list, hist_path, axis_steering=""):
         stack_list: list[ndarray] = []
-        for index, file_key in enumerate(file_key_list):
-            (value, _), error = self.get_hist(file_key, hist_path_list[index], axis_steering)
+        for file_key in file_key_list:
+            (value, _), error = self.get_hist(file_key, hist_path, axis_steering)
             stack_list.append(value)
 
         return stack_list
@@ -36,7 +36,6 @@ class ROOTFiles:
                 else:
                     raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering))
         else:
-            # TODO make function to parse file name
             hist_path = attach_hprefix_to_hist_name(file_name, hist_path)
             file_path = self.path+"/"+self.input_files[sample_type][hist_label][file_name]
             raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
@@ -47,11 +46,11 @@ class ROOTFiles:
             return root_to_numpy(raw_hist)
 
     def get_ratio_hist(self, nominator_file_key_list, denominator_file_key_list,
-                       nom_hist_path_list, denom_hist_path_list, axis_steering=""):
+                       nom_hist_path, denom_hist_path, axis_steering=""):
 
-        combined_nominator = self.get_combined_hist(nominator_file_key_list, nom_hist_path_list,
+        combined_nominator = self.get_combined_hist(nominator_file_key_list, nom_hist_path,
                                                     axis_steering, root_hist=True)
-        combined_denominator = self.get_combined_hist(denominator_file_key_list, denom_hist_path_list,
+        combined_denominator = self.get_combined_hist(denominator_file_key_list, denom_hist_path,
                                                       axis_steering, root_hist=True)
 
         ratio = combined_nominator.Clone("ratio")
@@ -82,10 +81,10 @@ class ROOTFiles:
         else:
             return root_to_numpy(bkg_subtracted_data_hist)
 
-    def get_combined_hist(self, file_key_list, hist_path_list, axis_steering="", root_hist=False):
+    def get_combined_hist(self, file_key_list, hist_path, axis_steering="", root_hist=False):
         raw_hist = None
         for index, file_key in enumerate(file_key_list):
-            hist = self.get_hist(file_key, hist_path_list[index], axis_steering, root_hist=True)
+            hist = self.get_hist(file_key, hist_path, axis_steering, root_hist=True)
             if index == 0:
                 raw_hist = hist
             else:

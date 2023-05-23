@@ -24,6 +24,26 @@ def root_to_numpy(hist):
     return (values, bins), error
 
 
+def get_mass_window_edges(file_path, hist_path):
+    file = rt.TFile.Open(file_path)
+
+    # make function to get TUnfoldBinning
+    directory = hist_path.split("/")[0]
+    hist_name = hist_path.split("/")[1]  # assuming no sub-directory
+    # get bin definition from file using hist name
+    matches = re.findall(r'(\[[^\]]*\])', hist_name)
+    bin_name = "[tunfold-bin]_" + "_".join(matches[1:])
+    bin_path = directory + "/" + bin_name
+    unfold_bin = file.Get(bin_path)
+
+    edges = unfold_bin.GetDistributionBinning(1)
+    edge_list = []
+    for edge in edges:
+        edge_list.append(edge)
+
+    return edge_list
+
+
 def get_raw_hist(file_path, hist_path, axis_steering=""):
     rt.TH1.AddDirectory(False)
     file = rt.TFile.Open(file_path)
