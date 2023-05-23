@@ -8,7 +8,7 @@ from helper import *
 # ROOT histogram to numpy, pandas etc
 class ROOTFiles:
 
-    def __init__(self, file_path, sample_config=None, data=None, mc=None):
+    def __init__(self, file_path, sample_config="sample_config.json", data=None, mc=None):
         self.path = file_path
         self.input_files = dict()
         self.set_input_files(sample_config, data, mc)
