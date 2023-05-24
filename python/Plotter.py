@@ -1,6 +1,7 @@
 import ROOTFiles as rf
 import matplotlib.pyplot as plt
 import mplhep as hep
+from matplotlib.ticker import (FixedLocator, FixedFormatter)
 
 
 def adjust_x_lim(axis, bins):
@@ -11,9 +12,19 @@ def adjust_x_lim(axis, bins):
         axis.set_xlim(bins[0], bins[-1])
 
 
+def set_labels(axis, bins, labels):
+    axis.minorticks_off()
+    major_ticks = FixedLocator(bins[1:])
+    axis.xaxis.set_major_locator(major_ticks)
+    axis.xaxis.set_major_formatter(FixedFormatter(labels))
+    axis.tick_params(axis='x', labelrotation = 45)
+
+
 class Plotter:
     fig = None
     axs = None
+    drawn_file_list = []
+    denominator_index = 0
 
     def __init__(self, channel, period):
         self.channel = channel
@@ -33,8 +44,14 @@ class Plotter:
         (values, bins), errors = self.root_file_handle.get_hist(file_key, hist_path,
                                                                 axis_steering=axis_steering)
 
-        hep.histplot((values, bins), ax=axis, yerr=errors, **kwargs)
+        hep.histplot((values, bins), ax=axis, yerr=errors, xerr=True, **kwargs)
         adjust_x_lim(axis, bins)
+
+        labels = self.root_file_handle.get_raw_labels(file_key, hist_path)
+        if labels is not None:
+            set_labels(axis, bins, labels)
+
+        self.drawn_file_list.append(file_key)
 
     def draw_stack(self, axis, file_key_list, hist_name, axis_steering="", use_mplhep=True, **kwargs):
         hist_path = self.channel + self.period + "/" + hist_name
@@ -43,11 +60,40 @@ class Plotter:
         if use_mplhep:
             hep.histplot(value_list, ax=axis, stack=True, bins=bins, **kwargs)
         else:
+            if "label" in kwargs:
+                label = kwargs["label"]
             width = bins[1:]-bins[0:-1]
             bottom = 0
             for index, value in enumerate(value_list):
-                axis.hist(bins[:-1], bins, weights=value/width, histtype='bar', bottom=bottom)
+                axis.hist(bins[:-1], bins, weights=value/width, histtype='bar', bottom=bottom, label=label[index])
                 bottom += value/width
+
+        adjust_x_lim(axis, bins)
+        self.drawn_file_list.append(file_key_list)
+
+    def set_denominator(self, drawn_file_index):
+        self.denominator_index = drawn_file_index
+
+    def draw_ratio(self, axis, nominator_file_list, nominator_hist_name, denominator_hist_name, axis_steering="", **kwargs):
+        nominator_hist_path = self.channel + self.period + "/" + nominator_hist_name
+        denominator_hist_path = self.channel + self .period + "/" + denominator_hist_name
+
+        if type(self.drawn_file_list[self.denominator_index]) == list:
+            denominator_file_list = self.drawn_file_list[self.denominator_index]
+        else:
+            denominator_file_list = [self.drawn_file_list[self.denominator_index]]
+
+        (values, bins), errors = self.root_file_handle.get_ratio_hist(nominator_file_list, denominator_file_list,
+                                                                      nominator_hist_path, denominator_hist_path,
+                                                                      axis_steering=axis_steering)
+
+        # Draw
+        hep.histplot((values, bins), ax=axis, yerr=errors, xerr=True, **kwargs)
+        adjust_x_lim(axis, bins)
+
+        labels = self.root_file_handle.get_raw_labels(nominator_file_list[0], nominator_hist_path)
+        if labels is not None:
+            set_labels(axis, bins, labels)
 
     def clear_all_axis(self):
         if len(self.axs) > 1:
