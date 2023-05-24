@@ -14,12 +14,16 @@ class ROOTFiles:
         self.set_input_files(sample_config, data, mc)
 
     def make_stack_list(self, file_key_list, hist_path, axis_steering=""):
-        stack_list: list[ndarray] = []
+        values_list: list[ndarray] = []
+        bins = None
+        errors_list = []
         for file_key in file_key_list:
-            (value, _), error = self.get_hist(file_key, hist_path, axis_steering)
-            stack_list.append(value)
+            (values, bins), errors = self.get_hist(file_key, hist_path, axis_steering)
+            values_list.append(values)
+            bins = bins
+            errors_list.append(errors)
 
-        return stack_list
+        return (values_list, bins), errors_list
 
     # get values, bin, error as numpy array
     def get_hist(self, file_key, hist_path, axis_steering="", root_hist=False):
