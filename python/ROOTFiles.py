@@ -3,15 +3,21 @@ from typing import List
 import json
 from numpy import ndarray
 from helper import *
+import pandas as pd
 
 
 # ROOT histogram to numpy, pandas etc
 class ROOTFiles:
 
-    def __init__(self, file_path, sample_config="sample_config.json", data=None, mc=None):
-        self.path = file_path
+    def __init__(self, channel, period, sample_config="sample_config.json", data=None, mc=None):
+        self.path = "/Users/jhkim/cms_snu/data/Ultralegacy/"+channel+"/"+period
         self.input_files = dict()
         self.set_input_files(sample_config, data, mc)
+        self.data_period = period
+        if period == "2016a":
+            self.data_period = "2016prePFV"
+        if period == "2016b":
+            self.data_period = "2016postPFV"
 
     def make_stack_list(self, file_key_list, hist_path, axis_steering=""):
         values_list: list[ndarray] = []
@@ -30,19 +36,22 @@ class ROOTFiles:
         sample_type, hist_label, file_name = file_key.split("/")
 
         raw_hist = None
-        if file_name == "all":  # sum of all histograms
-            for index, file in enumerate(self.input_files[sample_type][hist_label]):
-                file_path = self.path+"/"+self.input_files[sample_type][hist_label][file]
-                hist_path = attach_hprefix_to_hist_name(file, hist_path)
-
-                if index == 0:
-                    raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
-                else:
-                    raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering))
+        if sample_type == "data:bkg_subtracted":
+            raw_hist = self.get_bkg_subtracted_data_hist(hist_path, axis_steering, root_hist=True)
         else:
-            hist_path = attach_hprefix_to_hist_name(file_name, hist_path)
-            file_path = self.path+"/"+self.input_files[sample_type][hist_label][file_name]
-            raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
+            if file_name == "all":  # sum all histograms
+                for index, file in enumerate(self.input_files[sample_type][hist_label]):
+                    file_path = self.path+"/"+self.input_files[sample_type][hist_label][file]
+                    hist_path = attach_hprefix_to_hist_name(file, hist_path)
+
+                    if index == 0:
+                        raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
+                    else:
+                        raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering))
+            else:
+                hist_path = attach_hprefix_to_hist_name(file_name, hist_path)
+                file_path = self.path+"/"+self.input_files[sample_type][hist_label][file_name]
+                raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
 
         if root_hist:
             return raw_hist
@@ -63,9 +72,7 @@ class ROOTFiles:
         return root_to_numpy(ratio)
 
     def get_bkg_subtracted_data_hist(self, hist_path, axis_steering="", root_hist=False):
-        data_hist = None
-        for hist_label_index, hist_label in enumerate(self.input_files["data"]):
-            data_hist = self.get_hist("data/"+hist_label+"/all", hist_path, axis_steering, root_hist=True)
+        data_hist = self.get_hist("data/"+self.data_period+"/all", hist_path, axis_steering, root_hist=True)
 
         bkg_hist = None
         is_first_bkg = True
@@ -99,6 +106,42 @@ class ROOTFiles:
         else:
             return root_to_numpy(raw_hist)
 
+    # get ISR mean DataFrame from 2D pt-mass histogram
+    def get_isr_mean_dataframe(self, file_key, pt_hist_path, mass_hist_path,
+                               pt_axis_steering="dipt[];dimass[UOC]", mass_axis_steering="dimass[UO];dipt[OC0]"):
+        sample_type, hist_label, file_name = file_key.split("/")
+        use_bkg_subtracted_data = False
+        if "data:bkg_subtracted" == sample_type:
+            use_bkg_subtracted_data = True
+            sample_type = "data"
+        # Get mass window edges
+        if file_name == "all":
+            file_name_temp = [*self.input_files[sample_type][hist_label].keys()][0]  # use one of samples
+            file_path = self.path + "/" + self.input_files[sample_type][hist_label][file_name_temp]
+        else:
+            file_path = self.path + "/" + self.input_files[sample_type][hist_label][file_name]
+        edge_list = get_mass_window_edges(file_path, pt_hist_path)
+
+        # Get mass histogram
+        mass_hist = self.get_hist(file_key, mass_hist_path, axis_steering=mass_axis_steering, root_hist=True)
+
+        dict_list = []
+        matches = re.findall(r'\[([^\]]*)\]', pt_axis_steering)
+        for index, edge in enumerate(edge_list):
+            if index < len(edge_list)-1:
+                pt_axis_steering = "dipt["+matches[0]+"];dimass["+matches[1]+f"{index}]"
+                # pt
+                pt_hist = self.get_hist(file_key, pt_hist_path, axis_steering=pt_axis_steering, root_hist=True)
+                # mass
+                mass_hist.GetXaxis().SetRangeUser(edge, edge_list[index + 1])
+                temp_dict = {"mass_window": str(edge) + ":" + str(edge_list[index + 1]),
+                             "mean_pt": pt_hist.GetMean(), "mean_pt_stat_error": pt_hist.GetMeanError(),
+                             "mean_mass": mass_hist.GetMean(), "mean_mass_stat_error": mass_hist.GetMeanError()}
+                dict_list.append(temp_dict)
+        return pd.DataFrame(dict_list, columns=['mass_window',
+                                                'mean_pt', 'mean_pt_stat_error',
+                                                'mean_mass', 'mean_mass_stat_error'])
+
     def get_raw_labels(self, file_key, hist_name):
         sample_type, hist_label, file_name = file_key.split("/")
         if file_name == "all":
@@ -125,9 +168,8 @@ if __name__ == "__main__":
     print("ROOFiles")
     channel = "ee"
     period = "2016a"
-    path = "../../data/Ultralegacy/"+channel+"/"+period
 
-    data_handle = ROOTFiles(path, "sample_config.json")
+    data_handle = ROOTFiles(channel, period)
     data_handle.print_files()
     print(data_handle.get_hist("data/2016prePFV/all", "ee2016a/cutflow"))
     print(data_handle.get_raw_labels("data/2016prePFV/all", "ee2016a/cutflow"))
