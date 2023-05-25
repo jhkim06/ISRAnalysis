@@ -140,8 +140,7 @@ public:
         fUnfoldOut = new TFile(fUnfoldOutPath, "RECREATE");
 
         fUnfoldOut->mkdir(channel+year);
-        fUnfoldOut->mkdir(channel+year+"/data");
-        fUnfoldOut->mkdir(channel+year+"/DY");
+        fUnfoldOut->mkdir(channel+year+"/Matrix");
     }
     // Destructor
     ~ISRUnfold()

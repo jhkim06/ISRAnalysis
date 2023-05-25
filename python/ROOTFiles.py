@@ -9,8 +9,8 @@ import pandas as pd
 # ROOT histogram to numpy, pandas etc
 class ROOTFiles:
 
-    def __init__(self, channel, period, sample_config="sample_config.json", data=None, mc=None):
-        self.path = "/Users/jhkim/cms_snu/data/Ultralegacy/"+channel+"/"+period
+    def __init__(self, path, channel, period, sample_config="sample_config.json", data=None, mc=None):
+        self.path = path+channel+"/"+period
         self.input_files = dict()
         self.set_input_files(sample_config, data, mc)
         self.data_period = period
@@ -144,6 +144,8 @@ class ROOTFiles:
 
     def get_raw_labels(self, file_key, hist_name):
         sample_type, hist_label, file_name = file_key.split("/")
+        if "data:bkg_subtracted" == sample_type:
+            sample_type = "data"
         if file_name == "all":
             file_name = [*self.input_files[sample_type][hist_label].keys()][0]  # use one of samples
         file_path = self.path+"/"+self.input_files[sample_type][hist_label][file_name]

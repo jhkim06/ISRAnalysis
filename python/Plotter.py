@@ -30,11 +30,11 @@ class Plotter:
     drawn_file_list = []
     denominator_index = 0
 
-    def __init__(self, channel, period):
+    def __init__(self, path, channel, period):
         self.channel = channel
         self.period = period
-        self.path = "/Users/jhkim/cms_snu/data/Ultralegacy/"+channel+"/"+period
-        self.root_file_handle = rf.ROOTFiles(self.channel, self.period)
+        self.path = path+channel+"/"+period
+        self.root_file_handle = rf.ROOTFiles(path, self.channel, self.period)
 
     def create_subplots(self, rows=1, cols=1, **kwargs):
         self.clear_all_axis()
@@ -71,7 +71,7 @@ class Plotter:
             if "label" in kwargs:
                 label = kwargs["label"]
             else:
-                label = ["" for i in range(len(value_list))]
+                label = ["" for _ in range(len(value_list))]
             width = bins[1:]-bins[0:-1]
             bottom = 0
             for index, value in enumerate(value_list):

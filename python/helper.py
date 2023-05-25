@@ -78,6 +78,7 @@ def attach_hprefix_to_hist_name(file_name, hist_path):
     else:
         return hist_path
 
+
 def get_raw_labels(file_path, hist_name):
     with uprt.open(file_path) as file:
         return file[hist_name].axis().labels()

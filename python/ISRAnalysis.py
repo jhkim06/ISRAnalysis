@@ -42,11 +42,10 @@ class ISRAnalysis:
         self.var = var_
         self.n_mass_bins = None
         
-        self.out_dir_path     = current_dir+"/output/UltraLegacy/" +self.year+"/"+self.channel+"/"
+        self.out_dir_path     = current_dir+"/output/UltraLegacy/" +self.channel+"/"+self.year+"/"
         self.in_hist_path_txt = current_dir+"/inFiles/UltraLegacy/" +self.year+"/"+self.channel+"/fhist.txt"
 
         if channel_postfix_ != "" :
-            self.out_dir_path     = current_dir+"/output/UltraLegacy/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/"
             self.in_hist_path_txt = current_dir+"/inFiles/UltraLegacy/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/fhist.txt"
     
         # make output directory

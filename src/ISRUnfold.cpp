@@ -99,7 +99,7 @@ void ISRUnfold::save_hists_from_responseM(TFile* file)
     binningFine->Write("[tunfold-bin]_"+var+"_"+folded_bin_name);
 
     TH2* truth_unfolded = (TH2*)file->Get(channel+year+"/[tunfold-hist]_"+var+"_"+unfolded_bin_name);
-    fUnfoldOut->cd(channel+year+"/DY");
+    fUnfoldOut->cd(channel+year+"/Matrix");
     truth_unfolded->Write("[tunfold-unfolded_hist]_"+var+"_"+unfolded_bin_name);
     TH1* hist = (TH1*) file->Get(channel+year+"/[tunfold-hist]_"+var+"_"+folded_bin_name);
     hist->Write("[tunfold-hist]_"+var+"_"+folded_bin_name);
@@ -127,7 +127,7 @@ void ISRUnfold::setUnfInput(TString file_path, TString top_dir, TString sys_type
     TString full_hist_path = top_dir+"/[tunfold-hist]_"+var+"_"+folded_bin_name+sys_hist_postfix;
     TH1* hRec = (TH1*)filein->Get(full_hist_path);
 
-    fUnfoldOut->cd(channel+year+"/data");
+    fUnfoldOut->cd(channel+year);
     hRec->Write("[tunfold-hist]_"+var+"_"+folded_bin_name+sys_hist_postfix);
 
     // Nominal
@@ -157,10 +157,6 @@ void ISRUnfold::subBkgs(TString file_path, TString top_dir, TString bkg_name, TS
     TFile* filein = new TFile(file_path);
     TH1* hRec = (TH1*)filein->Get(top_dir+"/[tunfold-hist]_"+var+"_"+folded_bin_name+hist_postfix);
 
-    fUnfoldOut->mkdir(channel+year+"/"+bkg_name);
-    fUnfoldOut->cd(channel+year+"/"+bkg_name);
-    hRec->Write("[tunfold-hist]_"+var+"_"+folded_bin_name+hist_postfix);
-
     // Nominal histograms
     if(sys_type=="Type_0")
     {
@@ -175,7 +171,6 @@ void ISRUnfold::subBkgs(TString file_path, TString top_dir, TString bkg_name, TS
             varDirForReco->cd();
 
             hRec->SetName("histo_Fake"+bkg_name);
-            hRec->Write();
         }
     }
     else
@@ -293,11 +288,11 @@ void ISRUnfold::doISRUnfold(bool partialReg)
         useAxisBinning = true;
     }
 
-    fUnfoldOut->cd(channel+year+"/DY"); 
+    fUnfoldOut->cd(channel+year+"/Matrix"); 
     nominalTUnfold->GetRhoIJtotal("[tunfold-corr_hist]_"+var+"_"+folded_bin_name+"_"+unfolded_bin_name, 0, 0, 0, useAxisBinning)->Write();
     nominalTUnfold->GetEmatrixTotal("[tunfold-cov_hist]_"+var+"_"+folded_bin_name+"_"+unfolded_bin_name, 0, 0, 0, useAxisBinning)->Write();
 
-    fUnfoldOut->cd(channel+year+"/data"); 
+    fUnfoldOut->cd(channel+year); 
     nominalTUnfold->GetOutput("[tunfold-unfolded_hist]_"+var+"_"+unfolded_bin_name,0,0, "*[*]", useAxisBinning)->Write();
     nominalTUnfold->GetInput("[tunfold-input_hist]_"+var+"_"+folded_bin_name, 0, 0, 0, false)->Write();
 
@@ -330,19 +325,19 @@ void ISRUnfold::doAcceptCorr(TString filePath, TString top_dir)
     TH1* hFiducialPhaseMC = NULL;
 
     hFullPhaseMC     = (TH1*) filein->Get(top_dir+"/[tunfold-fullphase_hist]_"+var+"_"+unfolded_bin_name);
-    hFiducialPhaseMC = (TH1*) fUnfoldOut->Get(channel+year+"/DY/[tunfold-projX_hist]_"+var+"_"+unfolded_bin_name);
+    hFiducialPhaseMC = (TH1*) fUnfoldOut->Get(channel+year+"/Matrix/[tunfold-projX_hist]_"+var+"_"+unfolded_bin_name);
 
     hAcceptance = (TH1*) hFullPhaseMC->Clone("[tunfold-acc_hist]_"+var+"_"+unfolded_bin_name);
     hAcceptance->Divide(hFiducialPhaseMC); // Nominal acceptance correction factor
 
     TH1* hAcceptance_raw = (TH1*) hAcceptance->Clone("hAcceptance_raw");
 
-    fUnfoldOut->cd(channel+year+"/data"); 
+    fUnfoldOut->cd(channel+year); 
     hFullPhaseData = nominalTUnfold->GetOutput("[tunfold-unfolded_fullphase_hist]_"+var+"_"+unfolded_bin_name,0,0, "*[*]", false);
     hFullPhaseData->Multiply(hAcceptance); // acceptance corrected data
     hFullPhaseData->Write();
 
-    fUnfoldOut->cd(channel+year+"/DY"); 
+    fUnfoldOut->cd(channel+year+"/Matrix"); 
     hFullPhaseMC->SetName("[tunfold-unfolded_fullphase_hist]_"+var+"_"+unfolded_bin_name);
     hFullPhaseMC->Write();
     hAcceptance->Write();
