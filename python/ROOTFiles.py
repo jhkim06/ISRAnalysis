@@ -41,21 +41,24 @@ class ROOTFiles:
         hist_path = self.hist_dir+hist_name
         raw_hist = None
         if sample_type == "data:bkg_subtracted":
-            raw_hist = self.get_bkg_subtracted_data_hist(hist_name, axis_steering, root_hist=True, norm=norm)
+            raw_hist = self.get_bkg_subtracted_data_hist(hist_name, axis_steering, root_hist=True)
         else:
             if file_name == "all":  # sum all histograms
                 for index, file in enumerate(self.input_files[sample_type][hist_label]):
                     file_path = self.file_dir+"/"+self.input_files[sample_type][hist_label][file]
                     hist_path = attach_hprefix_to_hist_name(file, hist_path)
                     if index == 0:
-                        raw_hist = get_raw_hist(file_path, hist_path, axis_steering, norm=norm)
+                        raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
                     else:
-                        raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering, norm=norm))
+                        raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering))
             else:
                 hist_path = attach_hprefix_to_hist_name(file_name, hist_path)
-                file_path = self.file_dir + "/" + self.input_files[sample_type][hist_label][file_name]
-                raw_hist = get_raw_hist(file_path, hist_path, axis_steering, norm=norm)
+                file_path = self.file_dir+"/"+self.input_files[sample_type][hist_label][file_name]
+                raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
 
+        if norm:
+            integral = raw_hist.Integral()
+            raw_hist.Scale(1./integral)
         if root_hist:
             return raw_hist
         else:
