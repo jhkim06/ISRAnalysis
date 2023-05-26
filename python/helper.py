@@ -2,6 +2,7 @@ import ROOT as rt
 import uproot as uprt
 import numpy as np
 import re
+from collections import namedtuple
 
 
 def root_to_numpy(hist):
@@ -19,14 +20,15 @@ def root_to_numpy(hist):
     bins.append(bins[-1] + hist.GetBinWidth(nbinsx))
     values = np.array(values)
     bins = np.array(bins)
-    error = np.array(error)
+    errors = np.array(error)
 
-    return (values, bins), error
+    Hist = namedtuple('Hist', ['values', 'bins', 'errors'])
+    h = Hist(values, bins, errors)
+    return h
 
 
 def get_mass_window_edges(file_path, hist_path):
     file = rt.TFile.Open(file_path)
-
     # make function to get TUnfoldBinning
     directory = hist_path.split("/")[0]
     hist_name = hist_path.split("/")[1]  # assuming no sub-directory
@@ -44,7 +46,7 @@ def get_mass_window_edges(file_path, hist_path):
     return edge_list
 
 
-def get_raw_hist(file_path, hist_path, axis_steering=""):
+def get_raw_hist(file_path, hist_path, axis_steering="", norm=False):
     rt.TH1.AddDirectory(False)
     file = rt.TFile.Open(file_path)
     hist = file.Get(hist_path)
@@ -63,6 +65,10 @@ def get_raw_hist(file_path, hist_path, axis_steering=""):
         original_axis_binning = True
         hist = unfold_bin.ExtractHistogram(hist_name + "_extracted_" + axis_steering,
                                            hist, 0, original_axis_binning, axis_steering)
+
+    if norm:
+        integral = hist.Integral()
+        hist.Scale(1./integral)
 
     file.Close()
     return hist

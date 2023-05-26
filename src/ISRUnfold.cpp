@@ -320,8 +320,6 @@ void ISRUnfold::doISRUnfold(bool partialReg)
 void ISRUnfold::doAcceptCorr(TString filePath, TString top_dir)
 {
     TFile* filein = new TFile(filePath);
-
-
     TH1* hFiducialPhaseMC = NULL;
 
     hFullPhaseMC     = (TH1*) filein->Get(top_dir+"/[tunfold-fullphase_hist]_"+var+"_"+unfolded_bin_name);
