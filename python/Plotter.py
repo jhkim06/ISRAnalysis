@@ -14,13 +14,6 @@ def adjust_x_lim(axis, bins):
         axis.set_xlim(bins[0], bins[-1])
 
 
-def set_labels(axis, bins, labels):
-    axis.minorticks_off()
-    major_ticks = FixedLocator(bins[1:])
-    axis.xaxis.set_major_locator(major_ticks)
-    axis.xaxis.set_major_formatter(FixedFormatter(labels))
-
-
 class Plotter:
     def __init__(self, rows, cols, **kwargs):
         plt.ioff()
@@ -49,7 +42,6 @@ class Plotter:
         adjust_x_lim(axis, hist.bins)
 
     def draw_stack(self, stack, row=0, col=0, use_mplhep=True, **kwargs):
-        # stack: list of named tuple [(),()]
         axis = self.get_axis(row, col)
         if use_mplhep:
             hep.histplot(stack.values_list, ax=axis, stack=True, bins=stack.bins, **kwargs)
@@ -64,25 +56,29 @@ class Plotter:
                 axis.hist(stack.bins[:-1], stack.bins, weights=values/width, histtype='bar',
                           bottom=bottom, label=label[index])
                 bottom += values/width
-
         adjust_x_lim(axis, stack.bins)
 
-    '''
-    def draw_isr_means(self, axis, file_key, pt_hist_name, mass_hist_name,
-                       pt_axis_steering="dipt[];dimass[UOC]", mass_axis_steering="dimass[UO];dipt[OC0]", **kwargs):
+    def draw_error_bands(self):
+        pass
 
-        pt_hist_path = self.channel + self.period + "/" + pt_hist_name
-        mass_hist_path = self.channel + self.period + "/" + mass_hist_name
-        isr_data = self.root_file_handle.get_isr_mean_dataframe(file_key, pt_hist_path, mass_hist_path,
-                                                                pt_axis_steering, mass_axis_steering)
+    def set_labels(self, bins, labels, row=0, col=0):
+        axis = self.get_axis(row, col)
+        axis.minorticks_off()
+        major_ticks = FixedLocator(bins[1:])
+        axis.xaxis.set_major_locator(major_ticks)
+        axis.xaxis.set_major_formatter(FixedFormatter(labels))
 
-        axis.errorbar(
-            isr_data["mean_mass"],
-            isr_data["mean_pt"],
-            xerr=isr_data["mean_mass_stat_error"],
-            yerr=isr_data["mean_pt_stat_error"], **kwargs
-        )
-    '''
+    def draw_isr_data_frame(self, data_frame, row=0, col=0, **kwargs):
+        axis = self.get_axis(row, col)
+        x_column_name = "mass"
+        y_column_name = "pt"
+        error_name = "stat_error"
+
+        axis.errorbar(data_frame[x_column_name], data_frame[y_column_name],
+                      xerr=data_frame[x_column_name+"_"+error_name],
+                      yerr=data_frame[y_column_name+"_"+error_name],
+                      **kwargs)
+
 
     def clear_all_axis(self):
         plt.rcdefaults()

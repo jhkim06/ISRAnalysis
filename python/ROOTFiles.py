@@ -1,9 +1,8 @@
-from typing import List
-
 import json
 from numpy import ndarray
 from helper import *
 import pandas as pd
+from collections import namedtuple
 
 
 # ROOT histogram to numpy, pandas etc
@@ -126,18 +125,9 @@ class ROOTFiles:
             return root_to_numpy(raw_hist)
 
     # get ISR mean DataFrame from 2D pt-mass histogram
-    def get_isr_mean_dataframe(self, file_key, pt_hist_name, mass_hist_name,
-                               pt_steering="dipt[];dimass[UOC]", mass_steering="dimass[UO];dipt[OC0]"):
-        sample_type, hist_label, file_name = file_key.split("/")
-
-        # Get mass window edges
-        if "data:bkg_subtracted" == sample_type:
-            sample_type = "data"
-
-        if file_name == "all":
-            file_name = [*self.input_files[sample_type][hist_label].keys()][0]  # use one of samples
-        file_path = self.file_dir+"/"+self.input_files[sample_type][hist_label][file_name]
-        # Get mass window edges using bin info
+    def get_isr_dataframe(self, file_key, pt_hist_name, mass_hist_name, stat_type="mean", prob=0.5,
+                          pt_steering="dipt[];dimass[UOC]", mass_steering="dimass[UO];dipt[OC0]"):
+        file_path = self.get_file_path(file_key)
         pt_hist_path = self.hist_dir + pt_hist_name
         edge_list = get_mass_window_edges(file_path, pt_hist_path)
 
@@ -149,27 +139,34 @@ class ROOTFiles:
         for index, edge in enumerate(edge_list):
             if index < len(edge_list)-1:
                 pt_steering = "dipt["+matches[0]+"];dimass["+matches[1]+f"{index}]"
-                # get pt hist
+
                 pt_hist = self.get_hist(file_key, pt_hist_name, axis_steering=pt_steering, root_hist=True)
-                # adjust range to current mass window
                 mass_hist.GetXaxis().SetRangeUser(edge, edge_list[index + 1])
-                temp_dict = {"mass_window": str(edge) + ":" + str(edge_list[index + 1]),
-                             "mean_pt": pt_hist.GetMean(), "mean_pt_stat_error": pt_hist.GetMeanError(),
-                             "mean_mass": mass_hist.GetMean(), "mean_mass_stat_error": mass_hist.GetMeanError()}
+
+                stat = get_summary_statistics(pt_hist, stat_type, prob)
+                temp_dict = {"mass_window": str(edge)+":"+str(edge_list[index + 1]),
+                             "pt": stat.value, "pt_stat_error": stat.error,
+                             "mass": mass_hist.GetMean(), "mass_stat_error": mass_hist.GetMeanError()}
                 dict_list.append(temp_dict)
+
         return pd.DataFrame(dict_list, columns=['mass_window',
-                                                'mean_pt', 'mean_pt_stat_error',
-                                                'mean_mass', 'mean_mass_stat_error'])
+                                                'pt', 'pt_stat_error',
+                                                'mass', 'mass_stat_error'])
 
     def get_raw_labels(self, file_key, hist_name):
+        hist_path = self.hist_dir+hist_name
+        file_path = self.get_file_path(file_key)
+
+        return get_raw_labels(file_path, hist_path)
+
+    def get_file_path(self, file_key):
         sample_type, hist_label, file_name = file_key.split("/")
         if "data:bkg_subtracted" == sample_type:
             sample_type = "data"
         if file_name == "all":
             file_name = [*self.input_files[sample_type][hist_label].keys()][0]  # use one of samples
-        file_path = self.file_dir+"/" + self.input_files[sample_type][hist_label][file_name]
-
-        return get_raw_labels(file_path, hist_name)
+        file_path = self.file_dir+"/"+self.input_files[sample_type][hist_label][file_name]
+        return file_path
 
     def set_input_files(self, sample_config, data, mc):
         self.input_files["data"] = dict()
@@ -188,7 +185,7 @@ class ROOTFiles:
 if __name__ == "__main__":
     print("test ROOFiles")
 
-    data_handle = ROOTFiles("ee", "2016a")
+    data_handle = ROOTFiles("/Users/jhkim/cms_snu/data/Ultralegacy/", "ee", "2016a")
     data_handle.print_files()
     print(data_handle.get_hist("data/2016prePFV/all", "ee2016a/cutflow"))
     print(data_handle.get_raw_labels("data/2016prePFV/all", "ee2016a/cutflow"))

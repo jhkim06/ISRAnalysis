@@ -74,6 +74,27 @@ def get_raw_hist(file_path, hist_path, axis_steering="", norm=False):
     return hist
 
 
+def get_summary_statistics(hist, stat_type="mean", prob=0.5):
+    Stat = namedtuple('stat', ['value', 'error'])
+
+    if stat_type == "mean":
+        value = hist.GetMean()
+        error = hist.GetMeanError()
+    elif stat_type == "quantile":
+        hist_temp = hist.Clone("quantile")
+        hist_temp.Scale(1, "width")
+
+        length = 1
+        q = np.zeros(length)
+        prob_array = np.array([prob])
+        hist_temp.GetQuantiles(length, q, prob_array)
+        value = q[0]
+        error = 0  # FIXME
+    else:
+        return None
+    return Stat(value, error)
+
+
 def attach_hprefix_to_hist_name(file_name, hist_path):
     file_name_parsing = file_name.split(":")
     if len(file_name_parsing) == 2:  # hprefix set in config file
@@ -87,4 +108,4 @@ def attach_hprefix_to_hist_name(file_name, hist_path):
 
 def get_raw_labels(file_path, hist_name):
     with uprt.open(file_path) as file:
-        return file[hist_name].axis().labels()
+        return file[hist_name].axis().edges(), file[hist_name].axis().labels()
