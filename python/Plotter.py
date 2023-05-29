@@ -5,6 +5,7 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
 import numpy as np
 
+
 def adjust_x_lim(axis, bins):
     if bins[-1] >= 1e3:
         axis.set_xscale("log")
