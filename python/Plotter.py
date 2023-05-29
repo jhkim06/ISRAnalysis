@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import mplhep as hep
 from matplotlib.ticker import (FixedLocator, FixedFormatter)
-
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
+import numpy as np
 
 def adjust_x_lim(axis, bins):
     if bins[-1] >= 1e3:
@@ -18,6 +20,8 @@ class Plotter:
     def __init__(self, rows, cols, **kwargs):
         plt.ioff()
         hep.style.use("CMS")
+        plt.rcParams['axes.linewidth'] = 1
+        plt.rcParams['hatch.linewidth'] = 0.1
         self.rows = rows
         self.cols = cols
         self.fig, self.axs = plt.subplots(self.rows, self.cols, **kwargs)
@@ -38,8 +42,9 @@ class Plotter:
     def draw_hist(self, hist, row=0, col=0, **kwargs):
         # axis int or tuple
         axis = self.get_axis(row, col)
-        hep.histplot((hist.values, hist.bins), ax=axis, **kwargs)
+        artist = hep.histplot((hist.values, hist.bins), ax=axis, **kwargs)
         adjust_x_lim(axis, hist.bins)
+        return artist
 
     def draw_stack(self, stack, row=0, col=0, use_mplhep=True, **kwargs):
         axis = self.get_axis(row, col)
@@ -58,8 +63,36 @@ class Plotter:
                 bottom += values/width
         adjust_x_lim(axis, stack.bins)
 
-    def draw_error_bands(self):
-        pass
+    def draw_error_boxes(self, hist, row=0, col=0, set_y_ones=False, **kwargs):
+        axis = self.get_axis(row, col)
+        center = hist.bins[:-1]+np.diff(hist.bins)/2.
+        # down, up error for x axis (bin width)
+        xerrs = np.expand_dims(np.diff(hist.bins)/2., axis=0)
+        xerrs = np.append(xerrs, xerrs, axis=0)
+        # down, up error for y axis
+        yerrs = np.expand_dims(hist.errors, axis=0)
+        yerrs = np.append(yerrs, yerrs, axis=0)
+
+        if set_y_ones:
+            data = np.ones(len(hist.values))
+        else:
+            data = hist.values
+        # Loop over data points; create box from errors at each point
+        errorboxes = [Rectangle((x - xe[0], y - ye[0]), xe.sum(), ye.sum(),
+                                fill=False, edgecolor=None, facecolor=None)
+                      for x, y, xe, ye in zip(center, data, xerrs.T, yerrs.T)]
+        # Create patch collection with specified colour/alpha
+        pc = PatchCollection(errorboxes, match_original=True, hatch="xx",
+                             linewidth=0, zorder=100, **kwargs)
+        axis.add_collection(pc)
+        # Plot errorbars
+        artists = axis.errorbar(center, data, fmt='none')
+        # artist[0][0][0].get_data()
+        # artist[0][0][2][0].get_segments()  # bin content
+        # artist[0][0][2][1].get_segments()  # error boundary
+        # Add collection to axes
+        axis.add_collection(pc)
+        return artists
 
     def set_labels(self, bins, labels, row=0, col=0):
         axis = self.get_axis(row, col)
@@ -79,10 +112,11 @@ class Plotter:
                       yerr=data_frame[y_column_name+"_"+error_name],
                       **kwargs)
 
-
     def clear_all_axis(self):
         plt.rcdefaults()
         hep.style.use("CMS")
+        plt.rcParams['axes.linewidth'] = 1
+        plt.rcParams['hatch.linewidth'] = 0.1
 
         if self.rows == 1 and self.cols == 1:
             self.axs.cla()

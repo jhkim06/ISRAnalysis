@@ -10,7 +10,7 @@ class ROOTFiles:
 
     def __init__(self, path, channel, period, sample_config="sample_config.json", data=None, mc=None):
         self.file_dir = path+channel+"/"+period
-        self.hist_dir = channel+period+"/"
+        self.hist_dir = channel+period+"/"  # TODO case with additional sub directory?
         self.input_files = dict()
         self.set_input_files(sample_config, data, mc)
         self.data_period = period
@@ -34,7 +34,8 @@ class ROOTFiles:
         return stack
 
     # get values, bin, error as numpy array
-    def get_hist(self, file_key, hist_name, axis_steering="", root_hist=False, norm=False):
+    def get_hist(self, file_key, hist_name, axis_steering="", root_hist=False,
+                 norm=False, binwnorm=False):
         sample_type, hist_label, file_name = file_key.split("/")
 
         hist_path = self.hist_dir+hist_name
@@ -44,6 +45,7 @@ class ROOTFiles:
         else:
             if file_name == "all":  # sum all histograms
                 for index, file in enumerate(self.input_files[sample_type][hist_label]):
+                    # self.file_dir+"/SYS__/" or self.file_dir+"/object__/"
                     file_path = self.file_dir+"/"+self.input_files[sample_type][hist_label][file]
                     hist_path = attach_hprefix_to_hist_name(file, hist_path)
                     if index == 0:
@@ -58,22 +60,29 @@ class ROOTFiles:
         if norm:
             integral = raw_hist.Integral()
             raw_hist.Scale(1./integral)
+        if binwnorm:
+            raw_hist.Scale(1., "width")
         if root_hist:
             return raw_hist
         else:
             return root_to_numpy(raw_hist)
 
+    def get_systematic_bands(self):
+        pass
+
     def get_ratio_hist(self, file1_key_list, file2_key_list,
                        hist1_name, hist2_name, axis_steering="", root_hist=False,
-                       other_instance_for_file2=None, norm=False):
+                       other_instance_for_file2=None, norm=False, binwnorm=False):
         combined_nominator = self.get_combined_hist(file1_key_list, hist1_name,
-                                                    axis_steering, root_hist=True, norm=norm)
+                                                    axis_steering, root_hist=True, norm=norm, binwnorm=binwnorm)
         if other_instance_for_file2 is not None:
             combined_denominator = other_instance_for_file2.get_combined_hist(file2_key_list, hist2_name,
-                                                                              axis_steering, root_hist=True, norm=norm)
+                                                                              axis_steering, root_hist=True,
+                                                                              norm=norm, binwnorm=binwnorm)
         else:
             combined_denominator = self.get_combined_hist(file2_key_list, hist2_name,
-                                                          axis_steering, root_hist=True, norm=norm)
+                                                          axis_steering, root_hist=True,
+                                                          norm=norm, binwnorm=binwnorm)
         ratio = combined_nominator.Clone("ratio")
         ratio.Divide(combined_denominator)
 
@@ -82,9 +91,9 @@ class ROOTFiles:
         else:
             return root_to_numpy(ratio)
 
-    def get_bkg_subtracted_data_hist(self, hist_name, axis_steering="", root_hist=False, norm=False):
-        data_hist = self.get_hist("data/"+self.data_period+"/all", hist_name, axis_steering, root_hist=True,
-                                  norm=False)
+    def get_bkg_subtracted_data_hist(self, hist_name, axis_steering="", root_hist=False,
+                                     norm=False, binwnorm=False):
+        data_hist = self.get_hist("data/"+self.data_period+"/all", hist_name, axis_steering, root_hist=True)
 
         bkg_hist = None
         is_first_bkg = True
@@ -101,13 +110,16 @@ class ROOTFiles:
         if norm:
             integral = bkg_subtracted_data_hist.Integral()
             bkg_subtracted_data_hist.Scale(1./integral)
+        if binwnorm:
+            raw_hist.Scale(1., "width")
 
         if root_hist:
             return bkg_subtracted_data_hist
         else:
             return root_to_numpy(bkg_subtracted_data_hist)
 
-    def get_combined_hist(self, file_key_list, hist_name, axis_steering="", root_hist=False, norm=False):
+    def get_combined_hist(self, file_key_list, hist_name, axis_steering="", root_hist=False,
+                          norm=False, binwnorm=False):
         raw_hist = None
         for index, file_key in enumerate(file_key_list):
             hist = self.get_hist(file_key, hist_name, axis_steering, root_hist=True)
@@ -118,6 +130,8 @@ class ROOTFiles:
         if norm:
             integral = raw_hist.Integral()
             raw_hist.Scale(1./integral)
+        if binwnorm:
+            raw_hist.Scale(1., "width")
 
         if root_hist:
             return raw_hist
@@ -131,7 +145,6 @@ class ROOTFiles:
         pt_hist_path = self.hist_dir + pt_hist_name
         edge_list = get_mass_window_edges(file_path, pt_hist_path)
 
-        # Get mass histogram
         mass_hist = self.get_hist(file_key, mass_hist_name, axis_steering=mass_steering, root_hist=True)
 
         dict_list = []
