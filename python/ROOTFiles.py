@@ -1,4 +1,6 @@
 import json
+
+import numpy as np
 from numpy import ndarray
 from helper import *
 import pandas as pd
@@ -8,20 +10,16 @@ from collections import namedtuple
 # ROOT histogram to numpy, pandas etc
 class ROOTFiles:
 
-    def __init__(self, path, channel, period, sample_config="sample_config.json", data=None, mc=None):
+    def __init__(self, path, channel, period, *args, sample_config="sample_config.json"):
         self.file_dir = path+channel+"/"+period
         self.hist_dir = channel+period+"/"  # TODO case with additional sub directory?
         self.input_files = dict()
-        self.set_input_files(sample_config, data, mc)
+        self.set_input_files(sample_config, *args)
         self.data_period = period
         if period == "2016a":
             self.data_period = "2016prePFV"
         if period == "2016b":
             self.data_period = "2016postPFV"
-        # self.input_files = dict()
-        # self.input_files[""]  # nominal
-        # self.input_files["SYS__:"]
-        # self.input_files["0bject__:0object"]
 
     def make_stack_list(self, file_key_list, hist_name, axis_steering="", file_sel=""):
         values_list: list[ndarray] = []
@@ -41,7 +39,9 @@ class ROOTFiles:
     def get_hist(self, file_key, hist_name, axis_steering="", root_hist=False,
                  norm=False, binwnorm=False, file_sel=""):
         sample_type, hist_label, file_name = file_key.split("/")
-
+        file_postfix = "/"
+        if file_sel != "":
+            file_postfix = "/"+file_sel.split(":")[0] + "/"
         hist_path = self.hist_dir+hist_name
         raw_hist = None
         if sample_type == "data:bkg_subtracted":
@@ -50,44 +50,102 @@ class ROOTFiles:
         else:
             if file_name == "all":  # sum all histograms
                 for index, file in enumerate(self.input_files[file_sel][sample_type][hist_label]):
-                    file_path = self.file_dir+"/"+self.input_files[file_sel][sample_type][hist_label][file]
+                    file_path = self.file_dir+file_postfix+self.input_files[file_sel][sample_type][hist_label][file]
                     hist_path = attach_hprefix_to_hist_name(file, hist_path)
+
                     if index == 0:
                         raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
                     else:
                         raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering))
             else:
                 hist_path = attach_hprefix_to_hist_name(file_name, hist_path)
-                file_path = self.file_dir+"/"+self.input_files[file_sel][sample_type][hist_label][file_name]
+                file_path = self.file_dir+file_postfix+self.input_files[file_sel][sample_type][hist_label][file_name]
                 raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
         if norm:
             integral = raw_hist.Integral()
             raw_hist.Scale(1./integral)
         if binwnorm:
             raw_hist.Scale(1., "width")
+
         if root_hist:
-            return raw_hist
+            return raw_hist  
         else:
             return root_to_numpy(raw_hist)
 
-    def get_systematic_bands(self):
-        pass
+    def get_hist_systematic_bands(self, systematic_dict, file_key, hist_name, axis_steering="",
+                                  norm=False, binwnorm=False, file_sel=""):
+        nominal_hist = self.get_hist(file_key, hist_name, axis_steering, root_hist=True,
+                                     norm=norm, binwnorm=binwnorm)
+        # symmetric systematic
+        systematic_list = []
+        for systematic in systematic_dict.keys():
+            delta_list = []
+            for variation in systematic_dict[systematic]:
+                variation_postfix = ""
+                if variation != "":
+                    variation_postfix += "_"+variation
+                full_hist_name = hist_name+"_"+systematic+variation_postfix
+                systematic_hist = self.get_hist(file_key, full_hist_name, axis_steering, root_hist=True, norm=norm,
+                                                binwnorm=binwnorm, file_sel=file_sel)
+                systematic_hist.Add(nominal_hist, -1)
+                h = root_to_numpy(systematic_hist)
+                delta_list.append(np.absolute(h.values))
+            systematic_list.append(np.square(np.mean(delta_list, axis=0)))
+        sqrt_sum = np.sqrt(np.sum(np.array(systematic_list), axis=0))  # square root sum
+        return sqrt_sum
 
+    def get_combined_hist_systematic_bands(self, systematic_dict, file_key_list, hist_name, axis_steering="",
+                                           norm=False, binwnorm=False, file_sel=""):
+        nominal_hist = self.get_combined_hist(file_key_list, hist_name, axis_steering=axis_steering, root_hist=True,
+                                              norm=norm, binwnorm=binwnorm)
+        # symmetric systematic
+        systematic_list = []
+        for systematic in systematic_dict.keys():
+            delta_list = []
+            for variation in systematic_dict[systematic]:
+                variation_postfix = ""
+                if variation != "":
+                    variation_postfix += "_"+variation
+                full_hist_name = hist_name+"_"+systematic+variation_postfix
+                systematic_hist = self.get_combined_hist(file_key_list, full_hist_name, axis_steering=axis_steering,
+                                                         root_hist=True,
+                                                         norm=norm, binwnorm=binwnorm, file_sel=file_sel)
+                systematic_hist.Add(nominal_hist, -1)
+                h = root_to_numpy(systematic_hist)
+                delta_list.append(np.absolute(h.values))
+            systematic_list.append(np.square(np.mean(delta_list, axis=0)))
+        sqrt_sum = np.sqrt(np.sum(np.array(systematic_list), axis=0))  # square root sum
+        return sqrt_sum
+
+    def get_scaled_hist(self, file_key_list, hist_name, axis_steering="", root_hist=False,
+                        norm=False, binwnorm=False, file_sel="", systematic_dict=None):
+        hist = self.get_combined_hist(file_key_list, hist_name, axis_steering, root_hist,
+                                      norm, binwnorm)
+        sys_error = self.get_combined_hist_systematic_bands(systematic_dict, file_key_list, hist_name, axis_steering,
+                                           norm, binwnorm, file_sel)
+
+        ones = np.nan_to_num(hist.values/hist.values)
+        stat_error = np.nan_to_num(hist.errors/hist.values)
+        return Hist(ones, hist.bins, stat_error), np.nan_to_num(sys_error/hist.values)
+
+    # TODO how to handle systematic error for division
+    # currently considered statistical error assuming uncorrelated histograms
     def get_ratio_hist(self, file1_key_list, file2_key_list,
                        hist1_name, hist2_name, axis_steering="", root_hist=False,
-                       other_instance_for_file2=None, norm=False, binwnorm=False, file_sel=""):
+                       other_instance_for_file2=None, norm=False, binwnorm=False,
+                       file_sel1="", file_sel2=""):
         combined_nominator = self.get_combined_hist(file1_key_list, hist1_name,
                                                     axis_steering, root_hist=True, norm=norm,
-                                                    binwnorm=binwnorm, file_sel=file_sel)
+                                                    binwnorm=binwnorm, file_sel=file_sel1)
         if other_instance_for_file2 is not None:
             combined_denominator = other_instance_for_file2.get_combined_hist(file2_key_list, hist2_name,
                                                                               axis_steering, root_hist=True,
                                                                               norm=norm, binwnorm=binwnorm,
-                                                                              file_sel=file_sel)
+                                                                              file_sel=file_sel2)
         else:
             combined_denominator = self.get_combined_hist(file2_key_list, hist2_name,
                                                           axis_steering, root_hist=True,
-                                                          norm=norm, binwnorm=binwnorm, file_sel=file_sel)
+                                                          norm=norm, binwnorm=binwnorm, file_sel=file_sel2)
         ratio = combined_nominator.Clone("ratio")
         ratio.Divide(combined_denominator)
 
@@ -100,7 +158,6 @@ class ROOTFiles:
                                      norm=False, binwnorm=False, file_sel=""):
         data_hist = self.get_hist("data/"+self.data_period+"/all", hist_name, axis_steering, root_hist=True,
                                   file_sel=file_sel)
-
         bkg_hist = None
         is_first_bkg = True
         for hist_label in self.input_files[file_sel]["mc"]:
@@ -127,7 +184,7 @@ class ROOTFiles:
             return root_to_numpy(bkg_subtracted_data_hist)
 
     def get_combined_hist(self, file_key_list, hist_name, axis_steering="", root_hist=False,
-                          norm=False, binwnorm=False, file_sel="", systematic_dict=None):
+                          norm=False, binwnorm=False, file_sel=""):
         raw_hist = None
         for index, file_key in enumerate(file_key_list):
             hist = self.get_hist(file_key, hist_name, axis_steering, root_hist=True, file_sel=file_sel)
@@ -135,26 +192,6 @@ class ROOTFiles:
                 raw_hist = hist
             else:
                 raw_hist.Add(hist)
-        '''
-        for systematics
-        for variations
-            get combined 'up' histogram, using get_combined_hist(file_key_list, hist_name, systematic)
-            get |delta| from nominal histogram
-        get root square root mean sum
-        output np.array symmetric (1,n) or asymmetric (2,n) 
-        
-        if systematic_dict:
-            for systematic in systematic_dict.keys():
-                # temp np.array
-                for variation in systematic_dict[systematic]:
-                    hist_postfix = systematic+"_"+variation
-                    # get systematic histogram
-                    # self.file_dir+"/SYS__/" or self.file_dir+"/object__/"
-                    hist = self.get_combined_hist(file_key_list, hist_name, axis_steering,
-                                                  root_hist, norm, binwnorm)
-                    # get |delta|
-        '''
-
         if norm:
             integral = raw_hist.Integral()
             raw_hist.Scale(1./integral)
@@ -208,19 +245,26 @@ class ROOTFiles:
             sample_type = "data"
         if file_name == "all":
             file_name = [*self.input_files[file_sel][sample_type][hist_label].keys()][0]  # use one of samples
-        file_path = self.file_dir+"/"+self.input_files[file_sel][sample_type][hist_label][file_name]
+        file_postfix = "/"
+        if file_sel != "":
+            file_postfix = "/"+file_sel.split(":")[0]+"/"
+        file_path = self.file_dir+file_postfix+self.input_files[file_sel][sample_type][hist_label][file_name]
         return file_path
 
-    def set_input_files(self, sample_config, data, mc):
+    def set_input_files(self, sample_config, *args):
         self.input_files[""] = dict()
-        self.input_files[""]["data"] = dict()
-        self.input_files[""]["mc"] = dict()
 
         if sample_config:
-            with open(self.file_dir + "/" + sample_config, 'r') as config_file:
+            with open(self.file_dir+"/"+sample_config, 'r') as config_file:
                 config_json = json.load(config_file)
                 self.input_files[""]["data"] = config_json["data"]
                 self.input_files[""]["mc"] = config_json["mc"]
+            for arg in args:
+                with open(self.file_dir + "/" + sample_config, 'r') as config_file:
+                    config_json = json.load(config_file)
+                    self.input_files[arg] = dict()
+                    self.input_files[arg]["data"] = config_json["data"]
+                    self.input_files[arg]["mc"] = config_json["mc"]
 
     def print_files(self):
         print(self.input_files)

@@ -64,14 +64,18 @@ class Plotter:
                 bottom += values/width
         adjust_x_lim(axis, stack.bins)
 
-    def draw_error_boxes(self, hist, row=0, col=0, set_y_ones=False, **kwargs):
+    def draw_error_boxes(self, hist, sys_yerror=None, row=0, col=0, set_y_ones=False, **kwargs):
         axis = self.get_axis(row, col)
         center = hist.bins[:-1]+np.diff(hist.bins)/2.
         # down, up error for x axis (bin width)
         xerrs = np.expand_dims(np.diff(hist.bins)/2., axis=0)
         xerrs = np.append(xerrs, xerrs, axis=0)
         # down, up error for y axis
-        yerrs = np.expand_dims(hist.errors, axis=0)
+
+        yerror = hist.errors
+        if sys_yerror is not None:
+            yerror = sys_yerror  # TODO squared root sum
+        yerrs = np.expand_dims(yerror, axis=0)  # stat error saved in raw histogram
         yerrs = np.append(yerrs, yerrs, axis=0)
 
         if set_y_ones:

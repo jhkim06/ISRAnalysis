@@ -4,6 +4,8 @@ import numpy as np
 import re
 from collections import namedtuple
 
+Hist = namedtuple('Hist', ['values', 'bins', 'errors'])
+
 
 def root_to_numpy(hist):
     values = []
@@ -22,7 +24,6 @@ def root_to_numpy(hist):
     bins = np.array(bins)
     errors = np.array(error)
 
-    Hist = namedtuple('Hist', ['values', 'bins', 'errors'])
     h = Hist(values, bins, errors)
     return h
 
