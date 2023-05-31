@@ -55,8 +55,8 @@ def get_raw_hist(file_path, hist_path, axis_steering="", norm=False):
     # option for TUnfoldBinning
     if axis_steering != "":
         # make function to get TUnfoldBinning
-        directory = hist_path.split("/")[0]
-        hist_name = hist_path.split("/")[1]  # assuming no sub-directory
+        directory = "/".join(hist_path.split("/")[:-1])
+        hist_name = hist_path.split("/")[-1]  # assuming hists in the last sub-directory
         # get bin definition from file using hist name
         matches = re.findall(r'(\[[^\]]*\])', hist_name)
         bin_name = "[tunfold-bin]_" + "_".join(matches[1:])
@@ -66,11 +66,9 @@ def get_raw_hist(file_path, hist_path, axis_steering="", norm=False):
         original_axis_binning = True
         hist = unfold_bin.ExtractHistogram(hist_name + "_extracted_" + axis_steering,
                                            hist, 0, original_axis_binning, axis_steering)
-
     if norm:
         integral = hist.Integral()
         hist.Scale(1./integral)
-
     file.Close()
     return hist
 
@@ -94,17 +92,6 @@ def get_summary_statistics(hist, stat_type="mean", prob=0.5):
     else:
         return None
     return Stat(value, error)
-
-
-def attach_hprefix_to_hist_name(file_name, hist_path):
-    file_name_parsing = file_name.split(":")
-    if len(file_name_parsing) == 2:  # hprefix set in config file
-        directory = hist_path.split("/")[0]
-        hist_name = hist_path.split("/")[1]
-        hist_path = directory + "/" + file_name_parsing[1] + hist_name
-        return hist_path
-    else:
-        return hist_path
 
 
 def get_raw_labels(file_path, hist_name):

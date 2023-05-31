@@ -35,29 +35,48 @@ class ROOTFiles:
         stack = Stack(values_list, bins, errors_list)
         return stack
 
+    def get_file_directory(self, file_sel):
+        file_postfix = "/"
+        if file_sel != "":
+            file_postfix = "/"+file_sel.split(":")[0] + "/"
+        return self.file_dir+file_postfix
+
+    def get_hist_path(self, file_name, hist_name, file_sel=""):
+        file_name_parsing = file_name.split(":")
+        full_hist_dir = self.hist_dir
+        if file_sel != "":
+            full_hist_dir = self.hist_dir + file_sel.split(":")[1] + "/"
+
+        if len(file_name_parsing) == 2:  # hprefix set in config file
+            hist_path = full_hist_dir + file_name_parsing[1] + hist_name  # ex) tau_
+            return hist_path
+        else:
+            hist_path = full_hist_dir + hist_name
+            return hist_path
+
     # get values, bin, error as numpy array
     def get_hist(self, file_key, hist_name, axis_steering="", root_hist=False,
                  norm=False, binwnorm=False, file_sel=""):
         sample_type, hist_label, file_name = file_key.split("/")
-        file_postfix = "/"
-        if file_sel != "":
-            file_postfix = "/"+file_sel.split(":")[0] + "/"
-        hist_path = self.hist_dir+hist_name
         raw_hist = None
 
-        if file_name == "all":  # sum all histograms
-            for index, file in enumerate(self.input_files[file_sel][sample_type][hist_label]):
-                file_path = self.file_dir+file_postfix+self.input_files[file_sel][sample_type][hist_label][file]
-                hist_path = attach_hprefix_to_hist_name(file, hist_path)
-
-                if index == 0:
-                    raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
-                else:
-                    raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering))
+        if sample_type == "data:bkg_subtracted":
+            raw_hist = self.get_bkg_subtracted_data_hist(hist_name, axis_steering, root_hist=True,
+                                                         file_sel=file_sel)
         else:
-            hist_path = attach_hprefix_to_hist_name(file_name, hist_path)
-            file_path = self.file_dir+file_postfix+self.input_files[file_sel][sample_type][hist_label][file_name]
-            raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
+            if file_name == "all":  # sum all histograms
+                for index, file in enumerate(self.input_files[file_sel][sample_type][hist_label]):
+                    file_path = self.get_file_directory(file_sel)+self.input_files[file_sel][sample_type][hist_label][file]
+                    hist_path = self.get_hist_path(file, hist_name, file_sel)
+                    if index == 0:
+                        raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
+                    else:
+                        raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering))
+            else:
+                hist_path = self.get_hist_path(file_name, hist_name, file_sel)
+                file_path = self.get_file_directory(file_sel)+self.input_files[file_sel][sample_type][hist_label][file_name]
+                raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
+
         if norm:
             integral = raw_hist.Integral()
             raw_hist.Scale(1./integral)
@@ -68,6 +87,48 @@ class ROOTFiles:
             return raw_hist
         else:
             return root_to_numpy(raw_hist)
+
+    def get_combined_hist(self, file_key_list, hist_name, axis_steering="", root_hist=False,
+                          norm=False, binwnorm=False, file_sel=""):
+        raw_hist = None
+        for index, file_key in enumerate(file_key_list):
+            hist = self.get_hist(file_key, hist_name, axis_steering, root_hist=True, file_sel=file_sel)
+            if index == 0:
+                raw_hist = hist
+            else:
+                raw_hist.Add(hist)
+        if norm:
+            integral = raw_hist.Integral()
+            raw_hist.Scale(1./integral)
+        if binwnorm:
+            raw_hist.Scale(1., "width")
+
+        if root_hist:
+            return raw_hist
+        else:
+            return root_to_numpy(raw_hist)
+
+    def get_bkg_subtracted_data_hist(self, hist_name, axis_steering="", root_hist=False,
+                                     norm=False, binwnorm=False, file_sel=""):
+        data_hist = self.get_hist("data/"+self.data_period+"/all", hist_name, axis_steering, root_hist=True,
+                                  file_sel=file_sel)
+        # make file_key_list to background mc
+        bkg_key_list = ["mc/"+bkg_key+"/all" for bkg_key in self.input_files[""]["mc"].keys()
+                        if "background" in bkg_key]
+        bkg_hist = self.get_combined_hist(bkg_key_list, hist_name, axis_steering, root_hist=True,
+                                          file_sel=file_sel)
+        bkg_subtracted_data_hist = data_hist.Clone("data_bkg_subtracted")
+        bkg_subtracted_data_hist.Add(bkg_hist, -1)
+        if norm:
+            integral = bkg_subtracted_data_hist.Integral()
+            bkg_subtracted_data_hist.Scale(1./integral)
+        if binwnorm:
+            bkg_subtracted_data_hist.Scale(1., "width")
+
+        if root_hist:
+            return bkg_subtracted_data_hist
+        else:
+            return root_to_numpy(bkg_subtracted_data_hist)
 
     def get_hist_systematic_bands(self, systematic_dict, file_key, hist_name, axis_steering="",
                                   norm=False, binwnorm=False, file_sel=""):
@@ -151,55 +212,6 @@ class ROOTFiles:
         else:
             return root_to_numpy(ratio)
 
-    def get_bkg_subtracted_data_hist(self, hist_name, axis_steering="", root_hist=False,
-                                     norm=False, binwnorm=False, file_sel=""):
-        data_hist = self.get_hist("data/"+self.data_period+"/all", hist_name, axis_steering, root_hist=True,
-                                  file_sel=file_sel)
-        bkg_hist = None
-        is_first_bkg = True
-        for hist_label in self.input_files[file_sel]["mc"]:
-            if "background" in hist_label:
-                if is_first_bkg:
-                    bkg_hist = self.get_hist("mc/"+hist_label+"/all", hist_name, axis_steering, root_hist=True,
-                                             file_sel=file_sel)
-                    is_first_bkg = False
-                else:
-                    bkg_hist.Add(self.get_hist("mc/"+hist_label+"/all", hist_name, axis_steering, root_hist=True,
-                                               file_sel=file_sel))
-
-        bkg_subtracted_data_hist = data_hist.Clone("data_bkg_subtracted")
-        bkg_subtracted_data_hist.Add(bkg_hist, -1)
-        if norm:
-            integral = bkg_subtracted_data_hist.Integral()
-            bkg_subtracted_data_hist.Scale(1./integral)
-        if binwnorm:
-            raw_hist.Scale(1., "width")
-
-        if root_hist:
-            return bkg_subtracted_data_hist
-        else:
-            return root_to_numpy(bkg_subtracted_data_hist)
-
-    def get_combined_hist(self, file_key_list, hist_name, axis_steering="", root_hist=False,
-                          norm=False, binwnorm=False, file_sel=""):
-        raw_hist = None
-        for index, file_key in enumerate(file_key_list):
-            hist = self.get_hist(file_key, hist_name, axis_steering, root_hist=True, file_sel=file_sel)
-            if index == 0:
-                raw_hist = hist
-            else:
-                raw_hist.Add(hist)
-        if norm:
-            integral = raw_hist.Integral()
-            raw_hist.Scale(1./integral)
-        if binwnorm:
-            raw_hist.Scale(1., "width")
-
-        if root_hist:
-            return raw_hist
-        else:
-            return root_to_numpy(raw_hist)
-
     # get ISR mean DataFrame from 2D pt-mass histogram
     def get_isr_dataframe(self, file_key, pt_hist_name, mass_hist_name, file_sel="", stat_type="mean", prob=0.5,
                           pt_steering="dipt[];dimass[UOC]", mass_steering="dimass[UO];dipt[OC0]"):
@@ -242,10 +254,7 @@ class ROOTFiles:
             sample_type = "data"
         if file_name == "all":
             file_name = [*self.input_files[file_sel][sample_type][hist_label].keys()][0]  # use one of samples
-        file_postfix = "/"
-        if file_sel != "":
-            file_postfix = "/"+file_sel.split(":")[0]+"/"
-        file_path = self.file_dir+file_postfix+self.input_files[file_sel][sample_type][hist_label][file_name]
+        file_path = self.get_file_directory(file_sel)+self.input_files[file_sel][sample_type][hist_label][file_name]
         return file_path
 
     def set_input_files(self, sample_config, *args):
