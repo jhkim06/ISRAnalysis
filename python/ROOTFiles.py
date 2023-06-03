@@ -11,8 +11,8 @@ from collections import namedtuple
 class ROOTFiles:
 
     def __init__(self, path, channel, period, *args, sample_config="sample_config.json"):
-        self.file_dir = path+channel+"/"+period
-        self.hist_dir = channel+period+"/"  # TODO case with additional sub directory?
+        self.file_dir = path + channel + "/" + period
+        self.hist_dir = channel + period + "/"  # TODO case with additional sub directory?
         self.input_files = dict()
         self.set_input_files(sample_config, *args)
         self.data_period = period
@@ -38,15 +38,14 @@ class ROOTFiles:
     def get_file_directory(self, file_sel):
         file_postfix = "/"
         if file_sel != "":
-            file_postfix = "/"+file_sel.split(":")[0] + "/"
-        return self.file_dir+file_postfix
+            file_postfix = "/" + file_sel.split(":")[0] + "/"
+        return self.file_dir + file_postfix
 
     def get_hist_path(self, file_name, hist_name, file_sel=""):
         file_name_parsing = file_name.split(":")
         full_hist_dir = self.hist_dir
         if file_sel != "":
             full_hist_dir = self.hist_dir + file_sel.split(":")[1] + "/"
-
         if len(file_name_parsing) == 2:  # hprefix set in config file
             hist_path = full_hist_dir + file_name_parsing[1] + hist_name  # ex) tau_
             return hist_path
@@ -66,7 +65,8 @@ class ROOTFiles:
         else:
             if file_name == "all":  # sum all histograms
                 for index, file in enumerate(self.input_files[file_sel][sample_type][hist_label]):
-                    file_path = self.get_file_directory(file_sel)+self.input_files[file_sel][sample_type][hist_label][file]
+                    file_path = self.get_file_directory(file_sel) + \
+                                self.input_files[file_sel][sample_type][hist_label][file]
                     hist_path = self.get_hist_path(file, hist_name, file_sel)
                     if index == 0:
                         raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
@@ -74,12 +74,13 @@ class ROOTFiles:
                         raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering))
             else:
                 hist_path = self.get_hist_path(file_name, hist_name, file_sel)
-                file_path = self.get_file_directory(file_sel)+self.input_files[file_sel][sample_type][hist_label][file_name]
+                file_path = self.get_file_directory(file_sel) + \
+                            self.input_files[file_sel][sample_type][hist_label][file_name]
                 raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
 
         if norm:
             integral = raw_hist.Integral()
-            raw_hist.Scale(1./integral)
+            raw_hist.Scale(1. / integral)
         if binwnorm:
             raw_hist.Scale(1., "width")
 
@@ -99,7 +100,7 @@ class ROOTFiles:
                 raw_hist.Add(hist)
         if norm:
             integral = raw_hist.Integral()
-            raw_hist.Scale(1./integral)
+            raw_hist.Scale(1. / integral)
         if binwnorm:
             raw_hist.Scale(1., "width")
 
@@ -110,10 +111,10 @@ class ROOTFiles:
 
     def get_bkg_subtracted_data_hist(self, hist_name, axis_steering="", root_hist=False,
                                      norm=False, binwnorm=False, file_sel=""):
-        data_hist = self.get_hist("data/"+self.data_period+"/all", hist_name, axis_steering, root_hist=True,
+        data_hist = self.get_hist("data/" + self.data_period + "/all", hist_name, axis_steering, root_hist=True,
                                   file_sel=file_sel)
         # make file_key_list to background mc
-        bkg_key_list = ["mc/"+bkg_key+"/all" for bkg_key in self.input_files[""]["mc"].keys()
+        bkg_key_list = ["mc/" + bkg_key + "/all" for bkg_key in self.input_files[""]["mc"].keys()
                         if "background" in bkg_key]
         bkg_hist = self.get_combined_hist(bkg_key_list, hist_name, axis_steering, root_hist=True,
                                           file_sel=file_sel)
@@ -121,7 +122,7 @@ class ROOTFiles:
         bkg_subtracted_data_hist.Add(bkg_hist, -1)
         if norm:
             integral = bkg_subtracted_data_hist.Integral()
-            bkg_subtracted_data_hist.Scale(1./integral)
+            bkg_subtracted_data_hist.Scale(1. / integral)
         if binwnorm:
             bkg_subtracted_data_hist.Scale(1., "width")
 
@@ -141,8 +142,8 @@ class ROOTFiles:
             for variation in systematic_dict[systematic]:
                 variation_postfix = ""
                 if variation != "":
-                    variation_postfix += "_"+variation
-                full_hist_name = hist_name+"_"+systematic+variation_postfix
+                    variation_postfix += "_" + variation
+                full_hist_name = hist_name + "_" + systematic + variation_postfix
                 systematic_hist = self.get_hist(file_key, full_hist_name, axis_steering, root_hist=True, norm=norm,
                                                 binwnorm=binwnorm, file_sel=file_sel)
                 systematic_hist.Add(nominal_hist, -1)
@@ -163,8 +164,8 @@ class ROOTFiles:
             for variation in systematic_dict[systematic]:
                 variation_postfix = ""
                 if variation != "":
-                    variation_postfix += "_"+variation
-                full_hist_name = hist_name+"_"+systematic+variation_postfix
+                    variation_postfix += "_" + variation
+                full_hist_name = hist_name + "_" + systematic + variation_postfix
                 systematic_hist = self.get_combined_hist(file_key_list, full_hist_name, axis_steering=axis_steering,
                                                          root_hist=True,
                                                          norm=norm, binwnorm=binwnorm, file_sel=file_sel)
@@ -179,12 +180,15 @@ class ROOTFiles:
                         norm=False, binwnorm=False, file_sel="", systematic_dict=None):
         hist = self.get_combined_hist(file_key_list, hist_name, axis_steering, root_hist,
                                       norm, binwnorm)
-        sys_error = self.get_combined_hist_systematic_bands(systematic_dict, file_key_list, hist_name, axis_steering,
-                                           norm, binwnorm, file_sel)
+        sys_error = None
+        if systematic_dict is not None:
+            sys_error = self.get_combined_hist_systematic_bands(systematic_dict, file_key_list, hist_name, axis_steering,
+                                                                norm, binwnorm, file_sel)
+            sys_error = np.nan_to_num(sys_error / hist.values)
 
-        ones = np.nan_to_num(hist.values/hist.values)
-        stat_error = np.nan_to_num(hist.errors/hist.values)
-        return Hist(ones, hist.bins, stat_error), np.nan_to_num(sys_error/hist.values)
+        ones = np.nan_to_num(hist.values / hist.values)
+        stat_error = np.nan_to_num(hist.errors / hist.values)
+        return Hist(ones, hist.bins, stat_error), sys_error
 
     # TODO how to handle systematic error for division
     # currently considered statistical error assuming uncorrelated histograms
@@ -221,19 +225,17 @@ class ROOTFiles:
 
         mass_hist = self.get_hist(file_key, mass_hist_name, axis_steering=mass_steering, root_hist=True,
                                   file_sel=file_sel)
-
         dict_list = []
         matches = re.findall(r'\[([^\]]*)\]', pt_steering)
         for index, edge in enumerate(edge_list):
-            if index < len(edge_list)-1:
-                pt_steering = "dipt["+matches[0]+"];dimass["+matches[1]+f"{index}]"
-
+            if index < len(edge_list) - 1:
+                pt_steering = "dipt[" + matches[0] + "];dimass[" + matches[1] + f"{index}]"
                 pt_hist = self.get_hist(file_key, pt_hist_name, axis_steering=pt_steering, root_hist=True,
                                         file_sel=file_sel)
                 mass_hist.GetXaxis().SetRangeUser(edge, edge_list[index + 1])
 
                 stat = get_summary_statistics(pt_hist, stat_type, prob)
-                temp_dict = {"mass_window": str(edge)+":"+str(edge_list[index + 1]),
+                temp_dict = {"mass_window": str(edge) + ":" + str(edge_list[index + 1]),
                              "pt": stat.value, "pt_stat_error": stat.error,
                              "mass": mass_hist.GetMean(), "mass_stat_error": mass_hist.GetMeanError()}
                 dict_list.append(temp_dict)
@@ -243,7 +245,7 @@ class ROOTFiles:
                                                 'mass', 'mass_stat_error'])
 
     def get_raw_labels(self, file_key, hist_name):
-        hist_path = self.hist_dir+hist_name
+        hist_path = self.hist_dir + hist_name
         file_path = self.get_file_path(file_key)
 
         return get_raw_labels(file_path, hist_path)
@@ -254,14 +256,14 @@ class ROOTFiles:
             sample_type = "data"
         if file_name == "all":
             file_name = [*self.input_files[file_sel][sample_type][hist_label].keys()][0]  # use one of samples
-        file_path = self.get_file_directory(file_sel)+self.input_files[file_sel][sample_type][hist_label][file_name]
+        file_path = self.get_file_directory(file_sel) + self.input_files[file_sel][sample_type][hist_label][file_name]
         return file_path
 
     def set_input_files(self, sample_config, *args):
         self.input_files[""] = dict()
 
         if sample_config:
-            with open(self.file_dir+"/"+sample_config, 'r') as config_file:
+            with open(self.file_dir + "/" + sample_config, 'r') as config_file:
                 config_json = json.load(config_file)
                 self.input_files[""]["data"] = config_json["data"]
                 self.input_files[""]["mc"] = config_json["mc"]

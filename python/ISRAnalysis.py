@@ -8,22 +8,22 @@ import pandas as pd
 current_dir = os.getcwd()
 rt.gSystem.Load(current_dir + "/lib/libisrunfold.so")
 
-class HistType :
 
+class HistType :
     unf_input_hist = 0
     unf_bkg_hist = 1
     unf_res_matrix = 2
 
+
 class ISRAnalysis:
-    
     def __init__(self, 
-                 unfold_name_ = "Detector", 
-                 year_ = "2016", 
-                 channel_= "ee", 
-                 channel_postfix_ = "", 
-                 matrix_filekey_ = "DY",
-                 bin_def_ = "", 
-                 var_ = "Pt", 
+                 unfold_name_="Detector",
+                 year_="2016",
+                 channel_="ee",
+                 channel_postfix_="",
+                 matrix_filekey_="DY",
+                 bin_def_="",
+                 var_="Pt",
                  regMode_ = 0, 
                  bias_ = 0., 
                  density_ = 0):
@@ -42,8 +42,8 @@ class ISRAnalysis:
         self.var = var_
         self.n_mass_bins = None
         
-        self.out_dir_path     = current_dir+"/output/UltraLegacy/" +self.channel+"/"+self.year+"/"
-        self.in_hist_path_txt = current_dir+"/inFiles/UltraLegacy/" +self.year+"/"+self.channel+"/fhist.txt"
+        self.out_dir_path = current_dir+"/output/UltraLegacy/"+self.channel+"/"+self.year+"/"
+        self.in_hist_path_txt = current_dir+"/inFiles/UltraLegacy/"+self.year+"/"+self.channel+"/fhist.txt"
 
         if channel_postfix_ != "" :
             self.in_hist_path_txt = current_dir+"/inFiles/UltraLegacy/"+self.year+"/"+self.channel+"_"+channel_postfix_+"/fhist.txt"

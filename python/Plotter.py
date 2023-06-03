@@ -67,7 +67,7 @@ class Plotter:
     def draw_error_boxes(self, hist, sys_yerror=None, row=0, col=0, set_y_ones=False, **kwargs):
         axis = self.get_axis(row, col)
         center = hist.bins[:-1]+np.diff(hist.bins)/2.
-        # down, up error for x axis (bin width)
+        # down, up error for x-axis (bin width)
         xerrs = np.expand_dims(np.diff(hist.bins)/2., axis=0)
         xerrs = np.append(xerrs, xerrs, axis=0)
         # down, up error for y axis
