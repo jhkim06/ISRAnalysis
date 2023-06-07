@@ -199,7 +199,7 @@ class ISRAnalysis:
 
         self.unfold.doISRUnfold(partialReg)
 
-    def doAcceptance(self, isFSR = False) :
+    def doAcceptance(self, isFSR = False):
 
         if isFSR :
             self.unfold.doAcceptCorr(self.input_root_file["nominal"]['hist_accept_fullPhase'], self.dir_path)
@@ -207,7 +207,7 @@ class ISRAnalysis:
         else : 
             self.unfold.doAcceptCorr(self.input_root_file["nominal"]['DY'], self.dir_path)
 
-    def combineOutFiles(self, prefix = "") :
+    def combineOutFiles(self, prefix=""):
 
         pt_output_path = self.out_dir_path + self.unfold_name + "_" + self.channel + "_" + self.year + "_Pt.root" 
         mass_output_path = self.out_dir_path + self.unfold_name + "_" + self.channel + "_" + self.year + "_Mass.root" 
@@ -216,6 +216,6 @@ class ISRAnalysis:
             target_file_path = self.out_dir_path + self.unfold_name + "_" + self.channel + "_" + self.year + "_" + prefix + ".root"
         os.system('hadd -f ' + target_file_path + " " + pt_output_path + " " + mass_output_path)
 
-    def closeOutFiles(self) :
+    def closeOutFiles(self):
 
         self.unfold.closeOutFile()
