@@ -31,8 +31,8 @@ def root_to_numpy(hist):
 def get_mass_window_edges(file_path, hist_path):
     file = rt.TFile.Open(file_path)
     # make function to get TUnfoldBinning
-    directory = hist_path.split("/")[0]
-    hist_name = hist_path.split("/")[1]  # assuming no sub-directory
+    directory = "/".join(hist_path.split("/")[:-1])
+    hist_name = hist_path.split("/")[-1]   # assuming hists in the last sub-directory
     # get bin definition from file using hist name
     matches = re.findall(r'(\[[^\]]*\])', hist_name)
     bin_name = "[tunfold-bin]_" + "_".join(matches[1:])

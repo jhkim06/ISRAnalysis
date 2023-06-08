@@ -10,11 +10,12 @@ from collections import namedtuple
 # ROOT histogram to numpy, pandas etc
 class ROOTFiles:
 
-    def __init__(self, path, channel, period, *args, sample_config="sample_config.json"):
-        self.file_dir = path + channel + "/" + period
+    def __init__(self, path, channel, period, *args, sample_config="ee_sample_config.json"):
+        self.file_dir = {"data": path + "data/" + channel + "/" + period,
+                         "mc": path + "mc/" + period}
         self.hist_dir = channel + period + "/"  # TODO case with additional sub directory?
         self.input_files = dict()
-        self.set_input_files(sample_config, *args)
+        self.set_input_files(path, sample_config, *args)
         self.data_period = period
         if period == "2016a":
             self.data_period = "2016prePFV"
@@ -35,11 +36,11 @@ class ROOTFiles:
         stack = Stack(values_list, bins, errors_list)
         return stack
 
-    def get_file_directory(self, file_sel):
+    def get_file_directory(self, sample_type, file_sel):
         file_postfix = "/"
         if file_sel != "":
             file_postfix = "/" + file_sel.split(":")[0] + "/"
-        return self.file_dir + file_postfix
+        return self.file_dir[sample_type] + file_postfix
 
     def get_hist_path(self, file_name, hist_name, file_sel=""):
         file_name_parsing = file_name.split(":")
@@ -65,7 +66,7 @@ class ROOTFiles:
         else:
             if file_name == "all":  # sum all histograms
                 for index, file in enumerate(self.input_files[file_sel][sample_type][hist_label]):
-                    file_path = self.get_file_directory(file_sel) + \
+                    file_path = self.get_file_directory(sample_type, file_sel) + \
                                 self.input_files[file_sel][sample_type][hist_label][file]
                     hist_path = self.get_hist_path(file, hist_name, file_sel)
                     if index == 0:
@@ -74,7 +75,7 @@ class ROOTFiles:
                         raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering))
             else:
                 hist_path = self.get_hist_path(file_name, hist_name, file_sel)
-                file_path = self.get_file_directory(file_sel) + \
+                file_path = self.get_file_directory(sample_type, file_sel) + \
                             self.input_files[file_sel][sample_type][hist_label][file_name]
                 raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
 
@@ -220,7 +221,13 @@ class ROOTFiles:
     def get_isr_dataframe(self, file_key, pt_hist_name, mass_hist_name, file_sel="", stat_type="mean", prob=0.5,
                           pt_steering="dipt[];dimass[UOC]", mass_steering="dimass[UO];dipt[OC0]"):
         file_path = self.get_file_path(file_key, file_sel=file_sel)
-        pt_hist_path = self.hist_dir + pt_hist_name
+        # pt_hist_path = self.hist_dir + pt_hist_name
+        sample_type, hist_label, file_name = file_key.split("/")
+        if "data:bkg_subtracted" == sample_type:
+            sample_type = "data"
+        if file_name == "all":
+            file_name = [*self.input_files[file_sel][sample_type][hist_label].keys()][0]  # use one of samples
+        pt_hist_path = self.get_hist_path(file_name, pt_hist_name, file_sel)
         edge_list = get_mass_window_edges(file_path, pt_hist_path)
 
         mass_hist = self.get_hist(file_key, mass_hist_name, axis_steering=mass_steering, root_hist=True,
@@ -256,19 +263,19 @@ class ROOTFiles:
             sample_type = "data"
         if file_name == "all":
             file_name = [*self.input_files[file_sel][sample_type][hist_label].keys()][0]  # use one of samples
-        file_path = self.get_file_directory(file_sel) + self.input_files[file_sel][sample_type][hist_label][file_name]
+        file_path = self.get_file_directory(sample_type, file_sel) + self.input_files[file_sel][sample_type][hist_label][file_name]
         return file_path
 
-    def set_input_files(self, sample_config, *args):
+    def set_input_files(self, path, sample_config, *args):
         self.input_files[""] = dict()
 
         if sample_config:
-            with open(self.file_dir + "/" + sample_config, 'r') as config_file:
+            with open(path + sample_config, 'r') as config_file:
                 config_json = json.load(config_file)
                 self.input_files[""]["data"] = config_json["data"]
                 self.input_files[""]["mc"] = config_json["mc"]
             for arg in args:
-                with open(self.file_dir + "/" + sample_config, 'r') as config_file:
+                with open(path + sample_config, 'r') as config_file:
                     config_json = json.load(config_file)
                     self.input_files[arg] = dict()
                     self.input_files[arg]["data"] = config_json["data"]
