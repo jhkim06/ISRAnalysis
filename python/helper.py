@@ -35,7 +35,9 @@ def get_mass_window_edges(file_path, hist_path):
     hist_name = hist_path.split("/")[-1]   # assuming hists in the last sub-directory
     # get bin definition from file using hist name
     matches = re.findall(r'(\[[^\]]*\])', hist_name)
-    bin_name = "[tunfold-bin]_" + "_".join(matches[1:])
+    bin_name = "[tunfold-bin]_" + re.sub(r'(\([^\]]*\))', '', matches[1]) + "_" + "_".join(matches[2:])
+    print(bin_name)
+    #bin_name = "[tunfold-bin]_" + "_".join(matches[2:])
     bin_path = directory + "/" + bin_name
     unfold_bin = file.Get(bin_path)
 
@@ -47,7 +49,7 @@ def get_mass_window_edges(file_path, hist_path):
     return edge_list
 
 
-def get_raw_hist(file_path, hist_path, axis_steering="", norm=False):
+def get_raw_hist(file_path, hist_path, axis_steering="", use_axis_bin=True, norm=False):
     rt.TH1.AddDirectory(False)
     file = rt.TFile.Open(file_path)
     hist = file.Get(hist_path)
@@ -59,13 +61,13 @@ def get_raw_hist(file_path, hist_path, axis_steering="", norm=False):
         hist_name = hist_path.split("/")[-1]  # assuming hists in the last sub-directory
         # get bin definition from file using hist name
         matches = re.findall(r'(\[[^\]]*\])', hist_name)
-        bin_name = "[tunfold-bin]_" + "_".join(matches[1:])
+        # bin_name = "[tunfold-bin]_" + "_".join(matches[1:])
+        bin_name = "[tunfold-bin]_" + re.sub(r'(\([^\]]*\))', '', matches[1]) + "_" + "_".join(matches[2:])
         bin_path = directory + "/" + bin_name
         unfold_bin = file.Get(bin_path)
 
-        original_axis_binning = True
         hist = unfold_bin.ExtractHistogram(hist_name + "_extracted_" + axis_steering,
-                                           hist, 0, original_axis_binning, axis_steering)
+                                           hist, 0, use_axis_bin, axis_steering)
     if norm:
         integral = hist.Integral()
         hist.Scale(1./integral)
@@ -73,7 +75,7 @@ def get_raw_hist(file_path, hist_path, axis_steering="", norm=False):
     return hist
 
 
-def get_summary_statistics(hist, stat_type="mean", prob=0.5):
+def get_summary_statistics(hist, stat_type="mean", prob=0.6):
     Stat = namedtuple('stat', ['value', 'error'])
 
     if stat_type == "mean":

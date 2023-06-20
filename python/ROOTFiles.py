@@ -10,17 +10,13 @@ from collections import namedtuple
 # ROOT histogram to numpy, pandas etc
 class ROOTFiles:
 
-    def __init__(self, path, channel, period, *args, sample_config="ee_sample_config.json"):
+    def __init__(self, path, channel, period, *args, sample_config="sample_config.json"):
         self.file_dir = {"data": path + "data/" + channel + "/" + period,
                          "mc": path + "mc/" + period}
-        self.hist_dir = channel + period + "/"  # TODO case with additional sub directory?
+        self.hist_dir = channel + period + "/"
         self.input_files = dict()
-        self.set_input_files(path, sample_config, *args)
+        self.set_input_files(path, channel+"_"+sample_config, *args)
         self.data_period = period
-        if period == "2016a":
-            self.data_period = "2016prePFV"
-        if period == "2016b":
-            self.data_period = "2016postPFV"
 
     def make_stack_list(self, file_key_list, hist_name, axis_steering="", file_sel=""):
         values_list: list[ndarray] = []
@@ -180,7 +176,7 @@ class ROOTFiles:
     def get_scaled_hist(self, file_key_list, hist_name, axis_steering="", root_hist=False,
                         norm=False, binwnorm=False, file_sel="", systematic_dict=None):
         hist = self.get_combined_hist(file_key_list, hist_name, axis_steering, root_hist,
-                                      norm, binwnorm)
+                                      norm, binwnorm, file_sel=file_sel)
         sys_error = None
         if systematic_dict is not None:
             sys_error = self.get_combined_hist_systematic_bands(systematic_dict, file_key_list, hist_name, axis_steering,
@@ -211,6 +207,31 @@ class ROOTFiles:
                                                           norm=norm, binwnorm=binwnorm, file_sel=file_sel2)
         ratio = combined_nominator.Clone("ratio")
         ratio.Divide(combined_denominator)
+
+        if root_hist:
+            return ratio
+        else:
+            return root_to_numpy(ratio)
+
+    def get_ratio_hist2(self, file_key_list, hist_name, axis_steering="", nominator=None,
+                        denominator=None, root_hist=False, norm=False, binwnorm=False, file_sel=""):
+        if nominator is None and denominator is None:
+            return
+        if nominator is not None and denominator is not None:
+            return
+
+        if nominator is None:
+            nominator = self.get_combined_hist(file_key_list, hist_name,
+                                               axis_steering, root_hist=True, norm=norm,
+                                               binwnorm=binwnorm, file_sel=file_sel)
+            ratio = nominator.Clone("ratio")
+
+        else:
+            ratio = nominator.Clone("ratio")
+            denominator = self.get_combined_hist(file_key_list, hist_name,
+                                                 axis_steering, root_hist=True, norm=norm,
+                                                 binwnorm=binwnorm, file_sel=file_sel)
+        ratio.Divide(denominator)
 
         if root_hist:
             return ratio
