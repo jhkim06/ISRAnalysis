@@ -21,7 +21,7 @@ class Plotter:
     def __init__(self, rows, cols, **kwargs):
         plt.ioff()
         hep.style.use("CMS")
-        plt.rcParams['axes.linewidth'] = 1
+        plt.rcParams['axes.linewidth'] = 2
         plt.rcParams['hatch.linewidth'] = 0.1
         self.rows = rows
         self.cols = cols
@@ -110,17 +110,22 @@ class Plotter:
         axis = self.get_axis(row, col)
         x_column_name = "mass"
         y_column_name = "pt"
-        error_name = "stat_error"
+        error_name = "stat error"
+        if "pt_bkg stat" in data_frame:
+            data_frame['unc'] = np.sqrt(data_frame["pt_stat error"] ** 2 \
+                                        + data_frame["pt_bkg stat"] ** 2)
+        else:
+            data_frame['unc'] = np.sqrt(data_frame["pt_stat error"] ** 2)
 
         axis.errorbar(data_frame[x_column_name], data_frame[y_column_name],
                       xerr=data_frame[x_column_name+"_"+error_name],
-                      yerr=data_frame[y_column_name+"_"+error_name],
+                      yerr=data_frame['unc'],
                       **kwargs)
 
     def clear_all_axis(self):
         plt.rcdefaults()
         hep.style.use("CMS")
-        plt.rcParams['axes.linewidth'] = 1
+        plt.rcParams['axes.linewidth'] = 2
         plt.rcParams['hatch.linewidth'] = 0.1
 
         if self.rows == 1 and self.cols == 1:

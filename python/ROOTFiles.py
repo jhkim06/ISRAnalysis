@@ -52,13 +52,13 @@ class ROOTFiles:
 
     # get values, bin, error as numpy array
     def get_hist(self, file_key, hist_name, axis_steering="", root_hist=False,
-                 norm=False, binwnorm=False, file_sel=""):
+                 norm=False, binwnorm=False, file_sel="", stat_variation=0):
         sample_type, hist_label, file_name = file_key.split("/")
         raw_hist = None
 
         if sample_type == "data:bkg_subtracted":
             raw_hist = self.get_bkg_subtracted_data_hist(hist_name, axis_steering, root_hist=True,
-                                                         file_sel=file_sel)
+                                                         file_sel=file_sel, bkg_stat=stat_variation)
         else:
             if file_name == "all":  # sum all histograms
                 for index, file in enumerate(self.input_files[file_sel][sample_type][hist_label]):
@@ -66,14 +66,14 @@ class ROOTFiles:
                                 self.input_files[file_sel][sample_type][hist_label][file]
                     hist_path = self.get_hist_path(file, hist_name, file_sel)
                     if index == 0:
-                        raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
+                        raw_hist = get_raw_hist(file_path, hist_path, axis_steering, stat_variation=stat_variation)
                     else:
-                        raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering))
+                        raw_hist.Add(get_raw_hist(file_path, hist_path, axis_steering, stat_variation=stat_variation))
             else:
                 hist_path = self.get_hist_path(file_name, hist_name, file_sel)
                 file_path = self.get_file_directory(sample_type, file_sel) + \
                             self.input_files[file_sel][sample_type][hist_label][file_name]
-                raw_hist = get_raw_hist(file_path, hist_path, axis_steering)
+                raw_hist = get_raw_hist(file_path, hist_path, axis_steering, stat_variation=stat_variation)
 
         if norm:
             integral = raw_hist.Integral()
@@ -87,10 +87,11 @@ class ROOTFiles:
             return root_to_numpy(raw_hist)
 
     def get_combined_hist(self, file_key_list, hist_name, axis_steering="", root_hist=False,
-                          norm=False, binwnorm=False, file_sel=""):
+                          norm=False, binwnorm=False, file_sel="", stat_variation=0):
         raw_hist = None
         for index, file_key in enumerate(file_key_list):
-            hist = self.get_hist(file_key, hist_name, axis_steering, root_hist=True, file_sel=file_sel)
+            hist = self.get_hist(file_key, hist_name, axis_steering, root_hist=True, file_sel=file_sel,
+                                 stat_variation=stat_variation)
             if index == 0:
                 raw_hist = hist
             else:
@@ -107,14 +108,14 @@ class ROOTFiles:
             return root_to_numpy(raw_hist)
 
     def get_bkg_subtracted_data_hist(self, hist_name, axis_steering="", root_hist=False,
-                                     norm=False, binwnorm=False, file_sel=""):
+                                     norm=False, binwnorm=False, file_sel="", bkg_stat=0):
         data_hist = self.get_hist("data/" + self.data_period + "/all", hist_name, axis_steering, root_hist=True,
                                   file_sel=file_sel)
         # make file_key_list to background mc
         bkg_key_list = ["mc/" + bkg_key + "/all" for bkg_key in self.input_files[""]["mc"].keys()
                         if "background" in bkg_key]
         bkg_hist = self.get_combined_hist(bkg_key_list, hist_name, axis_steering, root_hist=True,
-                                          file_sel=file_sel)
+                                          file_sel=file_sel, stat_variation=bkg_stat)
         bkg_subtracted_data_hist = data_hist.Clone("data_bkg_subtracted")
         bkg_subtracted_data_hist.Add(bkg_hist, -1)
         if norm:
@@ -240,10 +241,12 @@ class ROOTFiles:
 
     # get ISR mean DataFrame from 2D pt-mass histogram
     def get_isr_dataframe(self, file_key, pt_hist_name, mass_hist_name, file_sel="", stat_type="mean", prob=0.5,
-                          pt_steering="dipt[];dimass[UOC]", mass_steering="dimass[UO];dipt[OC0]"):
+                          pt_steering="dipt[];dimass[UOC]", mass_steering="dimass[UO];dipt[OC0]", sys=False):
+
         file_path = self.get_file_path(file_key, file_sel=file_sel)
         # pt_hist_path = self.hist_dir + pt_hist_name
         sample_type, hist_label, file_name = file_key.split("/")
+        # to get the edges of mass window
         if "data:bkg_subtracted" == sample_type:
             sample_type = "data"
         if file_name == "all":
@@ -258,19 +261,40 @@ class ROOTFiles:
         for index, edge in enumerate(edge_list):
             if index < len(edge_list) - 1:
                 pt_steering = "dipt[" + matches[0] + "];dimass[" + matches[1] + f"{index}]"
+                # nominal
                 pt_hist = self.get_hist(file_key, pt_hist_name, axis_steering=pt_steering, root_hist=True,
                                         file_sel=file_sel)
                 mass_hist.GetXaxis().SetRangeUser(edge, edge_list[index + 1])
 
                 stat = get_summary_statistics(pt_hist, stat_type, prob)
                 temp_dict = {"mass_window": str(edge) + ":" + str(edge_list[index + 1]),
-                             "pt": stat.value, "pt_stat_error": stat.error,
-                             "mass": mass_hist.GetMean(), "mass_stat_error": mass_hist.GetMeanError()}
+                             "pt": stat.value, "pt_stat error": stat.error,
+                             "mass": mass_hist.GetMean(), "mass_stat error": mass_hist.GetMeanError()}
+
+                # systematics
+                # function to get systematic (symmetric)
+                # pt_bkg stat_error
+                # pt_eff sf_error
+                if sys:
+                    sys_name_dict = {"pt_bkg stat": [""]}
+                    sys_dict = self.get_isr_sys(stat.value, sys_name_dict, file_key, pt_hist_name, pt_steering, file_sel)
+                    temp_dict.update(sys_dict)
+
                 dict_list.append(temp_dict)
 
-        return pd.DataFrame(dict_list, columns=['mass_window',
-                                                'pt', 'pt_stat_error',
-                                                'mass', 'mass_stat_error'])
+        return pd.DataFrame(dict_list)
+
+    def get_isr_sys(self, nominal, sys_dict, file_key, hist_name, axis_steering, file_sel,
+                    stat_type="mean", prob=0.5):
+        stat_up_hist = self.get_hist(file_key, hist_name, axis_steering=axis_steering, root_hist=True,
+                                     file_sel=file_sel, stat_variation=1)
+        stat_down_hist = self.get_hist(file_key, hist_name, axis_steering=axis_steering, root_hist=True,
+                                       file_sel=file_sel, stat_variation=-1)
+
+        stat_up = get_summary_statistics(stat_up_hist, stat_type, prob).value
+        stat_down = get_summary_statistics(stat_down_hist, stat_type, prob).value
+        sys = abs(nominal - stat_up) if abs(nominal - stat_up) > abs(nominal - stat_down) else abs(nominal - stat_down)
+        return {"pt_bkg stat": sys}
 
     def get_raw_labels(self, file_key, hist_name):
         hist_path = self.hist_dir + hist_name

@@ -20,12 +20,16 @@ class ISRUnFolder:
                      mass_hist_name: {"folded": None, "unfolded": None}}
         # self.axis1_label = self.bins.unfolded.GetDistributionAxisLabel(0)
         # self.axis2_label = self.bins.unfolded.GetDistributionAxisLabel(1)
+        # unfold configuration as dictionary
+        # unfold_config[pt_hist_name] = {}
+        # unfold_config[mass_hist_name] = {}
 
     def create_unfolder(self, var_name, reg_mode, constraint_area, density_mode,
                         file_key="mc/signal:Drell-Yan/all", file_sel=""):
 
         response_matrix_name = self.make_response_matrix_name(var_name)
-        self.response_matrix = self.data_handle.get_hist(file_key, response_matrix_name, root_hist=True, file_sel=file_sel)
+        self.response_matrix = self.data_handle.get_hist(file_key, response_matrix_name, root_hist=True,
+                                                         file_sel=file_sel)
         unfolded_bin = self.get_bin(var_name, "unfolded", file_key, file_sel=file_sel)
         folded_bin = self.get_bin(var_name, "folded", file_key, file_sel=file_sel)
         self.bins[var_name]["folded"] = folded_bin
@@ -35,7 +39,6 @@ class ISRUnFolder:
                                                      constraint_area,
                                                      density_mode,
                                                      unfolded_bin, folded_bin)
-
         # set mass windows
         if "dipt-dimass" in var_name:
             edges = unfolded_bin.GetDistributionBinning(1)
@@ -61,7 +64,6 @@ class ISRUnFolder:
             self.unfolders[var_name].SubtractBackground(signal_fake_hist, "Drell-Yan fake")
 
         mc_hist = self.response_matrix.ProjectionY("projected_reco", 1, -1, "e")
-        print(f"data/mc: {input_hist.Integral()/mc_hist.Integral()}")
 
     def set_unfold_input_external(self, ext_hist, var_name, subtract_signal_fake=False,
                                   signal_file_key="mc/signal:Drell-Yan/all",  file_sel=""):

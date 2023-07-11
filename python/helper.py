@@ -36,7 +36,6 @@ def get_mass_window_edges(file_path, hist_path):
     # get bin definition from file using hist name
     matches = re.findall(r'(\[[^\]]*\])', hist_name)
     bin_name = "[tunfold-bin]_" + re.sub(r'(\([^\]]*\))', '', matches[1]) + "_" + "_".join(matches[2:])
-    print(bin_name)
     #bin_name = "[tunfold-bin]_" + "_".join(matches[2:])
     bin_path = directory + "/" + bin_name
     unfold_bin = file.Get(bin_path)
@@ -49,7 +48,8 @@ def get_mass_window_edges(file_path, hist_path):
     return edge_list
 
 
-def get_raw_hist(file_path, hist_path, axis_steering="", use_axis_bin=True, norm=False):
+def get_raw_hist(file_path, hist_path, axis_steering="", use_axis_bin=True, norm=False,
+                 stat_variation=0):
     rt.TH1.AddDirectory(False)
     file = rt.TFile.Open(file_path)
     hist = file.Get(hist_path)
@@ -68,6 +68,10 @@ def get_raw_hist(file_path, hist_path, axis_steering="", use_axis_bin=True, norm
 
         hist = unfold_bin.ExtractHistogram(hist_name + "_extracted_" + axis_steering,
                                            hist, 0, use_axis_bin, axis_steering)
+    if stat_variation != 0:  # nominal +/- stat
+        nbins = hist.GetNbinsX()
+        for ibin in range(nbins+1):
+            hist.SetBinContent(ibin, hist.GetBinContent(ibin) + stat_variation * hist.GetBinError(ibin))
     if norm:
         integral = hist.Integral()
         hist.Scale(1./integral)
