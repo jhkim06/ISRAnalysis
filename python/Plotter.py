@@ -106,20 +106,14 @@ class Plotter:
         axis.xaxis.set_major_locator(major_ticks)
         axis.xaxis.set_major_formatter(FixedFormatter(labels))
 
-    def draw_isr_data_frame(self, data_frame, row=0, col=0, **kwargs):
+    def draw_isr_data_frame(self, dimass_df, dipt_df, row=0, col=0, **kwargs):
         axis = self.get_axis(row, col)
-        x_column_name = "mass"
-        y_column_name = "pt"
+        stat_type = "mean"
         error_name = "stat error"
-        if "pt_bkg stat" in data_frame:
-            data_frame['unc'] = np.sqrt(data_frame["pt_stat error"] ** 2 \
-                                        + data_frame["pt_bkg stat"] ** 2)
-        else:
-            data_frame['unc'] = np.sqrt(data_frame["pt_stat error"] ** 2)
 
-        axis.errorbar(data_frame[x_column_name], data_frame[y_column_name],
-                      xerr=data_frame[x_column_name+"_"+error_name],
-                      yerr=data_frame['unc'],
+        axis.errorbar(dimass_df[stat_type], dipt_df[stat_type],
+                      xerr=dimass_df[error_name],
+                      yerr=dipt_df[error_name],
                       **kwargs)
 
     def clear_all_axis(self):

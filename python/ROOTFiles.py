@@ -145,8 +145,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
 
         return return_hist(raw_hist, root_hist)
 
-    def get_expectation_hist(self, root_hist=False,
-                             norm=False, mc_stat=0, include_signal_mc=True):
+    def get_expectation_hist(self, root_hist=False, norm=False, mc_stat=0, include_signal_mc=True):
 
         mc_key_list = [mc_key for mc_key in self.mc_key_list
                        if ("background" in mc_key) or ("signal" in mc_key and include_signal_mc)]
@@ -160,16 +159,28 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
     def get_combined_hist(self, file_key_list, root_hist=False,
                           norm=False, stat_variation=0, hist_name_postfix=""):
         raw_hist = None
-        for index, file_key in enumerate(file_key_list):
-            hist = self.get_hist(file_key, root_hist=True,
-                                 stat_variation=stat_variation, hist_name_postfix=hist_name_postfix)
-            if index == 0:
-                raw_hist = hist
+        if len(file_key_list) == 1:
+            sample_type, hist_label, file_name = file_key_list[0].split("/")
+            if "data" in sample_type:
+                if "data:bkg_subtracted" == sample_type:
+                    raw_hist = self.get_data_hist(root_hist=True, stat_variation=stat_variation, subtract_bkg=True)
+                else:
+                    raw_hist = self.get_data_hist(root_hist=True, stat_variation=stat_variation, subtract_bkg=False)
             else:
-                raw_hist.Add(hist)
+                raw_hist = self.get_hist(file_key_list[0], root_hist=True,
+                                         stat_variation=stat_variation)
+        else:
+            for index, file_key in enumerate(file_key_list):
+                hist = self.get_hist(file_key, root_hist=True, stat_variation=stat_variation,
+                                     hist_name_postfix=hist_name_postfix)
+                if index == 0:
+                    raw_hist = hist
+                else:
+                    raw_hist.Add(hist)
 
         return return_hist(raw_hist, root_hist)
 
+    # TODO hist_name_postfix
     def get_bkg_subtracted_data_hist(self, root_hist=False,
                                      norm=False, bkg_stat=0):
         data_hist = self.get_hist("data/" + self.data_period + "/all", root_hist=True)
@@ -230,7 +241,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         # todo error handle
         matches = re.findall(r'\[([^]]*)]', self.hist_name)
         if matches[1] == "dipt-dimass":
-            bin_name = "[tunfold-bin]_" + "[" + matches[1] + "]_" + "[" +  matches[2] + "]"
+            bin_name = "[tunfold-bin]_" + "[" + matches[1] + "]_" + "[" + matches[2] + "]"
         elif matches[1] == 'dimass-dipt':
             var_name = matches[1].split("-")
             var_name.reverse()
@@ -248,10 +259,9 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         return edge_list
 
     # get ISR mean DataFrame from 2D pt-mass histogram
-    def get_isr_dataframe(self, file_key, stat_type="mean", prob=0.5):
+    def get_isr_dataframe(self, file_key_list, stat_type="mean", prob=0.5):
 
         hist_name_matches = re.findall(r'\[([^]]*)]', self.hist_name)
-        var_name = hist_name_matches[1].split("-")[0]
 
         edge_list = self.get_isr_mass_window()
         matches = re.findall(r'\[([^]]*)]', self.axis_steering)
@@ -260,13 +270,13 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         dict_list = []
         for index, edge in enumerate(edge_list):
             if index < len(edge_list) - 1:
+
                 # for dipt update axis steering for each mass window
                 if hist_name_matches[1] == "dipt-dimass":
                     temp_steering = "dipt[" + matches[0] + "];dimass[" + matches[1] + f"{index}]"
                     self.set_axis_steering(temp_steering)
 
-                # nominal
-                temp_hist = self.get_hist(file_key, root_hist=True)
+                temp_hist = self.get_combined_hist(file_key_list, root_hist=True)  # here lets handle systematics
                 self.set_axis_steering(default_axis_steering)
 
                 if hist_name_matches[1] == "dimass-dipt":
@@ -274,7 +284,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
 
                 stat = get_summary_statistics(temp_hist, stat_type, prob)
                 temp_dict = {"mass_window": str(edge) + ":" + str(edge_list[index + 1]),
-                             var_name: stat.value, var_name + "_stat error": stat.error}
+                             stat_type: stat.value, "stat error": stat.error}
                 dict_list.append(temp_dict)
 
         return pd.DataFrame(dict_list)
@@ -282,7 +292,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
     # get separate dataframe
     # def get_isr_dataframe(self):
 
-    def get_isr_sys(self, nominal, sys_dict, file_key, hist_name, stat_type="mean", prob=0.5):
+    def get_isr_sys(self, nominal, file_key, stat_type="mean", prob=0.5):
         stat_up_hist = self.get_hist(file_key, root_hist=True, stat_variation=1)
         stat_down_hist = self.get_hist(file_key, root_hist=True, stat_variation=-1)
 
