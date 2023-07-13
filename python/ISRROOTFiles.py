@@ -53,7 +53,6 @@ class ISRROOTFiles(ROOTFiles):
     def set_isr_mass_window(self):
         # todo error handle
         matches = re.findall(r'\[([^]]*)]', self.dipt_hist_names[0])
-        print(matches)
         bin_name = "[tunfold-bin]_" + "[" + matches[1] + "]_" + "[" + matches[2] + "]"
 
         unfold_bin = self.get_tunfold_bin(bin_name)
@@ -72,12 +71,13 @@ class ISRROOTFiles(ROOTFiles):
         for index, edge in enumerate(self.dimass_window):
             if index < len(self.dimass_window) - 1:
                 # for dipt update axis steering for each mass window
-
                 dipt_steering = "dipt[" + dipt_matches[0] + "];dimass[" + dipt_matches[1] + f"{index}]"
-                super().set_hist_name(self.dipt_hist_names[0])
+                super().set_hist_name(self.dipt_hist_names[0])  # hist_postfix for systematic?
                 super().set_axis_steering(dipt_steering)
                 dipt_hist = super().get_combined_hist(file_key_list, root_hist=True)
 
+                # dimass
+                # dimass_hist, dipt_hist
                 super().set_hist_name(self.dimass_hist_names)
                 super().set_axis_steering(self.dimass_axis_steering)
                 dimass_hist = super().get_combined_hist(file_key_list, root_hist=True)
@@ -85,10 +85,13 @@ class ISRROOTFiles(ROOTFiles):
 
                 dipt_stat = get_summary_statistics(dipt_hist, stat_type, prob)
                 dimass_stat = get_summary_statistics(dimass_hist, stat_type, prob)
+
                 dipt_dict = {"mass_window": str(edge) + ":" + str(self.dimass_window[index + 1]),
                              stat_type: dipt_stat.value, "stat error": dipt_stat.error}
                 dimass_dict = {"mass_window": str(edge) + ":" + str(self.dimass_window[index + 1]),
-                             stat_type: dimass_stat.value, "stat error": dimass_stat.error}
+                               stat_type: dimass_stat.value, "stat error": dimass_stat.error}
+
+                # systematics!
 
                 dipt_dict_list.append(dipt_dict)
                 dimass_dict_list.append(dimass_dict)

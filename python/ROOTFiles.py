@@ -17,7 +17,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         self.set_input_files(base_file_path, channel + "_" + sample_config, *args)
         self.data_period = period
 
-        self.bin_width_norm = True
+        self.bin_width_norm = False
         self.axis_steering = ""
         self.file_sel = ""  # nominal, systematic
         self.hist_name = ""
