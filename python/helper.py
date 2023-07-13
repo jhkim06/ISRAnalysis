@@ -28,15 +28,21 @@ def root_to_numpy(hist):
     return h
 
 
+def return_hist(raw_hist, root_hist=False):
+    if root_hist:
+        return raw_hist
+    else:
+        return root_to_numpy(raw_hist)
+
+
 def get_mass_window_edges(file_path, hist_path):
     file = rt.TFile.Open(file_path)
     # make function to get TUnfoldBinning
     directory = "/".join(hist_path.split("/")[:-1])
     hist_name = hist_path.split("/")[-1]   # assuming hists in the last sub-directory
     # get bin definition from file using hist name
-    matches = re.findall(r'(\[[^\]]*\])', hist_name)
-    bin_name = "[tunfold-bin]_" + re.sub(r'(\([^\]]*\))', '', matches[1]) + "_" + "_".join(matches[2:])
-    #bin_name = "[tunfold-bin]_" + "_".join(matches[2:])
+    matches = re.findall(r'(\[[^]]*])', hist_name)
+    bin_name = "[tunfold-bin]_" + re.sub(r'(\([^]]*\))', '', matches[1]) + "_" + "_".join(matches[2:])
     bin_path = directory + "/" + bin_name
     unfold_bin = file.Get(bin_path)
 
@@ -60,9 +66,8 @@ def get_raw_hist(file_path, hist_path, axis_steering="", use_axis_bin=True, norm
         directory = "/".join(hist_path.split("/")[:-1])
         hist_name = hist_path.split("/")[-1]  # assuming hists in the last sub-directory
         # get bin definition from file using hist name
-        matches = re.findall(r'(\[[^\]]*\])', hist_name)
-        # bin_name = "[tunfold-bin]_" + "_".join(matches[1:])
-        bin_name = "[tunfold-bin]_" + re.sub(r'(\([^\]]*\))', '', matches[1]) + "_" + "_".join(matches[2:])
+        matches = re.findall(r'(\[[^]]*])', hist_name)
+        bin_name = "[tunfold-bin]_" + re.sub(r'(\([^]]*\))', '', matches[1]) + "_" + "_".join(matches[2:])
         bin_path = directory + "/" + bin_name
         unfold_bin = file.Get(bin_path)
 
@@ -75,6 +80,7 @@ def get_raw_hist(file_path, hist_path, axis_steering="", use_axis_bin=True, norm
     if norm:
         integral = hist.Integral()
         hist.Scale(1./integral)
+
     file.Close()
     return hist
 

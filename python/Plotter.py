@@ -22,7 +22,7 @@ class Plotter:
         plt.ioff()
         hep.style.use("CMS")
         plt.rcParams['axes.linewidth'] = 2
-        plt.rcParams['hatch.linewidth'] = 0.1
+        plt.rcParams['hatch.linewidth'] = 0.2
         self.rows = rows
         self.cols = cols
         self.fig, self.axs = plt.subplots(self.rows, self.cols, **kwargs)
@@ -59,9 +59,9 @@ class Plotter:
             bottom = 0
             width = stack.bins[1:] - stack.bins[0:-1]
             for index, values in enumerate(stack.values_list):
-                axis.hist(stack.bins[:-1], stack.bins, weights=values/width, histtype='bar',
+                axis.hist(stack.bins[:-1], stack.bins, weights=values, histtype='bar',
                           bottom=bottom, label=label[index])
-                bottom += values/width
+                bottom += values
         adjust_x_lim(axis, stack.bins)
 
     def draw_error_boxes(self, hist, sys_yerror=None, row=0, col=0, set_y_ones=False, **kwargs):

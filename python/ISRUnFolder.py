@@ -14,15 +14,23 @@ class ISRUnFolder:
         self.pt_hist_name = pt_hist_name
         self.mass_hist_name = mass_hist_name
         self.unfolders = {pt_hist_name: None, mass_hist_name: None}
+        self.sys_unfolders = {pt_hist_name: None, mass_hist_name: None}  # test for type 1
         self.mass_windows = None
         self.bin_names = bin_names
         self.bins = {pt_hist_name: {"folded": None, "unfolded": None},
                      mass_hist_name: {"folded": None, "unfolded": None}}
+        self.nominal_unfold_parameters = {pt_hist_name: None, mass_hist_name: None}
+
         # self.axis1_label = self.bins.unfolded.GetDistributionAxisLabel(0)
         # self.axis2_label = self.bins.unfolded.GetDistributionAxisLabel(1)
         # unfold configuration as dictionary
         # unfold_config[pt_hist_name] = {}
         # unfold_config[mass_hist_name] = {}
+        # systematic unfolding self.sys_unfolders
+        # type 1: input_hist variation
+        # type 2: matrix variation
+        # type 3: both input and matrix variation
+        # type 4: unfolding parameter variation
 
     def create_unfolder(self, var_name, reg_mode, constraint_area, density_mode,
                         file_key="mc/signal:Drell-Yan/all", file_sel=""):
