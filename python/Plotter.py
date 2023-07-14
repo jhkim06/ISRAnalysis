@@ -109,7 +109,7 @@ class Plotter:
     def draw_isr_data_frame(self, dimass_df, dipt_df, row=0, col=0, **kwargs):
         axis = self.get_axis(row, col)
         stat_type = "mean"
-        error_name = "stat error"
+        error_name = "total error"
 
         axis.errorbar(dimass_df[stat_type], dipt_df[stat_type],
                       xerr=dimass_df[error_name],

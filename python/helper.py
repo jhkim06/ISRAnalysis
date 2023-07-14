@@ -109,3 +109,12 @@ def get_summary_statistics(hist, stat_type="mean", prob=0.6):
 def get_raw_labels(file_path, hist_name):
     with uprt.open(file_path) as file:
         return file[hist_name].axis().edges(), file[hist_name].axis().labels()
+
+
+def calculate_squared_root_sum(raw_df, reg_expression, new_col_name="total error"):
+
+    selected_cols = raw_df.filter(regex=reg_expression)
+    squared_sum = (selected_cols ** 2).sum(axis=1)
+    root_of_squared_sum = np.sqrt(squared_sum)
+
+    raw_df[new_col_name] = root_of_squared_sum

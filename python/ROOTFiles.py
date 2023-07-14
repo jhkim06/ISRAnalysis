@@ -19,12 +19,12 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
 
         self.bin_width_norm = False
         self.axis_steering = ""
-        self.file_sel = ""  # nominal, systematic
+        self.file_sel = ""  # nominal, systematic TODO find name more appropriate
         self.hist_name = ""
 
         self.mc_key_list = None  # TODO set default using sample_config
         self.sys_dict = {
-            "bkg stat error": {"stat variation": (-1, 1, self.file_sel)},
+            "bkg stat error": ("stat variation", [-1, 1], self.file_sel),
             # "ID SF": {"hist name postfix": ("_PUweight_up", "_PUweight_down", "SYS__:")}
         }
         # self.data_keys
@@ -82,11 +82,11 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         return self.get_obj_path(file_name, self.hist_name, hist_name_postfix)
 
     # get values, bin, error as numpy array
-    def get_hist(self, file_key, root_hist=False, norm=False, stat_variation=0, hist_name_postfix=""):
+    def __get_hist(self, file_key, norm=False, stat_variation=0, hist_name_postfix=""):
         sample_type, hist_label, file_name = file_key.split("/")
         raw_hist = None
 
-        if file_name == "all":  # sum all histograms
+        if file_name == "all":  # sum all histograms in a file group
             for index, file in enumerate(self.input_files[sample_type][hist_label]):
                 file_path = self.get_file_directory(sample_type) + \
                             self.input_files[sample_type][hist_label][file]
@@ -108,23 +108,20 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         if self.bin_width_norm:
             raw_hist.Scale(1., "width")
 
-        return return_hist(raw_hist, root_hist)
+        return raw_hist
 
     def get_combined_hist(self, file_key_list, root_hist=False, norm=False, stat_variation=0, hist_name_postfix=""):
         raw_hist = None
         if len(file_key_list) == 1:
             sample_type, hist_label, file_name = file_key_list[0].split("/")
-            if "data" in sample_type:
-                if "data:bkg_subtracted" == sample_type:
-                    raw_hist = self.get_data_hist(root_hist=True, stat_variation=stat_variation, subtract_bkg=True)
-                else:
-                    raw_hist = self.get_data_hist(root_hist=True, subtract_bkg=False)
+            if "data:bkg_subtracted" == sample_type:
+                raw_hist = self.__get_bkg_subtracted_data_hist(bkg_stat=stat_variation)
             else:
-                raw_hist = self.get_hist(file_key_list[0], root_hist=True, stat_variation=stat_variation)
+                raw_hist = self.__get_hist(file_key_list[0], stat_variation=stat_variation)
         else:
             for index, file_key in enumerate(file_key_list):
-                hist = self.get_hist(file_key, root_hist=True, stat_variation=stat_variation,
-                                     hist_name_postfix=hist_name_postfix)
+                hist = self.__get_hist(file_key, stat_variation=stat_variation,
+                                       hist_name_postfix=hist_name_postfix)
                 if index == 0:
                     raw_hist = hist
                 else:
@@ -141,7 +138,8 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         bins = None
         errors_list = []
         for file_key in file_key_list:
-            hist = self.get_hist(file_key)
+            hist = self.__get_hist(file_key)
+            hist = root_to_numpy(hist)
             values_list.append(hist.values)
             bins = hist.bins
             errors_list.append(hist.errors)
@@ -149,19 +147,6 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         Stack = namedtuple('Stack', ['values_list', 'bins', 'errors_list'])
         stack = Stack(values_list, bins, errors_list)
         return stack
-
-    def get_data_hist(self, root_hist=False, norm=False, stat_variation=0, subtract_bkg=False):
-
-        if subtract_bkg:
-            raw_hist = self.get_bkg_subtracted_data_hist(root_hist=True, bkg_stat=stat_variation)
-        else:
-            raw_hist = self.get_hist("data/" + self.data_period + "/all", root_hist=True)
-
-        if norm:
-            integral = mc_hist.Integral()
-            mc_hist.Scale(1. / integral)
-
-        return return_hist(raw_hist, root_hist)
 
     def get_expectation_hist(self, root_hist=False, norm=False, mc_stat=0, include_signal_mc=True):
 
@@ -176,8 +161,8 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         return return_hist(mc_hist, root_hist)
 
     # TODO hist_name_postfix
-    def get_bkg_subtracted_data_hist(self, root_hist=False, norm=False, bkg_stat=0):
-        data_hist = self.get_hist("data/" + self.data_period + "/all", root_hist=True)
+    def __get_bkg_subtracted_data_hist(self, norm=False, bkg_stat=0):
+        data_hist = self.__get_hist("data/" + self.data_period + "/all")
         # make file_key_list to background mc
         bkg_key_list = [bkg_key for bkg_key in self.mc_key_list if "background" in bkg_key]
         bkg_hist = self.get_combined_hist(bkg_key_list, root_hist=True, stat_variation=bkg_stat)
@@ -188,7 +173,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
             integral = bkg_subtracted_data_hist.Integral()
             bkg_subtracted_data_hist.Scale(1. / integral)
 
-        return return_hist(bkg_subtracted_data_hist, root_hist)
+        return return_hist(bkg_subtracted_data_hist, root_hist=True)
 
     def get_scaled_hist(self, file_key_list, root_hist=False, norm=False, systematic_dict=None):
         hist = self.get_combined_hist(file_key_list, root_hist, norm)
@@ -237,7 +222,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         return get_raw_labels(file_path, hist_path)
 
     def get_hist_systematic_bands(self, systematic_dict, file_key, norm=False):
-        nominal_hist = self.get_hist(file_key, root_hist=True, norm=norm)
+        nominal_hist = self.__get_hist(file_key, norm=norm)
         # symmetric systematic
         systematic_list = []
         for systematic in systematic_dict.keys():
@@ -247,8 +232,8 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
                 if variation != "":
                     variation_postfix += "_" + variation
                 hist_name_postfix = "_" + systematic + variation_postfix
-                systematic_hist = self.get_hist(file_key, root_hist=True, norm=norm,
-                                                hist_name_postfix=hist_name_postfix)
+                systematic_hist = self.__get_hist(file_key, norm=norm,
+                                                  hist_name_postfix=hist_name_postfix)
                 systematic_hist.Add(nominal_hist, -1)
                 h = root_to_numpy(systematic_hist)
                 delta_list.append(np.absolute(h.values))
