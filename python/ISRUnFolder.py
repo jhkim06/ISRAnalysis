@@ -1,25 +1,85 @@
-import ROOTFiles
 import ROOT as rt
 import pandas as pd
 import ctypes
 from helper import get_summary_statistics, root_to_numpy
 import re
+from helper import *
+
+
+class ISRBinInfo:
+    def __init__(self, bin_info):
+
+        # di-lepton transverse momentum
+        self.bin_info = dict()
+        self._set_bin_info("dipt", bin_info)
+        self._set_bin_info("dimass", bin_info)
+
+    def _set_bin_info(self, var_name, bin_info):
+
+        self.bin_info[var_name] = dict()
+        self.bin_info[var_name]["bin"] = bin_info[var_name][0]
+        self.bin_info[var_name]["folded"] = bin_info[var_name][1][0]
+        self.bin_info[var_name]["unfolded"] = bin_info[var_name][1][1]
+        self.bin_info[var_name]["as_second_bin"] = bin_info[var_name][1][2]
+        self.bin_info[var_name]["under_overflow_info"] = bin_info[var_name][1][3]
+
+    def get_bin_name(self, var_name, level):
+
+        axis1_var = var_name.split("-")[0]
+        axis2_var = var_name.split("-")[1]
+
+        bin_name = "[tunfold-bin]_[" + var_name + "]" + "_" + \
+                   "[" + self.bin_info[axis1_var][level] + "_" + self.bin_info[axis1_var]["bin"] + \
+                   "-" + self.bin_info[axis2_var][level] + "_" + self.bin_info[axis2_var]["as_second_bin"] + "]"
+
+        return bin_name
+
+    def get_hist_name(self, hist_type, var_name, level):
+
+        axis1_var = var_name.split("-")[0]
+        axis2_var = var_name.split("-")[1]
+
+        return "[tunfold-" + hist_type + "]_" + "[" + var_name + "]_" +\
+               "[" + self.bin_info[axis1_var][level] + "_" + self.bin_info[axis1_var]["bin"] +\
+               "-" + self.bin_info[axis2_var][level] + "_" + self.bin_info[axis2_var]["as_second_bin"] + "]"
+
+    def get_response_matrix_name(self, var_name):
+
+        axis1_var = var_name.split("-")[0]
+        axis2_var = var_name.split("-")[1]
+
+        axis1_folded_bin_name = self.bin_info[axis1_var]["folded"] + "_" + self.bin_info[axis1_var]["bin"]
+        axis2_folded_bin_name = self.bin_info[axis2_var]["folded"] + "_" + self.bin_info[axis2_var]["as_second_bin"]
+        axis1_unfolded_bin_name = self.bin_info[axis1_var]["unfolded"] + "_" + self.bin_info[axis1_var]["bin"]
+        axis2_unfolded_bin_name = self.bin_info[axis2_var]["unfolded"] + "_" + self.bin_info[axis2_var]["as_second_bin"]
+
+        response_matrix_name = "[tunfold-matrix]_[" + var_name + "]" + "_" + \
+                               "[" + axis1_folded_bin_name + "-" + axis2_folded_bin_name + "]" + "_" + \
+                               "[" + axis1_unfolded_bin_name + "-" + axis2_unfolded_bin_name + "]"
+
+        return response_matrix_name
 
 
 class ISRUnFolder:
-    def __init__(self, data_handle, bin_names, pt_hist_name="dipt-dimass", mass_hist_name="dimass-dipt"):
+    def __init__(self, data_handle, bin_info,
+                 dipt="dipt-dimass", dimass="dimass-dipt"):
 
         # assuming 2D unfolding as default
         self.data_handle = data_handle
-        self.pt_hist_name = pt_hist_name
-        self.mass_hist_name = mass_hist_name
-        self.unfolders = {pt_hist_name: None, mass_hist_name: None}
-        self.sys_unfolders = {pt_hist_name: None, mass_hist_name: None}  # test for type 1
+        self.signal_file_key = ""
+
+        self.dipt_var_name = dipt
+        self.dimass_var_name = dimass
+
+        self.bins = None
         self.mass_windows = None
-        self.bin_names = bin_names
-        self.bins = {pt_hist_name: {"folded": None, "unfolded": None},
-                     mass_hist_name: {"folded": None, "unfolded": None}}
-        self.nominal_unfold_parameters = {pt_hist_name: None, mass_hist_name: None}
+        self.bin_info = ISRBinInfo(bin_info)
+        self.set_bins()
+        self.set_mass_window()
+        self.sys_turned_on = False
+
+        self.unfolders = {self.dipt_var_name: None, self.dimass_var_name: None}
+        self.sys_unfolders = {self.dipt_var_name: dict(), self.dimass_var_name: dict()}
 
         # self.axis1_label = self.bins.unfolded.GetDistributionAxisLabel(0)
         # self.axis2_label = self.bins.unfolded.GetDistributionAxisLabel(1)
@@ -32,102 +92,133 @@ class ISRUnFolder:
         # type 3: both input and matrix variation
         # type 4: unfolding parameter variation
 
-    def create_unfolder(self, var_name, reg_mode, constraint_area, density_mode,
-                        file_key="mc/signal:Drell-Yan/all", file_sel=""):
+    def set_signal_file_key(self, file_key):
+        self.signal_file_key = file_key
 
-        response_matrix_name = self.make_response_matrix_name(var_name)
-        self.response_matrix = self.data_handle.__get_hist(file_key, response_matrix_name, root_hist=True,
-                                                           file_sel=file_sel)
-        unfolded_bin = self.get_bin(var_name, "unfolded", file_key, file_sel=file_sel)
-        folded_bin = self.get_bin(var_name, "folded", file_key, file_sel=file_sel)
-        self.bins[var_name]["folded"] = folded_bin
-        self.bins[var_name]["unfolded"] = unfolded_bin
-        self.unfolders[var_name] = rt.TUnfoldDensity(self.response_matrix, rt.TUnfold.kHistMapOutputHoriz,
+    def set_bins(self):
+        self.bins = {self.dipt_var_name: {"folded": None, "unfolded": None},
+                     self.dimass_var_name: {"folded": None, "unfolded": None}}
+        self.set_bin("dipt-dimass", "folded")
+        self.set_bin("dipt-dimass", "unfolded")
+        self.set_bin("dimass-dipt", "folded")
+        self.set_bin("dimass-dipt", "unfolded")
+
+    def set_bin(self, var_name, which_level):
+
+        bin_name = self.bin_info.get_bin_name(var_name, which_level)
+        unfold_bin = self.data_handle.get_tunfold_bin(bin_name)
+        self.bins[var_name][which_level] = unfold_bin
+
+    def set_mass_window(self):
+        edges = self.bins["dipt-dimass"]["unfolded"].GetDistributionBinning(1)
+        self.mass_windows = [edge for edge in edges]
+
+    def create_unfolder(self, var_name, reg_mode, constraint_area, density_mode, sys=False):
+
+        response_matrix_name = self.bin_info.get_response_matrix_name(var_name)
+        self.data_handle.set_hist_name(response_matrix_name)
+        self.data_handle.set_axis_steering("")
+        response_matrix = self.data_handle.get_combined_hist([self.signal_file_key], root_hist=True)
+
+        self.unfolders[var_name] = rt.TUnfoldDensity(response_matrix, rt.TUnfold.kHistMapOutputHoriz,
                                                      reg_mode,
                                                      constraint_area,
                                                      density_mode,
-                                                     unfolded_bin, folded_bin)
-        # set mass windows
-        if "dipt-dimass" in var_name:
-            edges = unfolded_bin.GetDistributionBinning(1)
-            self.mass_windows = [edge for edge in edges]
+                                                     self.bins[var_name]["unfolded"],
+                                                     self.bins[var_name]["folded"])
+        if sys:
+            self.sys_turned_on = True
+            self._create_sys_unfolders(var_name, reg_mode, constraint_area, density_mode)  # TODO define properties
+            # for unfolding conditions?
 
-    def set_unfold_input(self, var_name, file_key, subtract_signal_fake=False,
-                         signal_file_key="mc/signal:Drell-Yan/all",  file_sel=""):
-        axis1_var = var_name.split("(")[0].split("-")[0]
-        axis2_var = var_name.split("(")[0].split("-")[1]
+    def _create_sys_unfolders(self, var_name, reg_mode, constraint_area, density_mode):
 
-        hist_name = "[tunfold-hist]_" + \
-                    "[" + var_name.split("(")[0]+"]_" + \
-                    "[folded_" + self.bin_names[axis1_var]["folded"] + \
-                    "-folded_" + self.bin_names[axis2_var]["folded"] + "]"
-        input_hist = self.data_handle.__get_hist(file_key, hist_name, root_hist=True, file_sel=file_sel)
+        for sys_name in self.data_handle.sys_dict:
+            self.sys_unfolders[var_name][sys_name] = dict()
+            for var in self.data_handle.sys_dict[sys_name][1]:
+
+                response_matrix_name = self.bin_info.get_response_matrix_name(var_name)
+                if self.data_handle.sys_dict[sys_name][0] == "hist name postfix":
+                    postfix = var
+                    response_matrix_name += postfix
+                self.data_handle.set_hist_name(response_matrix_name)
+                self.data_handle.set_axis_steering("")
+                response_matrix = self.data_handle.get_combined_hist([self.signal_file_key], root_hist=True)
+
+                self.sys_unfolders[var_name][sys_name][var] = rt.TUnfoldDensity(response_matrix,
+                                                                                rt.TUnfold.kHistMapOutputHoriz,
+                                                                                reg_mode,
+                                                                                constraint_area,
+                                                                                density_mode,
+                                                                                self.bins[var_name]["unfolded"],
+                                                                                self.bins[var_name]["folded"])
+
+    def set_unfold_input(self, var_name, file_key, subtract_signal_fake=False):
+
+        hist_name = self.bin_info.get_hist_name("hist", var_name, "folded")
+        self.data_handle.set_hist_name(hist_name)
+        input_hist = self.data_handle.get_combined_hist([file_key], root_hist=True)
+
         self.unfolders[var_name].SetInput(input_hist)
 
         if subtract_signal_fake:
-            hist_name = "[tunfold-fake_hist]_" + \
-                        "["+var_name+"]_[folded_" + self.bin_names[axis1_var]["folded"] + \
-                        "-folded_" + self.bin_names[axis2_var]["folded"]+"]"
-            signal_fake_hist = self.data_handle.__get_hist(signal_file_key, hist_name, root_hist=True, file_sel=file_sel)
+            hist_name = self.bin_info.get_hist_name("fake_hist", var_name, "folded")
+            self.data_handle.set_hist_name(hist_name)
+            signal_fake_hist = self.data_handle.get_combined_hist([self.signal_file_key], root_hist=True)
+
             self.unfolders[var_name].SubtractBackground(signal_fake_hist, "Drell-Yan fake")
 
-        mc_hist = self.response_matrix.ProjectionY("projected_reco", 1, -1, "e")
+        if self.sys_turned_on:
+            for sys_name in self.data_handle.sys_dict:
+                for var in self.data_handle.sys_dict[sys_name][1]:
+                    stat_variation = 0
+                    hist_name_postfix = ""
 
-    def set_unfold_input_external(self, ext_hist, var_name, subtract_signal_fake=False,
-                                  signal_file_key="mc/signal:Drell-Yan/all",  file_sel=""):
-        axis1_var = var_name.split("(")[0].split("-")[0]
-        axis2_var = var_name.split("(")[0].split("-")[1]
+                    if self.data_handle.sys_dict[sys_name][0] == "stat variation":
+                        stat_variation = var
+                    if self.data_handle.sys_dict[sys_name][0] == "hist name postfix":
+                        hist_name_postfix = var
+
+                    hist_name = self.bin_info.get_hist_name("hist", var_name, "folded")
+                    self.data_handle.set_hist_name(hist_name)
+                    input_hist = self.data_handle.get_combined_hist([file_key], root_hist=True,
+                                                                    stat_variation=stat_variation,
+                                                                    hist_name_postfix=hist_name_postfix)
+
+                    self.sys_unfolders[var_name][sys_name][var].SetInput(input_hist)
+
+                    if subtract_signal_fake:
+                        self.sys_unfolders[var_name][sys_name][var].SubtractBackground(signal_fake_hist,
+                                                                                       "Drell-Yan fake")
+
+    def set_unfold_input_external(self, ext_hist, var_name, subtract_signal_fake=False):
 
         self.unfolders[var_name].SetInput(ext_hist)
         if subtract_signal_fake:
-            hist_name = "[tunfold-fake_hist]_" + \
-                        "["+var_name+"]_[folded_" + self.bin_names[axis1_var]["folded"] + \
-                        "-folded_" + self.bin_names[axis2_var]["folded"]+"]"
-            signal_fake_hist = self.data_handle.__get_hist(signal_file_key, hist_name, root_hist=True, file_sel=file_sel)
+            hist_name = self.bin_info.get_hist_name("fake_hist", var_name, "folded")
+            self.data_handle.set_hist_name(hist_name)
+
+            signal_fake_hist = self.data_handle.get_combined_hist([self.signal_file_key], root_hist=True)
             self.unfolders[var_name].SubtractBackground(signal_fake_hist, "Drell-Yan fake")
 
-    def make_response_matrix_name(self, var_name):
-        axis1_var = var_name.split("(")[0].split("-")[0]
-        axis2_var = var_name.split("(")[0].split("-")[1]
-        axis1_folded_bin_name = "folded_" + self.bin_names[axis1_var]["folded"]
-        axis2_folded_bin_name = "folded_" + self.bin_names[axis2_var]["folded"]
-        axis1_unfolded_bin_name = "unfolded_" + self.bin_names[axis1_var]["unfolded"]
-        axis2_unfolded_bin_name = "unfolded_" + self.bin_names[axis2_var]["unfolded"]
+    def unfold(self, var_name):
+        self.unfolders[var_name].DoUnfold(0)
 
-        response_matrix_name = "[tunfold-matrix]_[" + var_name + "]" + "_" + \
-                               "[" + axis1_folded_bin_name + "-" + axis2_folded_bin_name + "]" + "_" + \
-                               "[" + axis1_unfolded_bin_name + "-" + axis2_unfolded_bin_name + "]"
-        return response_matrix_name
+        if self.sys_turned_on:
+            for sys_name in self.data_handle.sys_dict:
+                for var in self.data_handle.sys_dict[sys_name][1]:
+                    self.sys_unfolders[var_name][sys_name][var].DoUnfold(0)
 
-    def get_bin(self, var_name, which_level, file_key="mc/signal:Drell-Yan/all", file_sel=""):
-        axis1_var = var_name.split("(")[0].split("-")[0]
-        axis2_var = var_name.split("(")[0].split("-")[1]
+    def do_acceptance_correction(self, var_name, unfolded_hist, axis_steering):
 
-        sample_type, hist_label, file_name = file_key.split("/")
-        if file_name == "all":
-            file_name = [*self.data_handle.input_files[""][sample_type][hist_label].keys()][0]
-            file_key = "/".join([sample_type, hist_label, file_name])
-        bin_path = "[tunfold-bin]_[" + var_name.split("(")[0] + "]" + "_" + \
-                   "[" + which_level + "_" + self.bin_names[axis1_var][which_level] + \
-                   "-" + which_level + "_" + self.bin_names[axis2_var][which_level] + "]"
-        unfold_bin = self.data_handle.__get_hist(file_key, bin_path, root_hist=True, file_sel=file_sel)
-        return unfold_bin
+        hist_name = self.bin_info.get_hist_name("fullphase_hist", var_name, "unfolded")
+        self.data_handle.set_hist_name(hist_name)
+        self.data_handle.set_axis_steering(axis_steering)
+        dy_full_phase_hist = self.data_handle.get_combined_hist([self.signal_file_key], root_hist=True)
 
-    def do_acceptance_correction(self, var_name, unfolded_hist, axis_steering,
-                                 file_key="mc/signal:Drell-Yan/all", file_sel=""):
-        axis1_var = var_name.split("(")[0].split("-")[0]
-        axis2_var = var_name.split("(")[0].split("-")[1]
-
-        hist_name = "[tunfold-fullphase_hist]_["+var_name+"]_" + \
-                    "[unfolded_"+self.bin_names[axis1_var]["unfolded"] + \
-                    "-unfolded_"+self.bin_names[axis2_var]["unfolded"]+"]"
-        dy_full_phase_hist = self.data_handle.__get_hist(file_key, hist_name, axis_steering,
-                                                         root_hist=True, file_sel=file_sel)
-        hist_name = "[tunfold-hist]_["+var_name+"]_" + \
-                    "[unfolded_"+self.bin_names[axis1_var]["unfolded"] + \
-                    "-unfolded_"+self.bin_names[axis2_var]["unfolded"]+"]"
-        dy_unfolded_hist = self.data_handle.__get_hist(file_key, hist_name, axis_steering,
-                                                       root_hist=True, file_sel=file_sel)
+        hist_name = self.bin_info.get_hist_name("hist", var_name, "unfolded")
+        self.data_handle.set_hist_name(hist_name)
+        dy_unfolded_hist = self.data_handle.get_combined_hist([self.signal_file_key], root_hist=True)
 
         acceptance_th1 = dy_full_phase_hist.Clone("acceptance")
         acceptance_th1.Divide(dy_unfolded_hist)
@@ -136,14 +227,14 @@ class ISRUnFolder:
         return unfolded_hist
 
     def get_output_hist(self, var_name, axis_steering, use_axis_bin=True, do_accept=False, root_hist=False,
-                        norm=False, binwnorm=False, file_key="mc/signal:Drell-Yan/all", file_sel=""):
+                        norm=False, binwnorm=False):
+
         unfolded_hist = self.unfolders[var_name].GetOutput("unfolded_" + var_name,
                                                            ctypes.c_char_p(0),
                                                            ctypes.c_char_p(0),
                                                            axis_steering, use_axis_bin)
         if do_accept:
-            unfolded_hist = self.do_acceptance_correction(var_name, unfolded_hist, axis_steering,
-                                                          file_key=file_key, file_sel=file_sel)
+            unfolded_hist = self.do_acceptance_correction(var_name, unfolded_hist, axis_steering)
 
         if norm:
             integral = unfolded_hist.Integral()
@@ -156,48 +247,122 @@ class ISRUnFolder:
         else:
             return root_to_numpy(unfolded_hist)
 
-    def get_isr_dataframe(self, mass_axis_steering="dimass[OU];dipt[UOC0]",
-                          pt_axis_steering="dipt[O];dimass[UOC]", stat_type="mean", prob=0.5,
-                          do_accept=False, file_sel="", pt_cut=None, file_key="mc/signal:Drell-Yan/all"):
+    def get_isr_hists(self, dimass_steering, dipt_steering, mass_index, do_accept=False):
 
-        mass_unfolded_hist = self.unfolders[self.mass_hist_name].GetOutput("mass_unfolded",
-                                                                           ctypes.c_char_p(0),
-                                                                           ctypes.c_char_p(0),
-                                                                           mass_axis_steering, True)
+        mass_unfolded_hist = self.unfolders[self.dimass_var_name].GetOutput("mass_unfolded",
+                                                                            ctypes.c_char_p(0),
+                                                                            ctypes.c_char_p(0),
+                                                                            dimass_steering, True)
+        mass_unfolded_hist.GetXaxis().SetRangeUser(self.mass_windows[mass_index], self.mass_windows[mass_index + 1])
+
+        pt_unfolded_hist = self.unfolders[self.dipt_var_name].GetOutput("pt_unfolded",
+                                                                        ctypes.c_char_p(0),
+                                                                        ctypes.c_char_p(0),
+                                                                        dipt_steering, True)
+
         if do_accept:
-            mass_unfolded_hist = self.do_acceptance_correction(self.mass_hist_name, mass_unfolded_hist,
-                                                               mass_axis_steering, file_sel=file_sel,
-                                                               file_key=file_key)
-        dict_list = []
+            mass_unfolded_hist = self.do_acceptance_correction(self.dimass_var_name, mass_unfolded_hist,
+                                                               dimass_steering)
+            pt_unfolded_hist = self.do_acceptance_correction(self.dipt_var_name, pt_unfolded_hist,
+                                                             dipt_steering)
+
+        return mass_unfolded_hist, pt_unfolded_hist
+
+    def get_isr_sys_hists(self, dimass_steering, dipt_steering, mass_index, sys_name, sys_variation,
+                          do_accept=False):
+
+        mass_unfolded_hist = \
+            self.sys_unfolders[self.dimass_var_name][sys_name][sys_variation].GetOutput("mass_unfolded",
+                                                                                ctypes.c_char_p(0),
+                                                                                ctypes.c_char_p(0),
+                                                                                dimass_steering, True)
+        mass_unfolded_hist.GetXaxis().SetRangeUser(self.mass_windows[mass_index], self.mass_windows[mass_index + 1])
+
+        pt_unfolded_hist = self.sys_unfolders[self.dipt_var_name][sys_name][sys_variation].GetOutput("pt_unfolded",
+                                                                            ctypes.c_char_p(0),
+                                                                            ctypes.c_char_p(0),
+                                                                            dipt_steering, True)
+        if do_accept:
+            mass_unfolded_hist = self.do_acceptance_correction(self.dimass_var_name, mass_unfolded_hist,
+                                                               dimass_steering)
+            pt_unfolded_hist = self.do_acceptance_correction(self.dipt_var_name, pt_unfolded_hist,
+                                                             dipt_steering)
+
+        return mass_unfolded_hist, pt_unfolded_hist
+
+    def get_isr_sys_dict(self, dipt_nominal, dimass_nominal, dimass_steering, dipt_steering, mass_index,
+                         do_accept=False):
+
+        dipt_sys_dict = {}
+        dimass_sys_dict = {}
+
+        for sys_name in self.data_handle.sys_dict:
+            dipt_delta_sum = 0
+            dimass_delta_sum = 0
+            for var in self.data_handle.sys_dict[sys_name][1]:
+                dimass_var, dipt_var = self.get_isr_summary(dimass_steering, dipt_steering, mass_index,
+                                                            sys_name, var, do_accept=do_accept)
+
+                dipt_delta_sum += abs(dipt_var.value-dipt_nominal)
+                dimass_delta_sum += abs(dimass_var.value-dimass_nominal)
+
+            dipt_sys_dict[sys_name] = dipt_delta_sum / len(self.data_handle.sys_dict[sys_name][1])
+            dimass_sys_dict[sys_name] = dimass_delta_sum / len(self.data_handle.sys_dict[sys_name][1])
+
+        return dimass_sys_dict, dipt_sys_dict
+
+    def get_isr_summary(self, dimass_steering, dipt_steering, mass_index, sys_name, sys_variation,
+                        do_accept=False):
+
+        dimass_hist, dipt_hist = self.get_isr_sys_hists(dimass_steering, dipt_steering, mass_index,
+                                                        sys_name, sys_variation, do_accept=do_accept)
+
+        dipt_stat = get_summary_statistics(dipt_hist, "mean", 0.5)
+        dimass_stat = get_summary_statistics(dimass_hist, "mean", 0.5)
+
+        return dimass_stat, dipt_stat
+
+    def get_isr_dataframe(self, mass_axis_steering="dimass[OU];dipt[UOC0]", pt_axis_steering="dipt[O];dimass[UOC]",
+                          stat_type="mean", prob=0.5,
+                          do_accept=False, pt_cut=None):
+
+        dipt_dict_list = []
+        dimass_dict_list = []
+
         matches = re.findall(r'([a-z]+)\[([^]]*)]', pt_axis_steering)
         for index, edge in enumerate(self.mass_windows):
             if index < len(self.mass_windows) - 1:
+
                 pt_steering_mass_bin = matches[0][0] + "[" + matches[0][1] + "];" + \
                                        matches[1][0] + "[" + matches[1][1] + f"{index}]"
-                pt_unfolded_hist = self.unfolders[self.pt_hist_name].GetOutput("pt_unfolded",
-                                                                               ctypes.c_char_p(0),
-                                                                               ctypes.c_char_p(0),
-                                                                               pt_steering_mass_bin, True)
-                if do_accept:
-                    if len(self.mass_windows) == 7 and index > 3:
-                        pt_steering_mass_bin = matches[0][0] + "[" + matches[0][1] + "];" + \
-                                               matches[1][0] + "[" + matches[1][1] + "45]"
 
-                    pt_unfolded_hist = self.do_acceptance_correction(self.pt_hist_name, pt_unfolded_hist,
-                                                                     pt_steering_mass_bin, file_sel=file_sel,
-                                                                     file_key=file_key)
+                mass_unfolded_hist, pt_unfolded_hist = self.get_isr_hists(mass_axis_steering, pt_steering_mass_bin,
+                                                                          index, do_accept=do_accept)
                 if pt_cut is not None:
                     pt_unfolded_hist.GetXaxis().SetRangeUser(0, pt_cut)
 
                 stat = get_summary_statistics(pt_unfolded_hist, stat_type, prob)
+                dimass_stat = get_summary_statistics(mass_unfolded_hist, stat_type, prob)
 
-                mass_unfolded_hist.GetXaxis().SetRangeUser(edge, self.mass_windows[index + 1])
-                temp_dict = {"mass_window": str(edge) + ":" + str(self.mass_windows[index + 1]),
-                             "pt": stat.value, "pt_stat_error": stat.error,
-                             "mass": mass_unfolded_hist.GetMean(),
-                             "mass_stat_error": mass_unfolded_hist.GetMeanError()}
-                dict_list.append(temp_dict)
+                dipt_dict = {"mass_window": str(edge) + ":" + str(self.mass_windows[index + 1]),
+                             stat_type: stat.value, "stat error": stat.error}
+                dimass_dict = {"mass_window": str(edge) + ":" + str(self.mass_windows[index + 1]),
+                               stat_type: dimass_stat.value, "stat error": dimass_stat.error}
 
-        return pd.DataFrame(dict_list, columns=['mass_window',
-                                                'pt', 'pt_stat_error',
-                                                'mass', 'mass_stat_error'])
+                if self.sys_turned_on:
+                    dimass_sys_dict, dipt_sys_dict = self.get_isr_sys_dict(stat.value, dimass_stat.value,
+                                                                           mass_axis_steering, pt_steering_mass_bin,
+                                                                           index, do_accept=do_accept)
+                    dipt_dict.update(dipt_sys_dict)
+                    dimass_dict.update(dimass_sys_dict)
+
+                dipt_dict_list.append(dipt_dict)
+                dimass_dict_list.append(dimass_dict)
+
+        dipt_df = pd.DataFrame(dipt_dict_list)
+        dimass_df = pd.DataFrame(dimass_dict_list)
+        reg_expression = r".*error$"
+        calculate_squared_root_sum(dimass_df, reg_expression)
+        calculate_squared_root_sum(dipt_df, reg_expression)
+
+        return dimass_df, dipt_df

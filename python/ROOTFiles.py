@@ -18,7 +18,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         self.data_period = period
 
         self.bin_width_norm = False
-        self.axis_steering = ""
+        self.axis_steering = ""  # TODO remove anything related to TUnfold
         self.file_sel = ""  # nominal, systematic TODO find name more appropriate
         self.hist_name = ""
 

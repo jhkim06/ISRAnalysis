@@ -12,6 +12,9 @@ class ISRROOTFiles(ROOTFiles):
 
         self.file_key_list = None
 
+        self.dipt_name = ""
+        self.dimass_name = ""
+
         self.dipt_hist_names = None
         self.dimass_hist_names = ""
 
@@ -37,6 +40,24 @@ class ISRROOTFiles(ROOTFiles):
     def set_dimass_hist(self, hist_name, axis_steering=""):
         self.dimass_hist_names = hist_name
         self.dimass_axis_steering = axis_steering
+
+    def init_isr_hist_names(self, dipt_bin_def, dimass_bin_def, dipt_name="dipt", dimass_name="dimass"):
+        self.dipt_name = dipt_name
+        self.dimass_name = dimass_name
+
+        var_name = self.dipt_name + "-" + self.dimass_name
+        hist_name = "[tunfold-hist]_["+var_name+"]_" + \
+                    "[" + dipt_bin_def[0] + "-" + dimass_bin_def[0] + "]"
+        axis_steering = self.dipt_name + "[" + dipt_bin_def[1] + "];" + \
+                        self.dimass_name + "[" + dimass_bin_def[1] + "]"
+        self.set_dipt_hist([hist_name], axis_steering)
+
+        var_name = self.dimass_name + "-" + self.dipt_name
+        hist_name = "[tunfold-hist]_["+var_name+"]_" + \
+                    "[" + dimass_bin_def[0] + "-" + dipt_bin_def[0] + "]"
+        axis_steering = self.dimass_name + "[" + dimass_bin_def[1] + "];" + \
+                        self.dipt_name + "[" + dipt_bin_def[1] + "]"
+        self.set_dimass_hist(hist_name, axis_steering)
 
     def reset(self):
         self.set_isr_mass_window()
@@ -104,8 +125,10 @@ class ISRROOTFiles(ROOTFiles):
 
                 dimass_var, dipt_var = self.get_isr_summary(dipt_steering, dimass_steering, mass_index,
                                                             stat_variation, hist_name_postfix)
+
                 dipt_delta_sum += abs(dipt_var.value-dipt_nominal)
                 dimass_delta_sum += abs(dimass_var.value-dimass_nominal)
+
             dipt_sys_dict[sys_name] = dipt_delta_sum / len(self.sys_dict[sys_name][1])
             dimass_sys_dict[sys_name] = dimass_delta_sum / len(self.sys_dict[sys_name][1])
 
@@ -124,14 +147,18 @@ class ISRROOTFiles(ROOTFiles):
     # get ISR mean DataFrame from 2D pt-mass histogram
     def get_isr_dataframe(self, sys=False):
 
-        dipt_matches = re.findall(r'\[([^]]*)]', self.dipt_axis_steering)
+        dipt_steer_matches = re.findall(r'\[([^]]*)]', self.dipt_axis_steering)
+        dimass_steer_matches = re.findall(r'\[([^]]*)]', self.dimass_axis_steering)
+        dimass_steering = self.dimass_name + "[" + dimass_steer_matches[0] + "];" + \
+                          self.dipt_name + "[" + dimass_steer_matches[1] + "C0]"
 
         dipt_dict_list = []
         dimass_dict_list = []
         for index, edge in enumerate(self.dimass_window):
             if index < len(self.dimass_window) - 1:
-                dipt_steering = "dipt[" + dipt_matches[0] + "];dimass[" + dipt_matches[1] + f"{index}]"
-                dimass_stat, dipt_stat = self.get_isr_summary(dipt_steering, self.dimass_axis_steering, index)
+                dipt_steering = self.dipt_name + "[" + dipt_steer_matches[0] + "];" + \
+                                self.dimass_name + "[" + dipt_steer_matches[1] + f"C{index}]"
+                dimass_stat, dipt_stat = self.get_isr_summary(dipt_steering, dimass_steering, index)
 
                 dipt_dict = {"mass_window": str(edge) + ":" + str(self.dimass_window[index + 1]),
                              self.isr_stat_summary_type: dipt_stat.value, "stat error": dipt_stat.error}
