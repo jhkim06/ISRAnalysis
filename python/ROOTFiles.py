@@ -2,7 +2,6 @@ import json
 
 from numpy import ndarray
 from helper import *
-import pandas as pd
 from collections import namedtuple
 
 
@@ -10,6 +9,7 @@ from collections import namedtuple
 class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
 
     def __init__(self, base_file_path, channel, period, *args, sample_config="sample_config.json"):
+
         self.file_path = {"data": base_file_path + "data/" + channel + "/" + period,
                           "mc": base_file_path + "mc/" + period}
         self.hist_path = channel + period + "/"
@@ -18,25 +18,20 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         self.data_period = period
 
         self.bin_width_norm = False
-        self.axis_steering = ""  # TODO remove anything related to TUnfold
-        self.file_sel = ""  # nominal, systematic TODO find name more appropriate
+        self.additional_sel = ""  # nominal, systematic TODO additional_sel
         self.hist_name = ""
 
         self.mc_key_list = None  # TODO set default using sample_config
         self.sys_dict = {
-            "bkg stat error": ("stat variation", [-1, 1], self.file_sel),
+            "bkg stat error": ("stat variation", [-1, 1], self.additional_sel),
             # "ID SF": {"hist name postfix": ("_PUweight_up", "_PUweight_down", "SYS__:")}
         }
-        # self.data_keys
 
     def set_bin_width_norm(self, bin_width_norm):
         self.bin_width_norm = bin_width_norm
 
-    def set_axis_steering(self, axis_steering):
-        self.axis_steering = axis_steering
-
-    def set_file_sel(self, file_sel):
-        self.file_sel = file_sel
+    def set_additional_sel(self, additional_sel):
+        self.additional_sel = additional_sel
 
     def set_hist_name(self, hist_name):
         self.hist_name = hist_name
@@ -52,25 +47,24 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
 
     def get_file_directory(self, sample_type):
         file_postfix = "/"
-        if self.file_sel != "":
-            file_postfix = "/" + self.file_sel.split(":")[0] + "/"
+        if self.additional_sel != "":
+            file_postfix = "/" + self.additional_sel.split(":")[0] + "/"
         return self.file_path[sample_type] + file_postfix
 
-    def get_file_path(self, file_key):
-        sample_type, hist_label, file_name = file_key.split("/")
+    def get_file_path(self, hist_key):
+        sample_type, hist_label, file_name = hist_key.split("/")
         if "data:bkg_subtracted" == sample_type:
             sample_type = "data"
         if file_name == "all":
             file_name = [*self.input_files[sample_type][hist_label].keys()][0]  # use one of samples
-        file_path = self.get_file_directory(sample_type) + \
-                    self.input_files[sample_type][hist_label][file_name]
+        file_path = self.get_file_directory(sample_type) + self.input_files[sample_type][hist_label][file_name]
         return file_path
 
     def get_obj_path(self, file_name, obj_name, obj_name_postfix=""):
         file_name_parsing = file_name.split(":")
         full_hist_dir = self.hist_path
-        if self.file_sel != "":
-            full_hist_dir = self.hist_path + self.file_sel.split(":")[1] + "/"
+        if self.additional_sel != "":
+            full_hist_dir = self.hist_path + self.additional_sel.split(":")[1] + "/"
         if len(file_name_parsing) == 2:  # hprefix set in config file
             hist_path = full_hist_dir + file_name_parsing[1] + obj_name + obj_name_postfix  # ex) tau_
             return hist_path
@@ -82,8 +76,8 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         return self.get_obj_path(file_name, self.hist_name, hist_name_postfix)
 
     # get values, bin, error as numpy array
-    def __get_hist(self, file_key, norm=False, stat_variation=0, hist_name_postfix=""):
-        sample_type, hist_label, file_name = file_key.split("/")
+    def __get_hist(self, hist_key, norm=False, stat_variation=0, hist_name_postfix=""):
+        sample_type, hist_label, file_name = hist_key.split("/")
         raw_hist = None
 
         if file_name == "all":  # sum all histograms in a file group
@@ -92,14 +86,14 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
                             self.input_files[sample_type][hist_label][file]
                 hist_path = self.get_hist_path(file, hist_name_postfix)
                 if index == 0:
-                    raw_hist = get_raw_hist(file_path, hist_path, self.axis_steering, stat_variation=stat_variation)
+                    raw_hist = get_raw_hist(file_path, hist_path, stat_variation=stat_variation)
                 else:
-                    raw_hist.Add(get_raw_hist(file_path, hist_path, self.axis_steering, stat_variation=stat_variation))
+                    raw_hist.Add(get_raw_hist(file_path, hist_path, stat_variation=stat_variation))
         else:
             file_path = self.get_file_directory(sample_type) + \
                         self.input_files[sample_type][hist_label][file_name]
             hist_path = self.get_hist_path(file_name, hist_name_postfix)
-            raw_hist = get_raw_hist(file_path, hist_path, self.axis_steering, stat_variation=stat_variation)
+            raw_hist = get_raw_hist(file_path, hist_path, stat_variation=stat_variation)
 
         if norm:
             integral = raw_hist.Integral()
@@ -110,17 +104,17 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
 
         return raw_hist
 
-    def get_combined_hist(self, file_key_list, root_hist=False, norm=False, stat_variation=0, hist_name_postfix=""):
+    def get_combined_hist(self, hist_key_list, root_hist=False, norm=False, stat_variation=0, hist_name_postfix=""):
         raw_hist = None
-        if len(file_key_list) == 1:
-            sample_type, hist_label, file_name = file_key_list[0].split("/")
+        if len(hist_key_list) == 1:
+            sample_type, hist_label, file_name = hist_key_list[0].split("/")
             if "data:bkg_subtracted" == sample_type:
                 raw_hist = self.__get_bkg_subtracted_data_hist(bkg_stat=stat_variation)
             else:
-                raw_hist = self.__get_hist(file_key_list[0], stat_variation=stat_variation)
+                raw_hist = self.__get_hist(hist_key_list[0], stat_variation=stat_variation)
         else:
-            for index, file_key in enumerate(file_key_list):
-                hist = self.__get_hist(file_key, stat_variation=stat_variation,
+            for index, hist_key in enumerate(hist_key_list):
+                hist = self.__get_hist(hist_key, stat_variation=stat_variation,
                                        hist_name_postfix=hist_name_postfix)
                 if index == 0:
                     raw_hist = hist
@@ -133,12 +127,16 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
 
         return return_hist(raw_hist, root_hist)
 
-    def make_stack_list(self, file_key_list):
+    def get_hist(self, hist_name, hist_key_list, root_hist=False, norm=False, stat_variation=0, hist_name_postfix=""):
+        self.set_hist_name(hist_name)
+        return self.get_combined_hist(hist_key_list, root_hist, norm, stat_variation, hist_name_postfix)
+
+    def make_stack_list(self, hist_key_list):
         values_list: list[ndarray] = []
         bins = None
         errors_list = []
-        for file_key in file_key_list:
-            hist = self.__get_hist(file_key)
+        for hist_key in hist_key_list:
+            hist = self.__get_hist(hist_key)
             hist = root_to_numpy(hist)
             values_list.append(hist.values)
             bins = hist.bins
@@ -163,7 +161,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
     # TODO hist_name_postfix
     def __get_bkg_subtracted_data_hist(self, norm=False, bkg_stat=0):
         data_hist = self.__get_hist("data/" + self.data_period + "/all")
-        # make file_key_list to background mc
+        # make hist_key_list to background mc
         bkg_key_list = [bkg_key for bkg_key in self.mc_key_list if "background" in bkg_key]
         bkg_hist = self.get_combined_hist(bkg_key_list, root_hist=True, stat_variation=bkg_stat)
         bkg_subtracted_data_hist = data_hist.Clone("data_bkg_subtracted")
@@ -175,11 +173,11 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
 
         return return_hist(bkg_subtracted_data_hist, root_hist=True)
 
-    def get_scaled_hist(self, file_key_list, root_hist=False, norm=False, systematic_dict=None):
-        hist = self.get_combined_hist(file_key_list, root_hist, norm)
+    def get_scaled_hist(self, hist_key_list, root_hist=False, norm=False, systematic_dict=None):
+        hist = self.get_combined_hist(hist_key_list, root_hist, norm)
         sys_error = None
         if systematic_dict is not None:
-            sys_error = self.get_combined_hist_systematic_bands(systematic_dict, file_key_list, norm)
+            sys_error = self.get_combined_hist_systematic_bands(systematic_dict, hist_key_list, norm)
             sys_error = np.nan_to_num(sys_error / hist.values)
 
         ones = np.nan_to_num(hist.values / hist.values)
@@ -197,7 +195,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         return return_hist(ratio, root_hist)
 
     # either nominator or denominator is external TH histogram
-    def get_ratio_hist2(self, file_key_list, nominator=None,
+    def get_ratio_hist2(self, hist_key_list, nominator=None,
                         denominator=None, root_hist=False, norm=False):
         # TODO error handling?
         if nominator is None and denominator is None:
@@ -206,23 +204,23 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
             return
 
         if nominator is None:
-            nominator = self.get_combined_hist(file_key_list, root_hist=True, norm=norm)
+            nominator = self.get_combined_hist(hist_key_list, root_hist=True, norm=norm)
             ratio = nominator.Clone("ratio")
         else:
             ratio = nominator.Clone("ratio")
-            denominator = self.get_combined_hist(file_key_list, root_hist=True, norm=norm)
+            denominator = self.get_combined_hist(hist_key_list, root_hist=True, norm=norm)
         ratio.Divide(denominator)
 
         return return_hist(ratio, root_hist)
 
-    def get_raw_labels(self, file_key):
+    def get_raw_labels(self, hist_key):
         hist_path = self.hist_path + self.hist_name
-        file_path = self.get_file_path(file_key)
+        file_path = self.get_file_path(hist_key)
 
         return get_raw_labels(file_path, hist_path)
 
-    def get_hist_systematic_bands(self, systematic_dict, file_key, norm=False):
-        nominal_hist = self.__get_hist(file_key, norm=norm)
+    def get_hist_systematic_bands(self, systematic_dict, hist_key, norm=False):
+        nominal_hist = self.__get_hist(hist_key, norm=norm)
         # symmetric systematic
         systematic_list = []
         for systematic in systematic_dict.keys():
@@ -232,7 +230,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
                 if variation != "":
                     variation_postfix += "_" + variation
                 hist_name_postfix = "_" + systematic + variation_postfix
-                systematic_hist = self.__get_hist(file_key, norm=norm,
+                systematic_hist = self.__get_hist(hist_key, norm=norm,
                                                   hist_name_postfix=hist_name_postfix)
                 systematic_hist.Add(nominal_hist, -1)
                 h = root_to_numpy(systematic_hist)
@@ -241,8 +239,8 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
         sqrt_sum = np.sqrt(np.sum(np.array(systematic_list), axis=0))  # square root sum
         return sqrt_sum
 
-    def get_combined_hist_systematic_bands(self, systematic_dict, file_key_list, norm=False):
-        nominal_hist = self.get_combined_hist(file_key_list, root_hist=True, norm=norm)
+    def get_combined_hist_systematic_bands(self, systematic_dict, hist_key_list, norm=False):
+        nominal_hist = self.get_combined_hist(hist_key_list, root_hist=True, norm=norm)
         # symmetric systematic
         systematic_list = []
         for systematic in systematic_dict.keys():
@@ -252,7 +250,7 @@ class ROOTFiles:  # FIXME maybe better to name this class as Experiments?
                 if variation != "":
                     variation_postfix += "_" + variation
                 hist_name_postfix = "_" + systematic + variation_postfix
-                systematic_hist = self.get_combined_hist(file_key_list, root_hist=True,
+                systematic_hist = self.get_combined_hist(hist_key_list, root_hist=True,
                                                          norm=norm, hist_name_postfix=hist_name_postfix)
                 systematic_hist.Add(nominal_hist, -1)
                 h = root_to_numpy(systematic_hist)

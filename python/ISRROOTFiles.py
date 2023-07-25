@@ -1,76 +1,70 @@
 from ROOTFiles import ROOTFiles
-
+from ISRBinInfo import ISRBinInfo
 from helper import *
 import pandas as pd
-# from numpy import ndarray
-# from collections import namedtuple
 
 
 class ISRROOTFiles(ROOTFiles):
     def __init__(self, base_file_path, channel, period, *args, sample_config="sample_config.json"):
         super().__init__(base_file_path, channel, period, *args, sample_config=sample_config)
 
-        self.file_key_list = None
+        self.hist_key_list = None
 
-        self.dipt_name = ""
-        self.dimass_name = ""
+        self.dipt_hist_name = ""
+        self.dimass_hist_name = ""
 
-        self.dipt_hist_names = None
-        self.dimass_hist_names = ""
-
-        self.dipt_bin_name = ""
-        self.dimass_bin_name = ""
-
-        self.dipt_axis_steering = ""
-        self.dimass_axis_steering = ""
-
-        self.dimass_window = []
-        self.dipt_cut = None
+        self.dipt_var_name = ""
+        self.dimass_var_name = ""
+        self.bin_info = None
+        self.bins = None
+        self.mass_windows = None
 
         self.isr_stat_summary_type = "mean"
         self.isr_quantile_prob = 0.5
 
-    def set_file_key_list(self, file_key_list):
-        self.file_key_list = file_key_list
+    def set_hist_key_list(self, hist_key_list):
+        self.hist_key_list = hist_key_list
 
-    def set_dipt_hist(self, hist_names, axis_steering=""):
-        self.dipt_hist_names = hist_names
-        self.dipt_axis_steering = axis_steering
+    def set_bins(self):
+        self.bins = {self.dipt_var_name: {"folded": None, "unfolded": None},
+                     self.dimass_var_name: {"folded": None, "unfolded": None}}
+        self.set_bin("dipt-dimass", "folded")
+        self.set_bin("dipt-dimass", "unfolded")
+        self.set_bin("dimass-dipt", "folded")
+        self.set_bin("dimass-dipt", "unfolded")
 
-    def set_dimass_hist(self, hist_name, axis_steering=""):
-        self.dimass_hist_names = hist_name
-        self.dimass_axis_steering = axis_steering
+    def set_bin(self, var_name, which_level):
 
-    def init_isr_hist_names(self, dipt_bin_def, dimass_bin_def, dipt_name="dipt", dimass_name="dimass"):
-        self.dipt_name = dipt_name
-        self.dimass_name = dimass_name
+        bin_name = self.bin_info.get_bin_name(var_name, which_level)
+        unfold_bin = self.get_tunfold_bin(bin_name)
+        self.bins[var_name][which_level] = unfold_bin
 
-        var_name = self.dipt_name + "-" + self.dimass_name
-        hist_name = "[tunfold-hist]_["+var_name+"]_" + \
-                    "[" + dipt_bin_def[0] + "-" + dimass_bin_def[0] + "]"
-        axis_steering = self.dipt_name + "[" + dipt_bin_def[1] + "];" + \
-                        self.dimass_name + "[" + dimass_bin_def[1] + "]"
-        self.set_dipt_hist([hist_name], axis_steering)
+    def set_mass_window(self):
+        edges = self.bins["dipt-dimass"]["unfolded"].GetDistributionBinning(1)
+        self.mass_windows = [edge for edge in edges]
 
-        var_name = self.dimass_name + "-" + self.dipt_name
-        hist_name = "[tunfold-hist]_["+var_name+"]_" + \
-                    "[" + dimass_bin_def[0] + "-" + dipt_bin_def[0] + "]"
-        axis_steering = self.dimass_name + "[" + dimass_bin_def[1] + "];" + \
-                        self.dipt_name + "[" + dipt_bin_def[1] + "]"
-        self.set_dimass_hist(hist_name, axis_steering)
+    def init_isr_hist_names(self, bin_info,
+                            dipt_name="dipt-dimass", dimass_name="dimass-dipt"):
 
-    def reset(self):
-        self.set_isr_mass_window()
+        self.dipt_var_name = dipt_name
+        self.dimass_var_name = dimass_name
 
-    def get_tunfold_bin(self, bin_name, file_key=""):
-        if file_key == "":
+        self.bin_info = ISRBinInfo(bin_info)
+        self.set_bins()
+        self.set_mass_window()
+
+        self.dipt_hist_name = self.bin_info.get_hist_name("hist", self.dipt_var_name, "folded")
+        self.dimass_hist_name = self.bin_info.get_hist_name("hist", self.dimass_var_name, "folded")
+
+    def get_tunfold_bin(self, bin_name, hist_key=""):
+        if hist_key == "":
             for mc_key in self.input_files["mc"]:
                 if "signal" in mc_key:
-                    file_key = "mc/" + mc_key + "/" + [*self.input_files["mc"][mc_key].keys()][0]
+                    hist_key = "mc/" + mc_key + "/" + [*self.input_files["mc"][mc_key].keys()][0]
                     break
 
-        sample_type, hist_label, file_name = file_key.split("/")
-        file_path = super().get_file_path(file_key)
+        sample_type, hist_label, file_name = hist_key.split("/")
+        file_path = super().get_file_path(hist_key)
         bin_path = super().get_obj_path(file_name, bin_name)
 
         file = rt.TFile.Open(file_path)
@@ -79,31 +73,24 @@ class ISRROOTFiles(ROOTFiles):
 
         return tunfold_bin
 
-    def set_isr_mass_window(self):
-        # todo error handle
-        matches = re.findall(r'\[([^]]*)]', self.dipt_hist_names[0])
-        bin_name = "[tunfold-bin]_" + "[" + matches[1] + "]_" + "[" + matches[2] + "]"
-
-        unfold_bin = self.get_tunfold_bin(bin_name)
-        edges = unfold_bin.GetDistributionBinning(1)
-
-        for edge in edges:
-            self.dimass_window.append(edge)
-
     def get_isr_hists(self, dipt_steering, dimass_steering, mass_index,
                       stat_variation=0, hist_name_postfix=""):
 
         # stat_variation=0, hist_name_postfix=""
-        super().set_hist_name(self.dipt_hist_names[0])  # hist_postfix for systematic?
-        super().set_axis_steering(dipt_steering)
-        dipt_hist = super().get_combined_hist(self.file_key_list, root_hist=True, stat_variation=stat_variation,
-                                              hist_name_postfix=hist_name_postfix)
+        # get_hist(hist_name, hist_key_list, )
+        dipt_hist = super().get_hist(self.dipt_hist_name, self.hist_key_list, root_hist=True,
+                                     stat_variation=stat_variation,
+                                     hist_name_postfix=hist_name_postfix)
+        dipt_hist = self.bins[self.dipt_var_name]["folded"].ExtractHistogram("extracted_" + dipt_steering,
+                                                                             dipt_hist, 0, True, dipt_steering)
 
-        super().set_hist_name(self.dimass_hist_names)
-        super().set_axis_steering(dimass_steering)
-        dimass_hist = super().get_combined_hist(self.file_key_list, root_hist=True, stat_variation=stat_variation,
-                                                hist_name_postfix=hist_name_postfix)
-        dimass_hist.GetXaxis().SetRangeUser(self.dimass_window[mass_index], self.dimass_window[mass_index + 1])
+        dimass_hist = super().get_hist(self.dimass_hist_name, self.hist_key_list, root_hist=True,
+                                       stat_variation=stat_variation,
+                                       hist_name_postfix=hist_name_postfix)
+
+        dimass_hist = self.bins[self.dimass_var_name]["folded"].ExtractHistogram("extracted_" + dimass_steering,
+                                                                                 dimass_hist, 0, True, dimass_steering)
+        dimass_hist.GetXaxis().SetRangeUser(self.mass_windows[mass_index], self.mass_windows[mass_index + 1])
 
         return dipt_hist, dimass_hist
 
@@ -145,29 +132,30 @@ class ISRROOTFiles(ROOTFiles):
         return dimass_stat, dipt_stat
 
     # get ISR mean DataFrame from 2D pt-mass histogram
-    def get_isr_dataframe(self, sys=False):
+    def get_isr_dataframe(self, dimass_axis_steering="dimass[OU];dipt[OC0]",
+                          dipt_axis_steering="dipt[O];dimass[UOC]",
+                          sys=False):
 
-        dipt_steer_matches = re.findall(r'\[([^]]*)]', self.dipt_axis_steering)
-        dimass_steer_matches = re.findall(r'\[([^]]*)]', self.dimass_axis_steering)
-        dimass_steering = self.dimass_name + "[" + dimass_steer_matches[0] + "];" + \
-                          self.dipt_name + "[" + dimass_steer_matches[1] + "C0]"
+        matches = re.findall(r'([a-z]+)\[([^]]*)]', dipt_axis_steering)
 
         dipt_dict_list = []
         dimass_dict_list = []
-        for index, edge in enumerate(self.dimass_window):
-            if index < len(self.dimass_window) - 1:
-                dipt_steering = self.dipt_name + "[" + dipt_steer_matches[0] + "];" + \
-                                self.dimass_name + "[" + dipt_steer_matches[1] + f"C{index}]"
-                dimass_stat, dipt_stat = self.get_isr_summary(dipt_steering, dimass_steering, index)
+        for index, edge in enumerate(self.mass_windows):
+            if index < len(self.mass_windows) - 1:
 
-                dipt_dict = {"mass_window": str(edge) + ":" + str(self.dimass_window[index + 1]),
+                dipt_steering = matches[0][0] + "[" + matches[0][1] + "];" + \
+                                       matches[1][0] + "[" + matches[1][1] + f"{index}]"
+
+                dimass_stat, dipt_stat = self.get_isr_summary(dipt_steering, dimass_axis_steering, index)
+
+                dipt_dict = {"mass_window": str(edge) + ":" + str(self.mass_windows[index + 1]),
                              self.isr_stat_summary_type: dipt_stat.value, "stat error": dipt_stat.error}
-                dimass_dict = {"mass_window": str(edge) + ":" + str(self.dimass_window[index + 1]),
+                dimass_dict = {"mass_window": str(edge) + ":" + str(self.mass_windows[index + 1]),
                                self.isr_stat_summary_type: dimass_stat.value, "stat error": dimass_stat.error}
 
                 if sys:
                     dimass_sys_dict, dipt_sys_dict = self.get_isr_sys_dict(dipt_stat.value, dimass_stat.value,
-                                                                           dipt_steering, self.dimass_axis_steering,
+                                                                           dipt_steering, dimass_axis_steering,
                                                                            index)
                     dipt_dict.update(dipt_sys_dict)
                     dimass_dict.update(dimass_sys_dict)
